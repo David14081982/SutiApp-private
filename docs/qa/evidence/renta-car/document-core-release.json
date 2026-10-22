@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "checks": 23,
+  "productionTouched": false,
+  "lineEndings": "SQL checkout normalized to LF before execution",
+  "testChange": "Expected document type count 7 to 8 for RENTA_CAR_APPROVAL"
+}

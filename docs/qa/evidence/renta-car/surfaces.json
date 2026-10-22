@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Sheets E:J exact mapping; G only payment count; A:AG boundary",
+    "non-rental financing projection retained",
+    "rental PDF renders; applicant digital signature has no effect on bytes; original signature space",
+    "browser: past/booked/crossed range blocked; two days = 5000; existing documents and real signature pad; one submission"
+  ],
+  "productionWrites": 0
+}

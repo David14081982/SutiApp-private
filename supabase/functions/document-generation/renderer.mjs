@@ -4,6 +4,7 @@ import {AFFILIATE_FIELDS,initialLayout} from './layout.mjs';
 import {drawLayout} from './render-layout.mjs';
 export const RENDERER_VERSION='pdf-lib-1.17.1/suti-1';
 export const TITLES=Object.freeze({
+ RENTA_CAR_APPROVAL:'Renta Car · Arrendamiento de contado',
  LOAN_APPROVAL:'Autorización de préstamo',PROGRAM_FINANCING_APPROVAL:'Financiamiento autorizado',MEMBERSHIP_APPROVAL:'Solicitud de membresía autorizada',
  SAVINGS_ENROLLMENT_APPROVAL:'Incorporación al ahorro autorizada',SAVINGS_CONTRIBUTION_CHANGE:'Cambio de aportación autorizado',
  SAVINGS_CESSATION_APPROVAL:'Cese de aportaciones autorizado',SAVINGS_WITHDRAWAL_APPROVAL:'Retiro de ahorro autorizado'
@@ -27,6 +28,11 @@ export function documentContract(snapshot){
  const common=pairs([['Folio de solicitud',required(o.folio,'FOLIO')],['Solicitante',required(i.full_name,'NAME')],['Número de control',required(i.numero_control,'CONTROL')],['Programa',required(o.program,'PROGRAM')],['Fecha de autorización',date(required(o.approved_at,'APPROVED_AT'))],['Sindicato',i.union_label||i.union_code],['Categoría',i.category_label||i.category_code],['Adscripción registrada',i.unit]]);
  let sections=[],note='',schedule=null;
  switch(type){
+ case 'RENTA_CAR_APPROVAL': {
+  const r=required(f?.rental,'RENTAL_SNAPSHOT');
+  sections=[{title:'Renta autorizada',rows:pairs([['Unidad',required(f.product?.name,'PRODUCT')],['Entrega',date(required(r.start_date,'START_DATE'))],['Devolución',date(required(r.end_date,'END_DATE'))],['Días',required(r.days,'RENTAL_DAYS')],['Costo diario',money(required(r.daily_rate,'DAILY_RATE'))],['Total de contado',money(required(r.total,'TOTAL'))],['Número de pagos',1],['Fecha límite de pago',date(required(r.payment_due_date,'PAYMENT_DATE'))]])}];
+  note='Pago completo antes de entregar la unidad. Firma original del solicitante: ______________________________';break;
+ }
  case 'PROGRAM_FINANCING_APPROVAL':
   required(f,'FINANCIAL_SNAPSHOT');required(f.product?.name,'PRODUCT');
   sections=[{title:'Producto y condiciones autorizadas',rows:pairs([['Producto',f.product.name],['Precio autorizado',money(required(f.authorized_price,'PRICE'))],['Enganche',money(required(f.down_payment,'DOWN_PAYMENT'))],['Monto financiado',money(required(f.financed_amount,'FINANCED_AMOUNT'))],['Origen del precio',f.price_source],['Condiciones de financiamiento',f.financing_conditions?.rate_source]])},{title:'Resumen financiero',rows:finance(f)}];
@@ -60,6 +66,7 @@ export function documentContract(snapshot){
 export function syntheticSnapshot(type,program,config){
  if(!TITLES[type])throw Error('DOCUMENT_TYPE_NOT_SUPPORTED');
  const financial={product:{name:'Producto de ejemplo'},offering:{company_raw:'Empresa de ejemplo',concept:'Membresía de ejemplo'},authorized_price:12000,down_payment:2000,financed_amount:10000,price_source:'PRICE_CASH',financialResult:{fund:'Fondo de ejemplo',rate:0,administrativeFeePerPayment:0,lastPayment:2500,amount:10000,paymentCount:4,paymentPeriod:'QUINCENAL',interest:0,administrativeFeeTotal:0,total:10000,paymentPerPeriod:2500},payment_schedule:{rows:[1,2,3,4].map((n)=>({number:n,date:'2026-10-'+String(n*5).padStart(2,'0'),payment:2500,remaining_total:10000-n*2500}))}};
+ if(type==='RENTA_CAR_APPROVAL')financial.rental={start_date:'2026-10-10',end_date:'2026-10-11',days:2,daily_rate:2500,total:5000,payment_due_date:'2026-10-10',payment_count:1,payment_method:'CONTADO',signature_on_pdf:false};
  return {...config,document_type:type,contract_version:'1',renderer_version:RENDERER_VERSION,event_id:'PREVIEW',identity:{full_name:'Persona de ejemplo',numero_control:'EJEMPLO',union_label:'Sindicato de ejemplo',category_label:'Categoría de ejemplo',category_code:'BASE',unit:'Unidad de ejemplo',affiliate:Object.fromEntries(AFFILIATE_FIELDS.map(([key,label])=>[key,label+' de ejemplo']))},operation:{id:'PREVIEW',folio:'VISTA PREVIA',program,approved_at:'2026-09-28T12:00:00Z',financial,new_contribution_amount:400,previous_contribution_amount:200,process:'1',effective_from:'2026-10-30',request_type:'WITHDRAW',withdrawal_kind:'PARTIAL',requested_amount:500,authorized_amount:500,component:'CAPITAL',continue_saving:true},
   bank:type==='LOAN_APPROVAL'?{bank_name:'BANCO DEMO',disclosure:'FULL_DEPOSIT',account_holder:'Titular de ejemplo',card_number:'1111222233334444',clabe:'111222333444555666',card_last4:'4444',clabe_last4:'5666'}:undefined,
   signers:(config.signers||[]).map((s,n)=>({...s,full_name:'Firmante de ejemplo '+(n+1),title:'Cargo de ejemplo',asset:null}))};

@@ -34,40 +34,394 @@
 (function(){
 /* Focal additions to Finance requests. All text is rendered as React text. */
 (function () {
-  const h=React.createElement;
-  const R=()=>window.FinanceBlocksRepository;
-  const message=error=>({FINANCE_BLOCK_VERSION_CHANGED:'Otro administrador modificó este bloqueo. Recarga la bitácora antes de continuar.',FINANCE_BLOCK_ALREADY_EXISTS_REFRESH:'Este afiliado ya tiene un bloqueo registrado. Recarga para editarlo.',FINANCE_BLOCK_WRITE_DENIED:'Tu cuenta no tiene permiso para modificar bloqueos.',FINANCE_BLOCK_DATES_OR_REASON_INVALID:'Revisa las fechas y escribe una explicación.',FINANCE_BLOCK_CONTEXT_CHANGED:'La sesión cambió. Vuelve a abrir la bitácora.'})[error?.message]||'No se pudo guardar el cambio. Recarga la bitácora e inténtalo de nuevo.';
-  const day=value=>String(value||'').split('-').reverse().join('/');
-  const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'America/Hermosillo'}).format(new Date());
-  const status=row=>row.revoked_at?'Levantado':today()<row.starts_on?'Programado':today()>row.ends_on?'Vencido':'Activo';
-  const box={background:'var(--surface,white)',border:'1px solid #E4D3D9',borderRadius:14,padding:16,marginBottom:12,overflowWrap:'anywhere'};
-  const button={padding:'10px 14px',borderRadius:10,border:'1px solid #D6C8CE',background:'var(--surface,white)',color:'var(--guinda,#791636)',font:'inherit',cursor:'pointer'};
-  const field={display:'block',width:'100%',boxSizing:'border-box',padding:10,border:'1px solid #ccc',borderRadius:8,font:'inherit',marginTop:5};
-  function Explain({block}) { return h('div',{'data-finance-block-explanation':true},h('p',null,'No puedes enviar nuevas solicitudes de préstamos ni financiamiento durante este periodo.'),h('p',null,h('strong',null,'Desde: '),day(block.starts_on),h('br'),h('strong',null,'Hasta: '),day(block.ends_on)),h('p',{style:{whiteSpace:'pre-wrap'}},h('strong',null,'Motivo: '),block.reason)); }
-  let noticeRoot=null,noticeHost=null;
-  function Notice({block,onClose}) {
-    const ref=React.useRef(null);
-    React.useEffect(()=>{ref.current?.focus();const initial=R().context();const clear=()=>{if(R().context()!==initial)onClose();};const a=window.AffiliateAuth?.subscribe(clear),b=window.AdminRepository?.subscribe?.(clear);return()=>{a?.();b?.();};},[]);
-    return h('div',{style:{position:'fixed',inset:0,zIndex:100000,background:'#0008',display:'grid',placeItems:'center',padding:20}},h('section',{role:'dialog','aria-modal':true,'aria-labelledby':'finance-block-notice-title',style:{...box,width:'min(480px,100%)',maxHeight:'85vh',overflow:'auto'},onKeyDown:e=>{if(e.key==='Escape')onClose();if(e.key==='Tab'){e.preventDefault();ref.current?.focus();}}},h('h2',{id:'finance-block-notice-title'},'Solicitudes temporalmente bloqueadas'),h(Explain,{block}),h('button',{ref,style:button,onClick:onClose},'Entendido')));
+  const h = React.createElement;
+  const R = () => window.FinanceBlocksRepository;
+  const message = error => ({
+    FINANCE_BLOCK_VERSION_CHANGED: 'Otro administrador modificó este bloqueo. Recarga la bitácora antes de continuar.',
+    FINANCE_BLOCK_ALREADY_EXISTS_REFRESH: 'Este afiliado ya tiene un bloqueo registrado. Recarga para editarlo.',
+    FINANCE_BLOCK_WRITE_DENIED: 'Tu cuenta no tiene permiso para modificar bloqueos.',
+    FINANCE_BLOCK_DATES_OR_REASON_INVALID: 'Revisa las fechas y escribe una explicación.',
+    FINANCE_BLOCK_CONTEXT_CHANGED: 'La sesión cambió. Vuelve a abrir la bitácora.'
+  })[error?.message] || 'No se pudo guardar el cambio. Recarga la bitácora e inténtalo de nuevo.';
+  const day = value => String(value || '').split('-').reverse().join('/');
+  const today = () => new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'America/Hermosillo'
+  }).format(new Date());
+  const status = row => row.revoked_at ? 'Levantado' : today() < row.starts_on ? 'Programado' : today() > row.ends_on ? 'Vencido' : 'Activo';
+  const box = {
+    background: 'var(--surface,white)',
+    border: '1px solid #E4D3D9',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    overflowWrap: 'anywhere'
+  };
+  const button = {
+    padding: '10px 14px',
+    borderRadius: 10,
+    border: '1px solid #D6C8CE',
+    background: 'var(--surface,white)',
+    color: 'var(--guinda,#791636)',
+    font: 'inherit',
+    cursor: 'pointer'
+  };
+  const field = {
+    display: 'block',
+    width: '100%',
+    boxSizing: 'border-box',
+    padding: 10,
+    border: '1px solid #ccc',
+    borderRadius: 8,
+    font: 'inherit',
+    marginTop: 5
+  };
+  function Explain({
+    block
+  }) {
+    return h('div', {
+      'data-finance-block-explanation': true
+    }, h('p', null, 'No puedes enviar nuevas solicitudes de préstamos ni financiamiento durante este periodo.'), h('p', null, h('strong', null, 'Desde: '), day(block.starts_on), h('br'), h('strong', null, 'Hasta: '), day(block.ends_on)), h('p', {
+      style: {
+        whiteSpace: 'pre-wrap'
+      }
+    }, h('strong', null, 'Motivo: '), block.reason));
   }
-  window.FinanceBlocksUI={show(block){const previous=document.activeElement;const close=()=>{noticeRoot?.unmount();noticeHost?.remove();noticeRoot=null;noticeHost=null;previous?.focus?.();};if(noticeRoot)close();noticeHost=document.createElement('div');document.body.appendChild(noticeHost);noticeRoot=ReactDOM.createRoot(noticeHost);noticeRoot.render(h(Notice,{block,onClose:close}));}};
-  function Editor({row,request,onSaved,onCancel}) {
-    const [start,setStart]=React.useState(row?.starts_on||today()),[end,setEnd]=React.useState(row?.ends_on||today()),[reason,setReason]=React.useState(row?.reason||''),[busy,setBusy]=React.useState(false),[error,setError]=React.useState('');
-    async function save(e){e.preventDefault();setBusy(true);setError('');try{await R().save({p_request_id:request?.id||null,p_id:row?.id||null,p_version:row?.version||null,p_starts_on:start,p_ends_on:end,p_reason:reason.trim()});onSaved();}catch(e){setError(message(e));}finally{setBusy(false);}}
-    return h('form',{onSubmit:save,'data-finance-block-editor':true},h('p',null,'Aplica a todos los préstamos y financiamientos. Ambas fechas se incluyen.'),h('div',{style:{display:'flex',flexWrap:'wrap',gap:12}},h('label',null,'Fecha de inicio',h('input',{style:field,type:'date',required:true,value:start,onChange:e=>setStart(e.target.value)})),h('label',null,'Fecha de fin',h('input',{style:field,type:'date',required:true,min:start,value:end,onChange:e=>setEnd(e.target.value)}))),h('label',{style:{display:'block',margin:'12px 0'}},'Explicación visible para el afiliado',h('textarea',{style:field,required:true,maxLength:1000,rows:4,value:reason,onChange:e=>setReason(e.target.value)})),error&&h('p',{role:'alert'},error),h('button',{style:button,type:'submit',disabled:busy||!reason.trim()||end<start},busy?'Guardando…':'Guardar bloqueo'),' ',h('button',{style:button,type:'button',disabled:busy,onClick:onCancel},'Cancelar'));
+  let noticeRoot = null,
+    noticeHost = null;
+  function Notice({
+    block,
+    onClose
+  }) {
+    const ref = React.useRef(null);
+    React.useEffect(() => {
+      ref.current?.focus();
+      const initial = R().context();
+      const clear = () => {
+        if (R().context() !== initial) onClose();
+      };
+      const a = window.AffiliateAuth?.subscribe(clear),
+        b = window.AdminRepository?.subscribe?.(clear);
+      return () => {
+        a?.();
+        b?.();
+      };
+    }, []);
+    return h('div', {
+      style: {
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100000,
+        background: '#0008',
+        display: 'grid',
+        placeItems: 'center',
+        padding: 20
+      }
+    }, h('section', {
+      role: 'dialog',
+      'aria-modal': true,
+      'aria-labelledby': 'finance-block-notice-title',
+      style: {
+        ...box,
+        width: 'min(480px,100%)',
+        maxHeight: '85vh',
+        overflow: 'auto'
+      },
+      onKeyDown: e => {
+        if (e.key === 'Escape') onClose();
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          ref.current?.focus();
+        }
+      }
+    }, h('h2', {
+      id: 'finance-block-notice-title'
+    }, 'Solicitudes temporalmente bloqueadas'), h(Explain, {
+      block
+    }), h('button', {
+      ref,
+      style: button,
+      onClick: onClose
+    }, 'Entendido')));
   }
-  function Records({affiliateId,request,canWrite}) {
-    const [rows,setRows]=React.useState([]),[phase,setPhase]=React.useState('loading'),[error,setError]=React.useState(''),[edit,setEdit]=React.useState(null),[revision,setRevision]=React.useState(0),[revoke,setRevoke]=React.useState(null),[reason,setReason]=React.useState(''),[busy,setBusy]=React.useState(false),[search,setSearch]=React.useState('');
-    const generation=React.useRef(0);
-    React.useEffect(()=>{const seq=++generation.current,initial=R().context();setPhase('loading');setRows([]);setEdit(null);setRevoke(null);setError('');R().list(affiliateId).then(data=>{if(generation.current===seq){if(!Array.isArray(data))throw Error('Respuesta inválida');setRows(data);setPhase('ready');}}).catch(()=>{if(generation.current===seq){setPhase('error');setError('No se pudo consultar la bitácora.');}});const changed=()=>{if(R().context()===initial)return;generation.current++;setRows([]);setEdit(null);setRevoke(null);setPhase('error');setError('La sesión cambió. Vuelve a abrir la bitácora.');};const a=window.AffiliateAuth?.subscribe(changed),b=window.AdminRepository?.subscribe?.(changed);return()=>{generation.current++;a?.();b?.();};},[affiliateId,revision]);
-    const refresh=()=>{setEdit(null);setRevoke(null);setRevision(n=>n+1);};
-    async function lift(){setBusy(true);setError('');try{await R().revoke(revoke.id,revoke.version,reason.trim());refresh();}catch(e){setError(message(e));}finally{setBusy(false);}}
-    if(phase==='loading')return h('p',{role:'status'},'Consultando bloqueos…');
-    if(phase==='error')return h('div',{role:'alert'},error,' ',h('button',{style:button,onClick:refresh},'Reintentar'));
-    return h('div',null,!affiliateId&&h('label',null,'Buscar por nombre o número de control',h('input',{style:{...field,marginBottom:14},value:search,onChange:e=>setSearch(e.target.value)})),error&&h('p',{role:'alert'},error),!rows.length&&h('p',null,'No hay bloqueos registrados.'),request&&canWrite&&!rows.length&&!edit&&h('button',{style:button,onClick:()=>setEdit({create:true})},'Bloquear programas de Finanzas'),edit&&h(Editor,{key:edit.id||'new',row:edit.create?null:edit,request,onSaved:refresh,onCancel:()=>setEdit(null)}),rows.filter(row=>[row.full_name,row.numero_control].join(' ').toLowerCase().includes(search.toLowerCase())).map(row=>h('article',{key:row.id,style:box,'data-finance-block-id':row.id},h('strong',null,row.full_name,' · Control ',row.numero_control),h('p',null,h('strong',null,status(row)),' · ',day(row.starts_on),' — ',day(row.ends_on)),h('p',{style:{whiteSpace:'pre-wrap'}},row.reason),canWrite&&h('div',null,h('button',{style:button,onClick:()=>setEdit(row)},row.revoked_at?'Programar nuevo bloqueo':'Editar bloqueo'),' ',!row.revoked_at&&h('button',{style:button,onClick:()=>{setReason('');setRevoke(row);}},'Levantar bloqueo')),revoke?.id===row.id&&h('div',null,h('label',null,'Motivo para levantar el bloqueo',h('textarea',{style:field,value:reason,maxLength:1000,onChange:e=>setReason(e.target.value)})),h('button',{style:button,disabled:busy||!reason.trim(),onClick:lift},busy?'Guardando…':'Confirmar desbloqueo'),' ',h('button',{style:button,disabled:busy,onClick:()=>setRevoke(null)},'Cancelar')),h('details',{style:{marginTop:12}},h('summary',null,'Historial de cambios'),(row.events||[]).map(event=>h('div',{key:event.id,style:{borderTop:'1px solid #eee',padding:'10px 0'}},h('strong',null,({CREATE:'Creado',EDIT:'Editado',REVOKE:'Levantado'})[event.action]),' · ',new Date(event.created_at).toLocaleString('es-MX',{timeZone:'America/Hermosillo'}),h('p',null,event.reason),h('small',null,'Administrador: ',event.actor_auth_user_id),event.after&&h('p',null,'Vigencia registrada: ',day(event.after.starts_on),' — ',day(event.after.ends_on))))))));
+  window.FinanceBlocksUI = {
+    show(block) {
+      const previous = document.activeElement;
+      const close = () => {
+        noticeRoot?.unmount();
+        noticeHost?.remove();
+        noticeRoot = null;
+        noticeHost = null;
+        previous?.focus?.();
+      };
+      if (noticeRoot) close();
+      noticeHost = document.createElement('div');
+      document.body.appendChild(noticeHost);
+      noticeRoot = ReactDOM.createRoot(noticeHost);
+      noticeRoot.render(h(Notice, {
+        block,
+        onClose: close
+      }));
+    }
+  };
+  function Editor({
+    row,
+    request,
+    onSaved,
+    onCancel
+  }) {
+    const [start, setStart] = React.useState(row?.starts_on || today()),
+      [end, setEnd] = React.useState(row?.ends_on || today()),
+      [reason, setReason] = React.useState(row?.reason || ''),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState('');
+    async function save(e) {
+      e.preventDefault();
+      setBusy(true);
+      setError('');
+      try {
+        await R().save({
+          p_request_id: request?.id || null,
+          p_id: row?.id || null,
+          p_version: row?.version || null,
+          p_starts_on: start,
+          p_ends_on: end,
+          p_reason: reason.trim()
+        });
+        onSaved();
+      } catch (e) {
+        setError(message(e));
+      } finally {
+        setBusy(false);
+      }
+    }
+    return h('form', {
+      onSubmit: save,
+      'data-finance-block-editor': true
+    }, h('p', null, 'Aplica a todos los préstamos y financiamientos. Ambas fechas se incluyen.'), h('div', {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 12
+      }
+    }, h('label', null, 'Fecha de inicio', h('input', {
+      style: field,
+      type: 'date',
+      required: true,
+      value: start,
+      onChange: e => setStart(e.target.value)
+    })), h('label', null, 'Fecha de fin', h('input', {
+      style: field,
+      type: 'date',
+      required: true,
+      min: start,
+      value: end,
+      onChange: e => setEnd(e.target.value)
+    }))), h('label', {
+      style: {
+        display: 'block',
+        margin: '12px 0'
+      }
+    }, 'Explicación visible para el afiliado', h('textarea', {
+      style: field,
+      required: true,
+      maxLength: 1000,
+      rows: 4,
+      value: reason,
+      onChange: e => setReason(e.target.value)
+    })), error && h('p', {
+      role: 'alert'
+    }, error), h('button', {
+      style: button,
+      type: 'submit',
+      disabled: busy || !reason.trim() || end < start
+    }, busy ? 'Guardando…' : 'Guardar bloqueo'), ' ', h('button', {
+      style: button,
+      type: 'button',
+      disabled: busy,
+      onClick: onCancel
+    }, 'Cancelar'));
   }
-  window.FinanceBlockRequestControl=function({app,request}){return h('section',{className:'finwb-card','data-finance-block-control':true},h('h3',null,'Bloqueo de programas de Finanzas'),h(Records,{key:request.affiliate_id,affiliateId:request.affiliate_id,request,canWrite:app.admin.has('program_requests.write')}));};
-  window.FinanceBlocksModule=function({app,header,onBack}){return h('div',{'data-admin-view':'finance_blocks'},header?header({title:'Bitácora de bloqueos',sub:'Préstamos y financiamientos · vigencia y explicación',onBack}):h('button',{onClick:onBack},'Volver'),h('div',{style:{padding:20}},h(Records,{canWrite:app.admin.has('program_requests.write')})));};
+  function Records({
+    affiliateId,
+    request,
+    canWrite
+  }) {
+    const [rows, setRows] = React.useState([]),
+      [phase, setPhase] = React.useState('loading'),
+      [error, setError] = React.useState(''),
+      [edit, setEdit] = React.useState(null),
+      [revision, setRevision] = React.useState(0),
+      [revoke, setRevoke] = React.useState(null),
+      [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [search, setSearch] = React.useState('');
+    const generation = React.useRef(0);
+    React.useEffect(() => {
+      const seq = ++generation.current,
+        initial = R().context();
+      setPhase('loading');
+      setRows([]);
+      setEdit(null);
+      setRevoke(null);
+      setError('');
+      R().list(affiliateId).then(data => {
+        if (generation.current === seq) {
+          if (!Array.isArray(data)) throw Error('Respuesta inválida');
+          setRows(data);
+          setPhase('ready');
+        }
+      }).catch(() => {
+        if (generation.current === seq) {
+          setPhase('error');
+          setError('No se pudo consultar la bitácora.');
+        }
+      });
+      const changed = () => {
+        if (R().context() === initial) return;
+        generation.current++;
+        setRows([]);
+        setEdit(null);
+        setRevoke(null);
+        setPhase('error');
+        setError('La sesión cambió. Vuelve a abrir la bitácora.');
+      };
+      const a = window.AffiliateAuth?.subscribe(changed),
+        b = window.AdminRepository?.subscribe?.(changed);
+      return () => {
+        generation.current++;
+        a?.();
+        b?.();
+      };
+    }, [affiliateId, revision]);
+    const refresh = () => {
+      setEdit(null);
+      setRevoke(null);
+      setRevision(n => n + 1);
+    };
+    async function lift() {
+      setBusy(true);
+      setError('');
+      try {
+        await R().revoke(revoke.id, revoke.version, reason.trim());
+        refresh();
+      } catch (e) {
+        setError(message(e));
+      } finally {
+        setBusy(false);
+      }
+    }
+    if (phase === 'loading') return h('p', {
+      role: 'status'
+    }, 'Consultando bloqueos…');
+    if (phase === 'error') return h('div', {
+      role: 'alert'
+    }, error, ' ', h('button', {
+      style: button,
+      onClick: refresh
+    }, 'Reintentar'));
+    return h('div', null, !affiliateId && h('label', null, 'Buscar por nombre o número de control', h('input', {
+      style: {
+        ...field,
+        marginBottom: 14
+      },
+      value: search,
+      onChange: e => setSearch(e.target.value)
+    })), error && h('p', {
+      role: 'alert'
+    }, error), !rows.length && h('p', null, 'No hay bloqueos registrados.'), request && canWrite && !rows.length && !edit && h('button', {
+      style: button,
+      onClick: () => setEdit({
+        create: true
+      })
+    }, 'Bloquear programas de Finanzas'), edit && h(Editor, {
+      key: edit.id || 'new',
+      row: edit.create ? null : edit,
+      request,
+      onSaved: refresh,
+      onCancel: () => setEdit(null)
+    }), rows.filter(row => [row.full_name, row.numero_control].join(' ').toLowerCase().includes(search.toLowerCase())).map(row => h('article', {
+      key: row.id,
+      style: box,
+      'data-finance-block-id': row.id
+    }, h('strong', null, row.full_name, ' · Control ', row.numero_control), h('p', null, h('strong', null, status(row)), ' · ', day(row.starts_on), ' — ', day(row.ends_on)), h('p', {
+      style: {
+        whiteSpace: 'pre-wrap'
+      }
+    }, row.reason), canWrite && h('div', null, h('button', {
+      style: button,
+      onClick: () => setEdit(row)
+    }, row.revoked_at ? 'Programar nuevo bloqueo' : 'Editar bloqueo'), ' ', !row.revoked_at && h('button', {
+      style: button,
+      onClick: () => {
+        setReason('');
+        setRevoke(row);
+      }
+    }, 'Levantar bloqueo')), revoke?.id === row.id && h('div', null, h('label', null, 'Motivo para levantar el bloqueo', h('textarea', {
+      style: field,
+      value: reason,
+      maxLength: 1000,
+      onChange: e => setReason(e.target.value)
+    })), h('button', {
+      style: button,
+      disabled: busy || !reason.trim(),
+      onClick: lift
+    }, busy ? 'Guardando…' : 'Confirmar desbloqueo'), ' ', h('button', {
+      style: button,
+      disabled: busy,
+      onClick: () => setRevoke(null)
+    }, 'Cancelar')), h('details', {
+      style: {
+        marginTop: 12
+      }
+    }, h('summary', null, 'Historial de cambios'), (row.events || []).map(event => h('div', {
+      key: event.id,
+      style: {
+        borderTop: '1px solid #eee',
+        padding: '10px 0'
+      }
+    }, h('strong', null, {
+      CREATE: 'Creado',
+      EDIT: 'Editado',
+      REVOKE: 'Levantado'
+    }[event.action]), ' · ', new Date(event.created_at).toLocaleString('es-MX', {
+      timeZone: 'America/Hermosillo'
+    }), h('p', null, event.reason), h('small', null, 'Administrador: ', event.actor_auth_user_id), event.after && h('p', null, 'Vigencia registrada: ', day(event.after.starts_on), ' — ', day(event.after.ends_on))))))));
+  }
+  window.FinanceBlockRequestControl = function ({
+    app,
+    request
+  }) {
+    return h('section', {
+      className: 'finwb-card',
+      'data-finance-block-control': true
+    }, h('h3', null, 'Bloqueo de programas de Finanzas'), h(Records, {
+      key: request.affiliate_id,
+      affiliateId: request.affiliate_id,
+      request,
+      canWrite: app.admin.has('program_requests.write')
+    }));
+  };
+  window.FinanceBlocksModule = function ({
+    app,
+    header,
+    onBack
+  }) {
+    return h('div', {
+      'data-admin-view': 'finance_blocks'
+    }, header ? header({
+      title: 'Bitácora de bloqueos',
+      sub: 'Préstamos y financiamientos · vigencia y explicación',
+      onBack
+    }) : h('button', {
+      onClick: onBack
+    }, 'Volver'), h('div', {
+      style: {
+        padding: 20
+      }
+    }, h(Records, {
+      canWrite: app.admin.has('program_requests.write')
+    })));
+  };
 })();
 })();
 /* @@file sutifinanzas-repository.js */
@@ -993,8 +1347,13 @@
    financial allocation is calculated in the browser. */
 (function () {
   'use strict';
+
   const h = React.createElement;
-  const money = value => value == null || value === '' ? '—' : new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 2 }).format(Number(value));
+  const money = value => value == null || value === '' ? '—' : new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    maximumFractionDigits: 2
+  }).format(Number(value));
   const CSS = `
     .sicof-overlay{position:fixed;inset:0;z-index:180;background:rgba(17,20,30,.57);display:flex;align-items:center;justify-content:center;padding:20px}.sicof-dialog{background:#fff;border-radius:19px;width:min(920px,100%);max-height:90dvh;display:flex;flex-direction:column;box-shadow:0 24px 72px #0004;color:#172039;font-family:inherit}.sicof-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:21px 24px;border-bottom:1px solid #e2e5ed}.sicof-dialog-head h2{margin:0;font-size:20px;color:#96052b}.sicof-dialog-head p{margin:7px 0 0;color:#737d91;font-size:12px;line-height:1.55}.sicof-dialog-close{border:0;border-radius:10px;background:#f3f3f6;min-width:36px;height:36px;cursor:pointer;color:#303442;font-size:20px}.sicof-dialog-body{padding:20px 24px;overflow:auto;min-height:0}.sicof-view-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}.sicof-view-tabs button,.sicof-detail-loan{border:1px solid #e0e4ed;background:#f5f5f8;border-radius:9px;color:#626d82;padding:10px 14px;cursor:pointer;font:700 12px inherit}.sicof-view-tabs button[aria-selected=true]{color:white;background:#920027;border-color:#920027}.sicof-chart-card{border:1px solid #e0e4ed;background:#fff;border-radius:14px;padding:16px;margin-bottom:16px}.sicof-chart-title{font-weight:750;color:#940028;font-size:13px;margin-bottom:10px}.sicof-chart-legend{display:flex;flex-wrap:wrap;gap:12px;color:#758096;font-size:10.5px;margin-bottom:7px}.sicof-chart-legend span{display:inline-flex;align-items:center;gap:5px}.sicof-chart-legend i{width:10px;height:10px;border-radius:3px}.sicof-chart-scroll{overflow:auto}.sicof-chart-svg{display:block;width:100%;min-width:300px;height:auto}.sicof-detail-table{width:100%;border-collapse:collapse;font-size:12px}.sicof-detail-table th{text-align:left;color:#788397;font-size:10px;letter-spacing:.03em;background:#fafafb}.sicof-detail-table td,.sicof-detail-table th{padding:10px 8px;border-bottom:1px solid #e6e8ef;white-space:nowrap}.sicof-detail-table .is-number{text-align:right;font-variant-numeric:tabular-nums}.sicof-detail-note{color:#737d91;font-size:12px;line-height:1.6}.sicof-detail-stats{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.sicof-detail-stats span{padding:6px 10px;border-radius:999px;background:#f6f1f4;color:#860d32;font-size:11px;font-weight:750}.sicof-behavior{display:inline-flex;align-items:center;gap:5px;border:1px solid #dee6e9;border-radius:999px;padding:3px 8px;background:#eff8f3;color:#237351;font:700 10px inherit;cursor:pointer;margin-top:5px}.sicof-behavior[data-state=ARREARS]{background:#fff3e5;color:#965918;border-color:#f1dabb}.sicof-behavior[data-state=REVIEW],.sicof-behavior[data-state=error]{background:#fff0f1;color:#9b2139;border-color:#f0d2d9}.sicof-behavior[data-state=NO_HISTORY],.sicof-behavior[data-state=loading]{background:#f4f5f8;color:#727d90}.sicof-detail-loans{display:grid;gap:10px}.sicof-detail-loan{text-align:left;background:#fff;display:flex;justify-content:space-between;gap:14px}.sicof-detail-loan small{display:block;margin-top:5px;color:#737d91}.sicof-detail-error{padding:14px;border:1px solid #f1d2db;border-radius:10px;background:#fff4f6;color:#9b2340;font-size:12px}.sicof-dialog button:focus-visible{outline:3px solid #b9607a;outline-offset:2px}@media(max-width:600px){.sicof-overlay{padding:10px}.sicof-dialog{max-height:94dvh}.sicof-dialog-head,.sicof-dialog-body{padding:16px}.sicof-dialog-head h2{font-size:17px}}
   `;
@@ -1008,108 +1367,495 @@
     React.useEffect(() => window.AffiliateAuth ? window.AffiliateAuth.subscribe(() => setKey(contextKey())) : undefined, []);
     return key;
   }
-  function Modal({ title, subtitle, children, onClose }) {
-    const ref = React.useRef(null), closing = React.useRef(onClose);
+  function Modal({
+    title,
+    subtitle,
+    children,
+    onClose
+  }) {
+    const ref = React.useRef(null),
+      closing = React.useRef(onClose);
     closing.current = onClose;
     React.useEffect(() => {
-      const previous = document.activeElement, element = ref.current;
+      const previous = document.activeElement,
+        element = ref.current;
       const candidates = () => [...element.querySelectorAll('button:not(:disabled),a[href],input,select,textarea,[tabindex="0"]')].filter(node => node.getClientRects().length);
       element.focus();
       function keyboard(event) {
-        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closing.current(); }
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          closing.current();
+        }
         if (event.key === 'Tab') {
-          const nodes = candidates(), first = nodes[0], last = nodes[nodes.length - 1];
-          if (!nodes.length) { event.preventDefault(); return; }
-          if (event.shiftKey && (document.activeElement === first || document.activeElement === element)) { event.preventDefault(); last.focus(); }
-          else if (!event.shiftKey && (document.activeElement === last || document.activeElement === element)) { event.preventDefault(); first.focus(); }
+          const nodes = candidates(),
+            first = nodes[0],
+            last = nodes[nodes.length - 1];
+          if (!nodes.length) {
+            event.preventDefault();
+            return;
+          }
+          if (event.shiftKey && (document.activeElement === first || document.activeElement === element)) {
+            event.preventDefault();
+            last.focus();
+          } else if (!event.shiftKey && (document.activeElement === last || document.activeElement === element)) {
+            event.preventDefault();
+            first.focus();
+          }
         }
       }
       element.addEventListener('keydown', keyboard);
-      return () => { element.removeEventListener('keydown', keyboard); if (previous && previous.isConnected) previous.focus(); };
+      return () => {
+        element.removeEventListener('keydown', keyboard);
+        if (previous && previous.isConnected) previous.focus();
+      };
     }, []);
-    return h('div', { className: 'sicof-overlay', onMouseDown: event => { if (event.target === event.currentTarget) onClose(); } }, h('style', null, CSS),
-      h('section', { className: 'sicof-dialog', ref, role: 'dialog', 'aria-modal': 'true', 'aria-label': title, tabIndex: -1 },
-        h('header', { className: 'sicof-dialog-head' }, h('div', null, h('h2', null, title), subtitle && h('p', null, subtitle)), h('button', { type: 'button', className: 'sicof-dialog-close', onClick: onClose, 'aria-label': 'Cerrar detalle' }, '×')),
-        h('div', { className: 'sicof-dialog-body' }, children)));
+    return h('div', {
+      className: 'sicof-overlay',
+      onMouseDown: event => {
+        if (event.target === event.currentTarget) onClose();
+      }
+    }, h('style', null, CSS), h('section', {
+      className: 'sicof-dialog',
+      ref,
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-label': title,
+      tabIndex: -1
+    }, h('header', {
+      className: 'sicof-dialog-head'
+    }, h('div', null, h('h2', null, title), subtitle && h('p', null, subtitle)), h('button', {
+      type: 'button',
+      className: 'sicof-dialog-close',
+      onClick: onClose,
+      'aria-label': 'Cerrar detalle'
+    }, '×')), h('div', {
+      className: 'sicof-dialog-body'
+    }, children)));
   }
   // Scaling is visual only. Every displayed monetary point is supplied by backend.
-  function Chart({ title, rows, series, type, areaBetween }) {
-    const list = Array.isArray(rows) ? rows : [], fields = Array.isArray(series) ? series : [];
-    if (!list.length) return h('div', { className: 'sicof-chart-card' }, h('div', { className: 'sicof-chart-title' }, title), h('p', { className: 'sicof-detail-note' }, 'No hay movimientos para este periodo.'));
-    const width = Math.max(560, Math.min(1800, list.length * 48)), height = 248, left = 64, bottom = 52, top = 16, area = height - bottom - top;
-    const values = list.flatMap(row => type === 'stacked' ? [fields.reduce((height, field) => height + (Number(row[field.key]) || 0), 0)] : fields.map(field => Number(row[field.key]))).filter(Number.isFinite), max = Math.max(1, ...values.map(Math.abs));
-    const segments = keys => { const groups = []; let points = []; list.forEach((row, index) => { if (keys.every(key => row[key] != null && Number.isFinite(Number(row[key])))) points.push({ row, index }); else if (points.length) { groups.push(points); points = []; } }); if (points.length) groups.push(points); return groups; };
-    const colors = { complete: '#97002c', partial: '#ec791e', extra: '#21805b', unpaid: '#cf123a', future: '#c6cbd5', review: '#b48a3d' };
-    const y = value => top + area - Number(value) / max * area, x = index => left + (index + .5) * (width - left - 18) / list.length;
-    const tick = value => new Intl.NumberFormat('es-MX', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
-    return h('section', { className: 'sicof-chart-card', 'aria-label': title }, h('div', { className: 'sicof-chart-title' }, title),
-      h('div', { className: 'sicof-chart-legend' }, fields.map(field => h('span', { key: field.key }, h('i', { style: { background: field.color } }), field.label)), fields.some(field => field.byStatus) && h('span', null, h('i', { style: { background: colors.partial } }), 'Pago parcial'), fields.some(field => field.byStatus) && h('span', null, h('i', { style: { background: colors.unpaid } }), 'Sin pago'), areaBetween && h('span', null, h('i', { style: { background: '#ffe5ea' } }), 'Diferencia acumulada')),
-      h('div', { className: 'sicof-chart-scroll' }, h('svg', { className: 'sicof-chart-svg', viewBox: '0 0 ' + width + ' ' + height, role: 'img', 'aria-label': title },
-        [0, .5, 1].map(ratio => h('g', { key: ratio }, h('line', { x1: left, y1: y(max * ratio), x2: width - 12, y2: y(max * ratio), stroke: '#e3e6ef', strokeDasharray: '3 4' }), h('text', { x: left - 8, y: y(max * ratio) + 4, textAnchor: 'end', fill: '#778298', fontSize: 10 }, tick(max * ratio)))),
-        areaBetween && segments(areaBetween).map((group, index) => h('polygon', { key: 'area' + index, points: group.map(point => x(point.index) + ',' + y(point.row[areaBetween[0]])).concat([...group].reverse().map(point => x(point.index) + ',' + y(point.row[areaBetween[1]]))).join(' '), fill: '#ffe5ea', opacity: .85 })),
-        fields.map((field, column) => type === 'line'
-          ? h('g', { key: field.key }, segments([field.key]).map((group, index) => h('polyline', { key: index, points: group.map(point => x(point.index) + ',' + y(point.row[field.key])).join(' '), fill: 'none', stroke: field.color, strokeWidth: 2.5 })))
-          : h('g', { key: field.key }, list.map((row, index) => { const value = row[field.key]; if (value == null || !Number.isFinite(Number(value))) return null; const size = Math.max(4, Math.min(22, (width - left - 18) / list.length / (fields.length + 1))), offset = type === 'stacked' ? fields.slice(0, column).reduce((height, prior) => height + (Number(row[prior.key]) || 0), 0) : 0; return h('rect', { key: index, x: type === 'stacked' ? x(index) - size / 2 : x(index) + (column - fields.length / 2) * size, y: y(Number(value) + offset), width: size - 2, height: Math.max(0, Number(value) / max * area), fill: field.byStatus ? colors[row.comparison_state] || field.color : field.color, rx: 2 }, h('title', null, String(row.label || row.date || index + 1) + ': ' + field.label + ' ' + money(value))); }))),
-        list.map((row, index) => h('text', { key: index, x: x(index), y: height - bottom + 18, fill: '#778298', fontSize: 9, textAnchor: 'middle', transform: list.length > 12 ? 'rotate(-35 ' + x(index) + ' ' + (height - bottom + 18) + ')' : undefined }, String(row.label || row.date || index + 1).slice(0, 22))))));
+  function Chart({
+    title,
+    rows,
+    series,
+    type,
+    areaBetween
+  }) {
+    const list = Array.isArray(rows) ? rows : [],
+      fields = Array.isArray(series) ? series : [];
+    if (!list.length) return h('div', {
+      className: 'sicof-chart-card'
+    }, h('div', {
+      className: 'sicof-chart-title'
+    }, title), h('p', {
+      className: 'sicof-detail-note'
+    }, 'No hay movimientos para este periodo.'));
+    const width = Math.max(560, Math.min(1800, list.length * 48)),
+      height = 248,
+      left = 64,
+      bottom = 52,
+      top = 16,
+      area = height - bottom - top;
+    const values = list.flatMap(row => type === 'stacked' ? [fields.reduce((height, field) => height + (Number(row[field.key]) || 0), 0)] : fields.map(field => Number(row[field.key]))).filter(Number.isFinite),
+      max = Math.max(1, ...values.map(Math.abs));
+    const segments = keys => {
+      const groups = [];
+      let points = [];
+      list.forEach((row, index) => {
+        if (keys.every(key => row[key] != null && Number.isFinite(Number(row[key])))) points.push({
+          row,
+          index
+        });else if (points.length) {
+          groups.push(points);
+          points = [];
+        }
+      });
+      if (points.length) groups.push(points);
+      return groups;
+    };
+    const colors = {
+      complete: '#97002c',
+      partial: '#ec791e',
+      extra: '#21805b',
+      unpaid: '#cf123a',
+      future: '#c6cbd5',
+      review: '#b48a3d'
+    };
+    const y = value => top + area - Number(value) / max * area,
+      x = index => left + (index + .5) * (width - left - 18) / list.length;
+    const tick = value => new Intl.NumberFormat('es-MX', {
+      notation: 'compact',
+      maximumFractionDigits: 1
+    }).format(value);
+    return h('section', {
+      className: 'sicof-chart-card',
+      'aria-label': title
+    }, h('div', {
+      className: 'sicof-chart-title'
+    }, title), h('div', {
+      className: 'sicof-chart-legend'
+    }, fields.map(field => h('span', {
+      key: field.key
+    }, h('i', {
+      style: {
+        background: field.color
+      }
+    }), field.label)), fields.some(field => field.byStatus) && h('span', null, h('i', {
+      style: {
+        background: colors.partial
+      }
+    }), 'Pago parcial'), fields.some(field => field.byStatus) && h('span', null, h('i', {
+      style: {
+        background: colors.unpaid
+      }
+    }), 'Sin pago'), areaBetween && h('span', null, h('i', {
+      style: {
+        background: '#ffe5ea'
+      }
+    }), 'Diferencia acumulada')), h('div', {
+      className: 'sicof-chart-scroll'
+    }, h('svg', {
+      className: 'sicof-chart-svg',
+      viewBox: '0 0 ' + width + ' ' + height,
+      role: 'img',
+      'aria-label': title
+    }, [0, .5, 1].map(ratio => h('g', {
+      key: ratio
+    }, h('line', {
+      x1: left,
+      y1: y(max * ratio),
+      x2: width - 12,
+      y2: y(max * ratio),
+      stroke: '#e3e6ef',
+      strokeDasharray: '3 4'
+    }), h('text', {
+      x: left - 8,
+      y: y(max * ratio) + 4,
+      textAnchor: 'end',
+      fill: '#778298',
+      fontSize: 10
+    }, tick(max * ratio)))), areaBetween && segments(areaBetween).map((group, index) => h('polygon', {
+      key: 'area' + index,
+      points: group.map(point => x(point.index) + ',' + y(point.row[areaBetween[0]])).concat([...group].reverse().map(point => x(point.index) + ',' + y(point.row[areaBetween[1]]))).join(' '),
+      fill: '#ffe5ea',
+      opacity: .85
+    })), fields.map((field, column) => type === 'line' ? h('g', {
+      key: field.key
+    }, segments([field.key]).map((group, index) => h('polyline', {
+      key: index,
+      points: group.map(point => x(point.index) + ',' + y(point.row[field.key])).join(' '),
+      fill: 'none',
+      stroke: field.color,
+      strokeWidth: 2.5
+    }))) : h('g', {
+      key: field.key
+    }, list.map((row, index) => {
+      const value = row[field.key];
+      if (value == null || !Number.isFinite(Number(value))) return null;
+      const size = Math.max(4, Math.min(22, (width - left - 18) / list.length / (fields.length + 1))),
+        offset = type === 'stacked' ? fields.slice(0, column).reduce((height, prior) => height + (Number(row[prior.key]) || 0), 0) : 0;
+      return h('rect', {
+        key: index,
+        x: type === 'stacked' ? x(index) - size / 2 : x(index) + (column - fields.length / 2) * size,
+        y: y(Number(value) + offset),
+        width: size - 2,
+        height: Math.max(0, Number(value) / max * area),
+        fill: field.byStatus ? colors[row.comparison_state] || field.color : field.color,
+        rx: 2
+      }, h('title', null, String(row.label || row.date || index + 1) + ': ' + field.label + ' ' + money(value)));
+    }))), list.map((row, index) => h('text', {
+      key: index,
+      x: x(index),
+      y: height - bottom + 18,
+      fill: '#778298',
+      fontSize: 9,
+      textAnchor: 'middle',
+      transform: list.length > 12 ? 'rotate(-35 ' + x(index) + ' ' + (height - bottom + 18) + ')' : undefined
+    }, String(row.label || row.date || index + 1).slice(0, 22))))));
   }
-  function Table({ columns, rows }) {
-    return h('div', { style: { overflow: 'auto' } }, h('table', { className: 'sicof-detail-table' }, h('thead', null, h('tr', null, columns.map(column => h('th', { key: column.key, className: column.money ? 'is-number' : undefined }, column.label)))), h('tbody', null, rows.map((row, index) => h('tr', { key: row.id || index }, columns.map(column => h('td', { key: column.key, className: column.money ? 'is-number' : undefined }, column.key === '_index' ? index + 1 : column.money ? money(row[column.key]) : row[column.key] == null ? '—' : String(row[column.key]))))))));
+  function Table({
+    columns,
+    rows
+  }) {
+    return h('div', {
+      style: {
+        overflow: 'auto'
+      }
+    }, h('table', {
+      className: 'sicof-detail-table'
+    }, h('thead', null, h('tr', null, columns.map(column => h('th', {
+      key: column.key,
+      className: column.money ? 'is-number' : undefined
+    }, column.label)))), h('tbody', null, rows.map((row, index) => h('tr', {
+      key: row.id || index
+    }, columns.map(column => h('td', {
+      key: column.key,
+      className: column.money ? 'is-number' : undefined
+    }, column.key === '_index' ? index + 1 : column.money ? money(row[column.key]) : row[column.key] == null ? '—' : String(row[column.key]))))))));
   }
-  function LoanSummary({ loan }) {
-    const pct = value => value == null ? '—' : new Intl.NumberFormat('es-MX', { maximumFractionDigits: 2 }).format(value) + '%';
+  function LoanSummary({
+    loan
+  }) {
+    const pct = value => value == null ? '—' : new Intl.NumberFormat('es-MX', {
+      maximumFractionDigits: 2
+    }).format(value) + '%';
     const values = [['Monto prestado', money(loan.capital)], ['Total a pagar', money(loan.total)], ['Tasa quincenal', pct(loan.rate_percent)], ['Plazo', loan.term == null ? '—' : loan.term + ' pagos'], ['Pagado registrado', money(loan.paid)], ['Falta por pagar', money(loan.remaining_contractual)]];
-    return h('div', { className: 'sicof-chart-card', 'data-sicof-loan-summary': loan.id }, h('div', { className: 'sicof-chart-title' }, loan.fund + ' · ' + (loan.status || 'Estado por revisar')),
-      h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(135px,1fr))', gap: 14 } }, values.map(([label, value]) => h('div', { key: label }, h('span', { className: 'sicof-detail-note', style: { display: 'block', fontSize: 11 } }, label), h('b', null, value)))),
-      h('div', { style: { marginTop: 14 } }, loan.progress_percent != null && h('progress', { value: loan.progress_percent, max: 100, 'aria-label': 'Avance del préstamo', style: { width: '100%', accentColor: '#96002b' } }), h('p', { className: 'sicof-detail-note' }, 'Avance: ' + pct(loan.progress_percent) + ' · Atraso: ' + money(loan.arrears) + ' · ' + (loan.discount_start || '—') + ' → ' + (loan.discount_end || '—'))));
+    return h('div', {
+      className: 'sicof-chart-card',
+      'data-sicof-loan-summary': loan.id
+    }, h('div', {
+      className: 'sicof-chart-title'
+    }, loan.fund + ' · ' + (loan.status || 'Estado por revisar')), h('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit,minmax(135px,1fr))',
+        gap: 14
+      }
+    }, values.map(([label, value]) => h('div', {
+      key: label
+    }, h('span', {
+      className: 'sicof-detail-note',
+      style: {
+        display: 'block',
+        fontSize: 11
+      }
+    }, label), h('b', null, value)))), h('div', {
+      style: {
+        marginTop: 14
+      }
+    }, loan.progress_percent != null && h('progress', {
+      value: loan.progress_percent,
+      max: 100,
+      'aria-label': 'Avance del préstamo',
+      style: {
+        width: '100%',
+        accentColor: '#96002b'
+      }
+    }), h('p', {
+      className: 'sicof-detail-note'
+    }, 'Avance: ' + pct(loan.progress_percent) + ' · Atraso: ' + money(loan.arrears) + ' · ' + (loan.discount_start || '—') + ' → ' + (loan.discount_end || '—'))));
   }
-  function LoanContent({ loan }) {
+  function LoanContent({
+    loan
+  }) {
     const [view, setView] = React.useState('history');
     const schedule = loan.schedule || [];
-    return h(React.Fragment, null, h(LoanSummary, { loan }),
-      h('div', { className: 'sicof-view-tabs', role: 'tablist', 'aria-label': 'Detalle del préstamo' }, [['history', 'A · Historial real de pagos'], ['compare', 'B · Comparación esperado vs. pagado']].map(([key, label]) => h('button', { key, type: 'button', role: 'tab', 'aria-selected': view === key, onClick: () => setView(key) }, label))),
-      view === 'history'
-        ? h(Table, { rows: schedule, columns: [{ key: '_index', label: '#' }, { key: 'date', label: 'Fecha' }, { key: 'paid', label: 'Pagado', money: true }, { key: 'capital', label: 'Capital', money: true }, { key: 'interest', label: 'Interés', money: true }, { key: 'fee', label: 'Gasto admón.', money: true }, { key: 'cumulative_paid', label: 'Acumulado', money: true }] })
-        : h(React.Fragment, null,
-          h(Chart, { title: 'Esperado vs. pagado por cuota', rows: schedule, series: [{ key: 'expected', label: 'Esperado', color: '#d9dce4' }, { key: 'paid', label: 'Pagado registrado', color: '#97002c', byStatus: true }] }),
-          h(Chart, { title: 'Acumulado: lo que debió pagar vs. lo que pagó', type: 'line', areaBetween: ['cumulative_expected', 'cumulative_paid'], rows: schedule, series: [{ key: 'cumulative_expected', label: 'Debió pagar', color: '#9ca5b7' }, { key: 'cumulative_paid', label: 'Pagó registrado', color: '#97002c' }] }),
-          h('div', { className: 'sicof-detail-stats' }, (loan.comparison_summary || []).map((item, index) => h('span', { key: index }, item.label + ': ' + item.value))),
-          h(Table, { rows: schedule, columns: [{ key: '_index', label: '#' }, { key: 'date', label: 'Fecha' }, { key: 'expected', label: 'Esperado', money: true }, { key: 'paid', label: 'Pagado', money: true }, { key: 'difference', label: 'Diferencia', money: true }, { key: 'comparison_label', label: 'Estado' }] })),
-      !schedule.length && h('p', { className: 'sicof-detail-note' }, 'No hay cuotas registradas para este préstamo.'),
-      h('p', { className: 'sicof-detail-note' }, loan.evidence_note || 'Los importes se presentan según el historial registrado. La puntualidad requiere evidencia de vencimiento y fecha efectiva de pago; una cuota futura no equivale a incumplimiento.'));
+    return h(React.Fragment, null, h(LoanSummary, {
+      loan
+    }), h('div', {
+      className: 'sicof-view-tabs',
+      role: 'tablist',
+      'aria-label': 'Detalle del préstamo'
+    }, [['history', 'A · Historial real de pagos'], ['compare', 'B · Comparación esperado vs. pagado']].map(([key, label]) => h('button', {
+      key,
+      type: 'button',
+      role: 'tab',
+      'aria-selected': view === key,
+      onClick: () => setView(key)
+    }, label))), view === 'history' ? h(Table, {
+      rows: schedule,
+      columns: [{
+        key: '_index',
+        label: '#'
+      }, {
+        key: 'date',
+        label: 'Fecha'
+      }, {
+        key: 'paid',
+        label: 'Pagado',
+        money: true
+      }, {
+        key: 'capital',
+        label: 'Capital',
+        money: true
+      }, {
+        key: 'interest',
+        label: 'Interés',
+        money: true
+      }, {
+        key: 'fee',
+        label: 'Gasto admón.',
+        money: true
+      }, {
+        key: 'cumulative_paid',
+        label: 'Acumulado',
+        money: true
+      }]
+    }) : h(React.Fragment, null, h(Chart, {
+      title: 'Esperado vs. pagado por cuota',
+      rows: schedule,
+      series: [{
+        key: 'expected',
+        label: 'Esperado',
+        color: '#d9dce4'
+      }, {
+        key: 'paid',
+        label: 'Pagado registrado',
+        color: '#97002c',
+        byStatus: true
+      }]
+    }), h(Chart, {
+      title: 'Acumulado: lo que debió pagar vs. lo que pagó',
+      type: 'line',
+      areaBetween: ['cumulative_expected', 'cumulative_paid'],
+      rows: schedule,
+      series: [{
+        key: 'cumulative_expected',
+        label: 'Debió pagar',
+        color: '#9ca5b7'
+      }, {
+        key: 'cumulative_paid',
+        label: 'Pagó registrado',
+        color: '#97002c'
+      }]
+    }), h('div', {
+      className: 'sicof-detail-stats'
+    }, (loan.comparison_summary || []).map((item, index) => h('span', {
+      key: index
+    }, item.label + ': ' + item.value))), h(Table, {
+      rows: schedule,
+      columns: [{
+        key: '_index',
+        label: '#'
+      }, {
+        key: 'date',
+        label: 'Fecha'
+      }, {
+        key: 'expected',
+        label: 'Esperado',
+        money: true
+      }, {
+        key: 'paid',
+        label: 'Pagado',
+        money: true
+      }, {
+        key: 'difference',
+        label: 'Diferencia',
+        money: true
+      }, {
+        key: 'comparison_label',
+        label: 'Estado'
+      }]
+    })), !schedule.length && h('p', {
+      className: 'sicof-detail-note'
+    }, 'No hay cuotas registradas para este préstamo.'), h('p', {
+      className: 'sicof-detail-note'
+    }, loan.evidence_note || 'Los importes se presentan según el historial registrado. La puntualidad requiere evidencia de vencimiento y fecha efectiva de pago; una cuota futura no equivale a incumplimiento.'));
   }
-  function LoanDetail({ loan, onClose }) {
-    return h(Modal, { title: loan.name || 'Detalle del préstamo', subtitle: ['Folio ' + loan.folio, 'ID ' + loan.id, loan.fund, 'Prestado ' + money(loan.capital), 'Atraso ' + money(loan.arrears)].filter(Boolean).join(' · '), onClose }, h(LoanContent, { key: loan.id + ':' + loan.folio, loan }));
+  function LoanDetail({
+    loan,
+    onClose
+  }) {
+    return h(Modal, {
+      title: loan.name || 'Detalle del préstamo',
+      subtitle: ['Folio ' + loan.folio, 'ID ' + loan.id, loan.fund, 'Prestado ' + money(loan.capital), 'Atraso ' + money(loan.arrears)].filter(Boolean).join(' · '),
+      onClose
+    }, h(LoanContent, {
+      key: loan.id + ':' + loan.folio,
+      loan
+    }));
   }
-  function BehaviorInner({ affiliateId, identity }) {
-    const [state, setState] = React.useState({ phase: 'loading', data: null }), [open, setOpen] = React.useState(false), [loan, setLoan] = React.useState(null), [revision, setRevision] = React.useState(0);
+  function BehaviorInner({
+    affiliateId,
+    identity
+  }) {
+    const [state, setState] = React.useState({
+        phase: 'loading',
+        data: null
+      }),
+      [open, setOpen] = React.useState(false),
+      [loan, setLoan] = React.useState(null),
+      [revision, setRevision] = React.useState(0);
     React.useEffect(() => {
-      let live = true; setState({ phase: 'loading', data: null }); setOpen(false); setLoan(null);
-      Promise.resolve().then(() => window.SicofRepository.getBehavior(affiliateId)).then(data => { if (live && contextKey() === identity) setState({ phase: 'ready', data }); }, () => { if (live && contextKey() === identity) setState({ phase: 'error', data: null }); });
-      return () => { live = false; };
+      let live = true;
+      setState({
+        phase: 'loading',
+        data: null
+      });
+      setOpen(false);
+      setLoan(null);
+      Promise.resolve().then(() => window.SicofRepository.getBehavior(affiliateId)).then(data => {
+        if (live && contextKey() === identity) setState({
+          phase: 'ready',
+          data
+        });
+      }, () => {
+        if (live && contextKey() === identity) setState({
+          phase: 'error',
+          data: null
+        });
+      });
+      return () => {
+        live = false;
+      };
     }, [affiliateId, identity, revision]);
-    const data = state.data, status = data ? data.status : state.phase;
-    const labels = { CURRENT: 'Al corriente', ARREARS: 'Con atraso', NO_HISTORY: 'Sin historial', REVIEW: 'Información por revisar' };
-    return h(React.Fragment, null, h('style', null, CSS),
-      h('button', { type: 'button', className: 'sicof-behavior', 'data-state': status, 'data-sicof-behavior': affiliateId, 'aria-haspopup': 'dialog', onKeyDown: event => event.stopPropagation(), onClick: event => { event.stopPropagation(); if (state.phase === 'error') setRevision(v => v + 1); else if (state.phase === 'ready') setOpen(true); } }, state.phase === 'loading' ? 'Consultando cumplimiento…' : state.phase === 'error' ? 'Reintentar cumplimiento' : data.label || labels[data.status] || 'Información por revisar'),
-      open && data && !loan && h(Modal, { title: 'Comportamiento de pagos', subtitle: data.observed_at ? 'Actualizado: ' + new Date(data.observed_at).toLocaleString('es-MX') : null, onClose: () => setOpen(false) },
-        h('p', { className: 'sicof-detail-note' }, data.label || labels[data.status]),
-        h('div', { className: 'sicof-detail-stats' }, (data.summary || []).map((item, index) => h('span', { key: index }, item.label + ': ' + item.value))),
-        h('div', { className: 'sicof-detail-loans' }, (data.loans || []).map(item => h('button', { key: item.id + ':' + item.folio, type: 'button', className: 'sicof-detail-loan', onClick: () => setLoan(item) }, h('span', null, item.fund + ' · ' + item.id, h('small', null, item.status)), h('span', null, money(item.paid), h('small', null, 'Pagado registrado'))))),
-        !(data.loans || []).length && h('p', { className: 'sicof-detail-note' }, 'No hay préstamos registrados para esta persona.'),
-        h('p', { className: 'sicof-detail-note' }, 'Este indicador apoya la revisión y no aprueba ni rechaza solicitudes automáticamente.')),
-      loan && h(LoanDetail, { loan, onClose: () => setLoan(null) }));
+    const data = state.data,
+      status = data ? data.status : state.phase;
+    const labels = {
+      CURRENT: 'Al corriente',
+      ARREARS: 'Con atraso',
+      NO_HISTORY: 'Sin historial',
+      REVIEW: 'Información por revisar'
+    };
+    return h(React.Fragment, null, h('style', null, CSS), h('button', {
+      type: 'button',
+      className: 'sicof-behavior',
+      'data-state': status,
+      'data-sicof-behavior': affiliateId,
+      'aria-haspopup': 'dialog',
+      onKeyDown: event => event.stopPropagation(),
+      onClick: event => {
+        event.stopPropagation();
+        if (state.phase === 'error') setRevision(v => v + 1);else if (state.phase === 'ready') setOpen(true);
+      }
+    }, state.phase === 'loading' ? 'Consultando cumplimiento…' : state.phase === 'error' ? 'Reintentar cumplimiento' : data.label || labels[data.status] || 'Información por revisar'), open && data && !loan && h(Modal, {
+      title: 'Comportamiento de pagos',
+      subtitle: data.observed_at ? 'Actualizado: ' + new Date(data.observed_at).toLocaleString('es-MX') : null,
+      onClose: () => setOpen(false)
+    }, h('p', {
+      className: 'sicof-detail-note'
+    }, data.label || labels[data.status]), h('div', {
+      className: 'sicof-detail-stats'
+    }, (data.summary || []).map((item, index) => h('span', {
+      key: index
+    }, item.label + ': ' + item.value))), h('div', {
+      className: 'sicof-detail-loans'
+    }, (data.loans || []).map(item => h('button', {
+      key: item.id + ':' + item.folio,
+      type: 'button',
+      className: 'sicof-detail-loan',
+      onClick: () => setLoan(item)
+    }, h('span', null, item.fund + ' · ' + item.id, h('small', null, item.status)), h('span', null, money(item.paid), h('small', null, 'Pagado registrado'))))), !(data.loans || []).length && h('p', {
+      className: 'sicof-detail-note'
+    }, 'No hay préstamos registrados para esta persona.'), h('p', {
+      className: 'sicof-detail-note'
+    }, 'Este indicador apoya la revisión y no aprueba ni rechaza solicitudes automáticamente.')), loan && h(LoanDetail, {
+      loan,
+      onClose: () => setLoan(null)
+    }));
   }
-  function Behavior({ affiliateId }) {
+  function Behavior({
+    affiliateId
+  }) {
     const key = useContext();
     if (!affiliateId || !key) return null;
-    return h(BehaviorInner, { key: key + ':' + affiliateId, affiliateId, identity: key });
+    return h(BehaviorInner, {
+      key: key + ':' + affiliateId,
+      affiliateId,
+      identity: key
+    });
   }
   window.SicofPaymentBehavior = Behavior;
   window.SicofLoanDetail = LoanDetail;
   window.SicofLoanContent = LoanContent;
   window.SicofChart = Chart;
   window.SicofModal = Modal;
-  window.SicofView = Object.freeze({ money, Table, contextKey, useContext });
+  window.SicofView = Object.freeze({
+    money,
+    Table,
+    contextKey,
+    useContext
+  });
 })();
 })();
 /* @@file sicof-simulation-client.js */
@@ -1282,22 +2028,47 @@
 /* Explicit file workflow. Private preparation lives only in this component. */
 (function () {
   'use strict';
+
   const h = React.createElement;
   const FILE_LIMIT = 6 * 1024 * 1024;
   const FLOW_CSS = '.sicof-file-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.sicof-file-grid>section{min-width:0}.sicof-file-grid input[type=file]{max-width:100%;width:100%;font:inherit}.sicof-file-name{overflow-wrap:anywhere}.sicof-file-funds{display:grid;gap:9px;max-height:230px;overflow:auto;margin:12px 0}.sicof-file-grid fieldset{min-width:0;border:0;padding:0;margin:0}.sicof-file-grid legend{padding:0}.sicof-file-grid .sicof-segment{flex-wrap:wrap}.sicof-file-grid .sicof-segment button{min-width:0}.sicof-file-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}@media(max-width:760px){.sicof-file-grid{grid-template-columns:minmax(0,1fr)}}';
-  const copySettings = settings => ({ ...settings, selFunds: [...(settings.selFunds || [])], yieldPeriods: [...(settings.yieldPeriods || [])] });
+  const copySettings = settings => ({
+    ...settings,
+    selFunds: [...(settings.selFunds || [])],
+    yieldPeriods: [...(settings.yieldPeriods || [])]
+  });
   const validDate = value => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
   function deadline(promise, milliseconds) {
     let timer;
-    return Promise.race([promise, new Promise((_, reject) => { timer = setTimeout(() => reject(Error('SICOF_READ_TIMEOUT')), milliseconds); })]).finally(() => clearTimeout(timer));
+    return Promise.race([promise, new Promise((_, reject) => {
+      timer = setTimeout(() => reject(Error('SICOF_READ_TIMEOUT')), milliseconds);
+    })]).finally(() => clearTimeout(timer));
   }
-  function Flow({ app, onBack, header, identity, Workbench, defaultSettings, css, errorText }) {
+  function Flow({
+    app,
+    onBack,
+    header,
+    identity,
+    Workbench,
+    defaultSettings,
+    css,
+    errorText
+  }) {
     const [settings, setSettings] = React.useState(() => copySettings(typeof defaultSettings === 'function' ? defaultSettings() : defaultSettings));
-    const [file, setFile] = React.useState(null), [prepared, setPrepared] = React.useState(null);
-    const [funds, setFunds] = React.useState(null), [busy, setBusy] = React.useState('');
-    const [error, setError] = React.useState(''), [notice, setNotice] = React.useState(''), [inputKey, setInputKey] = React.useState(0);
-    const live = React.useRef(true), sequence = React.useRef(0), busyRef = React.useRef(false);
-    React.useEffect(() => () => { live.current = false; sequence.current++; }, []);
+    const [file, setFile] = React.useState(null),
+      [prepared, setPrepared] = React.useState(null);
+    const [funds, setFunds] = React.useState(null),
+      [busy, setBusy] = React.useState('');
+    const [error, setError] = React.useState(''),
+      [notice, setNotice] = React.useState(''),
+      [inputKey, setInputKey] = React.useState(0);
+    const live = React.useRef(true),
+      sequence = React.useRef(0),
+      busyRef = React.useRef(false);
+    React.useEffect(() => () => {
+      live.current = false;
+      sequence.current++;
+    }, []);
     const valid = ticket => live.current && sequence.current === ticket && window.SicofView.contextKey() === identity;
     const rangeKey = settings.periodIni + ':' + settings.periodFin;
     const currentFunds = funds?.rangeKey === rangeKey ? funds : null;
@@ -1315,39 +2086,71 @@
     async function run(name, action, complete) {
       if (busyRef.current || !live.current || window.SicofView.contextKey() !== identity) return;
       const ticket = ++sequence.current;
-      busyRef.current = true; setBusy(name); setError(''); setNotice('');
+      busyRef.current = true;
+      setBusy(name);
+      setError('');
+      setNotice('');
       try {
         const response = await deadline(Promise.resolve().then(action), name === 'prepare' ? 60000 : 30000);
         if (valid(ticket)) complete(response);
-      } catch (failure) { if (valid(ticket)) setError(message(failure)); }
-      finally { if (valid(ticket)) { busyRef.current = false; setBusy(''); } }
+      } catch (failure) {
+        if (valid(ticket)) setError(message(failure));
+      } finally {
+        if (valid(ticket)) {
+          busyRef.current = false;
+          setBusy('');
+        }
+      }
     }
     function requireDates(command) {
       if (!validDate(command.periodIni) || !validDate(command.periodFin) || command.periodIni > command.periodFin) throw Error('SICOF_RANGE_INVALID');
     }
     function acceptFunds(response, command) {
       if (!Array.isArray(response?.funds) || response.funds.some(value => typeof value !== 'string' || !value.trim() || value !== value.trim())) throw Error('SICOF_RESPONSE_INVALID');
-      setFunds({ rangeKey: command.periodIni + ':' + command.periodFin, values: [...new Set(response.funds)], observed_at: response.observed_at });
+      setFunds({
+        rangeKey: command.periodIni + ':' + command.periodFin,
+        values: [...new Set(response.funds)],
+        observed_at: response.observed_at
+      });
     }
     function loadFunds(command = settings, force = false) {
       if (!force && funds?.rangeKey === command.periodIni + ':' + command.periodFin) return;
       const snapshot = copySettings(command);
-      run('funds', () => { requireDates(snapshot); return window.SicofFileRepository.funds({ from: snapshot.periodIni, to: snapshot.periodFin }); }, response => acceptFunds(response, snapshot));
+      run('funds', () => {
+        requireDates(snapshot);
+        return window.SicofFileRepository.funds({
+          from: snapshot.periodIni,
+          to: snapshot.periodFin
+        });
+      }, response => acceptFunds(response, snapshot));
     }
     function chooseSource(src) {
       if (busyRef.current) return;
-      const next = { ...settings, src };
-      setSettings(next); setError(''); setNotice('');
+      const next = {
+        ...settings,
+        src
+      };
+      setSettings(next);
+      setError('');
+      setNotice('');
       // Choosing this option is the explicit request; mounting never reads data.
       if (src === 'sel') loadFunds(next);
     }
     function changeDate(key, value) {
       if (busyRef.current) return;
-      setSettings(previous => ({ ...previous, [key]: value })); setError(''); setNotice('');
+      setSettings(previous => ({
+        ...previous,
+        [key]: value
+      }));
+      setError('');
+      setNotice('');
     }
     function download() {
       const snapshot = copySettings(settings);
-      run('download', () => { requireDates(snapshot); return window.SicofFileRepository.downloadSource(snapshot); }, response => {
+      run('download', () => {
+        requireDates(snapshot);
+        return window.SicofFileRepository.downloadSource(snapshot);
+      }, response => {
         if (response?.funds) acceptFunds(response, snapshot);
         setNotice('Base descargada. Selecciona ese archivo en el paso 2 para preparar el cálculo.');
       });
@@ -1355,67 +2158,204 @@
     function selectFile(event) {
       if (busyRef.current) return;
       const selected = event.target.files?.[0] || null;
-      setError(''); setNotice('');
-      if (!selected) { setFile(null); return; }
+      setError('');
+      setNotice('');
+      if (!selected) {
+        setFile(null);
+        return;
+      }
       if (!/\.xlsx$/i.test(selected.name) || selected.size < 1 || selected.size > FILE_LIMIT) {
-        setFile(null); setError(message(Error('SICOF_FILE_SIZE_OR_TYPE_INVALID'))); event.target.value = ''; return;
+        setFile(null);
+        setError(message(Error('SICOF_FILE_SIZE_OR_TYPE_INVALID')));
+        event.target.value = '';
+        return;
       }
       setFile(selected);
     }
     function prepare(event) {
       event.preventDefault();
-      const selected = file, snapshot = copySettings(settings);
-      if (!selected) { setError('Selecciona el archivo .xlsx que quieres utilizar.'); return; }
-      run('prepare', () => { requireDates(snapshot); return window.SicofFileRepository.prepare(selected, snapshot); }, response => {
+      const selected = file,
+        snapshot = copySettings(settings);
+      if (!selected) {
+        setError('Selecciona el archivo .xlsx que quieres utilizar.');
+        return;
+      }
+      run('prepare', () => {
+        requireDates(snapshot);
+        return window.SicofFileRepository.prepare(selected, snapshot);
+      }, response => {
         // Repository already unwraps the authenticated {context,data} envelope.
         if (!response?.workspace || !response.result || response.simulation?.mode !== 'FILE' || !response.file) throw Error(response?.calculation_error || 'SICOF_FILE_RESPONSE_INVALID');
-        setPrepared({ response, file: selected, settings: snapshot, metadata: response.file });
+        setPrepared({
+          response,
+          file: selected,
+          settings: snapshot,
+          metadata: response.file
+        });
       });
     }
     function replaceFile() {
-      sequence.current++; busyRef.current = false; setBusy(''); setPrepared(null); setFile(null);
-      setError(''); setNotice(''); setInputKey(value => value + 1);
+      sequence.current++;
+      busyRef.current = false;
+      setBusy('');
+      setPrepared(null);
+      setFile(null);
+      setError('');
+      setNotice('');
+      setInputKey(value => value + 1);
     }
-    if (prepared) return h(Workbench, { app, onBack, header, identity, initialResponse: prepared.response, fileSession: { file: prepared.file, settings: prepared.settings, metadata: prepared.metadata }, onReplaceFile: replaceFile });
-    const button = (text, action, disabled, secondary) => h('button', { type: 'button', className: 'sicof-btn' + (secondary ? ' secondary' : ''), disabled, onClick: action }, text);
-    return h('div', { className: 'sicof', 'data-admin-view': 'sicof', 'data-sicof-phase': busy ? 'preparing-file' : 'select-file' },
-      h('style', null, (css || '') + '\n' + FLOW_CSS), header && header({ title: 'Sicof', sub: 'Rendimientos y seguimiento por periodo', onBack }),
-      h('div', { className: 'su-app-scroll sicof-content' },
-        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, 'Simulador de Rendimiento'), h('p', { className: 'sicof-sub' }, 'Descarga la base, carga el archivo y compara los escenarios con esa información.'))),
-        h('div', { className: 'sicof-file-grid' },
-          h('section', { className: 'sicof-panel', 'aria-labelledby': 'sicof-file-download-title' },
-            h('h2', { className: 'sicof-panel-head', id: 'sicof-file-download-title' }, '1. Descarga la base de préstamos'),
-            h('div', { className: 'sicof-panel-body' },
-              h('p', { className: 'sicof-sub' }, 'Los registros provienen de Historial P V2, del Google Sheets Sutiapp Final. El archivo conserva una sola hoja y las columnas A–O.'),
-              h('fieldset', { disabled: Boolean(busy) },
-                h('div', { className: 'sicof-date-row' },
-                  h('label', { className: 'sicof-field' }, h('span', null, 'Inicio'), h('input', { type: 'date', required: true, value: settings.periodIni, 'aria-label': 'Inicio del periodo', onChange: event => changeDate('periodIni', event.target.value) })),
-                  h('label', { className: 'sicof-field' }, h('span', null, 'Cierre / corte'), h('input', { type: 'date', required: true, value: settings.periodFin, 'aria-label': 'Cierre del periodo', onChange: event => changeDate('periodFin', event.target.value) }))),
-                h('div', { className: 'sicof-control', style: { marginTop: 16 } }, h('div', { className: 'sicof-label' }, 'Fuente de la bolsa'),
-                  h('div', { className: 'sicof-segment', role: 'group', 'aria-label': 'Fuente de la bolsa' }, [['caja', 'Solo Caja de Ahorro'], ['sel', 'Fondos seleccionados'], ['todos', 'Todos']].map(([value, label]) => h('button', { key: value, type: 'button', 'aria-pressed': settings.src === value, onClick: () => chooseSource(value) }, label)))),
-                settings.src === 'sel' && h('div', null,
-                  h('p', { className: 'sicof-help' }, 'Caja de Ahorro siempre se incluye. Marca los fondos adicionales.'),
-                  currentFunds && h('div', { className: 'sicof-file-funds', role: 'group', 'aria-label': 'Fondos adicionales' }, currentFunds.values.filter(value => value !== 'Caja de Ahorro').map(value => h('label', { className: 'sicof-check', key: value }, h('input', { type: 'checkbox', checked: settings.selFunds.includes(value), onChange: event => setSettings(previous => ({ ...previous, selFunds: event.target.checked ? [...previous.selFunds, value] : previous.selFunds.filter(item => item !== value) })) }), value))),
-                  !currentFunds && busy !== 'funds' && h('p', { className: 'sicof-help' }, 'Consulta los fondos disponibles para este periodo.'),
-                  button(currentFunds ? 'Volver a consultar fondos' : 'Consultar fondos', () => loadFunds(settings, true), Boolean(busy) || !datesValid, true))),
-              h('div', { className: 'sicof-file-actions' }, button(busy === 'download' ? 'Descargando base…' : '↓ Descargar base de préstamos (.xlsx)', download, Boolean(busy) || !datesValid, false)),
-              h('p', { className: 'sicof-help' }, 'Sólo se incluyen los fondos y las fechas seleccionados.'))),
-          h('section', { className: 'sicof-panel', 'aria-labelledby': 'sicof-file-import-title' },
-            h('h2', { className: 'sicof-panel-head', id: 'sicof-file-import-title' }, '2. Carga y prepara el archivo'),
-            h('div', { className: 'sicof-panel-body' },
-              h('p', { className: 'sicof-sub' }, 'Usa el archivo descargado sin alterar sus columnas ni registros, y conserva el mismo periodo y fondos del paso 1.'),
-              h('form', { onSubmit: prepare },
-                h('label', { className: 'sicof-field' }, h('span', null, 'Archivo de préstamos (.xlsx)'), h('input', { key: inputKey, type: 'file', accept: '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'aria-label': 'Archivo de préstamos (.xlsx)', disabled: Boolean(busy), onChange: selectFile })),
-                file && h('p', { className: 'sicof-help sicof-file-name' }, file.name + ' · ' + Math.max(1, Math.ceil(file.size / 1024)) + ' KB'),
-                h('div', { className: 'sicof-file-actions' }, h('button', { type: 'submit', className: 'sicof-btn', disabled: Boolean(busy) || !file || !datesValid }, busy === 'prepare' ? 'Preparando archivo…' : 'Preparar cálculo con este archivo'))),
-              h('p', { className: 'sicof-help' }, 'Al preparar se comprueba el archivo y se consulta una vez el ahorro de Supabase. El simulador mostrará las fechas del archivo, los préstamos y el ahorro consultado.'),
-              h('p', { className: 'sicof-help' }, 'Después, los filtros compatibles utilizan la información cargada. Para otro inicio o un cierre histórico distinto, prepara una nueva base.')))),
-        busy && h('p', { className: 'sicof-status', role: 'status' }, busy === 'funds' ? 'Consultando fondos disponibles…' : busy === 'download' ? 'Generando el archivo del periodo y fondos seleccionados…' : 'Comprobando el archivo y preparando la información de ahorro…'),
-        error && h('p', { className: 'sicof-status error', role: 'alert' }, error),
-        notice && h('p', { className: 'sicof-status success', role: 'status' }, notice)));
+    if (prepared) return h(Workbench, {
+      app,
+      onBack,
+      header,
+      identity,
+      initialResponse: prepared.response,
+      fileSession: {
+        file: prepared.file,
+        settings: prepared.settings,
+        metadata: prepared.metadata
+      },
+      onReplaceFile: replaceFile
+    });
+    const button = (text, action, disabled, secondary) => h('button', {
+      type: 'button',
+      className: 'sicof-btn' + (secondary ? ' secondary' : ''),
+      disabled,
+      onClick: action
+    }, text);
+    return h('div', {
+      className: 'sicof',
+      'data-admin-view': 'sicof',
+      'data-sicof-phase': busy ? 'preparing-file' : 'select-file'
+    }, h('style', null, (css || '') + '\n' + FLOW_CSS), header && header({
+      title: 'Sicof',
+      sub: 'Rendimientos y seguimiento por periodo',
+      onBack
+    }), h('div', {
+      className: 'su-app-scroll sicof-content'
+    }, h('div', {
+      className: 'sicof-title-row'
+    }, h('div', null, h('h1', null, 'Simulador de Rendimiento'), h('p', {
+      className: 'sicof-sub'
+    }, 'Descarga la base, carga el archivo y compara los escenarios con esa información.'))), h('div', {
+      className: 'sicof-file-grid'
+    }, h('section', {
+      className: 'sicof-panel',
+      'aria-labelledby': 'sicof-file-download-title'
+    }, h('h2', {
+      className: 'sicof-panel-head',
+      id: 'sicof-file-download-title'
+    }, '1. Descarga la base de préstamos'), h('div', {
+      className: 'sicof-panel-body'
+    }, h('p', {
+      className: 'sicof-sub'
+    }, 'Los registros provienen de Historial P V2, del Google Sheets Sutiapp Final. El archivo conserva una sola hoja y las columnas A–O.'), h('fieldset', {
+      disabled: Boolean(busy)
+    }, h('div', {
+      className: 'sicof-date-row'
+    }, h('label', {
+      className: 'sicof-field'
+    }, h('span', null, 'Inicio'), h('input', {
+      type: 'date',
+      required: true,
+      value: settings.periodIni,
+      'aria-label': 'Inicio del periodo',
+      onChange: event => changeDate('periodIni', event.target.value)
+    })), h('label', {
+      className: 'sicof-field'
+    }, h('span', null, 'Cierre / corte'), h('input', {
+      type: 'date',
+      required: true,
+      value: settings.periodFin,
+      'aria-label': 'Cierre del periodo',
+      onChange: event => changeDate('periodFin', event.target.value)
+    }))), h('div', {
+      className: 'sicof-control',
+      style: {
+        marginTop: 16
+      }
+    }, h('div', {
+      className: 'sicof-label'
+    }, 'Fuente de la bolsa'), h('div', {
+      className: 'sicof-segment',
+      role: 'group',
+      'aria-label': 'Fuente de la bolsa'
+    }, [['caja', 'Solo Caja de Ahorro'], ['sel', 'Fondos seleccionados'], ['todos', 'Todos']].map(([value, label]) => h('button', {
+      key: value,
+      type: 'button',
+      'aria-pressed': settings.src === value,
+      onClick: () => chooseSource(value)
+    }, label)))), settings.src === 'sel' && h('div', null, h('p', {
+      className: 'sicof-help'
+    }, 'Caja de Ahorro siempre se incluye. Marca los fondos adicionales.'), currentFunds && h('div', {
+      className: 'sicof-file-funds',
+      role: 'group',
+      'aria-label': 'Fondos adicionales'
+    }, currentFunds.values.filter(value => value !== 'Caja de Ahorro').map(value => h('label', {
+      className: 'sicof-check',
+      key: value
+    }, h('input', {
+      type: 'checkbox',
+      checked: settings.selFunds.includes(value),
+      onChange: event => setSettings(previous => ({
+        ...previous,
+        selFunds: event.target.checked ? [...previous.selFunds, value] : previous.selFunds.filter(item => item !== value)
+      }))
+    }), value))), !currentFunds && busy !== 'funds' && h('p', {
+      className: 'sicof-help'
+    }, 'Consulta los fondos disponibles para este periodo.'), button(currentFunds ? 'Volver a consultar fondos' : 'Consultar fondos', () => loadFunds(settings, true), Boolean(busy) || !datesValid, true))), h('div', {
+      className: 'sicof-file-actions'
+    }, button(busy === 'download' ? 'Descargando base…' : '↓ Descargar base de préstamos (.xlsx)', download, Boolean(busy) || !datesValid, false)), h('p', {
+      className: 'sicof-help'
+    }, 'Sólo se incluyen los fondos y las fechas seleccionados.'))), h('section', {
+      className: 'sicof-panel',
+      'aria-labelledby': 'sicof-file-import-title'
+    }, h('h2', {
+      className: 'sicof-panel-head',
+      id: 'sicof-file-import-title'
+    }, '2. Carga y prepara el archivo'), h('div', {
+      className: 'sicof-panel-body'
+    }, h('p', {
+      className: 'sicof-sub'
+    }, 'Usa el archivo descargado sin alterar sus columnas ni registros, y conserva el mismo periodo y fondos del paso 1.'), h('form', {
+      onSubmit: prepare
+    }, h('label', {
+      className: 'sicof-field'
+    }, h('span', null, 'Archivo de préstamos (.xlsx)'), h('input', {
+      key: inputKey,
+      type: 'file',
+      accept: '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'aria-label': 'Archivo de préstamos (.xlsx)',
+      disabled: Boolean(busy),
+      onChange: selectFile
+    })), file && h('p', {
+      className: 'sicof-help sicof-file-name'
+    }, file.name + ' · ' + Math.max(1, Math.ceil(file.size / 1024)) + ' KB'), h('div', {
+      className: 'sicof-file-actions'
+    }, h('button', {
+      type: 'submit',
+      className: 'sicof-btn',
+      disabled: Boolean(busy) || !file || !datesValid
+    }, busy === 'prepare' ? 'Preparando archivo…' : 'Preparar cálculo con este archivo'))), h('p', {
+      className: 'sicof-help'
+    }, 'Al preparar se comprueba el archivo y se consulta una vez el ahorro de Supabase. El simulador mostrará las fechas del archivo, los préstamos y el ahorro consultado.'), h('p', {
+      className: 'sicof-help'
+    }, 'Después, los filtros compatibles utilizan la información cargada. Para otro inicio o un cierre histórico distinto, prepara una nueva base.')))), busy && h('p', {
+      className: 'sicof-status',
+      role: 'status'
+    }, busy === 'funds' ? 'Consultando fondos disponibles…' : busy === 'download' ? 'Generando el archivo del periodo y fondos seleccionados…' : 'Comprobando el archivo y preparando la información de ahorro…'), error && h('p', {
+      className: 'sicof-status error',
+      role: 'alert'
+    }, error), notice && h('p', {
+      className: 'sicof-status success',
+      role: 'status'
+    }, notice)));
   }
   // A changed identity remounts every private field even if the parent omits key.
-  window.SicofFileFlow = props => h(Flow, { ...props, key: props.identity });
+  window.SicofFileFlow = props => h(Flow, {
+    ...props,
+    key: props.identity
+  });
 })();
 })();
 /* @@file sicof-admin.jsx */
@@ -1424,10 +2364,16 @@
    historical attribution, exports and persistence belong to the repository. */
 (function () {
   'use strict';
+
   function expandWorkspace(response) {
     if (!response?.wire_version) return response;
     if (response.wire_version !== 'SICOF_WORKSPACE_COMPACT_V1' || !Array.isArray(response.report_details) || !response.workspace || !Array.isArray(response.workspace.report?.rows)) throw Error('SICOF_RESPONSE_INVALID');
-    const { wire_version, report_details, row_schemas, ...data } = response;
+    const {
+      wire_version,
+      report_details,
+      row_schemas,
+      ...data
+    } = response;
     const schemas = row_schemas === undefined ? [] : row_schemas;
     const validKey = key => typeof key === 'string' && /^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(key) && !['__proto__', 'prototype', 'constructor'].includes(key);
     if (!Array.isArray(schemas) || schemas.some(keys => !Array.isArray(keys) || keys.some(key => !validKey(key)) || new Set(keys).size !== keys.length) || new Set(schemas.map(keys => JSON.stringify(keys))).size !== schemas.length) throw Error('SICOF_RESPONSE_INVALID');
@@ -1444,12 +2390,17 @@
         return Object.fromEntries(keys.map((key, index) => [key, row[index + 1]]));
       });
     }
-    const workspace = { ...data.workspace };
+    const workspace = {
+      ...data.workspace
+    };
     if (workspace.loans != null) {
       if (!Array.isArray(workspace.loans)) throw Error('SICOF_RESPONSE_INVALID');
       workspace.loans = workspace.loans.map(loan => {
         if (!loan || typeof loan !== 'object' || Array.isArray(loan)) throw Error('SICOF_RESPONSE_INVALID');
-        return loan.schedule == null ? loan : { ...loan, schedule: decodeRows(loan.schedule) };
+        return loan.schedule == null ? loan : {
+          ...loan,
+          schedule: decodeRows(loan.schedule)
+        };
       });
     }
     if (workspace.payments != null) workspace.payments = decodeRows(workspace.payments);
@@ -1460,125 +2411,230 @@
       if (!detail || Object.keys(detail).some(key => !['movements', 'periods', 'withdrawal_periods'].includes(key) || !Array.isArray(detail[key]))) throw Error('SICOF_RESPONSE_INVALID');
       return detail;
     };
-    const report = { ...data.workspace.report, rows: data.workspace.report.rows.map(row => {
-      const { detail_index, ...summary } = row;
-      return { ...summary, ...detailAt(detail_index) };
-    }) };
-    const result = data.result ? { ...data.result, rows: data.result.rows.map(row => {
-      const { loan_indexes, ...summary } = row;
-      if (!Array.isArray(loan_indexes)) throw Error('SICOF_RESPONSE_INVALID');
-      return { ...summary, loans: loan_indexes.map(index => {
-        if (!Number.isInteger(index) || index < 0 || index >= loans.length || loans[index].folio !== row.f) throw Error('SICOF_RESPONSE_INVALID');
-        return loans[index];
-      }) };
-    }) } : null;
-    return { ...data, workspace: { ...workspace, report }, result };
+    const report = {
+      ...data.workspace.report,
+      rows: data.workspace.report.rows.map(row => {
+        const {
+          detail_index,
+          ...summary
+        } = row;
+        return {
+          ...summary,
+          ...detailAt(detail_index)
+        };
+      })
+    };
+    const result = data.result ? {
+      ...data.result,
+      rows: data.result.rows.map(row => {
+        const {
+          loan_indexes,
+          ...summary
+        } = row;
+        if (!Array.isArray(loan_indexes)) throw Error('SICOF_RESPONSE_INVALID');
+        return {
+          ...summary,
+          loans: loan_indexes.map(index => {
+            if (!Number.isInteger(index) || index < 0 || index >= loans.length || loans[index].folio !== row.f) throw Error('SICOF_RESPONSE_INVALID');
+            return loans[index];
+          })
+        };
+      })
+    } : null;
+    return {
+      ...data,
+      workspace: {
+        ...workspace,
+        report
+      },
+      result
+    };
   }
   const h = React.createElement;
   function readWithDeadline(promise, milliseconds) {
     let timer;
-    const deadline = new Promise((_, reject) => { timer = setTimeout(() => reject(Error('SICOF_READ_TIMEOUT')), milliseconds); });
+    const deadline = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(Error('SICOF_READ_TIMEOUT')), milliseconds);
+    });
     return Promise.race([promise, deadline]).finally(() => clearTimeout(timer));
   }
-  const TABS = [{ id: 'resumen', label: 'Resumen' }, { id: 'liquidez', label: 'Liquidez' }, { id: 'reparto', label: 'Reparto por ahorrador' }, { id: 'prestamos', label: 'Préstamos y pagos' }, { id: 'atrasos', label: 'Atrasos' }, { id: 'reporte', label: 'Reporte préstamos' }, { id: 'cumplimiento', label: 'Cumplimiento' }, { id: 'ahorro', label: 'Informe final de ahorro' }];
+  const TABS = [{
+    id: 'resumen',
+    label: 'Resumen'
+  }, {
+    id: 'liquidez',
+    label: 'Liquidez'
+  }, {
+    id: 'reparto',
+    label: 'Reparto por ahorrador'
+  }, {
+    id: 'prestamos',
+    label: 'Préstamos y pagos'
+  }, {
+    id: 'atrasos',
+    label: 'Atrasos'
+  }, {
+    id: 'reporte',
+    label: 'Reporte préstamos'
+  }, {
+    id: 'cumplimiento',
+    label: 'Cumplimiento'
+  }, {
+    id: 'ahorro',
+    label: 'Informe final de ahorro'
+  }];
   const TEXTS = {
-    title: 'Simulador de Rendimiento', subtitle: 'Compara escenarios, revisa sus reglas y conserva el detalle de cada periodo.',
-    executive: 'Resumen ejecutivo', parameters: 'Parámetros de cálculo', distribution: 'Reparto por ahorrador', distributionNote: 'Consulta el rendimiento y el desglose de cada persona; las exclusiones conservan su motivo.',
-    liquidity: 'Tablero de liquidez — ¿alcanza si retiran?', liquidityNote: 'Compara la obligación a pagar y el efectivo disponible en distintos escenarios de retiro.',
-    loans: 'Comportamiento de los préstamos', loansNote: 'Capital recuperado y pagos registrados por fondo durante el periodo seleccionado.',
-    costs: 'Apartados y costos de la dirección', costsNote: 'Los apartados de la bolsa reducen el reparto; los de reserva reducen esa reserva. Los gastos pagados se distinguen de las estimaciones.',
-    paymentDetail: 'Detalle de pagos por fondo', arrears: 'Préstamos con saldo atrasado', matrix: 'Reporte de préstamos', compliance: 'Cumplimiento del reglamento',
-    savings: 'Informe final de ahorro', savingsNote: 'Ahorro, rendimientos, retiros y saldo restante separados por año y semestre. Los valores históricos conservan su periodo y sus políticas.'
+    title: 'Simulador de Rendimiento',
+    subtitle: 'Compara escenarios, revisa sus reglas y conserva el detalle de cada periodo.',
+    executive: 'Resumen ejecutivo',
+    parameters: 'Parámetros de cálculo',
+    distribution: 'Reparto por ahorrador',
+    distributionNote: 'Consulta el rendimiento y el desglose de cada persona; las exclusiones conservan su motivo.',
+    liquidity: 'Tablero de liquidez — ¿alcanza si retiran?',
+    liquidityNote: 'Compara la obligación a pagar y el efectivo disponible en distintos escenarios de retiro.',
+    loans: 'Comportamiento de los préstamos',
+    loansNote: 'Capital recuperado y pagos registrados por fondo durante el periodo seleccionado.',
+    costs: 'Apartados y costos de la dirección',
+    costsNote: 'Los apartados de la bolsa reducen el reparto; los de reserva reducen esa reserva. Los gastos pagados se distinguen de las estimaciones.',
+    paymentDetail: 'Detalle de pagos por fondo',
+    arrears: 'Préstamos con saldo atrasado',
+    matrix: 'Reporte de préstamos',
+    compliance: 'Cumplimiento del reglamento',
+    savings: 'Informe final de ahorro',
+    savingsNote: 'Ahorro, rendimientos, retiros y saldo restante separados por año y semestre. Los valores históricos conservan su periodo y sus políticas.'
   };
   const CAPTIONS = {
-  "caption_af09c35599": "% del inter\u00e9s a repartir: ",
-  "caption_7e9bf662fb": "Ahorradores elegibles",
-  "caption_126fc503e7": "Alerta de tasa anual (%)",
-  "caption_ca8bcab722": "A\u00f1o de origen ",
-  "caption_6126dc9bc7": "Base que participa",
-  "caption_0d9153d02a": "Bolsa a repartir",
-  "caption_7b11e88b28": "Bolsa proyectada neta de costos",
-  "caption_946772baa9": "Caja de Ahorro",
-  "caption_bf01a8c594": "Capital actual",
-  "caption_9c58bf03df": "Capital que participa",
-  "caption_796843dbf1": "Cierre / corte",
-  "caption_bdc9359ac4": "Cl\u00e1usula 10 \u00b7 Pr\u00e9stamo atrasado",
-  "caption_b5e61c8f4b": "Cl\u00e1usula 9 \u00b7 Incumplimiento de descuento",
-  "caption_2b118e4951": "Cobertura por escenario de retiro",
-  "caption_632ceec2d0": "Comparador de escenarios",
-  "caption_43fdfa80da": "Composici\u00f3n del respaldo",
-  "caption_fc5069be3c": "Concepto",
-  "caption_5c2fc5959f": "Consultado al ",
-  "caption_8eb5269dec": "Declarado por",
-  "caption_966c7c4cad": "Desde",
-  "caption_f276fa8bc7": "Despu\u00e9s de apartados",
-  "caption_8e28cd3b5e": "Disponible global actual",
-  "caption_ad2a201c5f": "El capital recuperado y el gasto administrativo se distinguen del inter\u00e9s repartible.",
-  "caption_7479d76606": "El porcentaje no repartido permanece como reserva.",
-  "caption_a2a2c3a48c": "Entregable",
-  "caption_87cf2a843e": "Estado",
-  "caption_0e1a0e1ca9": "Excluidos",
-  "caption_bcc476092d": "Fecha",
-  "caption_c08ffd6326": "Fecha de declaraci\u00f3n",
-  "caption_f0af28ffa9": "Fuente de la bolsa",
-  "caption_ccdaad85ef": "Hasta",
-  "caption_3f84b364f5": "Importe de origen ",
-  "caption_1df3c7fee7": "Incluye cobros futuros pendientes.",
-  "caption_4f70d8c37e": "Inicio",
-  "caption_25b72ce1d4": "Inter\u00e9s proyectado pendiente",
-  "caption_fdbcc19b2b": "Inter\u00e9s registrado cobrado",
-  "caption_bdd83879de": "Meses m\u00ednimos de permanencia",
-  "caption_835dcdf0f2": "Monto",
-  "caption_d08334255c": "Motivo y evidencia del desglose",
-  "caption_6840fc994d": "M\u00e9todo de reparto",
-  "caption_5e2a005722": "Pendientes de revisi\u00f3n",
-  "caption_aa7bf53fe2": "Periodo del semestre",
-  "caption_7c032398bb": "Promedio por d\u00edas",
-  "caption_886befac42": "Quincenas consecutivas",
-  "caption_8a205feba9": "Recuperaci\u00f3n acumulada en el tiempo",
-  "caption_8308ba3744": "Recuperado",
-  "caption_8300c9a509": "Recuperado vs. falta por cobrar, por fondo",
-  "caption_0219532342": "Reglas de exclusi\u00f3n",
-  "caption_d2c4cbec12": "Rendimiento",
-  "caption_1843b29991": "Rendimiento acreditado actual",
-  "caption_5c88817eee": "Rendimiento sobre rendimientos anteriores",
-  "caption_07da12a86c": "Reserva",
-  "caption_65c248a991": "Retenido",
-  "caption_8e63c12892": "Saldo actual",
-  "caption_26b3324926": "Saldo al corte",
-  "caption_23039dec1e": "Saldo bancario del fondo de ahorro",
-  "caption_6f8c7583dc": "Sale de",
-  "caption_a907ff22b0": "Semestre de origen ",
-  "caption_87dfb50c03": "Suma de rendimientos",
-  "caption_d4d948879d": "S\u00f3lo participa el rendimiento acreditado que a\u00fan permanece en la cuenta. Su origen hist\u00f3rico no cambia.",
-  "caption_98fd2e5f11": "Tasa del periodo",
-  "caption_252ac39cfb": "Tasa proyectada sobre base confirmada",
-  "caption_e4bfd8f1de": "Un mes vencido sin aportaci\u00f3n de jubilado equivale a dos quincenas. Los periodos futuros no son incumplimientos.",
-  "caption_48b38a5c8e": "Usa el ahorro confirmado; no garantiza cobro ni acredita rendimiento.",
-  "caption_eac6ad6da6": "Ver un ejemplo individual"
-};
+    "caption_af09c35599": "% del inter\u00e9s a repartir: ",
+    "caption_7e9bf662fb": "Ahorradores elegibles",
+    "caption_126fc503e7": "Alerta de tasa anual (%)",
+    "caption_ca8bcab722": "A\u00f1o de origen ",
+    "caption_6126dc9bc7": "Base que participa",
+    "caption_0d9153d02a": "Bolsa a repartir",
+    "caption_7b11e88b28": "Bolsa proyectada neta de costos",
+    "caption_946772baa9": "Caja de Ahorro",
+    "caption_bf01a8c594": "Capital actual",
+    "caption_9c58bf03df": "Capital que participa",
+    "caption_796843dbf1": "Cierre / corte",
+    "caption_bdc9359ac4": "Cl\u00e1usula 10 \u00b7 Pr\u00e9stamo atrasado",
+    "caption_b5e61c8f4b": "Cl\u00e1usula 9 \u00b7 Incumplimiento de descuento",
+    "caption_2b118e4951": "Cobertura por escenario de retiro",
+    "caption_632ceec2d0": "Comparador de escenarios",
+    "caption_43fdfa80da": "Composici\u00f3n del respaldo",
+    "caption_fc5069be3c": "Concepto",
+    "caption_5c2fc5959f": "Consultado al ",
+    "caption_8eb5269dec": "Declarado por",
+    "caption_966c7c4cad": "Desde",
+    "caption_f276fa8bc7": "Despu\u00e9s de apartados",
+    "caption_8e28cd3b5e": "Disponible global actual",
+    "caption_ad2a201c5f": "El capital recuperado y el gasto administrativo se distinguen del inter\u00e9s repartible.",
+    "caption_7479d76606": "El porcentaje no repartido permanece como reserva.",
+    "caption_a2a2c3a48c": "Entregable",
+    "caption_87cf2a843e": "Estado",
+    "caption_0e1a0e1ca9": "Excluidos",
+    "caption_bcc476092d": "Fecha",
+    "caption_c08ffd6326": "Fecha de declaraci\u00f3n",
+    "caption_f0af28ffa9": "Fuente de la bolsa",
+    "caption_ccdaad85ef": "Hasta",
+    "caption_3f84b364f5": "Importe de origen ",
+    "caption_1df3c7fee7": "Incluye cobros futuros pendientes.",
+    "caption_4f70d8c37e": "Inicio",
+    "caption_25b72ce1d4": "Inter\u00e9s proyectado pendiente",
+    "caption_fdbcc19b2b": "Inter\u00e9s registrado cobrado",
+    "caption_bdd83879de": "Meses m\u00ednimos de permanencia",
+    "caption_835dcdf0f2": "Monto",
+    "caption_d08334255c": "Motivo y evidencia del desglose",
+    "caption_6840fc994d": "M\u00e9todo de reparto",
+    "caption_5e2a005722": "Pendientes de revisi\u00f3n",
+    "caption_aa7bf53fe2": "Periodo del semestre",
+    "caption_7c032398bb": "Promedio por d\u00edas",
+    "caption_886befac42": "Quincenas consecutivas",
+    "caption_8a205feba9": "Recuperaci\u00f3n acumulada en el tiempo",
+    "caption_8308ba3744": "Recuperado",
+    "caption_8300c9a509": "Recuperado vs. falta por cobrar, por fondo",
+    "caption_0219532342": "Reglas de exclusi\u00f3n",
+    "caption_d2c4cbec12": "Rendimiento",
+    "caption_1843b29991": "Rendimiento acreditado actual",
+    "caption_5c88817eee": "Rendimiento sobre rendimientos anteriores",
+    "caption_07da12a86c": "Reserva",
+    "caption_65c248a991": "Retenido",
+    "caption_8e63c12892": "Saldo actual",
+    "caption_26b3324926": "Saldo al corte",
+    "caption_23039dec1e": "Saldo bancario del fondo de ahorro",
+    "caption_6f8c7583dc": "Sale de",
+    "caption_a907ff22b0": "Semestre de origen ",
+    "caption_87dfb50c03": "Suma de rendimientos",
+    "caption_d4d948879d": "S\u00f3lo participa el rendimiento acreditado que a\u00fan permanece en la cuenta. Su origen hist\u00f3rico no cambia.",
+    "caption_98fd2e5f11": "Tasa del periodo",
+    "caption_252ac39cfb": "Tasa proyectada sobre base confirmada",
+    "caption_e4bfd8f1de": "Un mes vencido sin aportaci\u00f3n de jubilado equivale a dos quincenas. Los periodos futuros no son incumplimientos.",
+    "caption_48b38a5c8e": "Usa el ahorro confirmado; no garantiza cobro ni acredita rendimiento.",
+    "caption_eac6ad6da6": "Ver un ejemplo individual"
+  };
   Object.assign(TEXTS, CAPTIONS);
   const textOverrides = values => Object.fromEntries(Object.entries(values || {}).filter(([key, value]) => Object.hasOwn(TEXTS, key) && value !== TEXTS[key]));
   function preferenceError(values, tabOrder) {
     const labels = textOverrides(values);
     if (Object.values(labels).some(value => typeof value !== 'string' || JSON.stringify(value).length > 500)) return 'Acorta el texto: cada etiqueta admite hasta 500 caracteres incluidos los caracteres de formato.';
-    if (JSON.stringify({ labels, tab_order: tabOrder }, null, 1).length > 20000) return 'Acorta algunos textos: la presentación completa admite hasta 20,000 caracteres.';
+    if (JSON.stringify({
+      labels,
+      tab_order: tabOrder
+    }, null, 1).length > 20000) return 'Acorta algunos textos: la presentación completa admite hasta 20,000 caracteres.';
     return '';
   }
   const CAPTION_KEYS = Object.fromEntries(Object.entries(CAPTIONS).map(([key, value]) => [value, key]));
   const CaptionContext = React.createContext(value => value);
-  function CaptionChart(props) { const caption = React.useContext(CaptionContext); return h(window.SicofChart, Object.assign({}, props, { title: caption(props.title), series: (props.series || []).map(field => Object.assign({}, field, { label: caption(field.label) })) })); }
+  function CaptionChart(props) {
+    const caption = React.useContext(CaptionContext);
+    return h(window.SicofChart, Object.assign({}, props, {
+      title: caption(props.title),
+      series: (props.series || []).map(field => Object.assign({}, field, {
+        label: caption(field.label)
+      }))
+    }));
+  }
   const CSS = `
     .sicof{--sc-wine:#96002b;--sc-wine-dark:#790322;--sc-gold:#a47c32;--sc-ink:#18243e;--sc-muted:#768096;--sc-line:#e0e4ed;--sc-paper:#fff;color:var(--sc-ink);font-family:inherit;min-width:0;background:#fafafb}.sicof *{box-sizing:border-box}.sicof-content{padding:22px 24px 42px;max-width:1580px;margin:auto}.sicof-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}.sicof h1{font-size:27px;letter-spacing:-.025em;color:var(--sc-wine);margin:2px 0 7px}.sicof h2{font-size:20px;color:var(--sc-wine);font-weight:700;margin:0 0 10px}.sicof h3{font-size:15px;color:var(--sc-wine);font-weight:750;margin:0 0 12px}.sicof p{line-height:1.6}.sicof-sub{font-size:12.5px;color:var(--sc-muted);margin:0 0 14px}.sicof-source{font-size:11px;color:var(--sc-muted);margin:4px 0}.sicof-tabs{display:flex;gap:4px;overflow:auto;position:sticky;top:0;z-index:4;background:#fafafb;border-bottom:1px solid var(--sc-line);padding:7px 0;margin-bottom:24px}.sicof-tab{flex:none;display:flex;align-items:center;border-radius:10px;background:#f1f2f6}.sicof-tab[data-active=true]{background:var(--sc-wine);color:#fff}.sicof-tab>button:first-child{border:0;padding:12px 13px;background:transparent;color:inherit;white-space:nowrap;font:750 12px inherit;cursor:pointer}.sicof-tab>button:not(:first-child){border:0;background:transparent;color:inherit;padding:5px;font-size:11px;cursor:pointer}.sicof-tab>button:disabled{opacity:.35;cursor:default}.sicof-layout{display:grid;grid-template-columns:minmax(285px,380px) minmax(0,1fr);gap:22px;align-items:start}.sicof-layout>*,.sicof-chart-grid>*{min-width:0}.sicof-panel{min-width:0;border:1px solid var(--sc-line);border-radius:15px;background:var(--sc-paper);box-shadow:0 2px 4px #18243e08;margin-bottom:18px;overflow:hidden}.sicof-panel-head{padding:17px 19px;border-bottom:1px solid var(--sc-line);margin:0!important;font-size:17px!important}.sicof-panel-body{padding:18px 19px}.sicof-control{margin-bottom:18px;padding-bottom:17px;border-bottom:1px solid #eff0f5}.sicof-control:last-child{border:0;margin-bottom:0;padding-bottom:0}.sicof-label{display:block;color:var(--sc-ink);font-size:12px;font-weight:750;margin-bottom:8px}.sicof-help{font-size:11.5px;color:var(--sc-muted);line-height:1.6;margin:7px 0 0}.sicof-segment{display:flex;gap:3px;padding:3px;border-radius:9px;background:#f1f2f6;flex-wrap:wrap}.sicof-segment button{flex:1;border:0;border-radius:7px;padding:8px 9px;font:700 11px inherit;color:#69748a;background:transparent;cursor:pointer}.sicof-segment button[aria-pressed=true]{background:#fff;color:var(--sc-wine);box-shadow:0 1px 4px #0001}.sicof input:not([type=checkbox]):not([type=range]),.sicof select,.sicof textarea{border:1px solid #dce1eb;border-radius:8px;background:#fff;padding:9px 10px;color:var(--sc-ink);font:12px inherit;max-width:100%;min-width:0}.sicof input[type=range]{accent-color:var(--sc-wine);width:100%;margin:7px 0}.sicof input[type=checkbox]{accent-color:var(--sc-wine)}.sicof-check{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.5;margin:9px 0;cursor:pointer}.sicof-check input{margin-top:3px;flex:none}.sicof-field{display:flex;flex-direction:column;gap:6px;min-width:0}.sicof-field>span{color:var(--sc-muted);font-size:11px;font-weight:700}.sicof-date-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.sicof-btn{border:1px solid var(--sc-wine);background:var(--sc-wine);color:white;border-radius:9px;padding:10px 14px;min-height:38px;font:750 12px inherit;cursor:pointer;white-space:nowrap}.sicof-btn.secondary{background:white;color:var(--sc-wine);border-color:#e0d7dd}.sicof-btn.gold{background:#a6813d;border-color:#a6813d}.sicof-btn:disabled{opacity:.5;cursor:wait}.sicof button:focus-visible,.sicof input:focus-visible,.sicof select:focus-visible{outline:3px solid #b9607a;outline-offset:2px}.sicof-toolbar{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin-bottom:16px}.sicof-toolbar>.sicof-search{flex:1;min-width:180px}.sicof-toolbar-spacer{flex:1}.sicof-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px;margin-bottom:17px}.sicof-metric{min-width:0;container-type:inline-size;background:white;border:1px solid var(--sc-line);border-radius:13px;padding:15px}.sicof-metric span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--sc-muted);font-weight:700}.sicof-metric strong{display:block;font-size:23px;font-size:clamp(16px,12cqi,23px);line-height:1.25;overflow-wrap:anywhere;color:var(--sc-wine);margin-top:8px;font-variant-numeric:tabular-nums}.sicof-metric small{display:block;font-size:11px;color:var(--sc-muted);line-height:1.5;margin-top:6px}.sicof-metric.primary{background:var(--sc-wine);border-color:var(--sc-wine)}.sicof-metric.primary span,.sicof-metric.primary strong,.sicof-metric.primary small{color:white}.sicof-metric.primary strong{font-size:39px;font-size:clamp(24px,20cqi,39px)}.sicof-wide{grid-column:1/-1}.sicof-status{border:1px solid #ead9bc;background:#fff9ec;color:#856221;padding:12px 14px;border-radius:10px;font-size:12px;line-height:1.6;margin:12px 0}.sicof-status.error{background:#fff1f4;border-color:#f2d6de;color:#9f2542}.sicof-status.success{background:#edf8f1;border-color:#cce9d8;color:#21734a}.sicof-error-line{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.sicof-table-scroll{overflow:auto;max-height:590px}.sicof-table{width:100%;border-collapse:collapse;font-size:12px}.sicof-table th{font-size:9.5px;font-weight:750;letter-spacing:.025em;color:var(--sc-muted);text-align:left;background:#f9fafc;position:sticky;top:0;z-index:1;white-space:nowrap}.sicof-table th button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:left}.sicof-table td,.sicof-table th{padding:10px 9px;border-bottom:1px solid #e7e9ef;vertical-align:top}.sicof-table td.number,.sicof-table th.number{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.sicof-table tbody tr[data-clickable=true]{cursor:pointer}.sicof-table tbody tr[data-clickable=true]:hover{background:#fff6f9}.sicof-table tfoot{font-weight:800;color:var(--sc-wine)}.sicof-chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.sicof-empty{padding:28px;text-align:center;color:var(--sc-muted);font-size:12px}.sicof-executive{margin-bottom:21px}.sicof-executive>summary,.sicof-explanation>summary{cursor:pointer;font-weight:750;color:var(--sc-wine);padding:15px 18px;font-size:16px}.sicof-executive ol{margin:0;padding-left:22px;font-size:12.5px;line-height:1.7}.sicof-executive li{padding:5px 0}.sicof-explanation{border:1px solid var(--sc-line);border-radius:11px;margin-bottom:17px}.sicof-explanation>div{padding:0 18px 18px}.sicof-formula{font-family:monospace;color:var(--sc-wine);background:#f9f2f5;padding:12px;border-radius:8px;font-size:12px}.sicof-multi{position:relative;min-width:190px;border:1px solid var(--sc-line);border-radius:8px;background:#fff}.sicof-multi summary{padding:10px;font-size:12px;cursor:pointer;list-style:none}.sicof-multi-panel{position:absolute;top:100%;left:0;min-width:280px;max-width:85vw;max-height:320px;overflow:auto;padding:11px 14px;border:1px solid var(--sc-line);border-radius:9px;background:white;box-shadow:0 12px 25px #0002;z-index:8}.sicof-multi-panel .sicof-toolbar{margin-bottom:5px}.sicof-multi-panel button{border:0;background:transparent;color:var(--sc-wine);font-size:11px;cursor:pointer;padding:4px}.sicof-cost-grid{display:grid;grid-template-columns:minmax(170px,1.5fr) 110px 140px 130px 125px auto;gap:10px;align-items:end}.sicof-cost-bar{display:flex;justify-content:space-between;gap:12px;background:var(--sc-wine);color:white;border-radius:9px;padding:13px 15px;font-size:12px;font-weight:750;margin-top:13px}.sicof-bank-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:15px}.sicof-actions{display:flex;justify-content:center;margin:18px 0 0}.sicof-row-link{background:transparent;border:0;text-align:left;color:var(--sc-wine);font:750 12px inherit;cursor:pointer;padding:0}.sicof-row-remove{border:0;background:transparent;color:var(--sc-wine);cursor:pointer;padding:4px 8px}.sicof-text-editor{display:grid;gap:14px}.sicof-text-editor textarea{min-height:66px;width:100%;font:13px inherit;padding:10px;border:1px solid #dee2eb;border-radius:8px}.sicof-period-note{padding:11px 12px;border-radius:9px;background:#f4f5f8;color:#6e7890;font-size:12px;margin:10px 0}.sicof-tooltip{font-size:10px;color:var(--sc-muted);display:block;margin-top:4px}.sicof-order-label{font-size:10px;color:var(--sc-muted);white-space:nowrap;padding:9px 0}.sicof-donut{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}.sicof-donut svg{width:160px;height:160px}.sicof-donut ul{list-style:none;padding:0;margin:0;display:grid;gap:10px;font-size:12px}.sicof-donut i{display:inline-block;width:10px;height:10px;margin-right:8px;border-radius:3px}
     @media(max-width:1200px){.sicof-cost-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.sicof-content{padding:18px}}@media(max-width:900px){.sicof-layout,.sicof-chart-grid{grid-template-columns:minmax(0,1fr)}.sicof-bank-grid{grid-template-columns:1fr}.sicof-title-row{flex-wrap:wrap}.sicof h1{font-size:23px}}@media(max-width:600px){.sicof-content{padding:14px 11px 32px}.sicof-panel-body{padding:14px}.sicof-tabs{margin-bottom:17px}.sicof-cost-grid{grid-template-columns:1fr 1fr}.sicof-btn{padding:9px 11px}.sicof-toolbar .sicof-field{flex:1;min-width:125px}}
   `;
-  function money(value) { return window.SicofView.money(value); }
-  function percent(value) { return value == null || value === '' ? '—' : new Intl.NumberFormat('es-MX', { maximumFractionDigits: 2 }).format(Number(value)) + '%'; }
-  function eligibilityLabel(row) { return row.review_required ? 'Por verificar' : row.ok ? 'Sí' : 'No'; }
-  function monthsLabel(value) { return value == null ? 'Por verificar' : value; }
+  function money(value) {
+    return window.SicofView.money(value);
+  }
+  function percent(value) {
+    return value == null || value === '' ? '—' : new Intl.NumberFormat('es-MX', {
+      maximumFractionDigits: 2
+    }).format(Number(value)) + '%';
+  }
+  function eligibilityLabel(row) {
+    return row.review_required ? 'Por verificar' : row.ok ? 'Sí' : 'No';
+  }
+  function monthsLabel(value) {
+    return value == null ? 'Por verificar' : value;
+  }
   function draftSettings() {
-    const now = new Date(), year = now.getFullYear(), first = now.getMonth() < 6;
-    return { src: 'caja', selFunds: [], pay: 90, method: 'avg', periodIni: year + (first ? '-01-01' : '-07-01'), periodFin: year + (first ? '-06-30' : '-12-31'), minm: 6, exterm: true, exmin: true, warn: 20, exConsec: false, consecN: 4, loanEffect: 'retiro', retScope: 'todo', anchorOn: false, anchorDate: year + (first ? '-01-01' : '-07-01'), capitalBasis: 'all', yieldMode: 'none', yieldPeriods: [] };
+    const now = new Date(),
+      year = now.getFullYear(),
+      first = now.getMonth() < 6;
+    return {
+      src: 'caja',
+      selFunds: [],
+      pay: 90,
+      method: 'avg',
+      periodIni: year + (first ? '-01-01' : '-07-01'),
+      periodFin: year + (first ? '-06-30' : '-12-31'),
+      minm: 6,
+      exterm: true,
+      exmin: true,
+      warn: 20,
+      exConsec: false,
+      consecN: 4,
+      loanEffect: 'retiro',
+      retScope: 'todo',
+      anchorOn: false,
+      anchorDate: year + (first ? '-01-01' : '-07-01'),
+      capitalBasis: 'all',
+      yieldMode: 'none',
+      yieldPeriods: []
+    };
   }
   function errorText(error) {
     const value = String(error && (error.code || error.message) || '');
@@ -1594,30 +2650,196 @@
     if (/VALIDATION|INVALID|RANGE|DATE/.test(value)) return 'Revisa las fechas y los importes del escenario.';
     return 'No se completó la consulta. Puedes reintentar; no se sustituyen datos por estimaciones.';
   }
-  function Metric({ label, value, note, primary }) { const caption = React.useContext(CaptionContext); label = caption(label); note = caption(note); return h('div', { className: 'sicof-metric' + (primary ? ' primary' : '') }, h('span', null, label), h('strong', null, value == null ? '—' : value), note && h('small', null, note)); }
-  function Panel({ title, children, className }) { const caption = React.useContext(CaptionContext); title = caption(title); return h('section', { className: 'sicof-panel' + (className ? ' ' + className : '') }, title && h('h3', { className: 'sicof-panel-head' }, title), h('div', { className: 'sicof-panel-body' }, children)); }
-  function Button({ children, onClick, busy, secondary, gold, ...props }) { return h('button', Object.assign({ type: 'button', className: 'sicof-btn' + (secondary ? ' secondary' : gold ? ' gold' : ''), onClick, disabled: busy }, props), children); }
-  function Field({ label, children }) { const caption = React.useContext(CaptionContext); label = caption(label); return h('label', { className: 'sicof-field' }, h('span', null, label), children); }
-  function Control({ label, children, help }) { const caption = React.useContext(CaptionContext); label = caption(label); help = caption(help); return h('div', { className: 'sicof-control' }, label && h('div', { className: 'sicof-label' }, label), children, help && h('p', { className: 'sicof-help' }, help)); }
-  function Check({ label, checked, onChange }) { return h('label', { className: 'sicof-check' }, h('input', { type: 'checkbox', checked: Boolean(checked), onChange: event => onChange(event.target.checked) }), label); }
-  function Segment({ label, value, options, onChange }) { return h('div', { className: 'sicof-segment', role: 'group', 'aria-label': label }, options.map(([id, text]) => h('button', { type: 'button', key: id, 'aria-pressed': value === id, onClick: () => onChange(id) }, text))); }
-  function Multi({ label, options, value, onChange }) {
-    const selected = value === null ? options.map(option => option.value) : value;
-    return h('details', { className: 'sicof-multi' }, h('summary', { 'aria-label': label }, label + ': ' + (value === null ? 'Todos' : selected.length + ' seleccionados') + ' ▾'), h('div', { className: 'sicof-multi-panel' },
-      h('div', { className: 'sicof-toolbar' }, h('button', { type: 'button', onClick: () => onChange(null) }, 'Todos'), h('button', { type: 'button', onClick: () => onChange([]) }, 'Ninguno')),
-      options.map(option => h(Check, { key: option.value, label: option.note ? h('span', null, option.label, h('small', { className: 'sicof-tooltip' }, option.note)) : option.label, checked: selected.includes(option.value), onChange: checked => onChange(checked ? [...selected, option.value] : selected.filter(key => key !== option.value)) }))));
+  function Metric({
+    label,
+    value,
+    note,
+    primary
+  }) {
+    const caption = React.useContext(CaptionContext);
+    label = caption(label);
+    note = caption(note);
+    return h('div', {
+      className: 'sicof-metric' + (primary ? ' primary' : '')
+    }, h('span', null, label), h('strong', null, value == null ? '—' : value), note && h('small', null, note));
   }
-  function Table({ columns, rows, onRow, totals, limit, empty }) {
+  function Panel({
+    title,
+    children,
+    className
+  }) {
+    const caption = React.useContext(CaptionContext);
+    title = caption(title);
+    return h('section', {
+      className: 'sicof-panel' + (className ? ' ' + className : '')
+    }, title && h('h3', {
+      className: 'sicof-panel-head'
+    }, title), h('div', {
+      className: 'sicof-panel-body'
+    }, children));
+  }
+  function Button({
+    children,
+    onClick,
+    busy,
+    secondary,
+    gold,
+    ...props
+  }) {
+    return h('button', Object.assign({
+      type: 'button',
+      className: 'sicof-btn' + (secondary ? ' secondary' : gold ? ' gold' : ''),
+      onClick,
+      disabled: busy
+    }, props), children);
+  }
+  function Field({
+    label,
+    children
+  }) {
+    const caption = React.useContext(CaptionContext);
+    label = caption(label);
+    return h('label', {
+      className: 'sicof-field'
+    }, h('span', null, label), children);
+  }
+  function Control({
+    label,
+    children,
+    help
+  }) {
+    const caption = React.useContext(CaptionContext);
+    label = caption(label);
+    help = caption(help);
+    return h('div', {
+      className: 'sicof-control'
+    }, label && h('div', {
+      className: 'sicof-label'
+    }, label), children, help && h('p', {
+      className: 'sicof-help'
+    }, help));
+  }
+  function Check({
+    label,
+    checked,
+    onChange
+  }) {
+    return h('label', {
+      className: 'sicof-check'
+    }, h('input', {
+      type: 'checkbox',
+      checked: Boolean(checked),
+      onChange: event => onChange(event.target.checked)
+    }), label);
+  }
+  function Segment({
+    label,
+    value,
+    options,
+    onChange
+  }) {
+    return h('div', {
+      className: 'sicof-segment',
+      role: 'group',
+      'aria-label': label
+    }, options.map(([id, text]) => h('button', {
+      type: 'button',
+      key: id,
+      'aria-pressed': value === id,
+      onClick: () => onChange(id)
+    }, text)));
+  }
+  function Multi({
+    label,
+    options,
+    value,
+    onChange
+  }) {
+    const selected = value === null ? options.map(option => option.value) : value;
+    return h('details', {
+      className: 'sicof-multi'
+    }, h('summary', {
+      'aria-label': label
+    }, label + ': ' + (value === null ? 'Todos' : selected.length + ' seleccionados') + ' ▾'), h('div', {
+      className: 'sicof-multi-panel'
+    }, h('div', {
+      className: 'sicof-toolbar'
+    }, h('button', {
+      type: 'button',
+      onClick: () => onChange(null)
+    }, 'Todos'), h('button', {
+      type: 'button',
+      onClick: () => onChange([])
+    }, 'Ninguno')), options.map(option => h(Check, {
+      key: option.value,
+      label: option.note ? h('span', null, option.label, h('small', {
+        className: 'sicof-tooltip'
+      }, option.note)) : option.label,
+      checked: selected.includes(option.value),
+      onChange: checked => onChange(checked ? [...selected, option.value] : selected.filter(key => key !== option.value))
+    }))));
+  }
+  function Table({
+    columns,
+    rows,
+    onRow,
+    totals,
+    limit,
+    empty
+  }) {
     const [sort, setSort] = React.useState(null);
-    const display = React.useMemo(() => { const result = [...(rows || [])]; if (sort) result.sort((a, b) => { const x = a[sort.key], y = b[sort.key]; return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x == null ? '' : x).localeCompare(String(y == null ? '' : y), 'es', { numeric: true })) * sort.direction; }); return result; }, [rows, sort]);
+    const display = React.useMemo(() => {
+      const result = [...(rows || [])];
+      if (sort) result.sort((a, b) => {
+        const x = a[sort.key],
+          y = b[sort.key];
+        return (typeof x === 'number' && typeof y === 'number' ? x - y : String(x == null ? '' : x).localeCompare(String(y == null ? '' : y), 'es', {
+          numeric: true
+        })) * sort.direction;
+      });
+      return result;
+    }, [rows, sort]);
     const format = (row, column) => column.render ? column.render(row) : column.format === 'money' ? money(row[column.key]) : column.format === 'percent' ? percent(row[column.key]) : row[column.key] == null ? '—' : typeof row[column.key] === 'boolean' ? row[column.key] ? 'Sí' : 'No' : String(row[column.key]);
     const list = limit ? display.slice(0, limit) : display;
-    const head = h('thead', null, h('tr', null, columns.map(column => h('th', { key: column.key, className: ['money', 'percent', 'number'].includes(column.format) ? 'number' : undefined, 'aria-sort': sort && sort.key === column.key ? sort.direction > 0 ? 'ascending' : 'descending' : 'none' }, h('button', { type: 'button', onClick: () => setSort({ key: column.key, direction: sort && sort.key === column.key ? -sort.direction : 1 }) }, column.label, sort && sort.key === column.key ? sort.direction > 0 ? ' ↑' : ' ↓' : ' ↕')))));
-    const body = h('tbody', null, list.map((row, index) => h('tr', { key: row.id || row.f || index, 'data-clickable': Boolean(onRow), tabIndex: onRow ? 0 : undefined, onClick: onRow ? () => onRow(row) : undefined, onKeyDown: onRow ? event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); onRow(row); } } : undefined }, columns.map(column => h('td', { key: column.key, className: ['money', 'percent', 'number'].includes(column.format) ? 'number' : undefined }, format(row, column))))));
-    const foot = totals && h('tfoot', null, h('tr', null, columns.map((column, index) => h('td', { key: column.key, className: ['money', 'percent', 'number'].includes(column.format) ? 'number' : undefined }, index === 0 ? 'Totales' : format(totals, column)))));
-    return h(React.Fragment, null, h('div', { className: 'sicof-table-scroll' }, h('table', { className: 'sicof-table' }, head, body, foot)),
-      !display.length && h('div', { className: 'sicof-empty' }, empty || 'No hay registros con estos filtros.'),
-      limit && display.length > limit && h('p', { className: 'sicof-help' }, 'Se muestran ' + limit + ' de ' + display.length + ' registros. La descarga incluye todos los registros filtrados.'));
+    const head = h('thead', null, h('tr', null, columns.map(column => h('th', {
+      key: column.key,
+      className: ['money', 'percent', 'number'].includes(column.format) ? 'number' : undefined,
+      'aria-sort': sort && sort.key === column.key ? sort.direction > 0 ? 'ascending' : 'descending' : 'none'
+    }, h('button', {
+      type: 'button',
+      onClick: () => setSort({
+        key: column.key,
+        direction: sort && sort.key === column.key ? -sort.direction : 1
+      })
+    }, column.label, sort && sort.key === column.key ? sort.direction > 0 ? ' ↑' : ' ↓' : ' ↕')))));
+    const body = h('tbody', null, list.map((row, index) => h('tr', {
+      key: row.id || row.f || index,
+      'data-clickable': Boolean(onRow),
+      tabIndex: onRow ? 0 : undefined,
+      onClick: onRow ? () => onRow(row) : undefined,
+      onKeyDown: onRow ? event => {
+        if (['Enter', ' '].includes(event.key)) {
+          event.preventDefault();
+          onRow(row);
+        }
+      } : undefined
+    }, columns.map(column => h('td', {
+      key: column.key,
+      className: ['money', 'percent', 'number'].includes(column.format) ? 'number' : undefined
+    }, format(row, column))))));
+    const foot = totals && h('tfoot', null, h('tr', null, columns.map((column, index) => h('td', {
+      key: column.key,
+      className: ['money', 'percent', 'number'].includes(column.format) ? 'number' : undefined
+    }, index === 0 ? 'Totales' : format(totals, column)))));
+    return h(React.Fragment, null, h('div', {
+      className: 'sicof-table-scroll'
+    }, h('table', {
+      className: 'sicof-table'
+    }, head, body, foot)), !display.length && h('div', {
+      className: 'sicof-empty'
+    }, empty || 'No hay registros con estos filtros.'), limit && display.length > limit && h('p', {
+      className: 'sicof-help'
+    }, 'Se muestran ' + limit + ' de ' + display.length + ' registros. La descarga incluye todos los registros filtrados.'));
   }
   // Presentation totals use only amounts already supplied by the backend snapshot.
   // They do not apportion a payment, calculate yield, or change a canonical balance.
@@ -1625,82 +2847,353 @@
     if (rows.some(row => row[key] == null || typeof row[key] !== 'number' || !Number.isFinite(row[key]) || (row.issues || []).includes('AMBIGUOUS_LOAN_DATE_ROWS'))) return null;
     return rows.reduce((sum, row) => sum + Math.round(row[key] * 100), 0) / 100;
   }
-  const severityLabel = value => ({ mild: 'Leve', moderate: 'Moderado', severe: 'Grave' })[value] || 'Por revisar';
-  function LoanProgress({ value }) { return value == null ? h('span', null, 'Por revisar') : h('span', null, h('progress', { value, max: 100, 'aria-label': 'Avance del préstamo', style: { width: 70, accentColor: '#96002b', marginRight: 6 } }), percent(value)); }
-  function match(row, query, fields) { const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-MX'); const text = normalize(query).trim(); return !text || normalize(fields.map(key => String(row[key] == null ? '' : row[key])).join(' ')).includes(text); }
-  function noteList(notes) { return (notes || []).map((note, index) => h('div', { key: index, className: 'sicof-status' + (note.level === 'error' || note.severity === 'error' || note.status === 'FAIL' ? ' error' : '') }, typeof note === 'string' ? note : note.message || note.text || note.label)); }
-  function Donut({ values }) {
+  const severityLabel = value => ({
+    mild: 'Leve',
+    moderate: 'Moderado',
+    severe: 'Grave'
+  })[value] || 'Por revisar';
+  function LoanProgress({
+    value
+  }) {
+    return value == null ? h('span', null, 'Por revisar') : h('span', null, h('progress', {
+      value,
+      max: 100,
+      'aria-label': 'Avance del préstamo',
+      style: {
+        width: 70,
+        accentColor: '#96002b',
+        marginRight: 6
+      }
+    }), percent(value));
+  }
+  function match(row, query, fields) {
+    const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('es-MX');
+    const text = normalize(query).trim();
+    return !text || normalize(fields.map(key => String(row[key] == null ? '' : row[key])).join(' ')).includes(text);
+  }
+  function noteList(notes) {
+    return (notes || []).map((note, index) => h('div', {
+      key: index,
+      className: 'sicof-status' + (note.level === 'error' || note.severity === 'error' || note.status === 'FAIL' ? ' error' : '')
+    }, typeof note === 'string' ? note : note.message || note.text || note.label));
+  }
+  function Donut({
+    values
+  }) {
     const parts = (values || []).filter(part => typeof part.share === 'number' && Number.isFinite(part.share) && part.share >= 0);
     let cursor = 0;
-    return h('div', { className: 'sicof-donut' }, h('svg', { viewBox: '0 0 120 120', role: 'img', 'aria-label': 'Composición del respaldo' }, h('circle', { cx: 60, cy: 60, r: 44, fill: 'none', stroke: '#eef0f5', strokeWidth: 16 }), parts.map((part, index) => { const offset = cursor; cursor += part.share / 100; return h('circle', { key: index, cx: 60, cy: 60, r: 44, fill: 'none', stroke: part.color || ['#97002c', '#a4abbc', '#bd984b'][index % 3], strokeWidth: 16, pathLength: 1, strokeDasharray: part.share / 100 + ' ' + (1 - part.share / 100), strokeDashoffset: -offset, transform: 'rotate(-90 60 60)' }, h('title', null, part.label + ': ' + money(part.amount))); })), h('ul', null, (values || []).map((part, index) => h('li', { key: index }, h('i', { style: { background: part.color || ['#97002c', '#a4abbc', '#bd984b'][index % 3] } }), part.label + ': ' + money(part.amount), part.share == null && h('small', { className: 'sicof-tooltip' }, 'Proporción por conciliar')))));
+    return h('div', {
+      className: 'sicof-donut'
+    }, h('svg', {
+      viewBox: '0 0 120 120',
+      role: 'img',
+      'aria-label': 'Composición del respaldo'
+    }, h('circle', {
+      cx: 60,
+      cy: 60,
+      r: 44,
+      fill: 'none',
+      stroke: '#eef0f5',
+      strokeWidth: 16
+    }), parts.map((part, index) => {
+      const offset = cursor;
+      cursor += part.share / 100;
+      return h('circle', {
+        key: index,
+        cx: 60,
+        cy: 60,
+        r: 44,
+        fill: 'none',
+        stroke: part.color || ['#97002c', '#a4abbc', '#bd984b'][index % 3],
+        strokeWidth: 16,
+        pathLength: 1,
+        strokeDasharray: part.share / 100 + ' ' + (1 - part.share / 100),
+        strokeDashoffset: -offset,
+        transform: 'rotate(-90 60 60)'
+      }, h('title', null, part.label + ': ' + money(part.amount)));
+    })), h('ul', null, (values || []).map((part, index) => h('li', {
+      key: index
+    }, h('i', {
+      style: {
+        background: part.color || ['#97002c', '#a4abbc', '#bd984b'][index % 3]
+      }
+    }), part.label + ': ' + money(part.amount), part.share == null && h('small', {
+      className: 'sicof-tooltip'
+    }, 'Proporción por conciliar')))));
   }
-  function Attribution({ participantId, transactionId, onClose, onSaved }) {
-    const identity = window.SicofView.useContext(), [state, setState] = React.useState({ phase: 'loading' }), [revision, setRevision] = React.useState(0);
-    const [slices, setSlices] = React.useState([]), [reason, setReason] = React.useState(''), [busy, setBusy] = React.useState(false), [error, setError] = React.useState(''), [stale, setStale] = React.useState(false);
-    const active = React.useRef(true), lock = React.useRef(false), retry = React.useRef(null);
-    React.useEffect(() => () => { active.current = false; }, []);
+  function Attribution({
+    participantId,
+    transactionId,
+    onClose,
+    onSaved
+  }) {
+    const identity = window.SicofView.useContext(),
+      [state, setState] = React.useState({
+        phase: 'loading'
+      }),
+      [revision, setRevision] = React.useState(0);
+    const [slices, setSlices] = React.useState([]),
+      [reason, setReason] = React.useState(''),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState(''),
+      [stale, setStale] = React.useState(false);
+    const active = React.useRef(true),
+      lock = React.useRef(false),
+      retry = React.useRef(null);
+    React.useEffect(() => () => {
+      active.current = false;
+    }, []);
     React.useEffect(() => {
-      let current = true; setState({ phase: 'loading' }); setError(''); setStale(false); retry.current = null; setSlices([]); setReason('');
+      let current = true;
+      setState({
+        phase: 'loading'
+      });
+      setError('');
+      setStale(false);
+      retry.current = null;
+      setSlices([]);
+      setReason('');
       Promise.resolve().then(() => window.SicofRepository.composition(participantId)).then(data => {
         if (!current || window.SicofView.contextKey() !== identity) return;
         const movement = (data.movements || []).find(row => row.transaction_id === transactionId);
-        if (!data.can_attribute || !movement || !movement.can_classify) { setState({ phase: 'denied' }); return; }
-        setState({ phase: 'ready', data, movement });
-      }, () => { if (current && window.SicofView.contextKey() === identity) setState({ phase: 'error' }); });
-      return () => { current = false; };
+        if (!data.can_attribute || !movement || !movement.can_classify) {
+          setState({
+            phase: 'denied'
+          });
+          return;
+        }
+        setState({
+          phase: 'ready',
+          data,
+          movement
+        });
+      }, () => {
+        if (current && window.SicofView.contextKey() === identity) setState({
+          phase: 'error'
+        });
+      });
+      return () => {
+        current = false;
+      };
     }, [participantId, transactionId, revision, identity]);
-    const movement = state.movement, opening = movement && movement.type === 'REGULARIZATION', origins = [];
-    const cents = value => { const number = Number(value); return value === '' || !Number.isFinite(number) || number <= 0 || Math.abs(number * 100 - Math.round(number * 100)) > 1e-7 ? null : Math.round(number * 100); };
-    let valid = state.phase === 'ready' && !stale && reason.trim().length >= 3 && slices.length > 0, sum = 0;
+    const movement = state.movement,
+      opening = movement && movement.type === 'REGULARIZATION',
+      origins = [];
+    const cents = value => {
+      const number = Number(value);
+      return value === '' || !Number.isFinite(number) || number <= 0 || Math.abs(number * 100 - Math.round(number * 100)) > 1e-7 ? null : Math.round(number * 100);
+    };
+    let valid = state.phase === 'ready' && !stale && reason.trim().length >= 3 && slices.length > 0,
+      sum = 0;
     for (const slice of slices) {
-      const origin = slice.unknown ? 'OPENING' : slice.year + (slice.semester ? '-S' + slice.semester : ''), amount = cents(slice.amount);
+      const origin = slice.unknown ? 'OPENING' : slice.year + (slice.semester ? '-S' + slice.semester : ''),
+        amount = cents(slice.amount);
       const start = slice.year + (slice.semester === '2' ? '-07-01' : '-01-01');
-      if (amount == null || (!slice.unknown && (!/^[12][0-9]{3}$/.test(slice.year) || start > movement?.effective_date)) || (slice.unknown && opening) || origins.some(row => row.origin_key === origin)) valid = false;
+      if (amount == null || !slice.unknown && (!/^[12][0-9]{3}$/.test(slice.year) || start > movement?.effective_date) || slice.unknown && opening || origins.some(row => row.origin_key === origin)) valid = false;
       if (amount != null) sum += amount;
-      origins.push({ origin_key: origin, amount: amount == null ? 0 : amount / 100 });
+      origins.push({
+        origin_key: origin,
+        amount: amount == null ? 0 : amount / 100
+      });
     }
     valid = valid && sum === cents(movement?.amount);
-    const update = (id, key, value) => { setSlices(previous => previous.map(row => row.id === id ? Object.assign({}, row, { [key]: value }) : row)); setError(''); };
+    const update = (id, key, value) => {
+      setSlices(previous => previous.map(row => row.id === id ? Object.assign({}, row, {
+        [key]: value
+      }) : row));
+      setError('');
+    };
     async function submit(event) {
-      event.preventDefault(); if (!valid || lock.current || window.SicofView.contextKey() !== identity) return;
-      const command = { transaction_id: transactionId, origins, allocation_version: state.data.version, reason: reason.trim() }, fingerprint = JSON.stringify(command);
-      if (!retry.current || retry.current.fingerprint !== fingerprint) retry.current = { fingerprint, key: crypto.randomUUID() };
-      lock.current = true; setBusy(true); setError('');
+      event.preventDefault();
+      if (!valid || lock.current || window.SicofView.contextKey() !== identity) return;
+      const command = {
+          transaction_id: transactionId,
+          origins,
+          allocation_version: state.data.version,
+          reason: reason.trim()
+        },
+        fingerprint = JSON.stringify(command);
+      if (!retry.current || retry.current.fingerprint !== fingerprint) retry.current = {
+        fingerprint,
+        key: crypto.randomUUID()
+      };
+      lock.current = true;
+      setBusy(true);
+      setError('');
       try {
         const action = opening ? 'attributeOpening' : 'attributeWithdrawal';
-        await window.SicofRepository[action](Object.assign({}, command, { key: retry.current.key }));
+        await window.SicofRepository[action](Object.assign({}, command, {
+          key: retry.current.key
+        }));
         if (active.current && window.SicofView.contextKey() === identity) onSaved();
       } catch (failure) {
         if (active.current && window.SicofView.contextKey() === identity) {
-          const changed = /VERSION|CHANGED|ALREADY_CLASSIFIED/.test(String(failure.code || failure.message)); setStale(changed);
+          const changed = /VERSION|CHANGED|ALREADY_CLASSIFIED/.test(String(failure.code || failure.message));
+          setStale(changed);
           setError(changed ? 'El saldo o su desglose cambi\u00f3. Recarga la composici\u00f3n y revisa los importes antes de confirmar.' : errorText(failure));
         }
-      } finally { lock.current = false; if (active.current) setBusy(false); }
+      } finally {
+        lock.current = false;
+        if (active.current) setBusy(false);
+      }
     }
-    return h(window.SicofModal, { title: 'Identificar periodos de origen', subtitle: 'La clasificaci\u00f3n documenta un movimiento existente; no abona ni retira dinero nuevamente.', onClose: () => { if (!lock.current) onClose(); } }, h('div', { className: 'sicof', 'data-sicof-attribution': transactionId },
-      state.phase === 'loading' && h('p', { role: 'status' }, 'Consultando composici\u00f3n actual\u2026'),
-      state.phase === 'error' && h('p', { role: 'alert' }, 'No fue posible consultar el saldo.', h(Button, { onClick: () => setRevision(value => value + 1) }, 'Reintentar consulta')),
-      state.phase === 'denied' && h('p', { role: 'alert' }, 'Este movimiento ya tiene una clasificaci\u00f3n o tu cuenta no tiene permiso para registrarla.'),
-      state.phase === 'ready' && h('form', { onSubmit: submit }, h('div', { className: 'sicof-metrics' }, h(Metric, { label: movement.component === 'YIELD' ? 'Rendimiento registrado' : 'Capital registrado', value: money(movement.amount), note: movement.effective_date })),
-        h('p', { className: 'sicof-period-note' }, opening ? 'Confirma s\u00f3lo cuando puedas comprobar el desglose completo. Si falta identificar una parte, cancela: el saldo inicial conserva su origen pendiente y su importe.' : 'Indica los periodos que financiaron este retiro. Puedes utilizar el saldo inicial por identificar sin atribuirle un a\u00f1o.'),
-        h('fieldset', { disabled: busy || stale, style: { border: 0, padding: 0, minWidth: 0 } }, slices.map((slice, index) => h('div', { className: 'sicof-panel', key: slice.id, style: { padding: 12 } }, h('b', null, 'Partida ' + (index + 1)),
-          !opening && h(Check, { label: 'Usar saldo inicial por identificar', checked: slice.unknown, onChange: value => update(slice.id, 'unknown', value) }),
-          h('div', { className: 'sicof-toolbar', style: { marginTop: 10 } }, !slice.unknown && h(Field, { label: 'A\u00f1o de origen ' + (index + 1) }, h('input', { type: 'number', min: 1000, max: movement.effective_date?.slice(0, 4), step: 1, required: true, value: slice.year, onChange: event => update(slice.id, 'year', event.target.value) })),
-            !slice.unknown && h(Field, { label: 'Semestre de origen ' + (index + 1) }, h('select', { 'aria-label': 'Semestre de origen ' + (index + 1), value: slice.semester, onChange: event => update(slice.id, 'semester', event.target.value) }, h('option', { value: '' }, 'A\u00f1o completo'), h('option', { value: '1' }, 'Enero a junio'), h('option', { value: '2' }, 'Julio a diciembre'))),
-            h(Field, { label: 'Importe de origen ' + (index + 1) }, h('input', { type: 'number', min: '.01', step: '.01', required: true, value: slice.amount, onChange: event => update(slice.id, 'amount', event.target.value) })),
-            h(Button, { secondary: true, onClick: () => setSlices(previous => previous.filter(row => row.id !== slice.id)) }, 'Quitar partida ' + (index + 1))))),
-          h(Button, { secondary: true, onClick: () => setSlices(previous => previous.concat({ id: crypto.randomUUID(), year: '', semester: '', amount: '', unknown: false })) }, '+ Agregar periodo'),
-          h(Field, { label: 'Motivo y evidencia del desglose' }, h('textarea', { required: true, minLength: 3, maxLength: 1000, value: reason, onChange: event => { setReason(event.target.value); setError(''); }, style: { minHeight: 75, marginTop: 12 } }))),
-        h('p', { className: 'sicof-help', role: 'status' }, 'Los importes deben sumar exactamente ' + money(movement.amount) + '. No se distribuye ning\u00fan importe autom\u00e1ticamente.'),
-        error && h('p', { className: 'sicof-status error', role: 'alert' }, error), stale && h(Button, { secondary: true, busy, onClick: () => setRevision(value => value + 1) }, 'Recargar composici\u00f3n'),
-        h('div', { className: 'sicof-actions', style: { gap: 10 } }, h(Button, { secondary: true, busy, onClick: onClose }, 'Cancelar'), h(Button, { type: 'submit', busy: busy || !valid }, busy ? 'Guardando\u2026' : 'Confirmar clasificaci\u00f3n')))));
+    return h(window.SicofModal, {
+      title: 'Identificar periodos de origen',
+      subtitle: 'La clasificaci\u00f3n documenta un movimiento existente; no abona ni retira dinero nuevamente.',
+      onClose: () => {
+        if (!lock.current) onClose();
+      }
+    }, h('div', {
+      className: 'sicof',
+      'data-sicof-attribution': transactionId
+    }, state.phase === 'loading' && h('p', {
+      role: 'status'
+    }, 'Consultando composici\u00f3n actual\u2026'), state.phase === 'error' && h('p', {
+      role: 'alert'
+    }, 'No fue posible consultar el saldo.', h(Button, {
+      onClick: () => setRevision(value => value + 1)
+    }, 'Reintentar consulta')), state.phase === 'denied' && h('p', {
+      role: 'alert'
+    }, 'Este movimiento ya tiene una clasificaci\u00f3n o tu cuenta no tiene permiso para registrarla.'), state.phase === 'ready' && h('form', {
+      onSubmit: submit
+    }, h('div', {
+      className: 'sicof-metrics'
+    }, h(Metric, {
+      label: movement.component === 'YIELD' ? 'Rendimiento registrado' : 'Capital registrado',
+      value: money(movement.amount),
+      note: movement.effective_date
+    })), h('p', {
+      className: 'sicof-period-note'
+    }, opening ? 'Confirma s\u00f3lo cuando puedas comprobar el desglose completo. Si falta identificar una parte, cancela: el saldo inicial conserva su origen pendiente y su importe.' : 'Indica los periodos que financiaron este retiro. Puedes utilizar el saldo inicial por identificar sin atribuirle un a\u00f1o.'), h('fieldset', {
+      disabled: busy || stale,
+      style: {
+        border: 0,
+        padding: 0,
+        minWidth: 0
+      }
+    }, slices.map((slice, index) => h('div', {
+      className: 'sicof-panel',
+      key: slice.id,
+      style: {
+        padding: 12
+      }
+    }, h('b', null, 'Partida ' + (index + 1)), !opening && h(Check, {
+      label: 'Usar saldo inicial por identificar',
+      checked: slice.unknown,
+      onChange: value => update(slice.id, 'unknown', value)
+    }), h('div', {
+      className: 'sicof-toolbar',
+      style: {
+        marginTop: 10
+      }
+    }, !slice.unknown && h(Field, {
+      label: 'A\u00f1o de origen ' + (index + 1)
+    }, h('input', {
+      type: 'number',
+      min: 1000,
+      max: movement.effective_date?.slice(0, 4),
+      step: 1,
+      required: true,
+      value: slice.year,
+      onChange: event => update(slice.id, 'year', event.target.value)
+    })), !slice.unknown && h(Field, {
+      label: 'Semestre de origen ' + (index + 1)
+    }, h('select', {
+      'aria-label': 'Semestre de origen ' + (index + 1),
+      value: slice.semester,
+      onChange: event => update(slice.id, 'semester', event.target.value)
+    }, h('option', {
+      value: ''
+    }, 'A\u00f1o completo'), h('option', {
+      value: '1'
+    }, 'Enero a junio'), h('option', {
+      value: '2'
+    }, 'Julio a diciembre'))), h(Field, {
+      label: 'Importe de origen ' + (index + 1)
+    }, h('input', {
+      type: 'number',
+      min: '.01',
+      step: '.01',
+      required: true,
+      value: slice.amount,
+      onChange: event => update(slice.id, 'amount', event.target.value)
+    })), h(Button, {
+      secondary: true,
+      onClick: () => setSlices(previous => previous.filter(row => row.id !== slice.id))
+    }, 'Quitar partida ' + (index + 1))))), h(Button, {
+      secondary: true,
+      onClick: () => setSlices(previous => previous.concat({
+        id: crypto.randomUUID(),
+        year: '',
+        semester: '',
+        amount: '',
+        unknown: false
+      }))
+    }, '+ Agregar periodo'), h(Field, {
+      label: 'Motivo y evidencia del desglose'
+    }, h('textarea', {
+      required: true,
+      minLength: 3,
+      maxLength: 1000,
+      value: reason,
+      onChange: event => {
+        setReason(event.target.value);
+        setError('');
+      },
+      style: {
+        minHeight: 75,
+        marginTop: 12
+      }
+    }))), h('p', {
+      className: 'sicof-help',
+      role: 'status'
+    }, 'Los importes deben sumar exactamente ' + money(movement.amount) + '. No se distribuye ning\u00fan importe autom\u00e1ticamente.'), error && h('p', {
+      className: 'sicof-status error',
+      role: 'alert'
+    }, error), stale && h(Button, {
+      secondary: true,
+      busy,
+      onClick: () => setRevision(value => value + 1)
+    }, 'Recargar composici\u00f3n'), h('div', {
+      className: 'sicof-actions',
+      style: {
+        gap: 10
+      }
+    }, h(Button, {
+      secondary: true,
+      busy,
+      onClick: onClose
+    }, 'Cancelar'), h(Button, {
+      type: 'submit',
+      busy: busy || !valid
+    }, busy ? 'Guardando\u2026' : 'Confirmar clasificaci\u00f3n')))));
   }
-  function Workbench({ app, onBack, header, identity, initialResponse, fileSession, onReplaceFile }) {
+  function Workbench({
+    app,
+    onBack,
+    header,
+    identity,
+    initialResponse,
+    fileSession,
+    onReplaceFile
+  }) {
     const fileMode = Boolean(fileSession);
-    const [settings, setSettings] = React.useState(() => fileSession?.settings || draftSettings()), [costs, setCosts] = React.useState([]), [bank, setBank] = React.useState({ amount: null, declaredBy: '', date: '' });
-    const [fileMetadata, setFileMetadata] = React.useState(fileSession?.metadata || null), [fileFunds, setFileFunds] = React.useState([]);
-    const [data, setData] = React.useState(null), [phase, setPhase] = React.useState('loading'), [loadError, setLoadError] = React.useState(''), [revision, setRevision] = React.useState(0);
-    const [storedResult, setResult] = React.useState(null), [calculation, setCalculation] = React.useState('idle'), [calculationError, setCalculationError] = React.useState('');
+    const [settings, setSettings] = React.useState(() => fileSession?.settings || draftSettings()),
+      [costs, setCosts] = React.useState([]),
+      [bank, setBank] = React.useState({
+        amount: null,
+        declaredBy: '',
+        date: ''
+      });
+    const [fileMetadata, setFileMetadata] = React.useState(fileSession?.metadata || null),
+      [fileFunds, setFileFunds] = React.useState([]);
+    const [data, setData] = React.useState(null),
+      [phase, setPhase] = React.useState('loading'),
+      [loadError, setLoadError] = React.useState(''),
+      [revision, setRevision] = React.useState(0);
+    const [storedResult, setResult] = React.useState(null),
+      [calculation, setCalculation] = React.useState('idle'),
+      [calculationError, setCalculationError] = React.useState('');
     const [appliedKey, setAppliedKey] = React.useState(null);
     const [sourceClock, setSourceClock] = React.useState(Date.now);
     const sourceExpiry = Date.parse(data?.source?.expires_at || '');
@@ -1711,74 +3204,233 @@
       const timer = setTimeout(() => setSourceClock(Date.now()), Math.max(0, sourceExpiry - Date.now()) + 10);
       return () => clearTimeout(timer);
     }, [sourceExpiry]);
-    const draftKey = JSON.stringify({ settings, costs, bank });
+    const draftKey = JSON.stringify({
+      settings,
+      costs,
+      bank
+    });
     const draftPending = appliedKey !== null && draftKey !== appliedKey;
     const result = draftPending ? null : storedResult;
-    const [tab, setTab] = React.useState('resumen'), [order, setOrder] = React.useState(TABS.map(item => item.id)), [texts, setTexts] = React.useState({}), [editing, setEditing] = React.useState(null);
-    const [busy, setBusy] = React.useState(''), [notice, setNotice] = React.useState(null), [detail, setDetail] = React.useState(null), [loan, setLoan] = React.useState(null), [attribution, setAttribution] = React.useState(null), [search, setSearch] = React.useState('');
-    const [paymentFilter, setPaymentFilter] = React.useState({ funds: null, q: '', from: '', to: '' }), [arrearsFilter, setArrearsFilter] = React.useState({ funds: null, q: '', severity: '' }), [matrixFilter, setMatrixFilter] = React.useState({ funds: null, q: '', year: '' }), [reportFilter, setReportFilter] = React.useState({ q: '', year: '', semester: '' });
-    const [costDraft, setCostDraft] = React.useState({ concept: '', amount: '', source: 'pool', status: 'estimated', date: '' });
-    const live = React.useRef(true), loadSequence = React.useRef(0), initialized = React.useRef(false), drag = React.useRef(null), busyRef = React.useRef(false), requestBusy = React.useRef(false);
-    const refreshSource = React.useRef(false), simulator = React.useRef(null), localSequence = React.useRef(0), appliedBasis = React.useRef(null);
+    const [tab, setTab] = React.useState('resumen'),
+      [order, setOrder] = React.useState(TABS.map(item => item.id)),
+      [texts, setTexts] = React.useState({}),
+      [editing, setEditing] = React.useState(null);
+    const [busy, setBusy] = React.useState(''),
+      [notice, setNotice] = React.useState(null),
+      [detail, setDetail] = React.useState(null),
+      [loan, setLoan] = React.useState(null),
+      [attribution, setAttribution] = React.useState(null),
+      [search, setSearch] = React.useState('');
+    const [paymentFilter, setPaymentFilter] = React.useState({
+        funds: null,
+        q: '',
+        from: '',
+        to: ''
+      }),
+      [arrearsFilter, setArrearsFilter] = React.useState({
+        funds: null,
+        q: '',
+        severity: ''
+      }),
+      [matrixFilter, setMatrixFilter] = React.useState({
+        funds: null,
+        q: '',
+        year: ''
+      }),
+      [reportFilter, setReportFilter] = React.useState({
+        q: '',
+        year: '',
+        semester: ''
+      });
+    const [costDraft, setCostDraft] = React.useState({
+      concept: '',
+      amount: '',
+      source: 'pool',
+      status: 'estimated',
+      date: ''
+    });
+    const live = React.useRef(true),
+      loadSequence = React.useRef(0),
+      initialized = React.useRef(false),
+      drag = React.useRef(null),
+      busyRef = React.useRef(false),
+      requestBusy = React.useRef(false);
+    const refreshSource = React.useRef(false),
+      simulator = React.useRef(null),
+      localSequence = React.useRef(0),
+      appliedBasis = React.useRef(null);
     const [simulationReady, setSimulationReady] = React.useState(false);
-    const currentDraft = React.useRef(draftKey); currentDraft.current = draftKey;
-    const latestInput = React.useRef(null); latestInput.current = { settings, costs, bank };
+    const currentDraft = React.useRef(draftKey);
+    currentDraft.current = draftKey;
+    const latestInput = React.useRef(null);
+    latestInput.current = {
+      settings,
+      costs,
+      bank
+    };
     const automaticFilters = Boolean(window.SicofSimulationClient);
     const repo = () => window.SicofRepository;
     const valid = () => live.current && window.SicofView.contextKey() === identity;
     const canConfigure = Boolean(app.admin && app.admin.has('savings.config'));
     const copy = key => texts[key] || TEXTS[key];
-    const caption = value => { if (typeof value !== 'string') return value; if (CAPTION_KEYS[value]) return copy(CAPTION_KEYS[value]); const prefix = Object.keys(CAPTION_KEYS).find(text => text.endsWith(' ') && value.startsWith(text)); return prefix ? copy(CAPTION_KEYS[prefix]) + value.slice(prefix.length) : value; };
-    React.useEffect(() => () => { live.current = false; loadSequence.current++; localSequence.current++; simulator.current?.close(); }, []);
-    function refresh(forceSource = false) { if (!requestBusy.current && !busyRef.current) { refreshSource.current = forceSource === true; requestBusy.current = true; setRevision(value => value + 1); } }
+    const caption = value => {
+      if (typeof value !== 'string') return value;
+      if (CAPTION_KEYS[value]) return copy(CAPTION_KEYS[value]);
+      const prefix = Object.keys(CAPTION_KEYS).find(text => text.endsWith(' ') && value.startsWith(text));
+      return prefix ? copy(CAPTION_KEYS[prefix]) + value.slice(prefix.length) : value;
+    };
+    React.useEffect(() => () => {
+      live.current = false;
+      loadSequence.current++;
+      localSequence.current++;
+      simulator.current?.close();
+    }, []);
+    function refresh(forceSource = false) {
+      if (!requestBusy.current && !busyRef.current) {
+        refreshSource.current = forceSource === true;
+        requestBusy.current = true;
+        setRevision(value => value + 1);
+      }
+    }
     React.useEffect(() => {
-      const sequence = ++loadSequence.current; localSequence.current++; simulator.current?.close(); simulator.current = null; appliedBasis.current = null; setSimulationReady(false); setPhase('loading'); setLoadError(''); setData(null); setResult(null); setDetail(null); setLoan(null);
-      requestBusy.current = true; setCalculation('loading'); setCalculationError('');
-      const command = latestInput.current, commandKey = JSON.stringify(command);
-      const forceSource = refreshSource.current; refreshSource.current = false;
-      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => fileMode ? (revision === 0 ? initialResponse : window.SicofFileRepository.prepare(fileSession.file, fileSession.settings)) : repo().workspace({ ...command, compact: true, ...(automaticFilters ? { simulation: true } : {}), ...(forceSource ? { refresh_source: true } : {}) })), forceSource ? 75000 : 45000).then(expandWorkspace).then(response => {
+      const sequence = ++loadSequence.current;
+      localSequence.current++;
+      simulator.current?.close();
+      simulator.current = null;
+      appliedBasis.current = null;
+      setSimulationReady(false);
+      setPhase('loading');
+      setLoadError('');
+      setData(null);
+      setResult(null);
+      setDetail(null);
+      setLoan(null);
+      requestBusy.current = true;
+      setCalculation('loading');
+      setCalculationError('');
+      const command = latestInput.current,
+        commandKey = JSON.stringify(command);
+      const forceSource = refreshSource.current;
+      refreshSource.current = false;
+      const timer = setTimeout(() => readWithDeadline(Promise.resolve().then(() => fileMode ? revision === 0 ? initialResponse : window.SicofFileRepository.prepare(fileSession.file, fileSession.settings) : repo().workspace({
+        ...command,
+        compact: true,
+        ...(automaticFilters ? {
+          simulation: true
+        } : {}),
+        ...(forceSource ? {
+          refresh_source: true
+        } : {})
+      })), forceSource ? 75000 : 45000).then(expandWorkspace).then(response => {
         if (!valid() || sequence !== loadSequence.current) return;
         const value = response.workspace;
         if (automaticFilters && response.simulation) {
           try {
-            const channel = window.SicofSimulationClient.create(); simulator.current = channel;
-            channel.initialize(response.simulation, value, response.result && { settings: response.result.settings, costs: response.result.costs, bank: response.result.bank }).then(() => {
+            const channel = window.SicofSimulationClient.create();
+            simulator.current = channel;
+            channel.initialize(response.simulation, value, response.result && {
+              settings: response.result.settings,
+              costs: response.result.costs,
+              bank: response.result.bank
+            }).then(() => {
               if (valid() && sequence === loadSequence.current) setSimulationReady(true);
-            }, error => { if (valid() && sequence === loadSequence.current) { channel.close(); simulator.current = null; setNotice({ level: 'error', message: errorText(error) }); } });
-          } catch (error) { setNotice({ level: 'error', message: errorText(error) }); }
+            }, error => {
+              if (valid() && sequence === loadSequence.current) {
+                channel.close();
+                simulator.current = null;
+                setNotice({
+                  level: 'error',
+                  message: errorText(error)
+                });
+              }
+            });
+          } catch (error) {
+            setNotice({
+              level: 'error',
+              message: errorText(error)
+            });
+          }
         }
-        setData(value); setPhase('ready'); if (response.file) { setFileMetadata(response.file); setFileFunds(value.funds || []); }
-        setAppliedKey(fileMode && response.result ? JSON.stringify({ settings: response.result.settings, costs: response.result.costs, bank: response.result.bank }) : commandKey); setResult(response.result); setCalculation(response.result ? 'ready' : 'error');
+        setData(value);
+        setPhase('ready');
+        if (response.file) {
+          setFileMetadata(response.file);
+          setFileFunds(value.funds || []);
+        }
+        setAppliedKey(fileMode && response.result ? JSON.stringify({
+          settings: response.result.settings,
+          costs: response.result.costs,
+          bank: response.result.bank
+        }) : commandKey);
+        setResult(response.result);
+        setCalculation(response.result ? 'ready' : 'error');
         appliedBasis.current = response.simulation?.basis || null;
         setCalculationError(response.calculation_error ? errorText(Error(response.calculation_error)) : '');
         if (!initialized.current) {
           initialized.current = true;
-          const preferences = value.preferences || {}; setTexts(preferences.texts || {});
+          const preferences = value.preferences || {};
+          setTexts(preferences.texts || {});
           if (Array.isArray(preferences.tabOrder)) setOrder([...new Set(preferences.tabOrder.concat(TABS.map(item => item.id)))].filter(id => TABS.some(item => item.id === id)));
         }
-      }, error => { if (valid() && sequence === loadSequence.current) { setPhase('error'); setCalculation('idle'); setLoadError(errorText(error)); } }).finally(() => { if (sequence === loadSequence.current) requestBusy.current = false; }), fileMode ? 0 : 200);
-      return () => { clearTimeout(timer); loadSequence.current++; };
+      }, error => {
+        if (valid() && sequence === loadSequence.current) {
+          setPhase('error');
+          setCalculation('idle');
+          setLoadError(errorText(error));
+        }
+      }).finally(() => {
+        if (sequence === loadSequence.current) requestBusy.current = false;
+      }), fileMode ? 0 : 200);
+      return () => {
+        clearTimeout(timer);
+        loadSequence.current++;
+      };
       // Local draft edits use the worker below; only context changes reload sources.
     }, [revision, identity]);
-    React.useEffect(() => { if (draftPending) setDetail(null); }, [draftKey, draftPending]);
+    React.useEffect(() => {
+      if (draftPending) setDetail(null);
+    }, [draftKey, draftPending]);
     function applyCalculation() {
       if (!simulator.current || !simulationReady || !simulator.current.supports(settings)) {
-        if (fileMode) { setCalculation('error'); setCalculationError('Este cambio requiere otra base: conserva el inicio y el corte de ahorro observado, y elige fechas y fondos incluidos en el archivo. Para otro periodo o más fondos, pulsa Cargar otro archivo.'); }
-        else refresh(); return;
+        if (fileMode) {
+          setCalculation('error');
+          setCalculationError('Este cambio requiere otra base: conserva el inicio y el corte de ahorro observado, y elige fechas y fondos incluidos en el archivo. Para otro periodo o más fondos, pulsa Cargar otro archivo.');
+        } else refresh();
+        return;
       }
-      const sequence = ++localSequence.current, command = { settings, costs, bank }, commandKey = JSON.stringify(command), channel = simulator.current;
-      setCalculation('loading'); setCalculationError('');
+      const sequence = ++localSequence.current,
+        command = {
+          settings,
+          costs,
+          bank
+        },
+        commandKey = JSON.stringify(command),
+        channel = simulator.current;
+      setCalculation('loading');
+      setCalculationError('');
       channel.calculate(command).then(response => {
         if (!valid() || sequence !== localSequence.current || channel !== simulator.current || currentDraft.current !== commandKey) return;
-        setData(previous => ({ ...previous, ...response.workspace })); setResult(response.result); setAppliedKey(commandKey); appliedBasis.current = response.basis;
-        setCalculation('ready'); setCalculationError('');
+        setData(previous => ({
+          ...previous,
+          ...response.workspace
+        }));
+        setResult(response.result);
+        setAppliedKey(commandKey);
+        appliedBasis.current = response.basis;
+        setCalculation('ready');
+        setCalculationError('');
       }, error => {
-        if (valid() && sequence === localSequence.current && channel === simulator.current && currentDraft.current === commandKey) { setCalculation('error'); setCalculationError(errorText(error)); }
+        if (valid() && sequence === localSequence.current && channel === simulator.current && currentDraft.current === commandKey) {
+          setCalculation('error');
+          setCalculationError(errorText(error));
+        }
       });
     }
     React.useEffect(() => {
       if (phase === 'ready' && !draftPending && storedResult && calculation !== 'ready') {
-        localSequence.current++; setCalculation('ready'); setCalculationError('');
+        localSequence.current++;
+        setCalculation('ready');
+        setCalculationError('');
       }
     }, [draftKey, appliedKey, phase]);
     React.useLayoutEffect(() => {
@@ -1788,186 +3440,1658 @@
       // server read. A range absent from this context needs one explicit load.
       if (simulator.current && !simulationReady) return;
       if (!simulationReady) return;
-      if (fileMode) { applyCalculation(); return () => { localSequence.current++; }; }
+      if (fileMode) {
+        applyCalculation();
+        return () => {
+          localSequence.current++;
+        };
+      }
       const timer = setTimeout(applyCalculation, 60);
-      return () => { clearTimeout(timer); localSequence.current++; };
+      return () => {
+        clearTimeout(timer);
+        localSequence.current++;
+      };
     }, [draftKey, appliedKey, phase, simulationReady, sourceExpired, busy]);
-
-    function change(key, value) { setSettings(previous => Object.assign({}, previous, { [key]: value })); setNotice(null); }
+    function change(key, value) {
+      setSettings(previous => Object.assign({}, previous, {
+        [key]: value
+      }));
+      setNotice(null);
+    }
     async function operation(name, action, after) {
       if (busyRef.current) return;
-      busyRef.current = true; setBusy(name); setNotice(null);
-      try { const response = await action(); if (!valid()) return; if (after) after(response); }
-      catch (error) { if (valid()) setNotice({ level: 'error', message: errorText(error) }); }
-      finally { busyRef.current = false; if (valid()) setBusy(''); }
+      busyRef.current = true;
+      setBusy(name);
+      setNotice(null);
+      try {
+        const response = await action();
+        if (!valid()) return;
+        if (after) after(response);
+      } catch (error) {
+        if (valid()) setNotice({
+          level: 'error',
+          message: errorText(error)
+        });
+      } finally {
+        busyRef.current = false;
+        if (valid()) setBusy('');
+      }
     }
-    function exportHistorical() { operation('export:historical', () => repo().exportReport('final_ahorro', { filters: { historical: true } }), () => setNotice({ message: 'Informe histórico descargado con sus valores originales.' })); }
+    function exportHistorical() {
+      operation('export:historical', () => repo().exportReport('final_ahorro', {
+        filters: {
+          historical: true
+        }
+      }), () => setNotice({
+        message: 'Informe histórico descargado con sus valores originales.'
+      }));
+    }
     function exportFile(kind, filters) {
-      if (kind === 'final_ahorro') { operation('export:' + kind, () => repo().exportReport(kind, { from: settings.periodIni, to: settings.periodFin, filters: filters || {} }), () => setNotice({ message: 'Informe de ahorro generado.' })); return; }
+      if (kind === 'final_ahorro') {
+        operation('export:' + kind, () => repo().exportReport(kind, {
+          from: settings.periodIni,
+          to: settings.periodFin,
+          filters: filters || {}
+        }), () => setNotice({
+          message: 'Informe de ahorro generado.'
+        }));
+        return;
+      }
       if (!result || calculation !== 'ready') return;
-      const action = fileMode && kind === 'base_calculo' ? () => window.SicofFileRepository.exportBase(fileMetadata, settings) : () => (fileMode ? window.SicofFileRepository : repo()).exportReport(kind, { settings, costs, bank, filters: filters || {}, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}), ...(fileMode ? { file_basis: fileMetadata.basis } : {}) });
-      operation('export:' + kind, action, () => setNotice({ message: 'Informe generado con el escenario consultado.' }));
+      const action = fileMode && kind === 'base_calculo' ? () => window.SicofFileRepository.exportBase(fileMetadata, settings) : () => (fileMode ? window.SicofFileRepository : repo()).exportReport(kind, {
+        settings,
+        costs,
+        bank,
+        filters: filters || {},
+        fingerprint: result.fingerprint,
+        ...(appliedBasis.current ? {
+          simulation_basis: appliedBasis.current
+        } : {}),
+        ...(fileMode ? {
+          file_basis: fileMetadata.basis
+        } : {})
+      });
+      operation('export:' + kind, action, () => setNotice({
+        message: 'Informe generado con el escenario consultado.'
+      }));
     }
-    function saveScenario() { if (!result || sourceExpired) return; operation('scenario', () => (fileMode ? window.SicofFileRepository : repo()).saveScenario({ settings, costs, bank, fingerprint: result.fingerprint, ...(appliedBasis.current ? { simulation_basis: appliedBasis.current } : {}), ...(fileMode ? { file_basis: fileMetadata.basis } : {}) }), response => { setNotice({ message: 'Escenario guardado con sus reglas, costos y fecha de consulta.' }); if (fileMode) setData(previous => ({ ...previous, scenarios: [...(previous.scenarios || []), { id: response.id, name: 'Escenario guardado en esta sesión', settings, costs, bank, rate: result.rate, annualRate: result.annualRate, base: result.base, payTotal: result.distributed, eligible_count: result.nqual, created_at: 'Confirmado en esta sesión' }] })); else setRevision(value => value + 1); }); }
-    function savePreferences(nextTexts, nextOrder) { const invalid = preferenceError(nextTexts, nextOrder); if (invalid) { setNotice({ level: 'error', message: invalid }); return; } const overrides = textOverrides(nextTexts); operation('preferences', () => repo().savePreferences({ texts: overrides, tabOrder: nextOrder }), () => { setTexts(overrides); setOrder(nextOrder); setEditing(null); setNotice({ message: 'Presentación guardada.' }); }); }
-    function moveTab(id, target) { if (busyRef.current || id === target) return; const next = order.filter(item => item !== id); next.splice(next.indexOf(target), 0, id); savePreferences(texts, next); }
+    function saveScenario() {
+      if (!result || sourceExpired) return;
+      operation('scenario', () => (fileMode ? window.SicofFileRepository : repo()).saveScenario({
+        settings,
+        costs,
+        bank,
+        fingerprint: result.fingerprint,
+        ...(appliedBasis.current ? {
+          simulation_basis: appliedBasis.current
+        } : {}),
+        ...(fileMode ? {
+          file_basis: fileMetadata.basis
+        } : {})
+      }), response => {
+        setNotice({
+          message: 'Escenario guardado con sus reglas, costos y fecha de consulta.'
+        });
+        if (fileMode) setData(previous => ({
+          ...previous,
+          scenarios: [...(previous.scenarios || []), {
+            id: response.id,
+            name: 'Escenario guardado en esta sesión',
+            settings,
+            costs,
+            bank,
+            rate: result.rate,
+            annualRate: result.annualRate,
+            base: result.base,
+            payTotal: result.distributed,
+            eligible_count: result.nqual,
+            created_at: 'Confirmado en esta sesión'
+          }]
+        }));else setRevision(value => value + 1);
+      });
+    }
+    function savePreferences(nextTexts, nextOrder) {
+      const invalid = preferenceError(nextTexts, nextOrder);
+      if (invalid) {
+        setNotice({
+          level: 'error',
+          message: invalid
+        });
+        return;
+      }
+      const overrides = textOverrides(nextTexts);
+      operation('preferences', () => repo().savePreferences({
+        texts: overrides,
+        tabOrder: nextOrder
+      }), () => {
+        setTexts(overrides);
+        setOrder(nextOrder);
+        setEditing(null);
+        setNotice({
+          message: 'Presentación guardada.'
+        });
+      });
+    }
+    function moveTab(id, target) {
+      if (busyRef.current || id === target) return;
+      const next = order.filter(item => item !== id);
+      next.splice(next.indexOf(target), 0, id);
+      savePreferences(texts, next);
+    }
     function addCost(event) {
-      event.preventDefault(); const amount = Number(costDraft.amount);
-      if (!costDraft.concept.trim() || !Number.isFinite(amount) || amount <= 0) { setNotice({ level: 'error', message: 'Captura un concepto y un importe mayor a cero.' }); return; }
-      const cost = Object.assign({}, costDraft, { id: crypto.randomUUID(), concept: costDraft.concept.trim(), amount });
+      event.preventDefault();
+      const amount = Number(costDraft.amount);
+      if (!costDraft.concept.trim() || !Number.isFinite(amount) || amount <= 0) {
+        setNotice({
+          level: 'error',
+          message: 'Captura un concepto y un importe mayor a cero.'
+        });
+        return;
+      }
+      const cost = Object.assign({}, costDraft, {
+        id: crypto.randomUUID(),
+        concept: costDraft.concept.trim(),
+        amount
+      });
       setCosts(previous => previous.concat(cost));
-      setCostDraft(previous => Object.assign({}, previous, { concept: '', amount: '' }));
+      setCostDraft(previous => Object.assign({}, previous, {
+        concept: '',
+        amount: ''
+      }));
     }
-    const fundOptions = (fileMode ? fileFunds : data && data.funds || []).map(fund => typeof fund === 'string' ? { value: fund, label: fund } : { value: fund.id || fund.name, label: fund.name || fund.label || fund.id, note: fileMode ? undefined : 'Cobrado: ' + money(fund.collected) + ' · Proyectado pendiente: ' + money(fund.projected) + (fund.unresolved_rows ? ' · ' + fund.unresolved_rows + ' por revisar' : '') });
-    const rows = result && result.rows || [], loans = data && data.loans || [], payments = data && data.payments || [], periods = data && data.periods || [], report = data && data.report || {};
-    const yieldOptions = periods.map(period => ({ value: period.origin_key || period.period_year + '-S' + period.semester, label: period.label || period.origin_key || period.period_year + ' · semestre ' + period.semester })).filter(period => /^\d{4}(-S[12])?$/.test(period.value) && period.value.slice(0, 4) + (period.value.endsWith('-S1') ? '-06-30' : '-12-31') < settings.periodIni);
+    const fundOptions = (fileMode ? fileFunds : data && data.funds || []).map(fund => typeof fund === 'string' ? {
+      value: fund,
+      label: fund
+    } : {
+      value: fund.id || fund.name,
+      label: fund.name || fund.label || fund.id,
+      note: fileMode ? undefined : 'Cobrado: ' + money(fund.collected) + ' · Proyectado pendiente: ' + money(fund.projected) + (fund.unresolved_rows ? ' · ' + fund.unresolved_rows + ' por revisar' : '')
+    });
+    const rows = result && result.rows || [],
+      loans = data && data.loans || [],
+      payments = data && data.payments || [],
+      periods = data && data.periods || [],
+      report = data && data.report || {};
+    const yieldOptions = periods.map(period => ({
+      value: period.origin_key || period.period_year + '-S' + period.semester,
+      label: period.label || period.origin_key || period.period_year + ' · semestre ' + period.semester
+    })).filter(period => /^\d{4}(-S[12])?$/.test(period.value) && period.value.slice(0, 4) + (period.value.endsWith('-S1') ? '-06-30' : '-12-31') < settings.periodIni);
     const exportBusy = Boolean(busy) || calculation !== 'ready' || !result || sourceExpired;
-    const input = (key, type, extra) => h('input', Object.assign({ type: type || 'number', value: settings[key], 'aria-label': key, onChange: event => change(key, type === 'date' || type === 'text' ? event.target.value : event.target.value === '' ? '' : Number(event.target.value)) }, extra));
+    const input = (key, type, extra) => h('input', Object.assign({
+      type: type || 'number',
+      value: settings[key],
+      'aria-label': key,
+      onChange: event => change(key, type === 'date' || type === 'text' ? event.target.value : event.target.value === '' ? '' : Number(event.target.value))
+    }, extra));
     const reportRows = (report.rows || []).filter(row => match(row, reportFilter.q, ['name', 'folio', 'n', 'f', 'A', 'B']) && (!reportFilter.year || String(row.year || row.period_year) === reportFilter.year) && (!reportFilter.semester || String(row.semester) === reportFilter.semester));
-    const paymentColumns = [{ key: 'date', label: 'Fecha' }, { key: 'folio', label: 'Folio' }, { key: 'name', label: 'Nombre' }, { key: 'loan_id', label: 'ID' }, { key: 'fund', label: 'Fondo' }, { key: 'paid', label: 'Cuota', format: 'money' }, { key: 'capital', label: 'Capital', format: 'money' }, { key: 'interest', label: 'Interés', format: 'money' }, { key: 'fee', label: 'Gasto admón.', format: 'money' }, { key: 'audit', label: 'Auditoría' }];
-    const loanColumns = [{ key: 'folio', label: 'Folio' }, { key: 'name', label: 'Nombre' }, { key: 'id', label: 'ID' }, { key: 'fund', label: 'Fondo' }, { key: 'capital', label: 'Prestado', format: 'money' }, { key: 'total', label: 'Total contractual', format: 'money' }, { key: 'expected', label: 'Debió pagar', format: 'money' }, { key: 'paid', label: 'Pagado', format: 'money' }, { key: 'arrears', label: 'Atraso', format: 'money' }, { key: 'progress_percent', label: 'Avance', render: row => h(LoanProgress, { value: row.progress_percent }) }, { key: 'severity', label: 'Severidad', render: row => severityLabel(row.severity) }, { key: 'status', label: 'Estado' }];
-    function showPayment(row) { const item = loans.find(value => String(value.id) === String(row.loan_id) && String(value.folio) === String(row.folio)); if (item) setLoan(item); else setNotice({ level: 'error', message: 'El préstamo de este pago requiere revisión de identidad en el historial.' }); }
-    function displayMetrics(list) { return h('div', { className: 'sicof-metrics' }, (list || []).map((metric, index) => h(Metric, { key: index, label: metric.label, value: metric.format === 'money' ? money(metric.value) : metric.format === 'percent' ? percent(metric.value) : metric.value, note: metric.value == null ? 'Pendiente de conciliación' : metric.note }))); }
-    function parameters() { return h(Panel, { title: copy('parameters') },
-      h(Control, { label: 'Fuente de la bolsa', help: 'El capital recuperado y el gasto administrativo se distinguen del interés repartible.' }, h(Segment, { label: 'Fuente de la bolsa', value: settings.src, options: [['caja', 'Solo Caja de Ahorro'], ['sel', 'Fondos seleccionados'], ['todos', 'Todos']], onChange: value => change('src', value) }), settings.src === 'sel' && h('div', { style: { marginTop: 10 } }, h(Multi, { label: 'Fondos adicionales', options: fundOptions.filter(fund => fund.label !== 'Caja de Ahorro'), value: settings.selFunds, onChange: value => change('selFunds', value === null ? fundOptions.filter(fund => fund.label !== 'Caja de Ahorro').map(fund => fund.value) : value) }), h('p', { className: 'sicof-help' }, 'Caja de Ahorro siempre se incluye en esta opción.'))),
-      h('div', { className: 'sicof-control' }, h(Button, { secondary: true, style: { width: '100%', whiteSpace: 'normal' }, busy: exportBusy || data?.can_export === false, onClick: () => exportFile('base_calculo') }, busy === 'export:base_calculo' ? 'Generando Excel…' : '↓ Descargar base del cálculo (.xlsx)'), h('p', { className: 'sicof-help' }, draftPending ? 'Aplica los cambios para descargar la base del nuevo cálculo.' : 'Descarga HISTORIAL P V2, columnas A–O, de los fondos seleccionados y dentro del periodo aplicado.')),
-      h(Control, { label: '% del interés a repartir: ' + settings.pay + '%', help: 'El porcentaje no repartido permanece como reserva.' }, input('pay', 'range', { min: 0, max: 100, step: 1, 'aria-label': 'Porcentaje del interés a repartir' })),
-      h(Control, { label: 'Método de reparto' }, h(Segment, { label: 'Método de reparto', value: settings.method, options: [['avg', 'Saldo promedio por días'], ['end', 'Saldo final']], onChange: value => change('method', value) })),
-      h(Control, { label: 'Periodo del semestre' }, h('div', { className: 'sicof-date-row' }, h(Field, { label: 'Inicio' }, input('periodIni', 'date', { 'aria-label': 'Inicio del periodo' })), h(Field, { label: 'Cierre / corte' }, input('periodFin', 'date', { 'aria-label': 'Cierre del periodo' })))),
-      h(Control, { label: 'Capital que participa' }, h(Segment, { label: 'Capital que participa', value: settings.capitalBasis, options: [['all', 'Capital acumulado'], ['period', 'Aportaciones del semestre']], onChange: value => change('capitalBasis', value) })),
-      h(Control, { label: 'Rendimiento sobre rendimientos anteriores', help: 'Sólo participa el rendimiento acreditado que aún permanece en la cuenta. Su origen histórico no cambia.' }, h('select', { 'aria-label': 'Rendimientos anteriores que participan', value: settings.yieldMode, onChange: event => change('yieldMode', event.target.value), style: { width: '100%' } }, h('option', { value: 'none' }, 'No; sólo aportaciones'), h('option', { value: 'previous' }, 'Sí; semestre anterior'), h('option', { value: 'selected' }, 'Sí; periodos seleccionados')), settings.yieldMode === 'selected' && h('div', { style: { marginTop: 10 } }, h(Multi, { label: 'Periodos de rendimiento', options: yieldOptions, value: settings.yieldPeriods, onChange: value => change('yieldPeriods', value === null ? yieldOptions.map(period => period.value) : value) }))),
-      h(Control, { label: 'Meses mínimos de permanencia' }, input('minm', 'number', { min: 0, max: 24, step: 1, 'aria-label': 'Meses mínimos' }), h(Check, { label: 'Contar desde una fecha común', checked: settings.anchorOn, onChange: value => change('anchorOn', value) }), settings.anchorOn && input('anchorDate', 'date', { 'aria-label': 'Fecha común de permanencia' })),
-      h(Control, { label: 'Reglas de exclusión' }, h(Check, { label: 'Excluir ahorradores con estado Terminado', checked: settings.exterm, onChange: value => change('exterm', value) }), h(Check, { label: 'Excluir a quien no cumple los meses mínimos', checked: settings.exmin, onChange: value => change('exmin', value) })),
-      h(Control, { label: 'Cláusula 9 · Incumplimiento de descuento', help: 'Un mes vencido sin aportación de jubilado equivale a dos quincenas. Los periodos futuros no son incumplimientos.' }, h(Check, { label: 'Excluir por descuentos consecutivos faltantes', checked: settings.exConsec, onChange: value => change('exConsec', value) }), h(Field, { label: 'Quincenas consecutivas' }, input('consecN', 'number', { min: 1, max: 12, step: 1, 'aria-label': 'Quincenas consecutivas sin descuento' }))),
-      h(Control, { label: 'Cláusula 10 · Préstamo atrasado' }, h(Segment, { label: 'Efecto del préstamo atrasado', value: settings.loanEffect, options: [['retiro', 'Sólo retiene el retiro'], ['rendimiento', 'Pierde rendimiento']], onChange: value => change('loanEffect', value) }), h('div', { style: { marginTop: 10 } }, h(Segment, { label: 'Alcance de retención', value: settings.retScope, options: [['todo', 'Todo el ahorro'], ['adeudo', 'Sólo el adeudo']], onChange: value => change('retScope', value) }))),
-      h(Control, { label: 'Alerta de tasa anual (%)' }, input('warn', 'number', { min: 0, step: 1, 'aria-label': 'Umbral de alerta anual' })));
+    const paymentColumns = [{
+      key: 'date',
+      label: 'Fecha'
+    }, {
+      key: 'folio',
+      label: 'Folio'
+    }, {
+      key: 'name',
+      label: 'Nombre'
+    }, {
+      key: 'loan_id',
+      label: 'ID'
+    }, {
+      key: 'fund',
+      label: 'Fondo'
+    }, {
+      key: 'paid',
+      label: 'Cuota',
+      format: 'money'
+    }, {
+      key: 'capital',
+      label: 'Capital',
+      format: 'money'
+    }, {
+      key: 'interest',
+      label: 'Interés',
+      format: 'money'
+    }, {
+      key: 'fee',
+      label: 'Gasto admón.',
+      format: 'money'
+    }, {
+      key: 'audit',
+      label: 'Auditoría'
+    }];
+    const loanColumns = [{
+      key: 'folio',
+      label: 'Folio'
+    }, {
+      key: 'name',
+      label: 'Nombre'
+    }, {
+      key: 'id',
+      label: 'ID'
+    }, {
+      key: 'fund',
+      label: 'Fondo'
+    }, {
+      key: 'capital',
+      label: 'Prestado',
+      format: 'money'
+    }, {
+      key: 'total',
+      label: 'Total contractual',
+      format: 'money'
+    }, {
+      key: 'expected',
+      label: 'Debió pagar',
+      format: 'money'
+    }, {
+      key: 'paid',
+      label: 'Pagado',
+      format: 'money'
+    }, {
+      key: 'arrears',
+      label: 'Atraso',
+      format: 'money'
+    }, {
+      key: 'progress_percent',
+      label: 'Avance',
+      render: row => h(LoanProgress, {
+        value: row.progress_percent
+      })
+    }, {
+      key: 'severity',
+      label: 'Severidad',
+      render: row => severityLabel(row.severity)
+    }, {
+      key: 'status',
+      label: 'Estado'
+    }];
+    function showPayment(row) {
+      const item = loans.find(value => String(value.id) === String(row.loan_id) && String(value.folio) === String(row.folio));
+      if (item) setLoan(item);else setNotice({
+        level: 'error',
+        message: 'El préstamo de este pago requiere revisión de identidad en el historial.'
+      });
     }
-    function scenarios() { const list = data && data.scenarios || []; return h(Panel, { title: 'Comparador de escenarios' }, h('div', { className: 'sicof-toolbar' }, canConfigure && h(Button, { onClick: saveScenario, busy: exportBusy }, '+ Guardar escenario actual'), canConfigure && list.length > 0 && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => operation('clear-scenarios', async () => { for (const scene of list) await repo().deleteScenario(scene.id); }, () => fileMode ? setData(previous => ({ ...previous, scenarios: [] })) : setRevision(value => value + 1)) }, 'Limpiar escenarios guardados')), h(Table, { rows: list.map(scene => Object.assign({}, scene, { name: scene.name || 'Escenario ' + String(scene.created_at || '').slice(0, 10) })), columns: [
-      { key: 'name', label: 'Escenario', render: scene => h('button', { type: 'button', className: 'sicof-row-link', onClick: () => { setSettings(Object.assign(draftSettings(), scene.settings)); setCosts(scene.costs || []); setBank(scene.bank || { amount: null, declaredBy: '', date: '' }); } }, scene.name) },
-      { key: 'source', label: 'Fuente', render: scene => ({ caja: 'Solo Caja de Ahorro', todos: 'Todos', sel: 'Caja + ' + (scene.settings.selFunds || []).join(', ') })[scene.settings.src] },
-      { key: 'pay', label: '% repartir', render: scene => percent(scene.settings.pay) }, { key: 'method', label: 'Método', render: scene => scene.settings.method === 'avg' ? 'Saldo promedio por días' : 'Saldo final' },
-      { key: 'period', label: 'Periodo', render: scene => scene.settings.periodIni + ' al ' + scene.settings.periodFin }, { key: 'minm', label: 'Meses mínimos', render: scene => scene.settings.minm },
-      { key: 'rate', label: 'Tasa', format: 'percent' }, { key: 'annualRate', label: 'Tasa anual', format: 'percent' }, { key: 'base', label: 'Base', format: 'money' }, { key: 'payTotal', label: 'Reparto', format: 'money' }, { key: 'eligible_count', label: 'Elegibles' }, { key: 'created_at', label: 'Guardado' },
-      { key: 'actions', label: 'Acciones', render: scene => canConfigure && h('button', { type: 'button', className: 'sicof-row-remove', disabled: Boolean(busy), onClick: () => operation('delete-scenario', () => repo().deleteScenario(scene.id), () => fileMode ? setData(previous => ({ ...previous, scenarios: previous.scenarios.filter(item => item.id !== scene.id) })) : setRevision(value => value + 1)), 'aria-label': 'Eliminar escenario ' + scene.name }, 'Eliminar') }
-    ], empty: 'Aún no has guardado escenarios.' }), h('p', { className: 'sicof-help' }, 'Selecciona un escenario para recuperar todas sus reglas, costos y declaración bancaria. El cálculo actualizado puede cambiar si cambiaron las fuentes.')); }
+    function displayMetrics(list) {
+      return h('div', {
+        className: 'sicof-metrics'
+      }, (list || []).map((metric, index) => h(Metric, {
+        key: index,
+        label: metric.label,
+        value: metric.format === 'money' ? money(metric.value) : metric.format === 'percent' ? percent(metric.value) : metric.value,
+        note: metric.value == null ? 'Pendiente de conciliación' : metric.note
+      })));
+    }
+    function parameters() {
+      return h(Panel, {
+        title: copy('parameters')
+      }, h(Control, {
+        label: 'Fuente de la bolsa',
+        help: 'El capital recuperado y el gasto administrativo se distinguen del interés repartible.'
+      }, h(Segment, {
+        label: 'Fuente de la bolsa',
+        value: settings.src,
+        options: [['caja', 'Solo Caja de Ahorro'], ['sel', 'Fondos seleccionados'], ['todos', 'Todos']],
+        onChange: value => change('src', value)
+      }), settings.src === 'sel' && h('div', {
+        style: {
+          marginTop: 10
+        }
+      }, h(Multi, {
+        label: 'Fondos adicionales',
+        options: fundOptions.filter(fund => fund.label !== 'Caja de Ahorro'),
+        value: settings.selFunds,
+        onChange: value => change('selFunds', value === null ? fundOptions.filter(fund => fund.label !== 'Caja de Ahorro').map(fund => fund.value) : value)
+      }), h('p', {
+        className: 'sicof-help'
+      }, 'Caja de Ahorro siempre se incluye en esta opción.'))), h('div', {
+        className: 'sicof-control'
+      }, h(Button, {
+        secondary: true,
+        style: {
+          width: '100%',
+          whiteSpace: 'normal'
+        },
+        busy: exportBusy || data?.can_export === false,
+        onClick: () => exportFile('base_calculo')
+      }, busy === 'export:base_calculo' ? 'Generando Excel…' : '↓ Descargar base del cálculo (.xlsx)'), h('p', {
+        className: 'sicof-help'
+      }, draftPending ? 'Aplica los cambios para descargar la base del nuevo cálculo.' : 'Descarga HISTORIAL P V2, columnas A–O, de los fondos seleccionados y dentro del periodo aplicado.')), h(Control, {
+        label: '% del interés a repartir: ' + settings.pay + '%',
+        help: 'El porcentaje no repartido permanece como reserva.'
+      }, input('pay', 'range', {
+        min: 0,
+        max: 100,
+        step: 1,
+        'aria-label': 'Porcentaje del interés a repartir'
+      })), h(Control, {
+        label: 'Método de reparto'
+      }, h(Segment, {
+        label: 'Método de reparto',
+        value: settings.method,
+        options: [['avg', 'Saldo promedio por días'], ['end', 'Saldo final']],
+        onChange: value => change('method', value)
+      })), h(Control, {
+        label: 'Periodo del semestre'
+      }, h('div', {
+        className: 'sicof-date-row'
+      }, h(Field, {
+        label: 'Inicio'
+      }, input('periodIni', 'date', {
+        'aria-label': 'Inicio del periodo'
+      })), h(Field, {
+        label: 'Cierre / corte'
+      }, input('periodFin', 'date', {
+        'aria-label': 'Cierre del periodo'
+      })))), h(Control, {
+        label: 'Capital que participa'
+      }, h(Segment, {
+        label: 'Capital que participa',
+        value: settings.capitalBasis,
+        options: [['all', 'Capital acumulado'], ['period', 'Aportaciones del semestre']],
+        onChange: value => change('capitalBasis', value)
+      })), h(Control, {
+        label: 'Rendimiento sobre rendimientos anteriores',
+        help: 'Sólo participa el rendimiento acreditado que aún permanece en la cuenta. Su origen histórico no cambia.'
+      }, h('select', {
+        'aria-label': 'Rendimientos anteriores que participan',
+        value: settings.yieldMode,
+        onChange: event => change('yieldMode', event.target.value),
+        style: {
+          width: '100%'
+        }
+      }, h('option', {
+        value: 'none'
+      }, 'No; sólo aportaciones'), h('option', {
+        value: 'previous'
+      }, 'Sí; semestre anterior'), h('option', {
+        value: 'selected'
+      }, 'Sí; periodos seleccionados')), settings.yieldMode === 'selected' && h('div', {
+        style: {
+          marginTop: 10
+        }
+      }, h(Multi, {
+        label: 'Periodos de rendimiento',
+        options: yieldOptions,
+        value: settings.yieldPeriods,
+        onChange: value => change('yieldPeriods', value === null ? yieldOptions.map(period => period.value) : value)
+      }))), h(Control, {
+        label: 'Meses mínimos de permanencia'
+      }, input('minm', 'number', {
+        min: 0,
+        max: 24,
+        step: 1,
+        'aria-label': 'Meses mínimos'
+      }), h(Check, {
+        label: 'Contar desde una fecha común',
+        checked: settings.anchorOn,
+        onChange: value => change('anchorOn', value)
+      }), settings.anchorOn && input('anchorDate', 'date', {
+        'aria-label': 'Fecha común de permanencia'
+      })), h(Control, {
+        label: 'Reglas de exclusión'
+      }, h(Check, {
+        label: 'Excluir ahorradores con estado Terminado',
+        checked: settings.exterm,
+        onChange: value => change('exterm', value)
+      }), h(Check, {
+        label: 'Excluir a quien no cumple los meses mínimos',
+        checked: settings.exmin,
+        onChange: value => change('exmin', value)
+      })), h(Control, {
+        label: 'Cláusula 9 · Incumplimiento de descuento',
+        help: 'Un mes vencido sin aportación de jubilado equivale a dos quincenas. Los periodos futuros no son incumplimientos.'
+      }, h(Check, {
+        label: 'Excluir por descuentos consecutivos faltantes',
+        checked: settings.exConsec,
+        onChange: value => change('exConsec', value)
+      }), h(Field, {
+        label: 'Quincenas consecutivas'
+      }, input('consecN', 'number', {
+        min: 1,
+        max: 12,
+        step: 1,
+        'aria-label': 'Quincenas consecutivas sin descuento'
+      }))), h(Control, {
+        label: 'Cláusula 10 · Préstamo atrasado'
+      }, h(Segment, {
+        label: 'Efecto del préstamo atrasado',
+        value: settings.loanEffect,
+        options: [['retiro', 'Sólo retiene el retiro'], ['rendimiento', 'Pierde rendimiento']],
+        onChange: value => change('loanEffect', value)
+      }), h('div', {
+        style: {
+          marginTop: 10
+        }
+      }, h(Segment, {
+        label: 'Alcance de retención',
+        value: settings.retScope,
+        options: [['todo', 'Todo el ahorro'], ['adeudo', 'Sólo el adeudo']],
+        onChange: value => change('retScope', value)
+      }))), h(Control, {
+        label: 'Alerta de tasa anual (%)'
+      }, input('warn', 'number', {
+        min: 0,
+        step: 1,
+        'aria-label': 'Umbral de alerta anual'
+      })));
+    }
+    function scenarios() {
+      const list = data && data.scenarios || [];
+      return h(Panel, {
+        title: 'Comparador de escenarios'
+      }, h('div', {
+        className: 'sicof-toolbar'
+      }, canConfigure && h(Button, {
+        onClick: saveScenario,
+        busy: exportBusy
+      }, '+ Guardar escenario actual'), canConfigure && list.length > 0 && h(Button, {
+        secondary: true,
+        busy: Boolean(busy),
+        onClick: () => operation('clear-scenarios', async () => {
+          for (const scene of list) await repo().deleteScenario(scene.id);
+        }, () => fileMode ? setData(previous => ({
+          ...previous,
+          scenarios: []
+        })) : setRevision(value => value + 1))
+      }, 'Limpiar escenarios guardados')), h(Table, {
+        rows: list.map(scene => Object.assign({}, scene, {
+          name: scene.name || 'Escenario ' + String(scene.created_at || '').slice(0, 10)
+        })),
+        columns: [{
+          key: 'name',
+          label: 'Escenario',
+          render: scene => h('button', {
+            type: 'button',
+            className: 'sicof-row-link',
+            onClick: () => {
+              setSettings(Object.assign(draftSettings(), scene.settings));
+              setCosts(scene.costs || []);
+              setBank(scene.bank || {
+                amount: null,
+                declaredBy: '',
+                date: ''
+              });
+            }
+          }, scene.name)
+        }, {
+          key: 'source',
+          label: 'Fuente',
+          render: scene => ({
+            caja: 'Solo Caja de Ahorro',
+            todos: 'Todos',
+            sel: 'Caja + ' + (scene.settings.selFunds || []).join(', ')
+          })[scene.settings.src]
+        }, {
+          key: 'pay',
+          label: '% repartir',
+          render: scene => percent(scene.settings.pay)
+        }, {
+          key: 'method',
+          label: 'Método',
+          render: scene => scene.settings.method === 'avg' ? 'Saldo promedio por días' : 'Saldo final'
+        }, {
+          key: 'period',
+          label: 'Periodo',
+          render: scene => scene.settings.periodIni + ' al ' + scene.settings.periodFin
+        }, {
+          key: 'minm',
+          label: 'Meses mínimos',
+          render: scene => scene.settings.minm
+        }, {
+          key: 'rate',
+          label: 'Tasa',
+          format: 'percent'
+        }, {
+          key: 'annualRate',
+          label: 'Tasa anual',
+          format: 'percent'
+        }, {
+          key: 'base',
+          label: 'Base',
+          format: 'money'
+        }, {
+          key: 'payTotal',
+          label: 'Reparto',
+          format: 'money'
+        }, {
+          key: 'eligible_count',
+          label: 'Elegibles'
+        }, {
+          key: 'created_at',
+          label: 'Guardado'
+        }, {
+          key: 'actions',
+          label: 'Acciones',
+          render: scene => canConfigure && h('button', {
+            type: 'button',
+            className: 'sicof-row-remove',
+            disabled: Boolean(busy),
+            onClick: () => operation('delete-scenario', () => repo().deleteScenario(scene.id), () => fileMode ? setData(previous => ({
+              ...previous,
+              scenarios: previous.scenarios.filter(item => item.id !== scene.id)
+            })) : setRevision(value => value + 1)),
+            'aria-label': 'Eliminar escenario ' + scene.name
+          }, 'Eliminar')
+        }],
+        empty: 'Aún no has guardado escenarios.'
+      }), h('p', {
+        className: 'sicof-help'
+      }, 'Selecciona un escenario para recuperar todas sus reglas, costos y declaración bancaria. El cálculo actualizado puede cambiar si cambiaron las fuentes.'));
+    }
     function summary() {
       const pendingBasis = result && result.base === 0 && result.reviewCount > 0;
       const partialBasis = result && result.base > 0 && result.reviewCount > 0;
-      const reasonLabels = { HISTORICAL_EXPECTATION_UNVERIFIED: 'Importe histórico esperado sin evidencia', HISTORICAL_DAILY_BALANCE_UNPROVEN: 'Historia insuficiente para el saldo promedio diario', ENROLLMENT_UNVERIFIED: 'Inscripción pendiente de verificar', SOURCE_REVIEW_REQUIRED: 'Cambios de fuente pendientes de revisión', CONTRIBUTION_EVIDENCE_INCOMPLETE: 'Evidencia de aportaciones incompleta' };
-      return h(React.Fragment, null,
-      h('details', { className: 'sicof-panel sicof-executive', open: true }, h('summary', null, copy('executive')), h('div', { className: 'sicof-panel-body' }, result && (result.summary || []).length ? h('ol', null, result.summary.map((text, index) => h('li', { key: index }, text))) : h('p', { className: 'sicof-sub' }, 'Selecciona el periodo y revisa la bolsa, sus reglas y el respaldo registrado antes de guardar un escenario.'))),
-      h('div', { className: 'sicof-layout' }, parameters(), h('div', null,
-        h('div', { className: 'sicof-metrics' }, h(Metric, { primary: true, label: partialBasis ? 'Tasa del periodo · provisional' : 'Tasa del periodo', value: pendingBasis ? 'Pendiente' : percent(result && result.rate), note: pendingBasis ? 'Falta una base elegible verificable.' : partialBasis ? 'Provisional: ' + result.nqual + ' ahorradores; ' + result.reviewCount + ' pendientes.' : result && result.annualRate != null ? 'Equivalente anual: ' + percent(result.annualRate) : 'Sobre la base seleccionada' }), h(Metric, { label: 'Bolsa a repartir', value: money(result && result.pool), note: 'Después de apartados' }), h(Metric, { label: 'Interés registrado cobrado', value: money(result && result.collected), note: 'Subtotal conciliado de la hoja; por fecha de amortización.' }), h(Metric, { label: 'Interés proyectado pendiente', value: money(result && result.projected), note: 'Cuotas futuras sin pago; no incluye todo el vencido.' }), h(Metric, { label: 'Bolsa proyectada neta de costos', value: money(result && result.projectedNetPool), note: 'Incluye cobros futuros pendientes.' }), h(Metric, { label: 'Tasa proyectada sobre base confirmada', value: pendingBasis ? 'Pendiente' : percent(result && result.projectedRateOnConfirmedBase), note: partialBasis ? 'Provisional sobre la base parcial; no acredita rendimiento.' : 'Usa el ahorro confirmado; no garantiza cobro ni acredita rendimiento.' }), h(Metric, { label: 'Reserva', value: money(result && result.reserve), note: 'Reserva del escenario; no es saldo bancario.' }), h(Metric, { label: 'Base que participa', value: pendingBasis ? 'Pendiente' : money(result && result.base), note: pendingBasis ? 'Sin base verificable; no significa ahorro cero.' : partialBasis ? 'Base parcial: ' + result.nqual + ' ahorradores.' : 'Suma de las bases elegibles de Ahorro.' }), h(Metric, { label: 'Ahorradores elegibles', value: result && result.nqual }), h(Metric, { label: 'Excluidos', value: result && result.nexcl }), h(Metric, { label: 'Pendientes de revisión', value: result && result.reviewCount }), h(Metric, { label: 'Suma de rendimientos', value: pendingBasis ? 'Pendiente' : money(result && result.distributed), note: pendingBasis ? 'Pendiente de cálculo; no es rendimiento cero.' : partialBasis ? 'Simulación parcial; no es un reparto aprobado.' : result && result.reconciliation_label })), result && result.reviewReasons && result.reviewReasons.length > 0 && h('details', { className: 'sicof-explanation', 'data-sicof-evidence': true }, h('summary', null, 'Ver motivos de las cuentas pendientes'), h('p', { className: 'sicof-sub' }, 'Una cuenta puede tener varios motivos. La tabla de reparto permite revisar cada caso.'), h('ul', null, result.reviewReasons.map(item => h('li', { key: item.reason }, (reasonLabels[item.reason] || item.reason) + ': ' + item.count)))), noteList(result && result.alerts), scenarios()))); }
-    function distribution() { return h(React.Fragment, null, h('h2', null, copy('distribution')), h('p', { className: 'sicof-sub' }, copy('distributionNote')), h(Panel, null,
-      h('details', { className: 'sicof-explanation' }, h('summary', null, '¿Cómo se calcula? · Saldo promedio, rendimiento y porcentaje'), h('div', null, h('p', { className: 'sicof-sub' }, 'El promedio pondera los importes confirmados por el tiempo que permanecieron durante el mismo periodo. Cada retiro reduce la partida que le corresponde desde su fecha efectiva.'), h('div', { className: 'sicof-formula' }, h('p', null, '1. Saldo promedio = suma de saldo × días de cada intervalo / días del periodo común.'), h('p', null, '2. Tasa del periodo (%) = rendimiento distribuido / suma de bases elegibles × 100. Rendimiento individual = base individual × tasa (%) / 100, con distribución a centavos.'), h('p', null, '3. % sobre saldo = rendimiento individual / saldo elegible final × 100. Expresa la proporción individual; no sustituye la tasa del periodo.')), h(Field, { label: 'Ver un ejemplo individual' }, h('select', { value: '', 'aria-label': 'Ejemplo de cálculo por ahorrador', onChange: event => { const row = rows.find(item => String(item.f) === event.target.value); if (row) setDetail(row); } }, h('option', { value: '' }, 'Selecciona un ahorrador'), rows.map(row => h('option', { key: row.f, value: row.f }, row.n)))))),
-      h('div', { className: 'sicof-toolbar' }, h('input', { className: 'sicof-search', type: 'search', placeholder: 'Buscar nombre o folio…', 'aria-label': 'Buscar ahorrador', value: search, onChange: event => setSearch(event.target.value) }), h(Button, { gold: true, busy: exportBusy, onClick: () => exportFile('reparto_formulado', { q: search }) }, '↓ Excel formulado'), h(Button, { secondary: true, busy: exportBusy, onClick: () => exportFile('csv', { q: search }) }, 'Descargar CSV')),
-      h(Table, { rows: rows.filter(row => match(row, search, ['f', 'n'])), onRow: setDetail, columns: [{ key: 'f', label: 'Folio' }, { key: 'n', label: 'Ahorrador' }, { key: 'e', label: 'Estado' }, { key: 'months', label: 'Meses', render: row => monthsLabel(row.months) }, { key: 'endbal', label: 'Saldo al corte', format: 'money' }, { key: 'avgbal', label: 'Saldo prom.', format: 'money' }, { key: 'rend', label: 'Rendimiento', format: 'money' }, { key: 'retenido', label: 'Retenido', format: 'money' }, { key: 'total', label: 'Capital + rendimientos', format: 'money' }, { key: 'entregable', label: 'Total a entregar', format: 'money' }, { key: 'pct', label: '% s/saldo', format: 'percent' }, { key: 'ok', label: 'Califica', render: eligibilityLabel }, { key: 'motivo', label: 'Motivo' }] }))); }
-    function liquidity() { const liq = result && result.liquidity || {}; return h(React.Fragment, null,
-      h('h2', null, '① Datos que la dirección declara'), h('p', { className: 'sicof-sub' }, 'El saldo declarado conserva responsable y fecha; una declaración no equivale a conciliación bancaria.'),
-      h(Panel, null, h('div', { className: 'sicof-bank-grid' }, h(Field, { label: 'Saldo bancario del fondo de ahorro' }, h('input', { type: 'number', min: 0, step: '.01', value: bank.amount == null ? '' : bank.amount, placeholder: 'Sin saldo declarado', onChange: event => setBank(previous => Object.assign({}, previous, { amount: event.target.value === '' ? null : Number(event.target.value) })) })), h(Field, { label: 'Declarado por' }, h('input', { value: bank.declaredBy, placeholder: 'Nombre y cargo', onChange: event => setBank(previous => Object.assign({}, previous, { declaredBy: event.target.value })) })), h(Field, { label: 'Fecha de declaración' }, h('input', { type: 'date', value: bank.date, onChange: event => setBank(previous => Object.assign({}, previous, { date: event.target.value })) })))),
-      h('h2', null, '② ' + copy('liquidity')), h('p', { className: 'sicof-sub' }, copy('liquidityNote')), displayMetrics(liq.metrics), noteList(liq.notes),
-      h('div', { className: 'sicof-chart-grid' }, h(Panel, { title: 'Cobertura por escenario de retiro' }, h(Table, { rows: liq.scenarios || [], columns: [{ key: 'label', label: 'Escenario' }, { key: 'required', label: 'Requerido', format: 'money' }, { key: 'cash', label: 'Efectivo', format: 'money' }, { key: 'coverage', label: 'Cobertura con efectivo', format: 'percent' }, { key: 'portfolio', label: 'Cartera pendiente', format: 'money' }, { key: 'shortfall', label: 'Faltante', format: 'money' }, { key: 'status_label', label: 'Resultado' }] })), h(Panel, { title: 'Composición del respaldo' }, h(Donut, { values: liq.composition || [] })))); }
-    function costSection() { return h(React.Fragment, null, h('h2', null, '④ ' + copy('costs')), h('p', { className: 'sicof-sub' }, copy('costsNote')), h(Panel, null,
-      h('form', { className: 'sicof-cost-grid', onSubmit: addCost }, h(Field, { label: 'Concepto' }, h('input', { required: true, maxLength: 250, placeholder: 'Ej. Evento aniversario', value: costDraft.concept, onChange: event => setCostDraft(previous => Object.assign({}, previous, { concept: event.target.value })) })), h(Field, { label: 'Monto' }, h('input', { required: true, type: 'number', min: '.01', step: '.01', value: costDraft.amount, onChange: event => setCostDraft(previous => Object.assign({}, previous, { amount: event.target.value })) })), h(Field, { label: 'Sale de' }, h('select', { value: costDraft.source, onChange: event => setCostDraft(previous => Object.assign({}, previous, { source: event.target.value })) }, h('option', { value: 'pool' }, 'Bolsa a repartir'), h('option', { value: 'reserve' }, 'Reserva'))), h(Field, { label: 'Estado' }, h('select', { value: costDraft.status, onChange: event => setCostDraft(previous => Object.assign({}, previous, { status: event.target.value })) }, h('option', { value: 'estimated' }, 'Estimado'), h('option', { value: 'committed' }, 'Comprometido'), h('option', { value: 'paid' }, 'Pagado'))), h(Field, { label: 'Fecha' }, h('input', { type: 'date', value: costDraft.date, onChange: event => setCostDraft(previous => Object.assign({}, previous, { date: event.target.value })) })), h('button', { className: 'sicof-btn', type: 'submit' }, '+ Agregar')),
-      costs.length > 0 && h(Table, { rows: costs, columns: [{ key: 'concept', label: 'Concepto' }, { key: 'amount', label: 'Monto', format: 'money' }, { key: 'source', label: 'Origen', render: row => row.source === 'pool' ? 'Bolsa a repartir' : 'Reserva' }, { key: 'status', label: 'Estado', render: row => ({ estimated: 'Estimado', committed: 'Comprometido', paid: 'Pagado' })[row.status] }, { key: 'date', label: 'Fecha' }, { key: 'remove', label: '', render: row => h('button', { type: 'button', className: 'sicof-row-remove', 'aria-label': 'Quitar costo ' + row.concept, onClick: () => setCosts(previous => previous.filter(item => item.id !== row.id)) }, '×') }] }),
-      !costs.length && h('p', { className: 'sicof-help' }, 'Sin apartados, el escenario refleja la bolsa sin costos adicionales.'), h('div', { className: 'sicof-cost-bar' }, h('span', null, 'Total apartado: ' + money(result && result.costsTotal)), h('span', null, result && result.costsEffectLabel || 'El efecto se muestra en la tasa del escenario')),
-      h('div', { className: 'sicof-actions' }, h(Button, { busy: exportBusy, onClick: () => exportFile('acta') }, '▤ Exportar escenario (acta imprimible)')), h('p', { className: 'sicof-help', style: { textAlign: 'center' } }, 'Incluye tasa, reglas, reserva, apartados y declaración de liquidez. Exportar no acredita ni entrega rendimientos.'))); }
+      const reasonLabels = {
+        HISTORICAL_EXPECTATION_UNVERIFIED: 'Importe histórico esperado sin evidencia',
+        HISTORICAL_DAILY_BALANCE_UNPROVEN: 'Historia insuficiente para el saldo promedio diario',
+        ENROLLMENT_UNVERIFIED: 'Inscripción pendiente de verificar',
+        SOURCE_REVIEW_REQUIRED: 'Cambios de fuente pendientes de revisión',
+        CONTRIBUTION_EVIDENCE_INCOMPLETE: 'Evidencia de aportaciones incompleta'
+      };
+      return h(React.Fragment, null, h('details', {
+        className: 'sicof-panel sicof-executive',
+        open: true
+      }, h('summary', null, copy('executive')), h('div', {
+        className: 'sicof-panel-body'
+      }, result && (result.summary || []).length ? h('ol', null, result.summary.map((text, index) => h('li', {
+        key: index
+      }, text))) : h('p', {
+        className: 'sicof-sub'
+      }, 'Selecciona el periodo y revisa la bolsa, sus reglas y el respaldo registrado antes de guardar un escenario.'))), h('div', {
+        className: 'sicof-layout'
+      }, parameters(), h('div', null, h('div', {
+        className: 'sicof-metrics'
+      }, h(Metric, {
+        primary: true,
+        label: partialBasis ? 'Tasa del periodo · provisional' : 'Tasa del periodo',
+        value: pendingBasis ? 'Pendiente' : percent(result && result.rate),
+        note: pendingBasis ? 'Falta una base elegible verificable.' : partialBasis ? 'Provisional: ' + result.nqual + ' ahorradores; ' + result.reviewCount + ' pendientes.' : result && result.annualRate != null ? 'Equivalente anual: ' + percent(result.annualRate) : 'Sobre la base seleccionada'
+      }), h(Metric, {
+        label: 'Bolsa a repartir',
+        value: money(result && result.pool),
+        note: 'Después de apartados'
+      }), h(Metric, {
+        label: 'Interés registrado cobrado',
+        value: money(result && result.collected),
+        note: 'Subtotal conciliado de la hoja; por fecha de amortización.'
+      }), h(Metric, {
+        label: 'Interés proyectado pendiente',
+        value: money(result && result.projected),
+        note: 'Cuotas futuras sin pago; no incluye todo el vencido.'
+      }), h(Metric, {
+        label: 'Bolsa proyectada neta de costos',
+        value: money(result && result.projectedNetPool),
+        note: 'Incluye cobros futuros pendientes.'
+      }), h(Metric, {
+        label: 'Tasa proyectada sobre base confirmada',
+        value: pendingBasis ? 'Pendiente' : percent(result && result.projectedRateOnConfirmedBase),
+        note: partialBasis ? 'Provisional sobre la base parcial; no acredita rendimiento.' : 'Usa el ahorro confirmado; no garantiza cobro ni acredita rendimiento.'
+      }), h(Metric, {
+        label: 'Reserva',
+        value: money(result && result.reserve),
+        note: 'Reserva del escenario; no es saldo bancario.'
+      }), h(Metric, {
+        label: 'Base que participa',
+        value: pendingBasis ? 'Pendiente' : money(result && result.base),
+        note: pendingBasis ? 'Sin base verificable; no significa ahorro cero.' : partialBasis ? 'Base parcial: ' + result.nqual + ' ahorradores.' : 'Suma de las bases elegibles de Ahorro.'
+      }), h(Metric, {
+        label: 'Ahorradores elegibles',
+        value: result && result.nqual
+      }), h(Metric, {
+        label: 'Excluidos',
+        value: result && result.nexcl
+      }), h(Metric, {
+        label: 'Pendientes de revisión',
+        value: result && result.reviewCount
+      }), h(Metric, {
+        label: 'Suma de rendimientos',
+        value: pendingBasis ? 'Pendiente' : money(result && result.distributed),
+        note: pendingBasis ? 'Pendiente de cálculo; no es rendimiento cero.' : partialBasis ? 'Simulación parcial; no es un reparto aprobado.' : result && result.reconciliation_label
+      })), result && result.reviewReasons && result.reviewReasons.length > 0 && h('details', {
+        className: 'sicof-explanation',
+        'data-sicof-evidence': true
+      }, h('summary', null, 'Ver motivos de las cuentas pendientes'), h('p', {
+        className: 'sicof-sub'
+      }, 'Una cuenta puede tener varios motivos. La tabla de reparto permite revisar cada caso.'), h('ul', null, result.reviewReasons.map(item => h('li', {
+        key: item.reason
+      }, (reasonLabels[item.reason] || item.reason) + ': ' + item.count)))), noteList(result && result.alerts), scenarios())));
+    }
+    function distribution() {
+      return h(React.Fragment, null, h('h2', null, copy('distribution')), h('p', {
+        className: 'sicof-sub'
+      }, copy('distributionNote')), h(Panel, null, h('details', {
+        className: 'sicof-explanation'
+      }, h('summary', null, '¿Cómo se calcula? · Saldo promedio, rendimiento y porcentaje'), h('div', null, h('p', {
+        className: 'sicof-sub'
+      }, 'El promedio pondera los importes confirmados por el tiempo que permanecieron durante el mismo periodo. Cada retiro reduce la partida que le corresponde desde su fecha efectiva.'), h('div', {
+        className: 'sicof-formula'
+      }, h('p', null, '1. Saldo promedio = suma de saldo × días de cada intervalo / días del periodo común.'), h('p', null, '2. Tasa del periodo (%) = rendimiento distribuido / suma de bases elegibles × 100. Rendimiento individual = base individual × tasa (%) / 100, con distribución a centavos.'), h('p', null, '3. % sobre saldo = rendimiento individual / saldo elegible final × 100. Expresa la proporción individual; no sustituye la tasa del periodo.')), h(Field, {
+        label: 'Ver un ejemplo individual'
+      }, h('select', {
+        value: '',
+        'aria-label': 'Ejemplo de cálculo por ahorrador',
+        onChange: event => {
+          const row = rows.find(item => String(item.f) === event.target.value);
+          if (row) setDetail(row);
+        }
+      }, h('option', {
+        value: ''
+      }, 'Selecciona un ahorrador'), rows.map(row => h('option', {
+        key: row.f,
+        value: row.f
+      }, row.n)))))), h('div', {
+        className: 'sicof-toolbar'
+      }, h('input', {
+        className: 'sicof-search',
+        type: 'search',
+        placeholder: 'Buscar nombre o folio…',
+        'aria-label': 'Buscar ahorrador',
+        value: search,
+        onChange: event => setSearch(event.target.value)
+      }), h(Button, {
+        gold: true,
+        busy: exportBusy,
+        onClick: () => exportFile('reparto_formulado', {
+          q: search
+        })
+      }, '↓ Excel formulado'), h(Button, {
+        secondary: true,
+        busy: exportBusy,
+        onClick: () => exportFile('csv', {
+          q: search
+        })
+      }, 'Descargar CSV')), h(Table, {
+        rows: rows.filter(row => match(row, search, ['f', 'n'])),
+        onRow: setDetail,
+        columns: [{
+          key: 'f',
+          label: 'Folio'
+        }, {
+          key: 'n',
+          label: 'Ahorrador'
+        }, {
+          key: 'e',
+          label: 'Estado'
+        }, {
+          key: 'months',
+          label: 'Meses',
+          render: row => monthsLabel(row.months)
+        }, {
+          key: 'endbal',
+          label: 'Saldo al corte',
+          format: 'money'
+        }, {
+          key: 'avgbal',
+          label: 'Saldo prom.',
+          format: 'money'
+        }, {
+          key: 'rend',
+          label: 'Rendimiento',
+          format: 'money'
+        }, {
+          key: 'retenido',
+          label: 'Retenido',
+          format: 'money'
+        }, {
+          key: 'total',
+          label: 'Capital + rendimientos',
+          format: 'money'
+        }, {
+          key: 'entregable',
+          label: 'Total a entregar',
+          format: 'money'
+        }, {
+          key: 'pct',
+          label: '% s/saldo',
+          format: 'percent'
+        }, {
+          key: 'ok',
+          label: 'Califica',
+          render: eligibilityLabel
+        }, {
+          key: 'motivo',
+          label: 'Motivo'
+        }]
+      })));
+    }
+    function liquidity() {
+      const liq = result && result.liquidity || {};
+      return h(React.Fragment, null, h('h2', null, '① Datos que la dirección declara'), h('p', {
+        className: 'sicof-sub'
+      }, 'El saldo declarado conserva responsable y fecha; una declaración no equivale a conciliación bancaria.'), h(Panel, null, h('div', {
+        className: 'sicof-bank-grid'
+      }, h(Field, {
+        label: 'Saldo bancario del fondo de ahorro'
+      }, h('input', {
+        type: 'number',
+        min: 0,
+        step: '.01',
+        value: bank.amount == null ? '' : bank.amount,
+        placeholder: 'Sin saldo declarado',
+        onChange: event => setBank(previous => Object.assign({}, previous, {
+          amount: event.target.value === '' ? null : Number(event.target.value)
+        }))
+      })), h(Field, {
+        label: 'Declarado por'
+      }, h('input', {
+        value: bank.declaredBy,
+        placeholder: 'Nombre y cargo',
+        onChange: event => setBank(previous => Object.assign({}, previous, {
+          declaredBy: event.target.value
+        }))
+      })), h(Field, {
+        label: 'Fecha de declaración'
+      }, h('input', {
+        type: 'date',
+        value: bank.date,
+        onChange: event => setBank(previous => Object.assign({}, previous, {
+          date: event.target.value
+        }))
+      })))), h('h2', null, '② ' + copy('liquidity')), h('p', {
+        className: 'sicof-sub'
+      }, copy('liquidityNote')), displayMetrics(liq.metrics), noteList(liq.notes), h('div', {
+        className: 'sicof-chart-grid'
+      }, h(Panel, {
+        title: 'Cobertura por escenario de retiro'
+      }, h(Table, {
+        rows: liq.scenarios || [],
+        columns: [{
+          key: 'label',
+          label: 'Escenario'
+        }, {
+          key: 'required',
+          label: 'Requerido',
+          format: 'money'
+        }, {
+          key: 'cash',
+          label: 'Efectivo',
+          format: 'money'
+        }, {
+          key: 'coverage',
+          label: 'Cobertura con efectivo',
+          format: 'percent'
+        }, {
+          key: 'portfolio',
+          label: 'Cartera pendiente',
+          format: 'money'
+        }, {
+          key: 'shortfall',
+          label: 'Faltante',
+          format: 'money'
+        }, {
+          key: 'status_label',
+          label: 'Resultado'
+        }]
+      })), h(Panel, {
+        title: 'Composición del respaldo'
+      }, h(Donut, {
+        values: liq.composition || []
+      }))));
+    }
+    function costSection() {
+      return h(React.Fragment, null, h('h2', null, '④ ' + copy('costs')), h('p', {
+        className: 'sicof-sub'
+      }, copy('costsNote')), h(Panel, null, h('form', {
+        className: 'sicof-cost-grid',
+        onSubmit: addCost
+      }, h(Field, {
+        label: 'Concepto'
+      }, h('input', {
+        required: true,
+        maxLength: 250,
+        placeholder: 'Ej. Evento aniversario',
+        value: costDraft.concept,
+        onChange: event => setCostDraft(previous => Object.assign({}, previous, {
+          concept: event.target.value
+        }))
+      })), h(Field, {
+        label: 'Monto'
+      }, h('input', {
+        required: true,
+        type: 'number',
+        min: '.01',
+        step: '.01',
+        value: costDraft.amount,
+        onChange: event => setCostDraft(previous => Object.assign({}, previous, {
+          amount: event.target.value
+        }))
+      })), h(Field, {
+        label: 'Sale de'
+      }, h('select', {
+        value: costDraft.source,
+        onChange: event => setCostDraft(previous => Object.assign({}, previous, {
+          source: event.target.value
+        }))
+      }, h('option', {
+        value: 'pool'
+      }, 'Bolsa a repartir'), h('option', {
+        value: 'reserve'
+      }, 'Reserva'))), h(Field, {
+        label: 'Estado'
+      }, h('select', {
+        value: costDraft.status,
+        onChange: event => setCostDraft(previous => Object.assign({}, previous, {
+          status: event.target.value
+        }))
+      }, h('option', {
+        value: 'estimated'
+      }, 'Estimado'), h('option', {
+        value: 'committed'
+      }, 'Comprometido'), h('option', {
+        value: 'paid'
+      }, 'Pagado'))), h(Field, {
+        label: 'Fecha'
+      }, h('input', {
+        type: 'date',
+        value: costDraft.date,
+        onChange: event => setCostDraft(previous => Object.assign({}, previous, {
+          date: event.target.value
+        }))
+      })), h('button', {
+        className: 'sicof-btn',
+        type: 'submit'
+      }, '+ Agregar')), costs.length > 0 && h(Table, {
+        rows: costs,
+        columns: [{
+          key: 'concept',
+          label: 'Concepto'
+        }, {
+          key: 'amount',
+          label: 'Monto',
+          format: 'money'
+        }, {
+          key: 'source',
+          label: 'Origen',
+          render: row => row.source === 'pool' ? 'Bolsa a repartir' : 'Reserva'
+        }, {
+          key: 'status',
+          label: 'Estado',
+          render: row => ({
+            estimated: 'Estimado',
+            committed: 'Comprometido',
+            paid: 'Pagado'
+          })[row.status]
+        }, {
+          key: 'date',
+          label: 'Fecha'
+        }, {
+          key: 'remove',
+          label: '',
+          render: row => h('button', {
+            type: 'button',
+            className: 'sicof-row-remove',
+            'aria-label': 'Quitar costo ' + row.concept,
+            onClick: () => setCosts(previous => previous.filter(item => item.id !== row.id))
+          }, '×')
+        }]
+      }), !costs.length && h('p', {
+        className: 'sicof-help'
+      }, 'Sin apartados, el escenario refleja la bolsa sin costos adicionales.'), h('div', {
+        className: 'sicof-cost-bar'
+      }, h('span', null, 'Total apartado: ' + money(result && result.costsTotal)), h('span', null, result && result.costsEffectLabel || 'El efecto se muestra en la tasa del escenario')), h('div', {
+        className: 'sicof-actions'
+      }, h(Button, {
+        busy: exportBusy,
+        onClick: () => exportFile('acta')
+      }, '▤ Exportar escenario (acta imprimible)')), h('p', {
+        className: 'sicof-help',
+        style: {
+          textAlign: 'center'
+        }
+      }, 'Incluye tasa, reglas, reserva, apartados y declaración de liquidez. Exportar no acredita ni entrega rendimientos.')));
+    }
     function loanPayments() {
-    const filteredPayments = payments.filter(row => (paymentFilter.funds === null || paymentFilter.funds.includes(row.fund)) && (!row.date || !paymentFilter.from || row.date >= paymentFilter.from) && (!row.date || !paymentFilter.to || row.date <= paymentFilter.to) && match(row, paymentFilter.q, ['name', 'folio', 'loan_id', 'fund']));
-    const paymentMetrics = [
-      { label: 'Pagos mostrados', value: filteredPayments.length }, { label: 'Cuotas registradas', value: sumSnapshot(filteredPayments, 'paid'), format: 'money' },
-      { label: 'Capital conciliado', value: sumSnapshot(filteredPayments, 'capital'), format: 'money' }, { label: 'Interés conciliado', value: sumSnapshot(filteredPayments, 'interest'), format: 'money' },
-      { label: 'Gasto administrativo', value: sumSnapshot(filteredPayments, 'fee'), format: 'money' }, { label: 'Por revisar', value: filteredPayments.filter(row => row.audit === 'REVIEW_REQUIRED' || (row.issues || []).length).length }
-    ];
-      const charts = result && result.charts || {}; return h(React.Fragment, null,
-      h('h2', null, '③ ' + copy('loans')), h('p', { className: 'sicof-sub' }, charts.byFundNote || copy('loansNote')), h('div', { className: 'sicof-chart-grid' }, h(CaptionChart, { title: 'Recuperado vs. falta por cobrar, por fondo', type: 'stacked', rows: charts.byFund || [], series: [{ key: 'paid', label: 'Recuperado', color: '#97002c' }, { key: 'pending', label: 'Por cobrar', color: '#d2d6df' }] }), h(CaptionChart, { title: 'Recuperación acumulada en el tiempo', type: 'line', rows: charts.recovery || [], series: [{ key: 'caja', label: 'Caja de Ahorro', color: '#97002c' }, { key: 'all', label: 'Todos los fondos', color: '#9ca5b7' }] })), costSection(),
-      h('h2', null, '④·b ' + copy('paymentDetail')), h(Panel, null,
-        h('div', { className: 'sicof-toolbar' }, h(Multi, { label: 'Fondos', options: fundOptions, value: paymentFilter.funds, onChange: value => setPaymentFilter(previous => Object.assign({}, previous, { funds: value })) }), h('input', { className: 'sicof-search', type: 'search', placeholder: 'Buscar nombre, folio o ID…', 'aria-label': 'Buscar pagos', value: paymentFilter.q, onChange: event => setPaymentFilter(previous => Object.assign({}, previous, { q: event.target.value })) }), h(Field, { label: 'Desde' }, h('input', { type: 'date', value: paymentFilter.from, onChange: event => setPaymentFilter(previous => Object.assign({}, previous, { from: event.target.value })) })), h(Field, { label: 'Hasta' }, h('input', { type: 'date', value: paymentFilter.to, onChange: event => setPaymentFilter(previous => Object.assign({}, previous, { to: event.target.value })) })), h(Button, { busy: exportBusy, onClick: () => exportFile('pagos', paymentFilter) }, '↓ Descargar préstamos')),
-        h('p', { className: 'sicof-help' }, filteredPayments.length + ' pagos con los filtros seleccionados. Selecciona una fila para revisar el préstamo.'), displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? paymentMetrics : []), h(Table, { columns: paymentColumns, rows: filteredPayments, limit: 600, onRow: showPayment })));
+      const filteredPayments = payments.filter(row => (paymentFilter.funds === null || paymentFilter.funds.includes(row.fund)) && (!row.date || !paymentFilter.from || row.date >= paymentFilter.from) && (!row.date || !paymentFilter.to || row.date <= paymentFilter.to) && match(row, paymentFilter.q, ['name', 'folio', 'loan_id', 'fund']));
+      const paymentMetrics = [{
+        label: 'Pagos mostrados',
+        value: filteredPayments.length
+      }, {
+        label: 'Cuotas registradas',
+        value: sumSnapshot(filteredPayments, 'paid'),
+        format: 'money'
+      }, {
+        label: 'Capital conciliado',
+        value: sumSnapshot(filteredPayments, 'capital'),
+        format: 'money'
+      }, {
+        label: 'Interés conciliado',
+        value: sumSnapshot(filteredPayments, 'interest'),
+        format: 'money'
+      }, {
+        label: 'Gasto administrativo',
+        value: sumSnapshot(filteredPayments, 'fee'),
+        format: 'money'
+      }, {
+        label: 'Por revisar',
+        value: filteredPayments.filter(row => row.audit === 'REVIEW_REQUIRED' || (row.issues || []).length).length
+      }];
+      const charts = result && result.charts || {};
+      return h(React.Fragment, null, h('h2', null, '③ ' + copy('loans')), h('p', {
+        className: 'sicof-sub'
+      }, charts.byFundNote || copy('loansNote')), h('div', {
+        className: 'sicof-chart-grid'
+      }, h(CaptionChart, {
+        title: 'Recuperado vs. falta por cobrar, por fondo',
+        type: 'stacked',
+        rows: charts.byFund || [],
+        series: [{
+          key: 'paid',
+          label: 'Recuperado',
+          color: '#97002c'
+        }, {
+          key: 'pending',
+          label: 'Por cobrar',
+          color: '#d2d6df'
+        }]
+      }), h(CaptionChart, {
+        title: 'Recuperación acumulada en el tiempo',
+        type: 'line',
+        rows: charts.recovery || [],
+        series: [{
+          key: 'caja',
+          label: 'Caja de Ahorro',
+          color: '#97002c'
+        }, {
+          key: 'all',
+          label: 'Todos los fondos',
+          color: '#9ca5b7'
+        }]
+      })), costSection(), h('h2', null, '④·b ' + copy('paymentDetail')), h(Panel, null, h('div', {
+        className: 'sicof-toolbar'
+      }, h(Multi, {
+        label: 'Fondos',
+        options: fundOptions,
+        value: paymentFilter.funds,
+        onChange: value => setPaymentFilter(previous => Object.assign({}, previous, {
+          funds: value
+        }))
+      }), h('input', {
+        className: 'sicof-search',
+        type: 'search',
+        placeholder: 'Buscar nombre, folio o ID…',
+        'aria-label': 'Buscar pagos',
+        value: paymentFilter.q,
+        onChange: event => setPaymentFilter(previous => Object.assign({}, previous, {
+          q: event.target.value
+        }))
+      }), h(Field, {
+        label: 'Desde'
+      }, h('input', {
+        type: 'date',
+        value: paymentFilter.from,
+        onChange: event => setPaymentFilter(previous => Object.assign({}, previous, {
+          from: event.target.value
+        }))
+      })), h(Field, {
+        label: 'Hasta'
+      }, h('input', {
+        type: 'date',
+        value: paymentFilter.to,
+        onChange: event => setPaymentFilter(previous => Object.assign({}, previous, {
+          to: event.target.value
+        }))
+      })), h(Button, {
+        busy: exportBusy,
+        onClick: () => exportFile('pagos', paymentFilter)
+      }, '↓ Descargar préstamos')), h('p', {
+        className: 'sicof-help'
+      }, filteredPayments.length + ' pagos con los filtros seleccionados. Selecciona una fila para revisar el préstamo.'), displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? paymentMetrics : []), h(Table, {
+        columns: paymentColumns,
+        rows: filteredPayments,
+        limit: 600,
+        onRow: showPayment
+      })));
     }
     function arrears() {
-    const filteredArrears = loans.filter(row => row.status === 'SALDO ATRASADO' && (arrearsFilter.funds === null || arrearsFilter.funds.includes(row.fund)) && (!arrearsFilter.severity || row.severity === arrearsFilter.severity) && match(row, arrearsFilter.q, ['name', 'folio', 'id', 'fund']));
-    const overdueTotal = sumSnapshot(filteredArrears, 'arrears');
-    const arrearsMetrics = [{ label: 'Préstamos con atraso', value: filteredArrears.length }, { label: 'Atraso registrado', value: overdueTotal, format: 'money' },
-      { label: 'Adeudo promedio', value: overdueTotal == null ? null : filteredArrears.length ? overdueTotal / filteredArrears.length : 0, format: 'money' }, { label: 'Casos graves', value: filteredArrears.filter(row => row.severity === 'severe').length }];
-      return h(React.Fragment, null, h('h2', null, copy('arrears')), h('p', { className: 'sicof-sub' }, 'Se muestran importes vencidos con evidencia; los pagos futuros y las incidencias por revisar se distinguen del incumplimiento.'), h(Panel, null,
-      h('div', { className: 'sicof-toolbar' }, h(Multi, { label: 'Fondos', options: fundOptions, value: arrearsFilter.funds, onChange: value => setArrearsFilter(previous => Object.assign({}, previous, { funds: value })) }), h('input', { type: 'search', className: 'sicof-search', placeholder: 'Buscar nombre, folio o ID…', 'aria-label': 'Buscar atrasos', value: arrearsFilter.q, onChange: event => setArrearsFilter(previous => Object.assign({}, previous, { q: event.target.value })) }), h('select', { 'aria-label': 'Severidad del atraso', value: arrearsFilter.severity, onChange: event => setArrearsFilter(previous => Object.assign({}, previous, { severity: event.target.value })) }, h('option', { value: '' }, 'Todas las severidades'), h('option', { value: 'mild' }, 'Leve'), h('option', { value: 'moderate' }, 'Moderado'), h('option', { value: 'severe' }, 'Grave')), h(Button, { busy: exportBusy, onClick: () => exportFile('atrasos', arrearsFilter) }, '↓ Descargar atrasos')),
-      displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? arrearsMetrics : []), h(Table, { rows: filteredArrears, columns: loanColumns, onRow: setLoan })));
+      const filteredArrears = loans.filter(row => row.status === 'SALDO ATRASADO' && (arrearsFilter.funds === null || arrearsFilter.funds.includes(row.fund)) && (!arrearsFilter.severity || row.severity === arrearsFilter.severity) && match(row, arrearsFilter.q, ['name', 'folio', 'id', 'fund']));
+      const overdueTotal = sumSnapshot(filteredArrears, 'arrears');
+      const arrearsMetrics = [{
+        label: 'Préstamos con atraso',
+        value: filteredArrears.length
+      }, {
+        label: 'Atraso registrado',
+        value: overdueTotal,
+        format: 'money'
+      }, {
+        label: 'Adeudo promedio',
+        value: overdueTotal == null ? null : filteredArrears.length ? overdueTotal / filteredArrears.length : 0,
+        format: 'money'
+      }, {
+        label: 'Casos graves',
+        value: filteredArrears.filter(row => row.severity === 'severe').length
+      }];
+      return h(React.Fragment, null, h('h2', null, copy('arrears')), h('p', {
+        className: 'sicof-sub'
+      }, 'Se muestran importes vencidos con evidencia; los pagos futuros y las incidencias por revisar se distinguen del incumplimiento.'), h(Panel, null, h('div', {
+        className: 'sicof-toolbar'
+      }, h(Multi, {
+        label: 'Fondos',
+        options: fundOptions,
+        value: arrearsFilter.funds,
+        onChange: value => setArrearsFilter(previous => Object.assign({}, previous, {
+          funds: value
+        }))
+      }), h('input', {
+        type: 'search',
+        className: 'sicof-search',
+        placeholder: 'Buscar nombre, folio o ID…',
+        'aria-label': 'Buscar atrasos',
+        value: arrearsFilter.q,
+        onChange: event => setArrearsFilter(previous => Object.assign({}, previous, {
+          q: event.target.value
+        }))
+      }), h('select', {
+        'aria-label': 'Severidad del atraso',
+        value: arrearsFilter.severity,
+        onChange: event => setArrearsFilter(previous => Object.assign({}, previous, {
+          severity: event.target.value
+        }))
+      }, h('option', {
+        value: ''
+      }, 'Todas las severidades'), h('option', {
+        value: 'mild'
+      }, 'Leve'), h('option', {
+        value: 'moderate'
+      }, 'Moderado'), h('option', {
+        value: 'severe'
+      }, 'Grave')), h(Button, {
+        busy: exportBusy,
+        onClick: () => exportFile('atrasos', arrearsFilter)
+      }, '↓ Descargar atrasos')), displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? arrearsMetrics : []), h(Table, {
+        rows: filteredArrears,
+        columns: loanColumns,
+        onRow: setLoan
+      })));
     }
     function matrix() {
-    const filteredMatrix = loans.filter(row => (matrixFilter.funds === null || matrixFilter.funds.includes(row.fund)) && match(row, matrixFilter.q, ['name', 'folio', 'id', 'fund']) && (!matrixFilter.year || (row.schedule || []).some(item => !item.date || String(item.date).slice(0, 4) === matrixFilter.year)));
-    const matrixDates = [...new Set(filteredMatrix.flatMap(row => (row.schedule || []).filter(item => !matrixFilter.year || String(item.date).slice(0, 4) === matrixFilter.year).map(item => item.date).filter(Boolean)))].sort();
-    const matrixEntries = filteredMatrix.flatMap(row => (row.schedule || []).filter(item => !matrixFilter.year || !item.date || String(item.date).slice(0, 4) === matrixFilter.year).map(item => Object.assign({}, item, { matrix_identity: row.id + ':' + row.folio })));
-    const matrixHasDuplicates = new Set(matrixEntries.map(row => row.matrix_identity + ':' + row.date)).size !== matrixEntries.length;
-    const matrixMetrics = [{ label: 'Préstamos', value: filteredMatrix.length }, { label: 'Fechas de pago', value: matrixDates.length },
-      ...[['paid', 'Cuotas registradas'], ['capital', 'Capital'], ['interest', 'Interés'], ['fee', 'Gasto administrativo']].map(([key, label]) => ({ label, value: matrixHasDuplicates ? null : sumSnapshot(matrixEntries, key), format: 'money' }))];
-    const matrixByDate = new Map(); for (const entry of matrixEntries) { if (!matrixByDate.has(entry.date)) matrixByDate.set(entry.date, []); matrixByDate.get(entry.date).push(entry); }
-    const matrixTotals = matrixDates.map(date => { const entries = matrixByDate.get(date) || [], unique = new Set(entries.map(row => row.matrix_identity)); return { date, ...Object.fromEntries(['paid', 'capital', 'interest', 'fee'].map(key => [key, unique.size < entries.length ? null : sumSnapshot(entries, key)])) }; });
-      const years = [...new Set(loans.flatMap(item => (item.schedule || []).map(row => String(row.date).slice(0, 4))))].sort().reverse(); return h(React.Fragment, null, h('h2', null, copy('matrix')), h('p', { className: 'sicof-sub' }, 'Matriz consolidada por préstamo y fecha: cuota, capital, interés y gasto administrativo.'), h(Panel, null,
-      h('div', { className: 'sicof-toolbar' }, h(Multi, { label: 'Fondos', options: fundOptions, value: matrixFilter.funds, onChange: value => setMatrixFilter(previous => Object.assign({}, previous, { funds: value })) }), h('select', { 'aria-label': 'Año del reporte de préstamos', value: matrixFilter.year, onChange: event => setMatrixFilter(previous => Object.assign({}, previous, { year: event.target.value })) }, h('option', { value: '' }, 'Todos los años'), years.map(year => h('option', { value: year, key: year }, year))), h('input', { type: 'search', className: 'sicof-search', 'aria-label': 'Buscar reporte de préstamos', placeholder: 'Buscar nombre, folio o ID…', value: matrixFilter.q, onChange: event => setMatrixFilter(previous => Object.assign({}, previous, { q: event.target.value })) }), h(Button, { busy: exportBusy, onClick: () => exportFile('matriz', matrixFilter) }, '↓ Descargar Excel'), h(Button, { secondary: true, busy: exportBusy, onClick: () => exportFile('matriz_fondos', matrixFilter) }, '↓ Excel por fondo')),
-      displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? matrixMetrics : []),
-      h('div', { className: 'sicof-table-scroll' }, h('table', { className: 'sicof-table' }, h('thead', null, h('tr', null, ['ID', 'Folio', 'Nombre', 'Fondo', 'Proceso', 'Estado', 'Prestado', 'Tasa quincenal', 'Plazo', 'Total', 'Cargos totales registrados', 'Capital + interés contractual', 'Interés total', 'Gasto admón. total', 'Inicio descuento', 'Fin descuento', 'Transferencia', 'Fecha descuento', 'Solicitud'].map(text => h('th', { key: text, rowSpan: 2 }, text)), matrixDates.map(date => h('th', { key: date, colSpan: 4, style: { textAlign: 'center' } }, date))), h('tr', null, matrixDates.flatMap(date => ['Cuota', 'Capital', 'Interés', 'Gasto admón.'].map(label => h('th', { key: date + label, className: 'number' }, label))))), h('tbody', null, filteredMatrix.slice(0, 100).map(item => h('tr', { key: item.id + ':' + item.folio, 'data-clickable': true, tabIndex: 0, onClick: () => setLoan(item), onKeyDown: event => { if (['Enter', ' '].includes(event.key)) { event.preventDefault(); setLoan(item); } } }, [item.id, item.folio, item.name, item.fund, item.process, item.status, money(item.capital), percent(item.rate_percent), item.term, money(item.total), money(item.loan_charges), money(item.principal_interest_total), money(item.interest_total), money(item.admin_fee_total), item.discount_start, item.discount_end, item.transfer_date, item.discount_date, item.request_date].map((value, index) => h('td', { key: index }, value)), matrixDates.flatMap(date => { const entries = (item.schedule || []).filter(row => row.date === date), entry = entries.length === 1 ? entries[0] : null; return ['paid', 'capital', 'interest', 'fee'].map(key => h('td', { key: date + key, className: 'number' }, entries.length > 1 ? 'Por revisar' : money(entry && entry[key]))); })))), h('tfoot', null, h('tr', null, h('td', { colSpan: 19 }, 'Totales de los filtros seleccionados'), matrixTotals.flatMap(total => ['paid', 'capital', 'interest', 'fee'].map(key => h('td', { key: total.date + key, className: 'number' }, total[key] == null ? 'Por conciliar' : money(total[key]))))))), !filteredMatrix.length && h('div', { className: 'sicof-empty' }, 'No hay préstamos con estos filtros.')),
-      h('p', { className: 'sicof-help' }, 'Se muestran hasta 100 préstamos. Ambas descargas respetan los mismos filtros e incluyen todos los registros.')));
+      const filteredMatrix = loans.filter(row => (matrixFilter.funds === null || matrixFilter.funds.includes(row.fund)) && match(row, matrixFilter.q, ['name', 'folio', 'id', 'fund']) && (!matrixFilter.year || (row.schedule || []).some(item => !item.date || String(item.date).slice(0, 4) === matrixFilter.year)));
+      const matrixDates = [...new Set(filteredMatrix.flatMap(row => (row.schedule || []).filter(item => !matrixFilter.year || String(item.date).slice(0, 4) === matrixFilter.year).map(item => item.date).filter(Boolean)))].sort();
+      const matrixEntries = filteredMatrix.flatMap(row => (row.schedule || []).filter(item => !matrixFilter.year || !item.date || String(item.date).slice(0, 4) === matrixFilter.year).map(item => Object.assign({}, item, {
+        matrix_identity: row.id + ':' + row.folio
+      })));
+      const matrixHasDuplicates = new Set(matrixEntries.map(row => row.matrix_identity + ':' + row.date)).size !== matrixEntries.length;
+      const matrixMetrics = [{
+        label: 'Préstamos',
+        value: filteredMatrix.length
+      }, {
+        label: 'Fechas de pago',
+        value: matrixDates.length
+      }, ...[['paid', 'Cuotas registradas'], ['capital', 'Capital'], ['interest', 'Interés'], ['fee', 'Gasto administrativo']].map(([key, label]) => ({
+        label,
+        value: matrixHasDuplicates ? null : sumSnapshot(matrixEntries, key),
+        format: 'money'
+      }))];
+      const matrixByDate = new Map();
+      for (const entry of matrixEntries) {
+        if (!matrixByDate.has(entry.date)) matrixByDate.set(entry.date, []);
+        matrixByDate.get(entry.date).push(entry);
+      }
+      const matrixTotals = matrixDates.map(date => {
+        const entries = matrixByDate.get(date) || [],
+          unique = new Set(entries.map(row => row.matrix_identity));
+        return {
+          date,
+          ...Object.fromEntries(['paid', 'capital', 'interest', 'fee'].map(key => [key, unique.size < entries.length ? null : sumSnapshot(entries, key)]))
+        };
+      });
+      const years = [...new Set(loans.flatMap(item => (item.schedule || []).map(row => String(row.date).slice(0, 4))))].sort().reverse();
+      return h(React.Fragment, null, h('h2', null, copy('matrix')), h('p', {
+        className: 'sicof-sub'
+      }, 'Matriz consolidada por préstamo y fecha: cuota, capital, interés y gasto administrativo.'), h(Panel, null, h('div', {
+        className: 'sicof-toolbar'
+      }, h(Multi, {
+        label: 'Fondos',
+        options: fundOptions,
+        value: matrixFilter.funds,
+        onChange: value => setMatrixFilter(previous => Object.assign({}, previous, {
+          funds: value
+        }))
+      }), h('select', {
+        'aria-label': 'Año del reporte de préstamos',
+        value: matrixFilter.year,
+        onChange: event => setMatrixFilter(previous => Object.assign({}, previous, {
+          year: event.target.value
+        }))
+      }, h('option', {
+        value: ''
+      }, 'Todos los años'), years.map(year => h('option', {
+        value: year,
+        key: year
+      }, year))), h('input', {
+        type: 'search',
+        className: 'sicof-search',
+        'aria-label': 'Buscar reporte de préstamos',
+        placeholder: 'Buscar nombre, folio o ID…',
+        value: matrixFilter.q,
+        onChange: event => setMatrixFilter(previous => Object.assign({}, previous, {
+          q: event.target.value
+        }))
+      }), h(Button, {
+        busy: exportBusy,
+        onClick: () => exportFile('matriz', matrixFilter)
+      }, '↓ Descargar Excel'), h(Button, {
+        secondary: true,
+        busy: exportBusy,
+        onClick: () => exportFile('matriz_fondos', matrixFilter)
+      }, '↓ Excel por fondo')), displayMetrics(data && data.source && data.source.status !== 'UNAVAILABLE' ? matrixMetrics : []), h('div', {
+        className: 'sicof-table-scroll'
+      }, h('table', {
+        className: 'sicof-table'
+      }, h('thead', null, h('tr', null, ['ID', 'Folio', 'Nombre', 'Fondo', 'Proceso', 'Estado', 'Prestado', 'Tasa quincenal', 'Plazo', 'Total', 'Cargos totales registrados', 'Capital + interés contractual', 'Interés total', 'Gasto admón. total', 'Inicio descuento', 'Fin descuento', 'Transferencia', 'Fecha descuento', 'Solicitud'].map(text => h('th', {
+        key: text,
+        rowSpan: 2
+      }, text)), matrixDates.map(date => h('th', {
+        key: date,
+        colSpan: 4,
+        style: {
+          textAlign: 'center'
+        }
+      }, date))), h('tr', null, matrixDates.flatMap(date => ['Cuota', 'Capital', 'Interés', 'Gasto admón.'].map(label => h('th', {
+        key: date + label,
+        className: 'number'
+      }, label))))), h('tbody', null, filteredMatrix.slice(0, 100).map(item => h('tr', {
+        key: item.id + ':' + item.folio,
+        'data-clickable': true,
+        tabIndex: 0,
+        onClick: () => setLoan(item),
+        onKeyDown: event => {
+          if (['Enter', ' '].includes(event.key)) {
+            event.preventDefault();
+            setLoan(item);
+          }
+        }
+      }, [item.id, item.folio, item.name, item.fund, item.process, item.status, money(item.capital), percent(item.rate_percent), item.term, money(item.total), money(item.loan_charges), money(item.principal_interest_total), money(item.interest_total), money(item.admin_fee_total), item.discount_start, item.discount_end, item.transfer_date, item.discount_date, item.request_date].map((value, index) => h('td', {
+        key: index
+      }, value)), matrixDates.flatMap(date => {
+        const entries = (item.schedule || []).filter(row => row.date === date),
+          entry = entries.length === 1 ? entries[0] : null;
+        return ['paid', 'capital', 'interest', 'fee'].map(key => h('td', {
+          key: date + key,
+          className: 'number'
+        }, entries.length > 1 ? 'Por revisar' : money(entry && entry[key])));
+      })))), h('tfoot', null, h('tr', null, h('td', {
+        colSpan: 19
+      }, 'Totales de los filtros seleccionados'), matrixTotals.flatMap(total => ['paid', 'capital', 'interest', 'fee'].map(key => h('td', {
+        key: total.date + key,
+        className: 'number'
+      }, total[key] == null ? 'Por conciliar' : money(total[key]))))))), !filteredMatrix.length && h('div', {
+        className: 'sicof-empty'
+      }, 'No hay préstamos con estos filtros.')), h('p', {
+        className: 'sicof-help'
+      }, 'Se muestran hasta 100 préstamos. Ambas descargas respetan los mismos filtros e incluyen todos los registros.')));
     }
-    function compliance() { return h(React.Fragment, null, h('h2', null, '⑤ ' + copy('compliance')), h('p', { className: 'sicof-sub' }, 'Cada regla muestra la evidencia revisada y su aplicación en el escenario. La simulación no modifica políticas ni acreditaciones anteriores.'), h(Panel, null, h(Table, { rows: result && result.compliance || [], columns: [{ key: 'rule', label: 'Regla del reglamento' }, { key: 'requirement', label: 'Qué exige' }, { key: 'application', label: 'Cómo se aplica' }, { key: 'status', label: 'Estado' }] })));
+    function compliance() {
+      return h(React.Fragment, null, h('h2', null, '⑤ ' + copy('compliance')), h('p', {
+        className: 'sicof-sub'
+      }, 'Cada regla muestra la evidencia revisada y su aplicación en el escenario. La simulación no modifica políticas ni acreditaciones anteriores.'), h(Panel, null, h(Table, {
+        rows: result && result.compliance || [],
+        columns: [{
+          key: 'rule',
+          label: 'Regla del reglamento'
+        }, {
+          key: 'requirement',
+          label: 'Qué exige'
+        }, {
+          key: 'application',
+          label: 'Cómo se aplica'
+        }, {
+          key: 'status',
+          label: 'Estado'
+        }]
+      })));
     }
-    function savingsReport() { const years = [...new Set([settings.periodIni.slice(0, 4), ...(report.periods || periods).map(period => String(period.year || period.period_year)).filter(year => year !== 'undefined')])].sort().reverse(); return h(React.Fragment, null, h('h2', null, copy('savings')), h('p', { className: 'sicof-sub' }, copy('savingsNote')), h(Panel, null,
-      h('div', { className: 'sicof-toolbar' }, h('input', { type: 'search', className: 'sicof-search', placeholder: 'Buscar nombre o folio…', 'aria-label': 'Buscar informe de ahorro', value: reportFilter.q, onChange: event => setReportFilter(previous => Object.assign({}, previous, { q: event.target.value })) }), h('select', { value: reportFilter.year, 'aria-label': 'Año del ahorro', onChange: event => setReportFilter(previous => Object.assign({}, previous, { year: event.target.value, semester: event.target.value ? previous.semester : '' })) }, h('option', { value: '' }, 'Todos los años'), years.map(year => h('option', { key: year, value: year }, year))), h('select', { value: reportFilter.semester, 'aria-label': 'Semestre del ahorro', onChange: event => setReportFilter(previous => Object.assign({}, previous, { semester: event.target.value, year: event.target.value ? previous.year || settings.periodIni.slice(0, 4) : previous.year })) }, h('option', { value: '' }, 'Ambos semestres'), h('option', { value: '1' }, 'Enero a junio'), h('option', { value: '2' }, 'Julio a diciembre')), h(Button, { gold: true, busy: Boolean(busy) || phase !== 'ready', onClick: () => exportFile('final_ahorro', reportFilter) }, '↓ Descargar informe final de ahorro')),
-      h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy), onClick: exportHistorical }, '↓ Descargar Excel histórico original')), noteList(report.notes), h(Table, { rows: reportRows, columns: report.columns || [{ key: 'folio', label: 'Folio' }, { key: 'name', label: 'Ahorrador' }, { key: 'period_label', label: 'Periodo' }, { key: 'capital', label: 'Aportaciones', format: 'money' }, { key: 'yield', label: 'Rendimiento', format: 'money' }, { key: 'withdrawn_capital', label: 'Capital retirado', format: 'money' }, { key: 'withdrawn_yield', label: 'Rendimiento pagado', format: 'money' }, { key: 'remaining', label: 'Saldo restante', format: 'money' }, { key: 'available', label: 'Disponible', format: 'money' }], onRow: row => setDetail({ reportRow: row, participant_id: row.participant_id, n: row.name || row.n || row.B, f: row.folio || row.f || row.A, movements: row.movements, periods: row.periods }), totals: reportFilter.q || reportFilter.year || reportFilter.semester ? null : report.totals }), h('p', { className: 'sicof-help' }, 'Los retiros se atribuyen a sus partidas de origen. Un total histórico sin desglose se mantiene identificado para conciliación y no duplica el saldo actual.')));
+    function savingsReport() {
+      const years = [...new Set([settings.periodIni.slice(0, 4), ...(report.periods || periods).map(period => String(period.year || period.period_year)).filter(year => year !== 'undefined')])].sort().reverse();
+      return h(React.Fragment, null, h('h2', null, copy('savings')), h('p', {
+        className: 'sicof-sub'
+      }, copy('savingsNote')), h(Panel, null, h('div', {
+        className: 'sicof-toolbar'
+      }, h('input', {
+        type: 'search',
+        className: 'sicof-search',
+        placeholder: 'Buscar nombre o folio…',
+        'aria-label': 'Buscar informe de ahorro',
+        value: reportFilter.q,
+        onChange: event => setReportFilter(previous => Object.assign({}, previous, {
+          q: event.target.value
+        }))
+      }), h('select', {
+        value: reportFilter.year,
+        'aria-label': 'Año del ahorro',
+        onChange: event => setReportFilter(previous => Object.assign({}, previous, {
+          year: event.target.value,
+          semester: event.target.value ? previous.semester : ''
+        }))
+      }, h('option', {
+        value: ''
+      }, 'Todos los años'), years.map(year => h('option', {
+        key: year,
+        value: year
+      }, year))), h('select', {
+        value: reportFilter.semester,
+        'aria-label': 'Semestre del ahorro',
+        onChange: event => setReportFilter(previous => Object.assign({}, previous, {
+          semester: event.target.value,
+          year: event.target.value ? previous.year || settings.periodIni.slice(0, 4) : previous.year
+        }))
+      }, h('option', {
+        value: ''
+      }, 'Ambos semestres'), h('option', {
+        value: '1'
+      }, 'Enero a junio'), h('option', {
+        value: '2'
+      }, 'Julio a diciembre')), h(Button, {
+        gold: true,
+        busy: Boolean(busy) || phase !== 'ready',
+        onClick: () => exportFile('final_ahorro', reportFilter)
+      }, '↓ Descargar informe final de ahorro')), h('div', {
+        className: 'sicof-toolbar'
+      }, h(Button, {
+        secondary: true,
+        busy: Boolean(busy),
+        onClick: exportHistorical
+      }, '↓ Descargar Excel histórico original')), noteList(report.notes), h(Table, {
+        rows: reportRows,
+        columns: report.columns || [{
+          key: 'folio',
+          label: 'Folio'
+        }, {
+          key: 'name',
+          label: 'Ahorrador'
+        }, {
+          key: 'period_label',
+          label: 'Periodo'
+        }, {
+          key: 'capital',
+          label: 'Aportaciones',
+          format: 'money'
+        }, {
+          key: 'yield',
+          label: 'Rendimiento',
+          format: 'money'
+        }, {
+          key: 'withdrawn_capital',
+          label: 'Capital retirado',
+          format: 'money'
+        }, {
+          key: 'withdrawn_yield',
+          label: 'Rendimiento pagado',
+          format: 'money'
+        }, {
+          key: 'remaining',
+          label: 'Saldo restante',
+          format: 'money'
+        }, {
+          key: 'available',
+          label: 'Disponible',
+          format: 'money'
+        }],
+        onRow: row => setDetail({
+          reportRow: row,
+          participant_id: row.participant_id,
+          n: row.name || row.n || row.B,
+          f: row.folio || row.f || row.A,
+          movements: row.movements,
+          periods: row.periods
+        }),
+        totals: reportFilter.q || reportFilter.year || reportFilter.semester ? null : report.totals
+      }), h('p', {
+        className: 'sicof-help'
+      }, 'Los retiros se atribuyen a sus partidas de origen. Un total histórico sin desglose se mantiene identificado para conciliación y no duplica el saldo actual.')));
     }
     function saverDetail() {
       if (!detail || attribution) return null;
       const canonical = report.balances && report.balances[detail.participant_id];
       const componentLabel = value => value === 'CAPITAL' ? 'Ahorro' : value === 'YIELD' ? 'Rendimiento' : value || '—';
-      const typeLabel = value => ({ CONTRIBUTION: 'Aportación', WITHDRAWAL: 'Retiro', YIELD: 'Rendimiento', YIELD_CREDIT: 'Rendimiento', REGULARIZATION: 'Saldo inicial certificado', ADJUSTMENT: 'Ajuste', REVERSAL: 'Reversión' })[value] || value || '—';
-      const movementColumns = [
-        { key: 'effective_date', label: 'Fecha', render: row => row.effective_date || row.date || '—' },
-        { key: 'type', label: 'Movimiento', render: row => row.label || typeLabel(row.type) },
-        { key: 'component', label: 'Componente', render: row => row.component_label || componentLabel(row.component) },
-        { key: 'amount', label: 'Importe', format: 'money', render: row => (row.direction === 'DEBIT' ? '−' : '') + money(row.amount) },
-        { key: 'origins', label: 'Periodos de origen', render: row => (row.origins || []).length ? row.origins.map(origin => (origin.origin_key === 'OPENING' ? 'Saldo inicial por identificar' : origin.origin_key) + ': ' + money(origin.amount)).join(' · ') : row.period_label || 'Periodo por identificar' }
-      ];
-      if (app.admin.has('savings.approve') && detail.participant_id) movementColumns.push({ key: 'classify', label: 'Origen', render: row => row.can_classify ? h(Button, { secondary: true, onClick: () => setAttribution({ participantId: detail.participant_id, transactionId: row.transaction_id }) }, 'Identificar periodo') : null });
-      return h(window.SicofModal, { title: detail.n || 'Detalle del ahorrador', subtitle: 'Folio ' + detail.f, onClose: () => setDetail(null) }, h('div', { className: 'sicof' },
-        !detail.reportRow && h('p', { className: 'sicof-help' }, 'Califica: ' + eligibilityLabel(detail) + ' · Permanencia: ' + monthsLabel(detail.months) + (detail.months == null ? '' : ' meses')),
-        canonical && h('div', { className: 'sicof-metrics' }, h(Metric, { label: 'Capital actual', value: money(canonical.capital) }), h(Metric, { label: 'Rendimiento acreditado actual', value: money(canonical.yield_amount) }), h(Metric, { label: 'Saldo actual', value: money(canonical.total) }), h(Metric, { label: 'Disponible global actual', value: money(canonical.available), note: 'Consultado al ' + (canonical.observed_at || canonical.as_of || '—') + '; no se suma por periodo.' })),
-        !detail.reportRow && h('div', { className: 'sicof-metrics' }, h(Metric, { label: 'Saldo al corte', value: money(detail.endbal) }), h(Metric, { label: 'Promedio por días', value: money(detail.avgbal) }), h(Metric, { label: 'Rendimiento', value: money(detail.rend), note: detail.motivo }), h(Metric, { label: 'Retenido', value: money(detail.retenido) }), h(Metric, { label: 'Entregable', value: money(detail.entregable) })),
-        h('h3', null, 'Movimientos registrados'), h(Table, { columns: movementColumns, rows: detail.movements || [] }),
-        (detail.periods || []).length > 0 && h(React.Fragment, null, h('h3', { style: { marginTop: 20 } }, 'Aportaciones, rendimientos y retiros por periodo'), h(Table, { rows: detail.periods, columns: [
-          { key: 'origin_key', label: 'Periodo', render: row => row.origin_key === 'OPENING' ? 'Saldo inicial por identificar' : row.origin_key === 'UNALLOCATED_WITHDRAWAL' ? 'Retiro por conciliar' : row.origin_key === 'UNALLOCATED_REVERSAL' ? 'Reversión pendiente de identificar' : row.origin_key === 'UNALLOCATED_ADJUSTMENT' ? 'Ajuste por conciliar' : row.origin_key === 'UNALLOCATED_CREDIT' ? 'Ingreso por identificar' : row.origin_key },
-          { key: 'component', label: 'Componente', render: row => componentLabel(row.component) },
-          { key: 'recognized', label: 'Reconocido', format: 'money' }, { key: 'withdrawn', label: 'Retirado', format: 'money' }, { key: 'adjustments', label: 'Ajustes', format: 'money' }, { key: 'remaining', label: 'Saldo restante', format: 'money' }
-        ] })),
-        !detail.reportRow && h(React.Fragment, null, h('h3', { style: { marginTop: 20 } }, 'Desglose del cálculo por días'), h(Table, { rows: detail.calculation_steps || [], empty: 'El desglose por días requiere fechas e importes comprobados para el periodo.', columns: [
-          { key: 'date', label: 'Fecha' }, { key: 'amount', label: 'Movimiento', format: 'money' }, { key: 'balance', label: 'Saldo elegible', format: 'money' }, { key: 'days', label: 'Permanencia (días)' }, { key: 'balance_days', label: 'Saldo × días', format: 'money' }
-        ] })),
-        detail.calculation_explanation && h('p', { className: 'sicof-formula' }, detail.calculation_explanation),
-        (detail.loans || []).length > 0 && h('div', { style: { marginTop: 20 } }, h('h3', null, 'Préstamos e historial de pagos'), detail.loans.map(item => h('details', { key: item.id + ':' + item.folio, className: 'sicof-explanation' }, h('summary', null, item.fund + ' · ' + item.id + ' · ' + item.status), h('div', null, h(window.SicofLoanContent, { loan: item })))))));
+      const typeLabel = value => ({
+        CONTRIBUTION: 'Aportación',
+        WITHDRAWAL: 'Retiro',
+        YIELD: 'Rendimiento',
+        YIELD_CREDIT: 'Rendimiento',
+        REGULARIZATION: 'Saldo inicial certificado',
+        ADJUSTMENT: 'Ajuste',
+        REVERSAL: 'Reversión'
+      })[value] || value || '—';
+      const movementColumns = [{
+        key: 'effective_date',
+        label: 'Fecha',
+        render: row => row.effective_date || row.date || '—'
+      }, {
+        key: 'type',
+        label: 'Movimiento',
+        render: row => row.label || typeLabel(row.type)
+      }, {
+        key: 'component',
+        label: 'Componente',
+        render: row => row.component_label || componentLabel(row.component)
+      }, {
+        key: 'amount',
+        label: 'Importe',
+        format: 'money',
+        render: row => (row.direction === 'DEBIT' ? '−' : '') + money(row.amount)
+      }, {
+        key: 'origins',
+        label: 'Periodos de origen',
+        render: row => (row.origins || []).length ? row.origins.map(origin => (origin.origin_key === 'OPENING' ? 'Saldo inicial por identificar' : origin.origin_key) + ': ' + money(origin.amount)).join(' · ') : row.period_label || 'Periodo por identificar'
+      }];
+      if (app.admin.has('savings.approve') && detail.participant_id) movementColumns.push({
+        key: 'classify',
+        label: 'Origen',
+        render: row => row.can_classify ? h(Button, {
+          secondary: true,
+          onClick: () => setAttribution({
+            participantId: detail.participant_id,
+            transactionId: row.transaction_id
+          })
+        }, 'Identificar periodo') : null
+      });
+      return h(window.SicofModal, {
+        title: detail.n || 'Detalle del ahorrador',
+        subtitle: 'Folio ' + detail.f,
+        onClose: () => setDetail(null)
+      }, h('div', {
+        className: 'sicof'
+      }, !detail.reportRow && h('p', {
+        className: 'sicof-help'
+      }, 'Califica: ' + eligibilityLabel(detail) + ' · Permanencia: ' + monthsLabel(detail.months) + (detail.months == null ? '' : ' meses')), canonical && h('div', {
+        className: 'sicof-metrics'
+      }, h(Metric, {
+        label: 'Capital actual',
+        value: money(canonical.capital)
+      }), h(Metric, {
+        label: 'Rendimiento acreditado actual',
+        value: money(canonical.yield_amount)
+      }), h(Metric, {
+        label: 'Saldo actual',
+        value: money(canonical.total)
+      }), h(Metric, {
+        label: 'Disponible global actual',
+        value: money(canonical.available),
+        note: 'Consultado al ' + (canonical.observed_at || canonical.as_of || '—') + '; no se suma por periodo.'
+      })), !detail.reportRow && h('div', {
+        className: 'sicof-metrics'
+      }, h(Metric, {
+        label: 'Saldo al corte',
+        value: money(detail.endbal)
+      }), h(Metric, {
+        label: 'Promedio por días',
+        value: money(detail.avgbal)
+      }), h(Metric, {
+        label: 'Rendimiento',
+        value: money(detail.rend),
+        note: detail.motivo
+      }), h(Metric, {
+        label: 'Retenido',
+        value: money(detail.retenido)
+      }), h(Metric, {
+        label: 'Entregable',
+        value: money(detail.entregable)
+      })), h('h3', null, 'Movimientos registrados'), h(Table, {
+        columns: movementColumns,
+        rows: detail.movements || []
+      }), (detail.periods || []).length > 0 && h(React.Fragment, null, h('h3', {
+        style: {
+          marginTop: 20
+        }
+      }, 'Aportaciones, rendimientos y retiros por periodo'), h(Table, {
+        rows: detail.periods,
+        columns: [{
+          key: 'origin_key',
+          label: 'Periodo',
+          render: row => row.origin_key === 'OPENING' ? 'Saldo inicial por identificar' : row.origin_key === 'UNALLOCATED_WITHDRAWAL' ? 'Retiro por conciliar' : row.origin_key === 'UNALLOCATED_REVERSAL' ? 'Reversión pendiente de identificar' : row.origin_key === 'UNALLOCATED_ADJUSTMENT' ? 'Ajuste por conciliar' : row.origin_key === 'UNALLOCATED_CREDIT' ? 'Ingreso por identificar' : row.origin_key
+        }, {
+          key: 'component',
+          label: 'Componente',
+          render: row => componentLabel(row.component)
+        }, {
+          key: 'recognized',
+          label: 'Reconocido',
+          format: 'money'
+        }, {
+          key: 'withdrawn',
+          label: 'Retirado',
+          format: 'money'
+        }, {
+          key: 'adjustments',
+          label: 'Ajustes',
+          format: 'money'
+        }, {
+          key: 'remaining',
+          label: 'Saldo restante',
+          format: 'money'
+        }]
+      })), !detail.reportRow && h(React.Fragment, null, h('h3', {
+        style: {
+          marginTop: 20
+        }
+      }, 'Desglose del cálculo por días'), h(Table, {
+        rows: detail.calculation_steps || [],
+        empty: 'El desglose por días requiere fechas e importes comprobados para el periodo.',
+        columns: [{
+          key: 'date',
+          label: 'Fecha'
+        }, {
+          key: 'amount',
+          label: 'Movimiento',
+          format: 'money'
+        }, {
+          key: 'balance',
+          label: 'Saldo elegible',
+          format: 'money'
+        }, {
+          key: 'days',
+          label: 'Permanencia (días)'
+        }, {
+          key: 'balance_days',
+          label: 'Saldo × días',
+          format: 'money'
+        }]
+      })), detail.calculation_explanation && h('p', {
+        className: 'sicof-formula'
+      }, detail.calculation_explanation), (detail.loans || []).length > 0 && h('div', {
+        style: {
+          marginTop: 20
+        }
+      }, h('h3', null, 'Préstamos e historial de pagos'), detail.loans.map(item => h('details', {
+        key: item.id + ':' + item.folio,
+        className: 'sicof-explanation'
+      }, h('summary', null, item.fund + ' · ' + item.id + ' · ' + item.status), h('div', null, h(window.SicofLoanContent, {
+        loan: item
+      })))))));
     }
-    const panes = { resumen: summary, liquidez: liquidity, reparto: distribution, prestamos: loanPayments, atrasos: arrears, reporte: matrix, cumplimiento: compliance, ahorro: savingsReport };
-    return h(CaptionContext.Provider, { value: caption }, h('div', { className: 'sicof', 'data-admin-view': 'sicof', 'data-sicof-phase': phase }, h('style', null, CSS), header && header({ title: 'Sicof', sub: 'Rendimientos y seguimiento por periodo', onBack }),
-      h('div', { className: 'su-app-scroll sicof-content' },
-        h('div', { className: 'sicof-title-row' }, h('div', null, h('h1', null, copy('title')), h('p', { className: 'sicof-sub' }, copy('subtitle')), data && data.source && h('p', { className: 'sicof-source' }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) : 'Fecha no informada') + (fileMode ? ' · Escenario del archivo' : data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', { className: 'sicof-toolbar' }, h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: refresh }, fileMode ? 'Preparar de nuevo' : 'Actualizar'), h(Button, { secondary: true, busy: Boolean(busy) || phase === 'loading', onClick: fileMode ? onReplaceFile : () => refresh(true) }, fileMode ? 'Cargar otro archivo' : 'Actualizar desde Google'), h(Button, { busy: Boolean(busy) || phase === 'loading' || !draftPending, onClick: applyCalculation }, 'Aplicar y calcular'), canConfigure && h(Button, { secondary: true, busy: Boolean(busy), onClick: () => setEditing(Object.assign({}, TEXTS, texts)) }, 'Editar textos'))),
-        fileMode && fileMetadata && h('div', { className: 'sicof-period-note', style: { overflowWrap: 'anywhere' }, 'data-sicof-file': fileMetadata.sha256 }, h('strong', null, 'Archivo: ' + fileMetadata.name), h('div', null, fileMetadata.from + ' al ' + fileMetadata.to + ' · ' + (fileMetadata.funds ? fileMetadata.funds.join(', ') : 'Todos los fondos')), h('div', null, 'Archivo preparado: ' + new Date(fileMetadata.imported_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' }) + ' · Ahorro consultado: ' + new Date(fileMetadata.savings_observed_at).toLocaleString('es-MX', { timeZone: 'America/Hermosillo' })), h('div', null, 'Los filtros utilizan esta información. Para incorporar movimientos posteriores, prepara de nuevo el archivo. Para otro inicio o un cierre histórico distinto, carga otra base.')),
-        h('div', { className: 'sicof-tabs', role: 'tablist', 'aria-label': 'Secciones de Sicof' }, order.map((id, index) => h('div', { key: id, className: 'sicof-tab', 'data-active': tab === id, draggable: canConfigure && !busy, onDragStart: () => { drag.current = id; }, onDragOver: event => event.preventDefault(), onDrop: event => { event.preventDefault(); if (canConfigure && drag.current) moveTab(drag.current, id); drag.current = null; } }, h('button', { type: 'button', role: 'tab', id: 'sicof-tab-' + id, 'aria-controls': 'sicof-pane-' + id, 'aria-selected': tab === id, onClick: () => setTab(id) }, TABS.find(item => item.id === id).label), canConfigure && h('button', { type: 'button', disabled: index === 0 || Boolean(busy), 'aria-label': 'Mover ' + TABS.find(item => item.id === id).label + ' a la izquierda', onClick: () => moveTab(id, order[index - 1]) }, '‹')))),
-        data && data.source && data.source.status === 'UNAVAILABLE' && h('div', { className: 'sicof-status error', role: 'alert' }, data.source.error || 'No fue posible consultar los préstamos. El informe de ahorro conserva su fuente disponible.'),
-        data?.source?.refreshing && h('div', { className: 'sicof-status', role: 'status' }, 'Google se está actualizando. Se conserva la fecha de la última comprobación correcta.'),
-        sourceExpired && phase === 'ready' && h('div', { className: 'sicof-status error', role: 'alert' }, 'Esta consulta superó los cinco minutos de vigencia. Pulsa Actualizar para obtener la versión disponible antes de calcular o descargar.'),
-        phase === 'loading' && h('div', { className: 'sicof-status', role: 'status' }, 'Consultando ahorro y pagos registrados…'),
-        phase === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, loadError, h(Button, { secondary: true, onClick: refresh }, 'Reintentar')),
-        calculation === 'loading' && h('div', { className: 'sicof-source', role: 'status' }, 'Actualizando cálculo del escenario…'),
-        calculation === 'error' && h('div', { className: 'sicof-status error sicof-error-line', role: 'alert' }, calculationError, h(Button, { secondary: true, onClick: fileMode ? onReplaceFile : refresh }, fileMode ? 'Cargar otro archivo' : 'Reintentar cálculo')),
-        draftPending && (!automaticFilters || (calculation !== 'error' && !sourceExpired)) && h('div', { className: 'sicof-status', role: 'status' }, automaticFilters ? (simulationReady ? 'Aplicando los filtros con la información cargada…' : 'Preparando el cálculo con la información cargada…') : 'Hay cambios sin aplicar. Pulsa Aplicar y calcular para consultar las fuentes una sola vez con todos los par\u00e1metros. Los datos de las otras secciones corresponden a la \u00faltima consulta.'),
-        notice && h('div', { className: 'sicof-status' + (notice.level === 'error' ? ' error' : ' success'), role: notice.level === 'error' ? 'alert' : 'status' }, notice.message),
-        h('section', { id: 'sicof-pane-' + tab, role: 'tabpanel', 'aria-labelledby': 'sicof-tab-' + tab, 'aria-busy': phase === 'loading' || calculation === 'loading' }, panes[tab]())),
-      saverDetail(), attribution && h(Attribution, { key: attribution.transactionId, ...attribution, onClose: () => setAttribution(null), onSaved: () => { setAttribution(null); setDetail(null); setNotice({ message: 'Clasificación registrada sin modificar el saldo.' }); setRevision(value => value + 1); } }), loan && h(window.SicofLoanDetail, { loan, onClose: () => setLoan(null) }),
-      editing && h(window.SicofModal, { title: 'Editar textos de Sicof', subtitle: 'La presentación no modifica importes ni reglas del cálculo.', onClose: () => setEditing(null) }, h('div', { className: 'sicof sicof-text-editor' }, Object.keys(TEXTS).map(key => h(Field, { key, label: TEXTS[key] }, h('textarea', { maxLength: 480, 'aria-label': TEXTS[key], value: editing[key], onChange: event => setEditing(previous => Object.assign({}, previous, { [key]: event.target.value })) }))), preferenceError(editing, order) && h('div', { className: 'sicof-status error', role: 'alert' }, preferenceError(editing, order)), h(Button, { busy: Boolean(busy) || Boolean(preferenceError(editing, order)), onClick: () => savePreferences(editing, order) }, 'Guardar textos')))));
+    const panes = {
+      resumen: summary,
+      liquidez: liquidity,
+      reparto: distribution,
+      prestamos: loanPayments,
+      atrasos: arrears,
+      reporte: matrix,
+      cumplimiento: compliance,
+      ahorro: savingsReport
+    };
+    return h(CaptionContext.Provider, {
+      value: caption
+    }, h('div', {
+      className: 'sicof',
+      'data-admin-view': 'sicof',
+      'data-sicof-phase': phase
+    }, h('style', null, CSS), header && header({
+      title: 'Sicof',
+      sub: 'Rendimientos y seguimiento por periodo',
+      onBack
+    }), h('div', {
+      className: 'su-app-scroll sicof-content'
+    }, h('div', {
+      className: 'sicof-title-row'
+    }, h('div', null, h('h1', null, copy('title')), h('p', {
+      className: 'sicof-sub'
+    }, copy('subtitle')), data && data.source && h('p', {
+      className: 'sicof-source'
+    }, 'Préstamos verificados: ' + (data.source.observed_at ? new Date(data.source.observed_at).toLocaleString('es-MX', {
+      timeZone: 'America/Hermosillo'
+    }) : 'Fecha no informada') + (fileMode ? ' · Escenario del archivo' : data.source.expires_at ? ' · Vigencia máxima: 5 minutos' : ''))), h('div', {
+      className: 'sicof-toolbar'
+    }, h(Button, {
+      secondary: true,
+      busy: Boolean(busy) || phase === 'loading',
+      onClick: refresh
+    }, fileMode ? 'Preparar de nuevo' : 'Actualizar'), h(Button, {
+      secondary: true,
+      busy: Boolean(busy) || phase === 'loading',
+      onClick: fileMode ? onReplaceFile : () => refresh(true)
+    }, fileMode ? 'Cargar otro archivo' : 'Actualizar desde Google'), h(Button, {
+      busy: Boolean(busy) || phase === 'loading' || !draftPending,
+      onClick: applyCalculation
+    }, 'Aplicar y calcular'), canConfigure && h(Button, {
+      secondary: true,
+      busy: Boolean(busy),
+      onClick: () => setEditing(Object.assign({}, TEXTS, texts))
+    }, 'Editar textos'))), fileMode && fileMetadata && h('div', {
+      className: 'sicof-period-note',
+      style: {
+        overflowWrap: 'anywhere'
+      },
+      'data-sicof-file': fileMetadata.sha256
+    }, h('strong', null, 'Archivo: ' + fileMetadata.name), h('div', null, fileMetadata.from + ' al ' + fileMetadata.to + ' · ' + (fileMetadata.funds ? fileMetadata.funds.join(', ') : 'Todos los fondos')), h('div', null, 'Archivo preparado: ' + new Date(fileMetadata.imported_at).toLocaleString('es-MX', {
+      timeZone: 'America/Hermosillo'
+    }) + ' · Ahorro consultado: ' + new Date(fileMetadata.savings_observed_at).toLocaleString('es-MX', {
+      timeZone: 'America/Hermosillo'
+    })), h('div', null, 'Los filtros utilizan esta información. Para incorporar movimientos posteriores, prepara de nuevo el archivo. Para otro inicio o un cierre histórico distinto, carga otra base.')), h('div', {
+      className: 'sicof-tabs',
+      role: 'tablist',
+      'aria-label': 'Secciones de Sicof'
+    }, order.map((id, index) => h('div', {
+      key: id,
+      className: 'sicof-tab',
+      'data-active': tab === id,
+      draggable: canConfigure && !busy,
+      onDragStart: () => {
+        drag.current = id;
+      },
+      onDragOver: event => event.preventDefault(),
+      onDrop: event => {
+        event.preventDefault();
+        if (canConfigure && drag.current) moveTab(drag.current, id);
+        drag.current = null;
+      }
+    }, h('button', {
+      type: 'button',
+      role: 'tab',
+      id: 'sicof-tab-' + id,
+      'aria-controls': 'sicof-pane-' + id,
+      'aria-selected': tab === id,
+      onClick: () => setTab(id)
+    }, TABS.find(item => item.id === id).label), canConfigure && h('button', {
+      type: 'button',
+      disabled: index === 0 || Boolean(busy),
+      'aria-label': 'Mover ' + TABS.find(item => item.id === id).label + ' a la izquierda',
+      onClick: () => moveTab(id, order[index - 1])
+    }, '‹')))), data && data.source && data.source.status === 'UNAVAILABLE' && h('div', {
+      className: 'sicof-status error',
+      role: 'alert'
+    }, data.source.error || 'No fue posible consultar los préstamos. El informe de ahorro conserva su fuente disponible.'), data?.source?.refreshing && h('div', {
+      className: 'sicof-status',
+      role: 'status'
+    }, 'Google se está actualizando. Se conserva la fecha de la última comprobación correcta.'), sourceExpired && phase === 'ready' && h('div', {
+      className: 'sicof-status error',
+      role: 'alert'
+    }, 'Esta consulta superó los cinco minutos de vigencia. Pulsa Actualizar para obtener la versión disponible antes de calcular o descargar.'), phase === 'loading' && h('div', {
+      className: 'sicof-status',
+      role: 'status'
+    }, 'Consultando ahorro y pagos registrados…'), phase === 'error' && h('div', {
+      className: 'sicof-status error sicof-error-line',
+      role: 'alert'
+    }, loadError, h(Button, {
+      secondary: true,
+      onClick: refresh
+    }, 'Reintentar')), calculation === 'loading' && h('div', {
+      className: 'sicof-source',
+      role: 'status'
+    }, 'Actualizando cálculo del escenario…'), calculation === 'error' && h('div', {
+      className: 'sicof-status error sicof-error-line',
+      role: 'alert'
+    }, calculationError, h(Button, {
+      secondary: true,
+      onClick: fileMode ? onReplaceFile : refresh
+    }, fileMode ? 'Cargar otro archivo' : 'Reintentar cálculo')), draftPending && (!automaticFilters || calculation !== 'error' && !sourceExpired) && h('div', {
+      className: 'sicof-status',
+      role: 'status'
+    }, automaticFilters ? simulationReady ? 'Aplicando los filtros con la información cargada…' : 'Preparando el cálculo con la información cargada…' : 'Hay cambios sin aplicar. Pulsa Aplicar y calcular para consultar las fuentes una sola vez con todos los par\u00e1metros. Los datos de las otras secciones corresponden a la \u00faltima consulta.'), notice && h('div', {
+      className: 'sicof-status' + (notice.level === 'error' ? ' error' : ' success'),
+      role: notice.level === 'error' ? 'alert' : 'status'
+    }, notice.message), h('section', {
+      id: 'sicof-pane-' + tab,
+      role: 'tabpanel',
+      'aria-labelledby': 'sicof-tab-' + tab,
+      'aria-busy': phase === 'loading' || calculation === 'loading'
+    }, panes[tab]())), saverDetail(), attribution && h(Attribution, {
+      key: attribution.transactionId,
+      ...attribution,
+      onClose: () => setAttribution(null),
+      onSaved: () => {
+        setAttribution(null);
+        setDetail(null);
+        setNotice({
+          message: 'Clasificación registrada sin modificar el saldo.'
+        });
+        setRevision(value => value + 1);
+      }
+    }), loan && h(window.SicofLoanDetail, {
+      loan,
+      onClose: () => setLoan(null)
+    }), editing && h(window.SicofModal, {
+      title: 'Editar textos de Sicof',
+      subtitle: 'La presentación no modifica importes ni reglas del cálculo.',
+      onClose: () => setEditing(null)
+    }, h('div', {
+      className: 'sicof sicof-text-editor'
+    }, Object.keys(TEXTS).map(key => h(Field, {
+      key,
+      label: TEXTS[key]
+    }, h('textarea', {
+      maxLength: 480,
+      'aria-label': TEXTS[key],
+      value: editing[key],
+      onChange: event => setEditing(previous => Object.assign({}, previous, {
+        [key]: event.target.value
+      }))
+    }))), preferenceError(editing, order) && h('div', {
+      className: 'sicof-status error',
+      role: 'alert'
+    }, preferenceError(editing, order)), h(Button, {
+      busy: Boolean(busy) || Boolean(preferenceError(editing, order)),
+      onClick: () => savePreferences(editing, order)
+    }, 'Guardar textos')))));
   }
-  function SicofAdmin({ app, onBack, header }) {
+  function SicofAdmin({
+    app,
+    onBack,
+    header
+  }) {
     const identity = window.SicofView.useContext();
-    if (!identity || !app.admin || app.admin.phase !== 'authorized') return h('div', { role: 'alert' }, 'Acceso administrativo requerido.');
-    if (window.SicofFileFlow) return h(window.SicofFileFlow, { key: identity, app, onBack, header, identity, Workbench, defaultSettings: draftSettings, expand: expandWorkspace, css: CSS, errorText });
-    return h(Workbench, { key: identity, app, onBack, header, identity });
+    if (!identity || !app.admin || app.admin.phase !== 'authorized') return h('div', {
+      role: 'alert'
+    }, 'Acceso administrativo requerido.');
+    if (window.SicofFileFlow) return h(window.SicofFileFlow, {
+      key: identity,
+      app,
+      onBack,
+      header,
+      identity,
+      Workbench,
+      defaultSettings: draftSettings,
+      expand: expandWorkspace,
+      css: CSS,
+      errorText
+    });
+    return h(Workbench, {
+      key: identity,
+      app,
+      onBack,
+      header,
+      identity
+    });
   }
   window.SicofAttribution = Attribution;
   window.SicofAdmin = SicofAdmin;
@@ -1979,48 +5103,177 @@
 /* Display canonical attribution without calculating another account balance. */
 (function () {
   'use strict';
-  const h=React.createElement;
-  const money=v=>v==null?'Por conciliar':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(v);
-  const label=p=>({OPENING:'Saldo inicial · periodo por identificar',UNALLOCATED_WITHDRAWAL:'Retiro pendiente de desglose',UNALLOCATED_ADJUSTMENT:'Ajuste pendiente de desglose',UNALLOCATED_CREDIT:'Ingreso pendiente de desglose',UNALLOCATED_REVERSAL:'Reversión por conciliar'}[p.origin_key])||(p.semester?`${p.period_year} · semestre ${p.semester}`:p.period_year||'Periodo por conciliar');
-  function SavingsPeriodBalances({composition}) {
-    if(!composition)return null;
-    const periods=composition.periods||[];
-    return h('section',{className:'sav-section','data-savings-period-balances':''},h('div',{className:'sav-section-title'},h('b',null,'Retiros y saldo por periodo')),
-      h('div',{className:'sav-year-list'},periods.map(p=>h('article',{className:'sav-year',key:p.origin_key+':'+p.component},
-        h('div',{className:'sav-year-head'},h('b',null,label(p)),h('span',null,p.component==='YIELD'?'RENDIMIENTO':'AHORRO')),
-        h('div',{className:'sav-year-grid'},h('div',null,h('span',null,'Registrado'),h('b',null,money(p.recognized))),h('div',null,h('span',null,'Retirado'),h('b',null,money(p.withdrawn)))),
-        p.adjustments!==0&&p.adjustments!=null&&h('div',{className:'sav-row'},h('span',null,'Ajustes'),h('b',null,money(p.adjustments))),
-        h('div',{className:'sav-year-subtotal'},h('span',null,'Saldo que permanece'),h('b',{'data-savings-period-remaining':p.origin_key+':'+p.component},money(p.remaining)))))),
-      h('div',{className:'sav-card','data-savings-current-available':''},h('div',{className:'sav-row'},h('span',null,'Disponible para retirar'),h('b',null,money(composition.balances?.available))),h('div',{className:'sav-row'},h('span',null,'Retenido'),h('b',null,money(composition.balances?.held)))),
-      h('p',{className:'sav-note'},'Cada retiro reduce una sola vez tu saldo. Las retenciones, si existen, afectan el disponible total; los periodos por conciliar conservan su identificación pendiente.'));
+
+  const h = React.createElement;
+  const money = v => v == null ? 'Por conciliar' : new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(v);
+  const label = p => ({
+    OPENING: 'Saldo inicial · periodo por identificar',
+    UNALLOCATED_WITHDRAWAL: 'Retiro pendiente de desglose',
+    UNALLOCATED_ADJUSTMENT: 'Ajuste pendiente de desglose',
+    UNALLOCATED_CREDIT: 'Ingreso pendiente de desglose',
+    UNALLOCATED_REVERSAL: 'Reversión por conciliar'
+  })[p.origin_key] || (p.semester ? `${p.period_year} · semestre ${p.semester}` : p.period_year || 'Periodo por conciliar');
+  function SavingsPeriodBalances({
+    composition
+  }) {
+    if (!composition) return null;
+    const periods = composition.periods || [];
+    return h('section', {
+      className: 'sav-section',
+      'data-savings-period-balances': ''
+    }, h('div', {
+      className: 'sav-section-title'
+    }, h('b', null, 'Retiros y saldo por periodo')), h('div', {
+      className: 'sav-year-list'
+    }, periods.map(p => h('article', {
+      className: 'sav-year',
+      key: p.origin_key + ':' + p.component
+    }, h('div', {
+      className: 'sav-year-head'
+    }, h('b', null, label(p)), h('span', null, p.component === 'YIELD' ? 'RENDIMIENTO' : 'AHORRO')), h('div', {
+      className: 'sav-year-grid'
+    }, h('div', null, h('span', null, 'Registrado'), h('b', null, money(p.recognized))), h('div', null, h('span', null, 'Retirado'), h('b', null, money(p.withdrawn)))), p.adjustments !== 0 && p.adjustments != null && h('div', {
+      className: 'sav-row'
+    }, h('span', null, 'Ajustes'), h('b', null, money(p.adjustments))), h('div', {
+      className: 'sav-year-subtotal'
+    }, h('span', null, 'Saldo que permanece'), h('b', {
+      'data-savings-period-remaining': p.origin_key + ':' + p.component
+    }, money(p.remaining)))))), h('div', {
+      className: 'sav-card',
+      'data-savings-current-available': ''
+    }, h('div', {
+      className: 'sav-row'
+    }, h('span', null, 'Disponible para retirar'), h('b', null, money(composition.balances?.available))), h('div', {
+      className: 'sav-row'
+    }, h('span', null, 'Retenido'), h('b', null, money(composition.balances?.held)))), h('p', {
+      className: 'sav-note'
+    }, 'Cada retiro reduce una sola vez tu saldo. Las retenciones, si existen, afectan el disponible total; los periodos por conciliar conservan su identificación pendiente.'));
   }
-  function SavingsWithdrawalOrigins({participantId,capital,yieldAmount,disabled,onChange}) {
-    const [state,setState]=React.useState({phase:'loading'}),[values,setValues]=React.useState({}),[revision,setRevision]=React.useState(0);
-    const callback=React.useRef(onChange);callback.current=onChange;
-    React.useEffect(()=>{
-      let active=true;setState({phase:'loading'});setValues({});callback.current({ready:false});
-      if(!participantId){setState({phase:'error',error:'No se pudo identificar la cuenta de ahorro.'});return()=>{active=false;};}
-      window.SicofRepository.composition(participantId).then(data=>{if(active)setState({phase:'ready',data});},()=>{if(active)setState({phase:'error',error:'No fue posible consultar el desglose del saldo.'});});
-      return()=>{active=false;};
-    },[participantId,revision]);
-    React.useEffect(()=>{
-      if(state.phase!=='ready'){callback.current({ready:false});return;}
-      const rows=state.data.periods||[],slices=[];let valid=true;
-      for(const p of rows){const raw=values[p.origin_key+':'+p.component]||'',amount=Number(raw);if(!Number.isFinite(amount)||amount<0||Math.round(amount*100)!==amount*100&&Math.abs(Math.round(amount*100)-amount*100)>1e-7||amount>Number(p.remaining)||amount>0&&p.remaining==null)valid=false;if(amount>0)slices.push({component:p.component,origin_key:p.origin_key,amount});}
-      const total=component=>slices.filter(s=>s.component===component).reduce((n,s)=>n+Math.round(s.amount*100),0);
-      valid=valid&&total('CAPITAL')===Math.round(Number(capital||0)*100)&&total('YIELD')===Math.round(Number(yieldAmount||0)*100)&&slices.length>0;
-      callback.current({ready:valid,origin_allocations:slices,allocation_version:state.data.version});
-    },[state,values,capital,yieldAmount]);
-    if(state.phase==='loading')return h('p',{role:'status'},'Consultando origen del ahorro…');
-    if(state.phase==='error')return h('div',{role:'alert'},state.error,h('button',{type:'button',disabled,onClick:()=>setRevision(v=>v+1)},'Reintentar'));
-    return h('fieldset',{disabled,'data-savings-withdrawal-origins':'',style:{border:'1px solid #e8e8ec',borderRadius:12,padding:12}},h('legend',null,'Origen de la entrega'),
-      h('p',{className:'svp-note'},'Indica cuánto se entrega de cada periodo. Los importes deben coincidir con el capital y rendimiento de la entrega.'),
-      (state.data.periods||[]).filter(p=>p.remaining==null||p.remaining>0).map(p=>h('label',{key:p.origin_key+':'+p.component,style:{display:'grid',gridTemplateColumns:'1fr 110px',gap:8,margin:'8px 0'}},
-        h('span',null,label(p)+' · '+(p.component==='YIELD'?'rendimiento':'capital'),h('small',{style:{display:'block'}},'Saldo: '+money(p.remaining))),
-        h('input',{type:'number',min:'0',step:'0.01',max:p.remaining==null?undefined:p.remaining,disabled:disabled||p.remaining==null||String(p.origin_key).startsWith('UNALLOCATED_'),value:values[p.origin_key+':'+p.component]||'',onChange:e=>setValues(v=>({...v,[p.origin_key+':'+p.component]:e.target.value}))}))));
+  function SavingsWithdrawalOrigins({
+    participantId,
+    capital,
+    yieldAmount,
+    disabled,
+    onChange
+  }) {
+    const [state, setState] = React.useState({
+        phase: 'loading'
+      }),
+      [values, setValues] = React.useState({}),
+      [revision, setRevision] = React.useState(0);
+    const callback = React.useRef(onChange);
+    callback.current = onChange;
+    React.useEffect(() => {
+      let active = true;
+      setState({
+        phase: 'loading'
+      });
+      setValues({});
+      callback.current({
+        ready: false
+      });
+      if (!participantId) {
+        setState({
+          phase: 'error',
+          error: 'No se pudo identificar la cuenta de ahorro.'
+        });
+        return () => {
+          active = false;
+        };
+      }
+      window.SicofRepository.composition(participantId).then(data => {
+        if (active) setState({
+          phase: 'ready',
+          data
+        });
+      }, () => {
+        if (active) setState({
+          phase: 'error',
+          error: 'No fue posible consultar el desglose del saldo.'
+        });
+      });
+      return () => {
+        active = false;
+      };
+    }, [participantId, revision]);
+    React.useEffect(() => {
+      if (state.phase !== 'ready') {
+        callback.current({
+          ready: false
+        });
+        return;
+      }
+      const rows = state.data.periods || [],
+        slices = [];
+      let valid = true;
+      for (const p of rows) {
+        const raw = values[p.origin_key + ':' + p.component] || '',
+          amount = Number(raw);
+        if (!Number.isFinite(amount) || amount < 0 || Math.round(amount * 100) !== amount * 100 && Math.abs(Math.round(amount * 100) - amount * 100) > 1e-7 || amount > Number(p.remaining) || amount > 0 && p.remaining == null) valid = false;
+        if (amount > 0) slices.push({
+          component: p.component,
+          origin_key: p.origin_key,
+          amount
+        });
+      }
+      const total = component => slices.filter(s => s.component === component).reduce((n, s) => n + Math.round(s.amount * 100), 0);
+      valid = valid && total('CAPITAL') === Math.round(Number(capital || 0) * 100) && total('YIELD') === Math.round(Number(yieldAmount || 0) * 100) && slices.length > 0;
+      callback.current({
+        ready: valid,
+        origin_allocations: slices,
+        allocation_version: state.data.version
+      });
+    }, [state, values, capital, yieldAmount]);
+    if (state.phase === 'loading') return h('p', {
+      role: 'status'
+    }, 'Consultando origen del ahorro…');
+    if (state.phase === 'error') return h('div', {
+      role: 'alert'
+    }, state.error, h('button', {
+      type: 'button',
+      disabled,
+      onClick: () => setRevision(v => v + 1)
+    }, 'Reintentar'));
+    return h('fieldset', {
+      disabled,
+      'data-savings-withdrawal-origins': '',
+      style: {
+        border: '1px solid #e8e8ec',
+        borderRadius: 12,
+        padding: 12
+      }
+    }, h('legend', null, 'Origen de la entrega'), h('p', {
+      className: 'svp-note'
+    }, 'Indica cuánto se entrega de cada periodo. Los importes deben coincidir con el capital y rendimiento de la entrega.'), (state.data.periods || []).filter(p => p.remaining == null || p.remaining > 0).map(p => h('label', {
+      key: p.origin_key + ':' + p.component,
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 110px',
+        gap: 8,
+        margin: '8px 0'
+      }
+    }, h('span', null, label(p) + ' · ' + (p.component === 'YIELD' ? 'rendimiento' : 'capital'), h('small', {
+      style: {
+        display: 'block'
+      }
+    }, 'Saldo: ' + money(p.remaining))), h('input', {
+      type: 'number',
+      min: '0',
+      step: '0.01',
+      max: p.remaining == null ? undefined : p.remaining,
+      disabled: disabled || p.remaining == null || String(p.origin_key).startsWith('UNALLOCATED_'),
+      value: values[p.origin_key + ':' + p.component] || '',
+      onChange: e => setValues(v => ({
+        ...v,
+        [p.origin_key + ':' + p.component]: e.target.value
+      }))
+    }))));
   }
-  window.SavingsPeriodBalances=SavingsPeriodBalances;
-  window.SavingsWithdrawalOrigins=SavingsWithdrawalOrigins;
+  window.SavingsPeriodBalances = SavingsPeriodBalances;
+  window.SavingsWithdrawalOrigins = SavingsWithdrawalOrigins;
 })();
 })();
 /* @@file document-generation-design.js */
@@ -3399,6 +6652,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     } = React,
     R = () => window.DocumentGenerationRepository;
   const TYPES = {
+    RENTA_CAR_APPROVAL: 'Renta Car · Arrendamiento de contado',
     LOAN_APPROVAL: 'Autorización de préstamo',
     PROGRAM_FINANCING_APPROVAL: 'Financiamiento autorizado',
     MEMBERSHIP_APPROVAL: 'Solicitud de membresía autorizada',
@@ -3414,7 +6668,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
     membership: 'Membresías',
     auto: 'Autos',
     casa: 'Casa',
-    renta: 'Renta',
+    renta: 'Renta Car',
     terrenos: 'Terrenos',
     aires: 'Aires Acondicionados',
     puertas: 'Puertas',
@@ -3937,7 +7191,7 @@ function _extends() { return _extends = Object.assign ? Object.assign.bind() : f
       allow = k => perms[k] === true;
     const assignmentFor = (program, type) => assignments.find(a => a.program === program && a.document_type === type && !a.fund_key);
     const programs = [...new Set(['prestamo', 'caja', 'nomina', 'membership', ...(data?.programs || [])])],
-      scopeTypes = program => program === 'caja' ? ['LOAN_APPROVAL', ...Object.keys(TYPES).filter(t => t.startsWith('SAVINGS_'))] : program === 'membership' ? ['MEMBERSHIP_APPROVAL'] : ['prestamo', 'nomina'].includes(program) ? ['LOAN_APPROVAL'] : ['PROGRAM_FINANCING_APPROVAL'];
+      scopeTypes = program => program === 'renta' ? ['RENTA_CAR_APPROVAL'] : program === 'caja' ? ['LOAN_APPROVAL', ...Object.keys(TYPES).filter(t => t.startsWith('SAVINGS_'))] : program === 'membership' ? ['MEMBERSHIP_APPROVAL'] : ['prestamo', 'nomina'].includes(program) ? ['LOAN_APPROVAL'] : ['PROGRAM_FINANCING_APPROVAL'];
     const scopes = programs.flatMap(program => scopeTypes(program).map(document_type => ({
         program,
         document_type,
@@ -19728,68 +22982,348 @@ Object.assign(window, {
 /* @@file savings-request-form.jsx */
 (function(){
 /* Functional Savings actions inside the existing Savings sheet. */
-(function(){
- 'use strict';const h=React.createElement,{useState,useRef}=React;
- function SavingsRequestForm({type,dashboard,onSaved,onClose}){
-  const [amount,setAmount]=useState(''),[continuing,setContinuing]=useState(true),[reason,setReason]=useState(''),[reviewed,setReviewed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[done,setDone]=useState(null);
-  const attempt=useRef(),lock=useRef(false),available=dashboard.balances&&dashboard.balances.available;
-  const money=n=>typeof n==='number'?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n):'Por confirmar';
-  const valid=/^\d+(\.\d{1,2})?$/.test(amount),isWithdrawal=type==='WITHDRAW',isStop=type==='TERMINATE';
-  const number=valid?Number(amount):null;
-  const [quote,setQuote]=useState(null),[quoteError,setQuoteError]=useState('');
-  const automaticJoin=type==='JOIN'&&quote?.auto_join_enabled===true;
-  React.useEffect(()=>{if(type!=='JOIN'||!valid||number<200){setQuote(null);return;}let alive=true;setQuote(null);setQuoteError('');const timer=setTimeout(()=>{Promise.resolve().then(()=>window.SavingsRepository.getJoinContext(number)).then(v=>{if(alive)setQuote(v);}).catch(()=>{if(alive)setQuoteError('No se pudieron consultar las fechas. Cambia el importe o vuelve a abrir la solicitud para reintentar.');});},250);return()=>{alive=false;clearTimeout(timer);};},[type,amount]);
-  const allowed=type==='JOIN'?Boolean((dashboard.join_context&&dashboard.join_context.can_join||dashboard.write_capabilities&&dashboard.write_capabilities.requests&&dashboard.actions&&dashboard.actions.JOIN)&&quote&&quote.can_join&&quote.amount===number):dashboard.write_capabilities&&dashboard.write_capabilities.requests&&dashboard.actions&&dashboard.actions[type];
-  const ready=allowed&&(isStop||valid&&number>0&&(isWithdrawal?typeof available==='number'&&number<=available:number>=200));
-  function change(fn,value){fn(value);setReviewed(false);attempt.current=null;setError('');}
-  async function submit(event){event.preventDefault();if(!ready||lock.current)return;if(!reviewed){setReviewed(true);return;}
-   const payload={requestType:type,amount:isWithdrawal?number:isStop?0:null,newContributionAmount:!isWithdrawal&&!isStop?number:null,
-    component:isWithdrawal?'BOTH':null,continueSaving:isStop?false:isWithdrawal?(number<available?true:continuing):true,reason};
-   const serial=JSON.stringify(payload);if(!attempt.current||attempt.current.serial!==serial)attempt.current={serial,key:crypto.randomUUID()};
-   lock.current=true;setBusy(true);setError('');try{const result=await window.SavingsRepository.submitRequest({...payload,idempotencyKey:attempt.current.key});setDone(result);await onSaved();}
-   catch(e){const raw=String(e&&e.message||'');setError(/CLOSED|DISABLED|NOT_AVAILABLE|ACTION/.test(raw)?'Esta opción ya no está habilitada. Actualiza tu ahorro.':/BALANCE|AMOUNT|AVAILABLE/.test(raw)?'Revisa el importe y el saldo disponible antes de enviar.':/PRIVATE|PUBLISHED/.test(raw)?'El programa está en revisión. Aún no se reciben solicitudes desde esta pantalla.':/PENDING|EXISTS/.test(raw)?'Ya tienes una solicitud pendiente de este tipo. Revisa su estado.':'No se pudo confirmar el envío. Conservamos tu captura para que puedas reintentar.');}
-   finally{lock.current=false;setBusy(false);}
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useRef
+    } = React;
+  function SavingsRequestForm({
+    type,
+    dashboard,
+    onSaved,
+    onClose
+  }) {
+    const [amount, setAmount] = useState(''),
+      [continuing, setContinuing] = useState(true),
+      [reason, setReason] = useState(''),
+      [reviewed, setReviewed] = useState(false),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [done, setDone] = useState(null);
+    const attempt = useRef(),
+      lock = useRef(false),
+      available = dashboard.balances && dashboard.balances.available;
+    const money = n => typeof n === 'number' ? new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(n) : 'Por confirmar';
+    const valid = /^\d+(\.\d{1,2})?$/.test(amount),
+      isWithdrawal = type === 'WITHDRAW',
+      isStop = type === 'TERMINATE';
+    const number = valid ? Number(amount) : null;
+    const [quote, setQuote] = useState(null),
+      [quoteError, setQuoteError] = useState('');
+    const automaticJoin = type === 'JOIN' && quote?.auto_join_enabled === true;
+    React.useEffect(() => {
+      if (type !== 'JOIN' || !valid || number < 200) {
+        setQuote(null);
+        return;
+      }
+      let alive = true;
+      setQuote(null);
+      setQuoteError('');
+      const timer = setTimeout(() => {
+        Promise.resolve().then(() => window.SavingsRepository.getJoinContext(number)).then(v => {
+          if (alive) setQuote(v);
+        }).catch(() => {
+          if (alive) setQuoteError('No se pudieron consultar las fechas. Cambia el importe o vuelve a abrir la solicitud para reintentar.');
+        });
+      }, 250);
+      return () => {
+        alive = false;
+        clearTimeout(timer);
+      };
+    }, [type, amount]);
+    const allowed = type === 'JOIN' ? Boolean((dashboard.join_context && dashboard.join_context.can_join || dashboard.write_capabilities && dashboard.write_capabilities.requests && dashboard.actions && dashboard.actions.JOIN) && quote && quote.can_join && quote.amount === number) : dashboard.write_capabilities && dashboard.write_capabilities.requests && dashboard.actions && dashboard.actions[type];
+    const ready = allowed && (isStop || valid && number > 0 && (isWithdrawal ? typeof available === 'number' && number <= available : number >= 200));
+    function change(fn, value) {
+      fn(value);
+      setReviewed(false);
+      attempt.current = null;
+      setError('');
+    }
+    async function submit(event) {
+      event.preventDefault();
+      if (!ready || lock.current) return;
+      if (!reviewed) {
+        setReviewed(true);
+        return;
+      }
+      const payload = {
+        requestType: type,
+        amount: isWithdrawal ? number : isStop ? 0 : null,
+        newContributionAmount: !isWithdrawal && !isStop ? number : null,
+        component: isWithdrawal ? 'BOTH' : null,
+        continueSaving: isStop ? false : isWithdrawal ? number < available ? true : continuing : true,
+        reason
+      };
+      const serial = JSON.stringify(payload);
+      if (!attempt.current || attempt.current.serial !== serial) attempt.current = {
+        serial,
+        key: crypto.randomUUID()
+      };
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      try {
+        const result = await window.SavingsRepository.submitRequest({
+          ...payload,
+          idempotencyKey: attempt.current.key
+        });
+        setDone(result);
+        await onSaved();
+      } catch (e) {
+        const raw = String(e && e.message || '');
+        setError(/CLOSED|DISABLED|NOT_AVAILABLE|ACTION/.test(raw) ? 'Esta opción ya no está habilitada. Actualiza tu ahorro.' : /BALANCE|AMOUNT|AVAILABLE/.test(raw) ? 'Revisa el importe y el saldo disponible antes de enviar.' : /PRIVATE|PUBLISHED/.test(raw) ? 'El programa está en revisión. Aún no se reciben solicitudes desde esta pantalla.' : /PENDING|EXISTS/.test(raw) ? 'Ya tienes una solicitud pendiente de este tipo. Revisa su estado.' : 'No se pudo confirmar el envío. Conservamos tu captura para que puedas reintentar.');
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    }
+    if (done) return h('div', {
+      role: 'status'
+    }, h('p', null, type === 'JOIN' && done.automatic_join === true ? 'Ya formas parte de Caja de Ahorro. Tu plan quedó registrado.' : 'Solicitud registrada. Puedes consultar su estado en tu ahorro.'), type === 'JOIN' && h('p', null, 'Primer descuento previsto: ' + joinDate(done.effective_from) + '.' + (done.automatic_join === true ? ' No necesitas esperar una aprobación administrativa.' : ' Consulta el seguimiento de tu ingreso.')), h('p', null, done.folio || done.request && done.request.folio || ''), h('button', {
+      className: 'sav-primary',
+      onClick: onClose
+    }, 'Entendido'));
+    return h('form', {
+      onSubmit: submit
+    }, isWithdrawal && h('p', null, 'Saldo disponible: ', h('strong', null, money(available))), !isStop && h('label', {
+      style: {
+        display: 'grid',
+        gap: 8,
+        margin: '12px 0'
+      }
+    }, isWithdrawal ? 'Importe a retirar' : 'Monto de cada descuento', h('input', {
+      type: 'text',
+      inputMode: 'decimal',
+      value: amount,
+      onChange: e => change(setAmount, e.target.value),
+      disabled: busy,
+      'aria-label': isWithdrawal ? 'Importe a retirar' : 'Monto de cada descuento',
+      style: {
+        padding: 12,
+        border: '1px solid var(--line)',
+        borderRadius: 12,
+        font: 'inherit'
+      }
+    })), isWithdrawal && number !== null && typeof available === 'number' && (number < available ? h('p', null, 'Es un retiro parcial. Seguirás ahorrando con el mismo monto y el resto permanecerá en tu ahorro.') : number === available && h('label', {
+      style: {
+        display: 'grid',
+        gap: 8
+      }
+    }, 'Después de retirar todo', h('select', {
+      value: continuing ? 'yes' : 'no',
+      disabled: busy,
+      onChange: e => change(setContinuing, e.target.value === 'yes'),
+      style: {
+        padding: 12,
+        border: '1px solid var(--line)',
+        borderRadius: 12
+      }
+    }, h('option', {
+      value: 'yes'
+    }, 'Continuar ahorrando'), h('option', {
+      value: 'no'
+    }, 'Dejar de ahorrar')))), isStop && h('p', null, 'Solicitarás dejar de ahorrar. Tu saldo permanecerá en la cuenta; esta solicitud no retira dinero.'), !isWithdrawal && !isStop && h('p', null, 'La fecha de inicio se calculará al enviar: 30 días después de la solicitud y la siguiente fecha de descuento que corresponda.'), type === 'JOIN' && h('div', {
+      'data-savings-join-preview': ''
+    }, quoteError && h('p', {
+      role: 'alert'
+    }, quoteError), valid && number >= 200 && !quote && !quoteError && h('p', null, 'Consultando fechas…'), quote && h(React.Fragment, null, h('p', null, 'Descuento ' + (quote.frequency === 'MONTHLY' ? 'mensual, el día 5.' : 'quincenal, los días 15 y 30; en febrero, 15 y 28.')), h('p', null, 'Fecha de registro prevista: ' + joinDate(quote.registration_date)), h('p', null, 'Primer descuento previsto: ' + joinDate(quote.first_discount_on)), automaticJoin && h('p', null, 'Al confirmar, el sistema validará tu ingreso y registrará tu plan sin aprobación administrativa.'), !quote.can_join && h('p', {
+      role: 'alert'
+    }, joinReason(quote.reason)), h(SavingsJoinSchedule, {
+      rows: quote.upcoming
+    }))), h('label', {
+      style: {
+        display: 'grid',
+        gap: 8,
+        margin: '12px 0'
+      }
+    }, 'Observaciones (opcional)', h('textarea', {
+      value: reason,
+      maxLength: 1000,
+      disabled: busy,
+      onChange: e => change(setReason, e.target.value),
+      style: {
+        padding: 12,
+        border: '1px solid var(--line)',
+        borderRadius: 12,
+        font: 'inherit'
+      }
+    })), reviewed && h('p', {
+      role: 'status'
+    }, automaticJoin ? 'Revisa tu aportación y las fechas. Al confirmar quedará registrado tu ingreso y su plan de descuentos. Las fechas previstas no son dinero recibido.' : 'Revisa los datos. Al confirmar se registrará la solicitud; no se reserva ni se entrega dinero en este paso.'), error && h('p', {
+      role: 'alert'
+    }, error), h('button', {
+      type: 'submit',
+      className: 'sav-primary',
+      disabled: !ready || busy
+    }, busy ? 'Enviando…' : automaticJoin ? reviewed ? 'Confirmar ingreso' : 'Revisar ingreso' : reviewed ? 'Confirmar solicitud' : 'Revisar solicitud'));
   }
-  if(done)return h('div',{role:'status'},h('p',null,type==='JOIN'&&done.automatic_join===true?'Ya formas parte de Caja de Ahorro. Tu plan quedó registrado.':'Solicitud registrada. Puedes consultar su estado en tu ahorro.'),type==='JOIN'&&h('p',null,'Primer descuento previsto: '+joinDate(done.effective_from)+'.'+(done.automatic_join===true?' No necesitas esperar una aprobación administrativa.':' Consulta el seguimiento de tu ingreso.')),h('p',null,done.folio||done.request&&done.request.folio||''),h('button',{className:'sav-primary',onClick:onClose},'Entendido'));
-  return h('form',{onSubmit:submit},isWithdrawal&&h('p',null,'Saldo disponible: ',h('strong',null,money(available))),
-   !isStop&&h('label',{style:{display:'grid',gap:8,margin:'12px 0'}},isWithdrawal?'Importe a retirar':'Monto de cada descuento',h('input',{type:'text',inputMode:'decimal',value:amount,onChange:e=>change(setAmount,e.target.value),disabled:busy,'aria-label':isWithdrawal?'Importe a retirar':'Monto de cada descuento',style:{padding:12,border:'1px solid var(--line)',borderRadius:12,font:'inherit'}})),
-   isWithdrawal&&number!==null&&typeof available==='number'&&(number<available?h('p',null,'Es un retiro parcial. Seguirás ahorrando con el mismo monto y el resto permanecerá en tu ahorro.'):number===available&&h('label',{style:{display:'grid',gap:8}},'Después de retirar todo',h('select',{value:continuing?'yes':'no',disabled:busy,onChange:e=>change(setContinuing,e.target.value==='yes'),style:{padding:12,border:'1px solid var(--line)',borderRadius:12}},h('option',{value:'yes'},'Continuar ahorrando'),h('option',{value:'no'},'Dejar de ahorrar')))),
-   isStop&&h('p',null,'Solicitarás dejar de ahorrar. Tu saldo permanecerá en la cuenta; esta solicitud no retira dinero.'),
-   !isWithdrawal&&!isStop&&h('p',null,'La fecha de inicio se calculará al enviar: 30 días después de la solicitud y la siguiente fecha de descuento que corresponda.'),
-   type==='JOIN'&&h('div',{'data-savings-join-preview':''},quoteError&&h('p',{role:'alert'},quoteError),valid&&number>=200&&!quote&&!quoteError&&h('p',null,'Consultando fechas…'),quote&&h(React.Fragment,null,h('p',null,'Descuento '+(quote.frequency==='MONTHLY'?'mensual, el día 5.':'quincenal, los días 15 y 30; en febrero, 15 y 28.')),h('p',null,'Fecha de registro prevista: '+joinDate(quote.registration_date)),h('p',null,'Primer descuento previsto: '+joinDate(quote.first_discount_on)),automaticJoin&&h('p',null,'Al confirmar, el sistema validará tu ingreso y registrará tu plan sin aprobación administrativa.'),!quote.can_join&&h('p',{role:'alert'},joinReason(quote.reason)),h(SavingsJoinSchedule,{rows:quote.upcoming}))),
-   h('label',{style:{display:'grid',gap:8,margin:'12px 0'}},'Observaciones (opcional)',h('textarea',{value:reason,maxLength:1000,disabled:busy,onChange:e=>change(setReason,e.target.value),style:{padding:12,border:'1px solid var(--line)',borderRadius:12,font:'inherit'}})),
-   reviewed&&h('p',{role:'status'},automaticJoin?'Revisa tu aportación y las fechas. Al confirmar quedará registrado tu ingreso y su plan de descuentos. Las fechas previstas no son dinero recibido.':'Revisa los datos. Al confirmar se registrará la solicitud; no se reserva ni se entrega dinero en este paso.'),
-   error&&h('p',{role:'alert'},error),h('button',{type:'submit',className:'sav-primary',disabled:!ready||busy},busy?'Enviando…':automaticJoin?(reviewed?'Confirmar ingreso':'Revisar ingreso'):reviewed?'Confirmar solicitud':'Revisar solicitud'));
- }
- function SavingsRequestHistory({requests}){
-  const names={JOIN:'Ingreso al ahorro',WITHDRAW:'Retiro de ahorro',CHANGE_AMOUNT:'Cambio de monto',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'};
-  const states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisi?n',APPROVED:'Aprobada',APPLIED:'Aplicada',SETTLED:'Pagada',CANCELLED:'Cancelada',REJECTED:'Rechazada'};
-  return h('div',{'data-savings-request-history':''},(requests||[]).map(r=>h('div',{className:'sav-tx',key:r.id},h('div',null,h('b',null,names[r.request_type]||'Solicitud de ahorro'),h(window.GeneratedDocuments,{domain:'savings',operationId:r.id}),h('span',null,r.folio+' ? '+(states[r.status]||'Por confirmar')),r.effective_from&&h('span',null,'Fecha prevista: '+new Date(r.effective_from+'T12:00:00').toLocaleDateString('es-MX'))),h('strong',null,r.new_contribution_amount||r.requested_amount?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.new_contribution_amount||r.requested_amount):''))));
- }
- function useSavingsBeneficiaries(identityKey,revision){
-  const [state,setState]=useState({phase:'loading'}),[retry,setRetry]=useState(0);
-  React.useEffect(()=>{let alive=true;setState({phase:'loading',identityKey});
-   Promise.resolve().then(()=>window.SavingsRepository.getBeneficiaries()).then(data=>{if(alive)setState({phase:'ready',data,identityKey});})
-    .catch(e=>{if(alive)setState({phase:'error',identityKey,error:/IDENTITY|AFFILIATE/.test(String(e.message))?'Tu registro de ahorro necesita revisión antes de consultar o cambiar beneficiarios. Comunícate con la encargada.':'No fue posible consultar tus beneficiarios. Intenta de nuevo.'});});
-   return()=>{alive=false;};
-  },[identityKey,revision,retry]);
-  return {...(state.identityKey===identityKey?state:{phase:'loading'}),retry:()=>setRetry(v=>v+1)};
- }
- function SavingsBeneficiarySignatures({signatures}){
-  const [image,setImage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
-  const mounted=useRef(true);React.useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;};},[]);
-  async function open(path){setError('');setBusy(true);setImage('');try{const url=await window.SavingsRepository.getBeneficiarySignature(path);if(mounted.current)setImage(url);}catch(e){if(mounted.current)setError('No se pudo abrir la firma. Intenta de nuevo.');}finally{if(mounted.current)setBusy(false);}}
-  const files=(signatures||[]).filter(s=>s.status==='STORED'&&s.path),missing=(signatures||[]).filter(s=>s.status!=='STORED').length;
-  return h('div',{'data-beneficiary-signatures':''},files.map((s,i)=>h('button',{type:'button',className:'sav-retry',key:s.path,disabled:busy,onClick:()=>open(s.path),style:{margin:'8px 8px 8px 0'}},'Ver firma'+(files.length>1?' '+(i+1):''))),
-   missing>0&&h('p',null,'Hay '+missing+' registro(s) histórico(s) sin firma disponible. Al actualizar, se solicitará una nueva firma.'),
-   busy&&h('p',{role:'status'},'Abriendo firma…'),error&&h('p',{role:'alert'},error),image&&h('div',null,h('img',{src:image,alt:'Firma de autorización de beneficiarios',style:{display:'block',maxWidth:'100%',background:'#fff',border:'1px solid var(--line)',borderRadius:12},onError:()=>{setImage('');setError('La firma no se pudo mostrar. Vuelve a abrirla.');}}),h('button',{type:'button',className:'sav-retry',onClick:()=>setImage('')},'Cerrar firma')));
- }
- function SavingsBeneficiarySignaturePad({value,onChange}){
-  const wrap=useRef(null),change=useRef(onChange),[revision,setRevision]=useState(0);change.current=onChange;
-  React.useEffect(()=>{let width=wrap.current.clientWidth;const observer=new ResizeObserver(()=>{const next=wrap.current.clientWidth;if(next!==width){width=next;change.current('');setRevision(v=>v+1);}});observer.observe(wrap.current);return()=>observer.disconnect();},[]);
-  return h('div',{ref:wrap},h(window.SignaturePad,{key:revision,value,onChange,label:'Firma de autorización'}));
- }
- const BENEFICIARY_CSS = `
+  function SavingsRequestHistory({
+    requests
+  }) {
+    const names = {
+      JOIN: 'Ingreso al ahorro',
+      WITHDRAW: 'Retiro de ahorro',
+      CHANGE_AMOUNT: 'Cambio de monto',
+      TERMINATE: 'Dejar de ahorrar',
+      EXTRAORDINARY_WITHDRAWAL: 'Retiro especial'
+    };
+    const states = {
+      SUBMITTED: 'Recibida',
+      UNDER_REVIEW: 'En revisi?n',
+      APPROVED: 'Aprobada',
+      APPLIED: 'Aplicada',
+      SETTLED: 'Pagada',
+      CANCELLED: 'Cancelada',
+      REJECTED: 'Rechazada'
+    };
+    return h('div', {
+      'data-savings-request-history': ''
+    }, (requests || []).map(r => h('div', {
+      className: 'sav-tx',
+      key: r.id
+    }, h('div', null, h('b', null, names[r.request_type] || 'Solicitud de ahorro'), h(window.GeneratedDocuments, {
+      domain: 'savings',
+      operationId: r.id
+    }), h('span', null, r.folio + ' ? ' + (states[r.status] || 'Por confirmar')), r.effective_from && h('span', null, 'Fecha prevista: ' + new Date(r.effective_from + 'T12:00:00').toLocaleDateString('es-MX'))), h('strong', null, r.new_contribution_amount || r.requested_amount ? new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(r.new_contribution_amount || r.requested_amount) : ''))));
+  }
+  function useSavingsBeneficiaries(identityKey, revision) {
+    const [state, setState] = useState({
+        phase: 'loading'
+      }),
+      [retry, setRetry] = useState(0);
+    React.useEffect(() => {
+      let alive = true;
+      setState({
+        phase: 'loading',
+        identityKey
+      });
+      Promise.resolve().then(() => window.SavingsRepository.getBeneficiaries()).then(data => {
+        if (alive) setState({
+          phase: 'ready',
+          data,
+          identityKey
+        });
+      }).catch(e => {
+        if (alive) setState({
+          phase: 'error',
+          identityKey,
+          error: /IDENTITY|AFFILIATE/.test(String(e.message)) ? 'Tu registro de ahorro necesita revisión antes de consultar o cambiar beneficiarios. Comunícate con la encargada.' : 'No fue posible consultar tus beneficiarios. Intenta de nuevo.'
+        });
+      });
+      return () => {
+        alive = false;
+      };
+    }, [identityKey, revision, retry]);
+    return {
+      ...(state.identityKey === identityKey ? state : {
+        phase: 'loading'
+      }),
+      retry: () => setRetry(v => v + 1)
+    };
+  }
+  function SavingsBeneficiarySignatures({
+    signatures
+  }) {
+    const [image, setImage] = useState(''),
+      [error, setError] = useState(''),
+      [busy, setBusy] = useState(false);
+    const mounted = useRef(true);
+    React.useEffect(() => {
+      mounted.current = true;
+      return () => {
+        mounted.current = false;
+      };
+    }, []);
+    async function open(path) {
+      setError('');
+      setBusy(true);
+      setImage('');
+      try {
+        const url = await window.SavingsRepository.getBeneficiarySignature(path);
+        if (mounted.current) setImage(url);
+      } catch (e) {
+        if (mounted.current) setError('No se pudo abrir la firma. Intenta de nuevo.');
+      } finally {
+        if (mounted.current) setBusy(false);
+      }
+    }
+    const files = (signatures || []).filter(s => s.status === 'STORED' && s.path),
+      missing = (signatures || []).filter(s => s.status !== 'STORED').length;
+    return h('div', {
+      'data-beneficiary-signatures': ''
+    }, files.map((s, i) => h('button', {
+      type: 'button',
+      className: 'sav-retry',
+      key: s.path,
+      disabled: busy,
+      onClick: () => open(s.path),
+      style: {
+        margin: '8px 8px 8px 0'
+      }
+    }, 'Ver firma' + (files.length > 1 ? ' ' + (i + 1) : ''))), missing > 0 && h('p', null, 'Hay ' + missing + ' registro(s) histórico(s) sin firma disponible. Al actualizar, se solicitará una nueva firma.'), busy && h('p', {
+      role: 'status'
+    }, 'Abriendo firma…'), error && h('p', {
+      role: 'alert'
+    }, error), image && h('div', null, h('img', {
+      src: image,
+      alt: 'Firma de autorización de beneficiarios',
+      style: {
+        display: 'block',
+        maxWidth: '100%',
+        background: '#fff',
+        border: '1px solid var(--line)',
+        borderRadius: 12
+      },
+      onError: () => {
+        setImage('');
+        setError('La firma no se pudo mostrar. Vuelve a abrirla.');
+      }
+    }), h('button', {
+      type: 'button',
+      className: 'sav-retry',
+      onClick: () => setImage('')
+    }, 'Cerrar firma')));
+  }
+  function SavingsBeneficiarySignaturePad({
+    value,
+    onChange
+  }) {
+    const wrap = useRef(null),
+      change = useRef(onChange),
+      [revision, setRevision] = useState(0);
+    change.current = onChange;
+    React.useEffect(() => {
+      let width = wrap.current.clientWidth;
+      const observer = new ResizeObserver(() => {
+        const next = wrap.current.clientWidth;
+        if (next !== width) {
+          width = next;
+          change.current('');
+          setRevision(v => v + 1);
+        }
+      });
+      observer.observe(wrap.current);
+      return () => observer.disconnect();
+    }, []);
+    return h('div', {
+      ref: wrap
+    }, h(window.SignaturePad, {
+      key: revision,
+      value,
+      onChange,
+      label: 'Firma de autorización'
+    }));
+  }
+  const BENEFICIARY_CSS = `
 .ben-v2{--guinda:#910022;--guinda-600:#7e0020;--guinda-50:#fbeef1;--guinda-100:#f3d6de;--grad-guinda:linear-gradient(150deg,#e8364f 0%,#c41230 42%,#910022 100%);--ink:#14213d;--ink-2:#5a6378;--ink-3:#97a0b3;--ink-4:#c4cad6;--surface:#fff;--surface-2:#eef1f6;--bg:#f2f3f5;--hairline:#e6eaf1;--line:rgba(20,33,61,.08);--neo-sm:0 6px 16px -8px rgba(20,33,61,.16),0 2px 5px rgba(20,33,61,.05);--neo-md:0 14px 30px -12px rgba(20,33,61,.2),0 4px 10px -2px rgba(20,33,61,.06);--neo-inset:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9);--glow:0 10px 26px -6px rgba(209,31,58,.55);--ok:#13794A;--ok-bg:#E7F6ED;--bad:#C0341D;--bad-bg:#FDEAEA;--warn:#8A5A00;--warn-bg:#FDF3DC;--font:'Nunito',system-ui,sans-serif;--mono:'Spline Sans Mono',ui-monospace,monospace}
 .ben-v2 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .ben-v2 body{margin:0;font-family:var(--font);background:#d9dee8;color:var(--ink);display:grid;place-items:start center;min-height:100dvh;padding:24px 0}
@@ -19954,16 +23488,37 @@ Object.assign(window, {
 @media (prefers-reduced-motion:reduce){.ben-v2 *{transition:none!important;animation:none!important}}
 
 `;
- const BEN_COLORS=['#910022','#1B6CA8','#13794A','#8A5A00','#6A3FA0','#B3261E'];
- const benColor=i=>BEN_COLORS[i%BEN_COLORS.length];
- const benMoney=n=>n==null||!Number.isFinite(n)?'No disponible':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
- const benProjection=(balance,pct)=>balance==null?null:balance*Number(pct)/100;
- const benTotal=rows=>rows.reduce((n,r)=>n+Math.round((Number(r.percentage)||0)*100),0);
- const benIcon=(name,size=18)=>name==='edit'?h('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.1,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true},h('path',{d:'M4 20h4L20 8a2.8 2.8 0 0 0-4-4L4 16v4Z'}),h('path',{d:'m14.5 5.5 4 4'})):h(window.Icon,{name,size,'aria-hidden':true});
- const benInitials=name=>name.trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()||'—';
- // Styles copied from the approved HTML, scoped to this flow. Sizing follows the
- // existing text-scale preference; the standalone phone frame is not reproduced.
- const BEN_RESPONSIVE=`
+  const BEN_COLORS = ['#910022', '#1B6CA8', '#13794A', '#8A5A00', '#6A3FA0', '#B3261E'];
+  const benColor = i => BEN_COLORS[i % BEN_COLORS.length];
+  const benMoney = n => n == null || !Number.isFinite(n) ? 'No disponible' : new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(n);
+  const benProjection = (balance, pct) => balance == null ? null : balance * Number(pct) / 100;
+  const benTotal = rows => rows.reduce((n, r) => n + Math.round((Number(r.percentage) || 0) * 100), 0);
+  const benIcon = (name, size = 18) => name === 'edit' ? h('svg', {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2.1,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true
+  }, h('path', {
+    d: 'M4 20h4L20 8a2.8 2.8 0 0 0-4-4L4 16v4Z'
+  }), h('path', {
+    d: 'm14.5 5.5 4 4'
+  })) : h(window.Icon, {
+    name,
+    size,
+    'aria-hidden': true
+  });
+  const benInitials = name => name.trim().split(/\s+/).slice(0, 2).map(x => x[0] || '').join('').toUpperCase() || '—';
+  // Styles copied from the approved HTML, scoped to this flow. Sizing follows the
+  // existing text-scale preference; the standalone phone frame is not reproduced.
+  const BEN_RESPONSIVE = `
  .ben-v2{position:absolute;inset:0;z-index:20;width:100%;height:100%;max-width:none;border-radius:0;box-shadow:none;background:var(--bg);color:var(--ink);font-family:var(--font);display:flex;flex-direction:column;overflow:hidden}
  .ben-v2 .top{padding-top:calc(15px + env(safe-area-inset-top))}.ben-v2 .scroll{min-height:0;overscroll-behavior:contain}.ben-v2 .pad{padding-bottom:24px}.ben-v2 .bar{gap:8px;flex-wrap:wrap}.ben-v2 .bar .btn{flex:1;min-width:0}
  .ben-v2 button,.ben-v2 input[type=range]{min-height:44px}.ben-v2 .top button,.ben-v2 .icobtn{min-width:44px;min-height:44px}.ben-v2 .btn{height:auto;min-height:52px;padding:12px;white-space:normal;line-height:1.35}.ben-v2 .tag{min-height:44px}
@@ -19976,114 +23531,891 @@ Object.assign(window, {
  @media(min-width:700px){.ben-v2 .scroll>.pad,.ben-v2 .doc,.ben-v2>.bar,.ben-v2>.top,.ben-v2 .sheet{width:min(100%,560px);margin-left:auto;margin-right:auto}.ben-v2>.top{width:100%;padding-left:max(18px,calc((100% - 524px)/2));padding-right:max(18px,calc((100% - 524px)/2))}}
  @media(prefers-reduced-motion:reduce){.ben-v2 *{animation:none!important;transition:none!important}}
  `;
- function BenDistribution({rows,hero=false}){
-  const remaining=Math.max(0,10000-benTotal(rows))/100;
-  return h(React.Fragment,null,h('div',{className:hero?'rail':'split','aria-hidden':true},rows.map((r,i)=>h('i',{key:i,style:{flexGrow:Math.max(0,Number(r.percentage)||0),flexBasis:0,background:hero?undefined:benColor(i)}})),remaining>0&&h('i',{className:'rest',style:{flexGrow:remaining,flexBasis:0,background:hero?undefined:'#dfe4ee'}})),!hero&&h('div',{className:'legend'},rows.map((r,i)=>h('span',{key:i},h('b',{style:{background:benColor(i)}}),(r.full_name.trim().split(/\s+/)[0]||'Sin nombre')+' · '+(Number(r.percentage)||0)+'%')),remaining>0&&h('span',null,'Sin asignar · '+remaining+'%')));
- }
- function BenSheet({title,onClose,children}){
-  const ref=useRef(null),close=useRef(onClose);close.current=onClose;
-  React.useEffect(()=>{const previous=document.activeElement,el=ref.current,overlay=el.parentElement;const siblings=[...overlay.parentElement.children].filter(node=>node!==overlay).map(node=>[node,node.inert]);siblings.forEach(([node])=>{node.inert=true;});el.focus();return()=>{siblings.forEach(([node,inert])=>{node.inert=inert;});if(previous&&previous.isConnected)previous.focus();};},[]);
-  function keyboard(e){if(e.key==='Escape'){e.stopPropagation();close.current();}if(e.key==='Tab'){const controls=[...ref.current.querySelectorAll('button:not(:disabled),input:not(:disabled),[tabindex="0"]')].filter(x=>x.getClientRects().length);if(!controls.length){e.preventDefault();return;}const first=controls[0],last=controls[controls.length-1];if(e.shiftKey&&(document.activeElement===first||document.activeElement===ref.current)){e.preventDefault();last.focus();}else if(!e.shiftKey&&(document.activeElement===last||document.activeElement===ref.current)){e.preventDefault();first.focus();}}}
-  return h('div',{className:'sheetpad open',onMouseDown:e=>{if(e.target===e.currentTarget)close.current();}},h('section',{className:'sheet',role:'dialog','aria-modal':true,'aria-label':title,tabIndex:-1,ref,onKeyDown:keyboard},h('div',{className:'grab'}),h('div',{className:'sheet-head'},h('h2',{className:'stit',style:{margin:0}},title),h('button',{type:'button',className:'icobtn','aria-label':'Cerrar',onClick:onClose},benIcon('close'))),children));
- }
- function BenRow({row,index,balance,onClick,signatureText}){
-  return h(onClick?'button':'div',{type:onClick?'button':undefined,className:'prow',onClick},h('span',{className:'edge',style:{background:benColor(index)}}),h('span',{className:'av',style:{background:benColor(index)}},benInitials(row.full_name)),h('span',{style:{flex:1,minWidth:90}},h('span',{className:'pname'},row.full_name),h('span',{className:'prel'},row.relationship||'Parentesco por confirmar',signatureText&&h('span',{className:'firm'},signatureText))),h('span',{className:'pamt'},h('span',{className:'n',style:{color:benColor(index)}},Number(row.percentage)+'%'),h('span',{className:'m'},benMoney(benProjection(balance,row.percentage)))),onClick&&benIcon('chevR'));
- }
- function SavingsBeneficiariesExperience({state,balanceView,onClose,onSaved}){
-  const [editing,setEditing]=useState(false),[detail,setDetail]=useState(null),ref=useRef(null);
-  React.useEffect(()=>{const previous=document.activeElement;ref.current?.focus();return()=>{if(previous&&previous.isConnected)previous.focus();};},[editing]);
-  const data=state.data,rows=data?data.beneficiaries:[],balance=balanceView.value;
-  const signatures=data?data.signatures:[],stored=signatures.filter(s=>s.status==='STORED'&&s.path).length;
-  // The RPC exposes version documents, not a per-person signature mapping.
-  const signatureText=stored?'Firma de designación disponible':'Falta firma';
-  if(editing)return h(SavingsBeneficiariesForm,{beneficiaries:editing.beneficiaries,versionId:editing.version_id,balance,onSaved,onClose:()=>setEditing(false)});
-  const remaining=(10000-benTotal(rows))/100;
-  return h('section',{className:'ben-v2',ref,tabIndex:-1,'aria-label':'Beneficiarios','data-beneficiaries-v2':'summary'},h('style',null,BENEFICIARY_CSS+BEN_RESPONSIVE),h('header',{className:'top'},h('button',{type:'button',onClick:onClose,'aria-label':'Volver a Ahorro'},benIcon('arrowL')),h('div',null,h('h1',null,'Beneficiarios'),h('div',{className:'sub'},'Quién cobra tu ahorro'))),
-   h('main',{className:'scroll'},h('div',{className:'doc'},h('div',{className:'seal'},h('svg',{width:150,height:150,viewBox:'0 0 100 100',fill:'none',stroke:'#fff',strokeWidth:1.6,'aria-hidden':true},h('circle',{cx:50,cy:50,r:46}),h('circle',{cx:50,cy:50,r:37}),h('path',{d:'M50 13v74M13 50h74'}))),h('div',{className:'k'},'TU AHORRO ACTUAL'),h('div',{className:'money','data-beneficiaries-balance':balance==null?'':balance},balanceView.label),h('div',{className:'note'},'Estimación con tu saldo actual y los porcentajes que tú decidas.'),state.phase==='ready'&&h(React.Fragment,null,h(BenDistribution,{rows,hero:true}),h('div',{className:'veredicto'},benIcon(remaining===0?'check':'info'),remaining===0?'Repartido al 100% entre '+rows.length+(rows.length===1?' persona':' personas'):'Falta repartir '+remaining+'% · '+benMoney(benProjection(balance,remaining))))),
-    h('div',{className:'pad'},state.phase==='loading'&&h('p',{role:'status'},'Consultando tus beneficiarios…'),state.phase==='error'&&h('div',null,h('p',{role:'alert'},state.error),h('button',{className:'btn pri block',onClick:state.retry},'Reintentar')),
-     state.phase==='ready'&&h(React.Fragment,null,h('div',{className:'sh'},h('b',null,'QUIÉN COBRA Y CUÁNTO'),h('s',null,'proyección actual')),rows.length?h('div',{className:'list','data-savings-beneficiaries':''},rows.map((row,index)=>h(BenRow,{key:row.id,row,index,balance,signatureText,onClick:()=>setDetail({row,index})}))):h('div',{className:'empty'},h('div',{className:'ic'},benIcon('users',26)),h('b',null,'Nadie designado todavía'),h('s',null,'No hay beneficiarios registrados.')),
-      data.pending_count>0&&h('div',{className:'state warn',role:'status',style:{marginTop:16}},'Hay registros anteriores pendientes de revisión que no forman parte de tu distribución vigente.'),h('div',{className:'foot'},benIcon('info',14),h('span',null,'Los importes son proyecciones sobre el saldo actual, no cantidades futuras garantizadas. El cambio sustituye la designación vigente y conserva su historia.'))))),
-   state.phase==='ready'&&data.can_edit&&h('footer',{className:'bar'},h('button',{className:'btn pri block',onClick:()=>setEditing(data)},benIcon('edit'),'Cambiar beneficiarios')),
-   detail&&h(BenSheet,{title:detail.row.full_name,onClose:()=>setDetail(null)},h('div',{className:'prel'},detail.row.relationship||'Parentesco por confirmar'),h('div',{className:'detail-grid'},h('div',null,h('small',null,'LE CORRESPONDE'),h('strong',{style:{color:benColor(detail.index)}},Number(detail.row.percentage)+'%')),h('div',null,h('small',null,'RECIBIRÍA HOY · ESTIMACIÓN'),h('strong',null,benMoney(benProjection(balance,detail.row.percentage))))),h('div',{className:'state '+(stored?'ok':'warn')},signatureText),h('p',null,'Documentos de firma de esta designación. No acreditan la aceptación individual del beneficiario.'),h(SavingsBeneficiarySignatures,{signatures}),h('button',{className:'btn sec block',onClick:()=>setDetail(null)},'Cerrar detalle')));
- }
- function SavingsBeneficiariesForm({beneficiaries,versionId,onSaved,onClose,balance}){
-  const [rows,setRows]=useState(()=>beneficiaries?.length?beneficiaries.map(x=>({full_name:x.full_name,relationship:x.relationship||'',percentage:String(x.percentage)})):[{full_name:'',relationship:'',percentage:'100'}]);
-  const [busy,setBusy]=useState(false),[review,setReview]=useState(false),[error,setError]=useState(''),[signature,setSignature]=useState(''),[accepted,setAccepted]=useState(false),[signatureRevision,setSignatureRevision]=useState(0),[saved,setSaved]=useState(false);
-  const [remove,setRemove]=useState(null),[signing,setSigning]=useState(false),[cancel,setCancel]=useState(false),[stroke,setStroke]=useState('');
-  const heading=useRef(null),scroll=useRef(null);
-  React.useEffect(()=>{heading.current?.focus();scroll.current?.scrollTo(0,0);},[review,saved]);
-  const lock=useRef(false),attempt=useRef();
-  function reset(){setReview(false);setError('');setSignature('');setAccepted(false);setSignatureRevision(v=>v+1);attempt.current=null;}
-  const update=(i,k,v)=>{setRows(a=>a.map((r,n)=>n===i?{...r,[k]:v}:r));reset();};
-  const cents=rows.reduce((n,r)=>n+Math.round(Number(r.percentage)*100),0);
-  const valid=rows.length>0&&rows.length<=20&&cents===10000&&rows.every(r=>r.full_name.trim().length>=3&&r.full_name.trim().length<=180&&(!r.relationship.trim()||r.relationship.trim().length>=2&&r.relationship.trim().length<=80)&&/^\d+(\.\d{1,2})?$/.test(r.percentage)&&Number(r.percentage)>0&&Number(r.percentage)<=100);
-  async function submit(e){e.preventDefault();if(e.nativeEvent&&e.nativeEvent.submitter&&e.nativeEvent.submitter.getAttribute('data-beneficiary-submit')!=='true')return;if(lock.current||!valid||saved)return;if(!review){setReview(true);return;}if(!signature||!accepted)return;
-   lock.current=true;setBusy(true);setError('');if(!attempt.current)attempt.current=crypto.randomUUID();
-   try{await window.SavingsRepository.replaceBeneficiaries(rows.map(r=>({full_name:r.full_name.trim(),relationship:r.relationship.trim()||null,percentage:Number(r.percentage)})),attempt.current,{signature,accepted,versionId});setSaved(true);onSaved();}
-   catch(e){setError(/IDEMPOTENCY|CHANGED|STALE/.test(String(e.message))?'Los datos cambiaron. Cierra esta propuesta y actualiza tus beneficiarios antes de intentar de nuevo.':/OVER_100|INVALID/.test(String(e.message))?'Revisa nombres y porcentajes. El total no puede superar el 100 %.':'No se pudo confirmar el guardado. Conservamos tu captura y firma para reintentar.');}
-   finally{lock.current=false;setBusy(false);}
+  function BenDistribution({
+    rows,
+    hero = false
+  }) {
+    const remaining = Math.max(0, 10000 - benTotal(rows)) / 100;
+    return h(React.Fragment, null, h('div', {
+      className: hero ? 'rail' : 'split',
+      'aria-hidden': true
+    }, rows.map((r, i) => h('i', {
+      key: i,
+      style: {
+        flexGrow: Math.max(0, Number(r.percentage) || 0),
+        flexBasis: 0,
+        background: hero ? undefined : benColor(i)
+      }
+    })), remaining > 0 && h('i', {
+      className: 'rest',
+      style: {
+        flexGrow: remaining,
+        flexBasis: 0,
+        background: hero ? undefined : '#dfe4ee'
+      }
+    })), !hero && h('div', {
+      className: 'legend'
+    }, rows.map((r, i) => h('span', {
+      key: i
+    }, h('b', {
+      style: {
+        background: benColor(i)
+      }
+    }), (r.full_name.trim().split(/\s+/)[0] || 'Sin nombre') + ' · ' + (Number(r.percentage) || 0) + '%')), remaining > 0 && h('span', null, 'Sin asignar · ' + remaining + '%')));
   }
-  const remaining=Number.isFinite(cents)?(10000-cents)/100:100;
-  const signButton=()=>h('button',{type:'button',className:'sign tocable '+(signature?'':'pend'),disabled:busy||!valid,onClick:()=>{setStroke('');setSigning(true);}},h('span',{className:'thumb'},signature?h('img',{src:signature,alt:'Firma de autorización capturada'}):benIcon('edit',22)),h('span',{style:{flex:1}},h('b',null,signature?'Firma capturada':'Firmar aquí'),h('s',null,signature?'Toca para volver a firmar':'Una firma autoriza toda la designación')),benIcon('chevR'));
-  return h('section',{className:'ben-v2','data-beneficiaries-v2':saved?'saved':review?'review':'editor'},h('style',null,BENEFICIARY_CSS+BEN_RESPONSIVE),
-   h('header',{className:'top'},h('button',{type:'button',disabled:busy,onClick:()=>review?setReview(false):setCancel(true),'aria-label':'Regresar'},benIcon('arrowL')),h('div',null,h('h1',{ref:heading,tabIndex:-1},saved?'Cambio registrado':review?'Revisa el cambio':'Cambiar beneficiarios'),h('div',{className:'sub'},'Reparto de '+benMoney(balance)))),
-   h('form',{onSubmit:submit,'data-beneficiaries-form':'',style:{display:'contents'}},h('main',{className:'scroll',ref:scroll},h('div',{className:'pad',style:{paddingTop:16}},saved?h('div',{className:'empty',role:'status'},h('div',{className:'ic'},benIcon('check',26)),h('b',null,'Tus beneficiarios quedaron guardados'),h('s',null,'La firma y el consentimiento quedaron registrados con la nueva designación.')):h(React.Fragment,null,
-    h('div',{className:'hero'},h('div',{className:'k'},'REPARTO ASIGNADO'),h('div',{className:'money',style:{fontSize:'calc(27px * var(--text-scale,1))',color:remaining===0?'var(--ok)':remaining<0?'var(--bad)':'var(--ink)'}},(Number.isFinite(cents)?cents/100:0)+'%'),h('div',{className:'note'},'de 100% · '+benMoney(benProjection(balance,Math.min(100,cents/100)))),h(BenDistribution,{rows})),
-    h('div',{className:'status '+(remaining===0?'ok':remaining<0?'bad':'warn'),role:remaining<0?'alert':'status','aria-live':'polite'},h('span',{className:'ic'},benIcon(remaining===0?'check':'info')),h('div',null,h('b',null,remaining===0?'Reparto completo · 100%':remaining<0?'Te pasaste por '+(-remaining)+'%':'Falta repartir '+remaining+'%'),h('s',null,remaining<0?'La suma de los porcentajes no puede superar el 100 %.':remaining>0?benMoney(benProjection(balance,remaining))+' por asignar. Completa el reparto antes de revisar.':'Revisa nombres y porcentajes antes de confirmar.'))),
-    review?h(React.Fragment,null,h('div',{className:'list'},rows.map((row,index)=>h(BenRow,{key:index,row,index,balance})),h('div',{className:'revtot'},h('span',null,'Total repartido'),h('b',null,'100%'))),h('div',{className:'state warn',style:{marginTop:16}},benIcon('info'),h('div',null,h('b',null,'Sustituye la designación anterior'),h('s',null,'La distribución vigente será reemplazada. Su registro histórico se conserva.'))),signButton(),h('label',{className:'consent'},h('input',{type:'checkbox',checked:accepted,disabled:busy||!signature,onChange:e=>{setAccepted(e.target.checked);attempt.current=null;}}),'Autorizo esta distribución de mi ahorro entre los beneficiarios indicados en caso de fallecimiento.')):
-    h(React.Fragment,null,rows.length>=2&&h('button',{type:'button',className:'smart nuevo',onClick:()=>{const base=Math.floor(10000/rows.length);setRows(a=>a.map((r,i)=>({...r,percentage:String((i===a.length-1?10000-base*(a.length-1):base)/100)})));reset();}},h('span',{className:'sheen'}),h('span',{className:'ic'},benIcon('users',20)),h('span',null,h('b',null,'Repartir en partes iguales'),h('s',null,'Reparto exacto del 100%'))),
-     rows.map((r,i)=>h('fieldset',{className:'ed',key:i,disabled:busy},h('div',{className:'edhead'},h('span',{className:'n',style:{background:benColor(i)}},i+1),h('b',null,r.full_name||'Beneficiario '+(i+1)),h('button',{type:'button',className:'icobtn danger','aria-label':'Quitar beneficiario '+(i+1),onClick:()=>setRemove(i)},benIcon('trash'))),
-      h('label',null,h('span',{className:'lab'},'Nombre completo'),h('input',{className:'field',value:r.full_name,maxLength:180,placeholder:'Nombre como aparece en su identificación',autoComplete:'off',onChange:e=>update(i,'full_name',e.target.value)})),
-      h('span',{className:'lab'},'PARENTESCO'),h('div',{className:'chips',role:'group','aria-label':'Parentesco de beneficiario '+(i+1)},['Cónyuge','Hijo(a)','Madre','Padre','Hermano(a)','Otro'].map(p=>h('button',{type:'button',className:'tag',key:p,'aria-pressed':r.relationship===p,onClick:()=>update(i,'relationship',r.relationship===p?'':p)},p))),
-      r.relationship&&!['Cónyuge','Hijo(a)','Madre','Padre','Hermano(a)','Otro'].includes(r.relationship)&&h('p',{className:'prel'},'Parentesco registrado: '+r.relationship),
-      h('span',{className:'lab'},'LE CORRESPONDE'),h('div',{className:'pctrow'},h('button',{type:'button',className:'step','aria-label':'Bajar 5 por ciento',disabled:Number(r.percentage)<=0,onClick:()=>update(i,'percentage',String(Math.max(0,Math.round(((Number(r.percentage)||0)-5)*100)/100)))},'−5'),h('div',{className:'pctbox'},h('input',{'aria-label':'Porcentaje',inputMode:'decimal',value:r.percentage,maxLength:6,onChange:e=>update(i,'percentage',e.target.value.replace(',','.'))}),h('em',null,'%')),h('button',{type:'button',className:'step','aria-label':'Subir 5 por ciento',disabled:Number(r.percentage)>=100,onClick:()=>update(i,'percentage',String(Math.min(100,Math.round(((Number(r.percentage)||0)+5)*100)/100)))},'+5')),
-      h('input',{type:'range',className:'rng',min:0,max:100,step:0.01,value:Number(r.percentage)||0,'aria-label':'Porcentaje con deslizador',onChange:e=>update(i,'percentage',e.target.value)}),h('div',{className:'money-hint'},'Recibiría ',h('b',null,benMoney(benProjection(balance,r.percentage))),' de tu ahorro actual · estimación'),
-      remaining>0&&h('div',{className:'quick'},h('button',{type:'button',className:'tag',onClick:()=>update(i,'percentage',String(Math.round(((Number(r.percentage)||0)+remaining)*100)/100))},'Darle el '+remaining+'% restante')),
-      remove===i&&h('div',{className:'confirm'},h('span',null,'¿Quitar a esta persona del reparto?'),h('button',{type:'button',className:'btn sm sec',onClick:()=>setRemove(null)},'No'),h('button',{type:'button',className:'btn sm pri',onClick:()=>{setRows(a=>a.filter((_,n)=>n!==i));setRemove(null);reset();}},'Quitar')))),
-     h('button',{type:'button',className:'btn sec block',disabled:busy||rows.length>=20,onClick:()=>{setRows(a=>[...a,{full_name:'',relationship:'',percentage:String(Math.max(0,remaining))}]);setRemove(null);reset();}},benIcon('plus'),rows.length>=20?'Máximo 20 beneficiarios':'Agregar beneficiario'),
-     signButton()),
-    h('div',{className:'foot'},benIcon('info',14),h('span',null,'Los importes son proyecciones sobre tu saldo actual. Se guardan porcentajes, no cantidades monetarias.')),
-    error&&h('p',{role:'alert'},error)))),
-    h('footer',{className:'bar'},saved?h('button',{type:'button',className:'btn pri block',onClick:onClose},'Entendido'):h(React.Fragment,null,h('button',{type:'button',className:'btn out',disabled:busy,onClick:()=>review?setReview(false):setCancel(true)},review?'Volver a editar':'Cancelar'),review&&!signature?h('button',{type:'button',className:'btn pri',disabled:busy||!valid,onClick:()=>{setStroke('');setSigning(true);}},'Confirmar y firmar'):h('button',{type:'submit','data-beneficiary-submit':'true',className:'btn pri',disabled:!valid||busy||review&&(!signature||!accepted)},busy?'Guardando…':review?'Confirmar beneficiarios':'Revisar cambios')))),
-   signing&&h(BenSheet,{title:'Firma de autorización',onClose:()=>{setSigning(false);setStroke('');}},h('p',null,'Traza tu firma con el dedo o el mouse. Autoriza la distribución completa; no representa la firma individual de cada beneficiario.'),h(SavingsBeneficiarySignaturePad,{key:signatureRevision,value:stroke,onChange:setStroke}),h('button',{type:'button',className:'btn pri block',disabled:!stroke,onClick:()=>{setSignature(stroke);setAccepted(false);attempt.current=null;setSigning(false);setStroke('');}},'Guardar firma')),
-   cancel&&h(BenSheet,{title:'¿Descartar esta propuesta?',onClose:()=>setCancel(false)},h('p',null,'La designación guardada seguirá vigente.'),h('button',{type:'button',className:'btn sec block',onClick:()=>setCancel(false)},'Seguir editando'),h('button',{type:'button',className:'btn pri block',style:{marginTop:12},onClick:onClose},'Descartar cambios')));
- }
- window.useSavingsBeneficiaries=useSavingsBeneficiaries;
- window.SavingsBeneficiarySignatures=SavingsBeneficiarySignatures;
- window.SavingsBeneficiariesExperience=SavingsBeneficiariesExperience;
-
- function joinDate(value){return value?new Date(value+(String(value).length===10?'T12:00:00Z':'')).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric',timeZone:'America/Hermosillo'}):'Por confirmar';}
- function joinReason(reason){return {IDENTITY_REVIEW:'La encargada debe revisar la vinculación de tu Folio.',OPENING_REVIEW:'Tu registro anterior está en revisión. La encargada debe confirmarlo antes de un nuevo ingreso.',CATEGORY_REQUIRED:'Falta confirmar tu tipo de trabajador para calcular las fechas. Comunícate con la encargada.',INTAKE_CLOSED:'Por el momento no se reciben nuevos ingresos al ahorro.',REQUEST_PENDING:'Hay un ingreso anterior pendiente de resolución. Consulta su seguimiento.'}[reason]||'';}
- function SavingsJoinSchedule({rows}){return h('details',{'data-savings-join-schedule':''},h('summary',null,'Próximos descuentos previstos'),h('p',null,'Proyección de un año. No es saldo recibido y no incluye rendimientos.'),(rows||[]).map(r=>h('div',{className:'sav-row',key:r.contribution_date},h('span',null,joinDate(r.contribution_date)),h('b',null,new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.expected_amount)))));}
- function SavingsJoinAccess({revision,onJoin,existing}){
-  const [context,setContext]=useState(null),[error,setError]=useState(false),[retry,setRetry]=useState(0);
-  React.useEffect(()=>{let alive=true;setContext(null);setError(false);Promise.resolve().then(()=>window.SavingsRepository.getJoinContext()).then(v=>{if(alive)setContext(v);}).catch(()=>{if(alive)setError(true);});return()=>{alive=false;};},[revision,retry]);
-  if(existing&&(!context||!context.request&&!context.can_join))return error?h('p',{role:'alert'},'No se pudo consultar el registro de ingreso.',h('button',{className:'sav-retry',onClick:()=>setRetry(v=>v+1)},'Reintentar')):null;
-  const request=context&&context.request,states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisión',APPROVED:'Ingreso registrado',REJECTED:'Rechazada',CANCELLED:'Cancelada',APPLIED:'Aplicada'};
-  const pending=request&&['SUBMITTED','UNDER_REVIEW'].includes(request.status);
-  if(request&&['SUBMITTED','UNDER_REVIEW','APPROVED','APPLIED'].includes(request.status))return h('section',{'data-savings-join-access':'','data-savings-join-pending':pending?'':undefined,'data-savings-join-status':request.status,'aria-label':'Tu solicitud de ingreso',style:{margin:existing?'12px 16px':undefined,padding:16,border:'1px solid #e4e4e8',borderRadius:17,background:'#fff',boxShadow:'0 3px 8px rgba(20,33,61,.05)',color:'var(--ink, #14213d)',fontFamily:'inherit',textAlign:'left',flexShrink:0,maxHeight:existing?'45vh':undefined,overflowY:'auto',boxSizing:'border-box'}},
-   h('div',{style:{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}},
-    h('h3',{style:{margin:0,flex:'1 1 140px',fontSize:14,fontWeight:800}},pending?'Seguimiento de tu ingreso':'Tu ingreso al ahorro'),
-    h('span',{style:{padding:'5px 9px',borderRadius:999,background:pending?'#fff1d5':'#edf8f1',color:pending?'#9a6813':'#157f4a',fontSize:10,fontWeight:750}},pending?(request.status==='SUBMITTED'?'Recibida':'En revisi\u00f3n'):states[request.status])),
-   h('p',{style:{margin:'10px 0 14px',fontSize:12,lineHeight:1.5,color:'var(--muted, #85858d)'}},pending?'Este ingreso anterior o asistido sigue pendiente de resolución. Su seguimiento se conserva.':'Tu ingreso quedó registrado. Consulta la fecha del primer descuento previsto.'),
-   h('div',{style:{padding:'12px 14px',borderRadius:12,background:'var(--pink, #f9edf2)'}},
-    h('span',{style:{display:'block',fontSize:11,color:'var(--muted, #85858d)',fontWeight:650}},'Monto por descuento'),
-    h('strong',{style:{display:'block',marginTop:3,fontSize:24,fontWeight:800,fontVariantNumeric:'tabular-nums',color:'var(--wine, #a00042)'}},new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(request.amount))),
-   h('dl',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,margin:'14px 0',fontSize:11}},
-    [['Registrada',joinDate(request.submitted_at)],['Primer descuento previsto',joinDate(request.effective_from)]].map(([label,value])=>h('div',{key:label},h('dt',{style:{color:'var(--muted, #85858d)',lineHeight:1.4}},label),h('dd',{style:{margin:'4px 0 0',fontWeight:750,lineHeight:1.4}},value)))),
-   h('details',{'data-savings-join-schedule':'',style:{borderTop:'1px solid var(--line, #e4e4e8)',paddingTop:12,fontSize:12}},
-    h('summary',{style:{cursor:'pointer',color:'var(--wine, #a00042)',fontWeight:750,lineHeight:1.5}},'Pr\u00f3ximos descuentos previstos'),
-    h('p',{style:{fontSize:11,lineHeight:1.5,color:'var(--muted, #85858d)'}},'Proyecci\u00f3n de un a\u00f1o. No es saldo recibido y no incluye rendimientos.'),
-    (context.upcoming||[]).map(r=>h('div',{className:'sav-row',key:r.contribution_date},h('span',null,joinDate(r.contribution_date)),h('b',null,new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(r.expected_amount))))));
-  return h('div',{'data-savings-join-access':'',style:existing?{margin:'12px 16px'}:undefined},
-   (!existing||context.can_join)&&h('button',{type:'button',className:'sav-primary',disabled:!context||!context.can_join,onClick:()=>onJoin(context)},'Ingresar al ahorro'),
-   !context&&!error&&!existing&&h('p',{role:'status'},'Consultando disponibilidad…'),error&&h('p',{role:'alert'},'No se pudo consultar el ingreso al ahorro. ',h('button',{className:'sav-retry',onClick:()=>setRetry(v=>v+1)},'Reintentar')),
-   context&&joinReason(context.reason)&&h('p',null,joinReason(context.reason)),request&&h('div',{style:{textAlign:'left'}},h('h3',null,'Tu solicitud de ingreso'),h('p',null,states[request.status]||'Por confirmar'),h('p',null,'Registrada: '+joinDate(request.submitted_at)),h('p',null,'Monto por descuento: '+new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(request.amount)),h('p',null,'Primer descuento previsto: '+joinDate(request.effective_from)),h(SavingsJoinSchedule,{rows:context.upcoming})));
- }
- window.SavingsJoinAccess=SavingsJoinAccess;
- window.SavingsRequestHistory=SavingsRequestHistory;
- window.SavingsBeneficiariesForm=SavingsBeneficiariesForm;
- window.SavingsRequestForm=SavingsRequestForm;
+  function BenSheet({
+    title,
+    onClose,
+    children
+  }) {
+    const ref = useRef(null),
+      close = useRef(onClose);
+    close.current = onClose;
+    React.useEffect(() => {
+      const previous = document.activeElement,
+        el = ref.current,
+        overlay = el.parentElement;
+      const siblings = [...overlay.parentElement.children].filter(node => node !== overlay).map(node => [node, node.inert]);
+      siblings.forEach(([node]) => {
+        node.inert = true;
+      });
+      el.focus();
+      return () => {
+        siblings.forEach(([node, inert]) => {
+          node.inert = inert;
+        });
+        if (previous && previous.isConnected) previous.focus();
+      };
+    }, []);
+    function keyboard(e) {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        close.current();
+      }
+      if (e.key === 'Tab') {
+        const controls = [...ref.current.querySelectorAll('button:not(:disabled),input:not(:disabled),[tabindex="0"]')].filter(x => x.getClientRects().length);
+        if (!controls.length) {
+          e.preventDefault();
+          return;
+        }
+        const first = controls[0],
+          last = controls[controls.length - 1];
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || document.activeElement === ref.current)) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+    return h('div', {
+      className: 'sheetpad open',
+      onMouseDown: e => {
+        if (e.target === e.currentTarget) close.current();
+      }
+    }, h('section', {
+      className: 'sheet',
+      role: 'dialog',
+      'aria-modal': true,
+      'aria-label': title,
+      tabIndex: -1,
+      ref,
+      onKeyDown: keyboard
+    }, h('div', {
+      className: 'grab'
+    }), h('div', {
+      className: 'sheet-head'
+    }, h('h2', {
+      className: 'stit',
+      style: {
+        margin: 0
+      }
+    }, title), h('button', {
+      type: 'button',
+      className: 'icobtn',
+      'aria-label': 'Cerrar',
+      onClick: onClose
+    }, benIcon('close'))), children));
+  }
+  function BenRow({
+    row,
+    index,
+    balance,
+    onClick,
+    signatureText
+  }) {
+    return h(onClick ? 'button' : 'div', {
+      type: onClick ? 'button' : undefined,
+      className: 'prow',
+      onClick
+    }, h('span', {
+      className: 'edge',
+      style: {
+        background: benColor(index)
+      }
+    }), h('span', {
+      className: 'av',
+      style: {
+        background: benColor(index)
+      }
+    }, benInitials(row.full_name)), h('span', {
+      style: {
+        flex: 1,
+        minWidth: 90
+      }
+    }, h('span', {
+      className: 'pname'
+    }, row.full_name), h('span', {
+      className: 'prel'
+    }, row.relationship || 'Parentesco por confirmar', signatureText && h('span', {
+      className: 'firm'
+    }, signatureText))), h('span', {
+      className: 'pamt'
+    }, h('span', {
+      className: 'n',
+      style: {
+        color: benColor(index)
+      }
+    }, Number(row.percentage) + '%'), h('span', {
+      className: 'm'
+    }, benMoney(benProjection(balance, row.percentage)))), onClick && benIcon('chevR'));
+  }
+  function SavingsBeneficiariesExperience({
+    state,
+    balanceView,
+    onClose,
+    onSaved
+  }) {
+    const [editing, setEditing] = useState(false),
+      [detail, setDetail] = useState(null),
+      ref = useRef(null);
+    React.useEffect(() => {
+      const previous = document.activeElement;
+      ref.current?.focus();
+      return () => {
+        if (previous && previous.isConnected) previous.focus();
+      };
+    }, [editing]);
+    const data = state.data,
+      rows = data ? data.beneficiaries : [],
+      balance = balanceView.value;
+    const signatures = data ? data.signatures : [],
+      stored = signatures.filter(s => s.status === 'STORED' && s.path).length;
+    // The RPC exposes version documents, not a per-person signature mapping.
+    const signatureText = stored ? 'Firma de designación disponible' : 'Falta firma';
+    if (editing) return h(SavingsBeneficiariesForm, {
+      beneficiaries: editing.beneficiaries,
+      versionId: editing.version_id,
+      balance,
+      onSaved,
+      onClose: () => setEditing(false)
+    });
+    const remaining = (10000 - benTotal(rows)) / 100;
+    return h('section', {
+      className: 'ben-v2',
+      ref,
+      tabIndex: -1,
+      'aria-label': 'Beneficiarios',
+      'data-beneficiaries-v2': 'summary'
+    }, h('style', null, BENEFICIARY_CSS + BEN_RESPONSIVE), h('header', {
+      className: 'top'
+    }, h('button', {
+      type: 'button',
+      onClick: onClose,
+      'aria-label': 'Volver a Ahorro'
+    }, benIcon('arrowL')), h('div', null, h('h1', null, 'Beneficiarios'), h('div', {
+      className: 'sub'
+    }, 'Quién cobra tu ahorro'))), h('main', {
+      className: 'scroll'
+    }, h('div', {
+      className: 'doc'
+    }, h('div', {
+      className: 'seal'
+    }, h('svg', {
+      width: 150,
+      height: 150,
+      viewBox: '0 0 100 100',
+      fill: 'none',
+      stroke: '#fff',
+      strokeWidth: 1.6,
+      'aria-hidden': true
+    }, h('circle', {
+      cx: 50,
+      cy: 50,
+      r: 46
+    }), h('circle', {
+      cx: 50,
+      cy: 50,
+      r: 37
+    }), h('path', {
+      d: 'M50 13v74M13 50h74'
+    }))), h('div', {
+      className: 'k'
+    }, 'TU AHORRO ACTUAL'), h('div', {
+      className: 'money',
+      'data-beneficiaries-balance': balance == null ? '' : balance
+    }, balanceView.label), h('div', {
+      className: 'note'
+    }, 'Estimación con tu saldo actual y los porcentajes que tú decidas.'), state.phase === 'ready' && h(React.Fragment, null, h(BenDistribution, {
+      rows,
+      hero: true
+    }), h('div', {
+      className: 'veredicto'
+    }, benIcon(remaining === 0 ? 'check' : 'info'), remaining === 0 ? 'Repartido al 100% entre ' + rows.length + (rows.length === 1 ? ' persona' : ' personas') : 'Falta repartir ' + remaining + '% · ' + benMoney(benProjection(balance, remaining))))), h('div', {
+      className: 'pad'
+    }, state.phase === 'loading' && h('p', {
+      role: 'status'
+    }, 'Consultando tus beneficiarios…'), state.phase === 'error' && h('div', null, h('p', {
+      role: 'alert'
+    }, state.error), h('button', {
+      className: 'btn pri block',
+      onClick: state.retry
+    }, 'Reintentar')), state.phase === 'ready' && h(React.Fragment, null, h('div', {
+      className: 'sh'
+    }, h('b', null, 'QUIÉN COBRA Y CUÁNTO'), h('s', null, 'proyección actual')), rows.length ? h('div', {
+      className: 'list',
+      'data-savings-beneficiaries': ''
+    }, rows.map((row, index) => h(BenRow, {
+      key: row.id,
+      row,
+      index,
+      balance,
+      signatureText,
+      onClick: () => setDetail({
+        row,
+        index
+      })
+    }))) : h('div', {
+      className: 'empty'
+    }, h('div', {
+      className: 'ic'
+    }, benIcon('users', 26)), h('b', null, 'Nadie designado todavía'), h('s', null, 'No hay beneficiarios registrados.')), data.pending_count > 0 && h('div', {
+      className: 'state warn',
+      role: 'status',
+      style: {
+        marginTop: 16
+      }
+    }, 'Hay registros anteriores pendientes de revisión que no forman parte de tu distribución vigente.'), h('div', {
+      className: 'foot'
+    }, benIcon('info', 14), h('span', null, 'Los importes son proyecciones sobre el saldo actual, no cantidades futuras garantizadas. El cambio sustituye la designación vigente y conserva su historia.'))))), state.phase === 'ready' && data.can_edit && h('footer', {
+      className: 'bar'
+    }, h('button', {
+      className: 'btn pri block',
+      onClick: () => setEditing(data)
+    }, benIcon('edit'), 'Cambiar beneficiarios')), detail && h(BenSheet, {
+      title: detail.row.full_name,
+      onClose: () => setDetail(null)
+    }, h('div', {
+      className: 'prel'
+    }, detail.row.relationship || 'Parentesco por confirmar'), h('div', {
+      className: 'detail-grid'
+    }, h('div', null, h('small', null, 'LE CORRESPONDE'), h('strong', {
+      style: {
+        color: benColor(detail.index)
+      }
+    }, Number(detail.row.percentage) + '%')), h('div', null, h('small', null, 'RECIBIRÍA HOY · ESTIMACIÓN'), h('strong', null, benMoney(benProjection(balance, detail.row.percentage))))), h('div', {
+      className: 'state ' + (stored ? 'ok' : 'warn')
+    }, signatureText), h('p', null, 'Documentos de firma de esta designación. No acreditan la aceptación individual del beneficiario.'), h(SavingsBeneficiarySignatures, {
+      signatures
+    }), h('button', {
+      className: 'btn sec block',
+      onClick: () => setDetail(null)
+    }, 'Cerrar detalle')));
+  }
+  function SavingsBeneficiariesForm({
+    beneficiaries,
+    versionId,
+    onSaved,
+    onClose,
+    balance
+  }) {
+    const [rows, setRows] = useState(() => beneficiaries?.length ? beneficiaries.map(x => ({
+      full_name: x.full_name,
+      relationship: x.relationship || '',
+      percentage: String(x.percentage)
+    })) : [{
+      full_name: '',
+      relationship: '',
+      percentage: '100'
+    }]);
+    const [busy, setBusy] = useState(false),
+      [review, setReview] = useState(false),
+      [error, setError] = useState(''),
+      [signature, setSignature] = useState(''),
+      [accepted, setAccepted] = useState(false),
+      [signatureRevision, setSignatureRevision] = useState(0),
+      [saved, setSaved] = useState(false);
+    const [remove, setRemove] = useState(null),
+      [signing, setSigning] = useState(false),
+      [cancel, setCancel] = useState(false),
+      [stroke, setStroke] = useState('');
+    const heading = useRef(null),
+      scroll = useRef(null);
+    React.useEffect(() => {
+      heading.current?.focus();
+      scroll.current?.scrollTo(0, 0);
+    }, [review, saved]);
+    const lock = useRef(false),
+      attempt = useRef();
+    function reset() {
+      setReview(false);
+      setError('');
+      setSignature('');
+      setAccepted(false);
+      setSignatureRevision(v => v + 1);
+      attempt.current = null;
+    }
+    const update = (i, k, v) => {
+      setRows(a => a.map((r, n) => n === i ? {
+        ...r,
+        [k]: v
+      } : r));
+      reset();
+    };
+    const cents = rows.reduce((n, r) => n + Math.round(Number(r.percentage) * 100), 0);
+    const valid = rows.length > 0 && rows.length <= 20 && cents === 10000 && rows.every(r => r.full_name.trim().length >= 3 && r.full_name.trim().length <= 180 && (!r.relationship.trim() || r.relationship.trim().length >= 2 && r.relationship.trim().length <= 80) && /^\d+(\.\d{1,2})?$/.test(r.percentage) && Number(r.percentage) > 0 && Number(r.percentage) <= 100);
+    async function submit(e) {
+      e.preventDefault();
+      if (e.nativeEvent && e.nativeEvent.submitter && e.nativeEvent.submitter.getAttribute('data-beneficiary-submit') !== 'true') return;
+      if (lock.current || !valid || saved) return;
+      if (!review) {
+        setReview(true);
+        return;
+      }
+      if (!signature || !accepted) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      if (!attempt.current) attempt.current = crypto.randomUUID();
+      try {
+        await window.SavingsRepository.replaceBeneficiaries(rows.map(r => ({
+          full_name: r.full_name.trim(),
+          relationship: r.relationship.trim() || null,
+          percentage: Number(r.percentage)
+        })), attempt.current, {
+          signature,
+          accepted,
+          versionId
+        });
+        setSaved(true);
+        onSaved();
+      } catch (e) {
+        setError(/IDEMPOTENCY|CHANGED|STALE/.test(String(e.message)) ? 'Los datos cambiaron. Cierra esta propuesta y actualiza tus beneficiarios antes de intentar de nuevo.' : /OVER_100|INVALID/.test(String(e.message)) ? 'Revisa nombres y porcentajes. El total no puede superar el 100 %.' : 'No se pudo confirmar el guardado. Conservamos tu captura y firma para reintentar.');
+      } finally {
+        lock.current = false;
+        setBusy(false);
+      }
+    }
+    const remaining = Number.isFinite(cents) ? (10000 - cents) / 100 : 100;
+    const signButton = () => h('button', {
+      type: 'button',
+      className: 'sign tocable ' + (signature ? '' : 'pend'),
+      disabled: busy || !valid,
+      onClick: () => {
+        setStroke('');
+        setSigning(true);
+      }
+    }, h('span', {
+      className: 'thumb'
+    }, signature ? h('img', {
+      src: signature,
+      alt: 'Firma de autorización capturada'
+    }) : benIcon('edit', 22)), h('span', {
+      style: {
+        flex: 1
+      }
+    }, h('b', null, signature ? 'Firma capturada' : 'Firmar aquí'), h('s', null, signature ? 'Toca para volver a firmar' : 'Una firma autoriza toda la designación')), benIcon('chevR'));
+    return h('section', {
+      className: 'ben-v2',
+      'data-beneficiaries-v2': saved ? 'saved' : review ? 'review' : 'editor'
+    }, h('style', null, BENEFICIARY_CSS + BEN_RESPONSIVE), h('header', {
+      className: 'top'
+    }, h('button', {
+      type: 'button',
+      disabled: busy,
+      onClick: () => review ? setReview(false) : setCancel(true),
+      'aria-label': 'Regresar'
+    }, benIcon('arrowL')), h('div', null, h('h1', {
+      ref: heading,
+      tabIndex: -1
+    }, saved ? 'Cambio registrado' : review ? 'Revisa el cambio' : 'Cambiar beneficiarios'), h('div', {
+      className: 'sub'
+    }, 'Reparto de ' + benMoney(balance)))), h('form', {
+      onSubmit: submit,
+      'data-beneficiaries-form': '',
+      style: {
+        display: 'contents'
+      }
+    }, h('main', {
+      className: 'scroll',
+      ref: scroll
+    }, h('div', {
+      className: 'pad',
+      style: {
+        paddingTop: 16
+      }
+    }, saved ? h('div', {
+      className: 'empty',
+      role: 'status'
+    }, h('div', {
+      className: 'ic'
+    }, benIcon('check', 26)), h('b', null, 'Tus beneficiarios quedaron guardados'), h('s', null, 'La firma y el consentimiento quedaron registrados con la nueva designación.')) : h(React.Fragment, null, h('div', {
+      className: 'hero'
+    }, h('div', {
+      className: 'k'
+    }, 'REPARTO ASIGNADO'), h('div', {
+      className: 'money',
+      style: {
+        fontSize: 'calc(27px * var(--text-scale,1))',
+        color: remaining === 0 ? 'var(--ok)' : remaining < 0 ? 'var(--bad)' : 'var(--ink)'
+      }
+    }, (Number.isFinite(cents) ? cents / 100 : 0) + '%'), h('div', {
+      className: 'note'
+    }, 'de 100% · ' + benMoney(benProjection(balance, Math.min(100, cents / 100)))), h(BenDistribution, {
+      rows
+    })), h('div', {
+      className: 'status ' + (remaining === 0 ? 'ok' : remaining < 0 ? 'bad' : 'warn'),
+      role: remaining < 0 ? 'alert' : 'status',
+      'aria-live': 'polite'
+    }, h('span', {
+      className: 'ic'
+    }, benIcon(remaining === 0 ? 'check' : 'info')), h('div', null, h('b', null, remaining === 0 ? 'Reparto completo · 100%' : remaining < 0 ? 'Te pasaste por ' + -remaining + '%' : 'Falta repartir ' + remaining + '%'), h('s', null, remaining < 0 ? 'La suma de los porcentajes no puede superar el 100 %.' : remaining > 0 ? benMoney(benProjection(balance, remaining)) + ' por asignar. Completa el reparto antes de revisar.' : 'Revisa nombres y porcentajes antes de confirmar.'))), review ? h(React.Fragment, null, h('div', {
+      className: 'list'
+    }, rows.map((row, index) => h(BenRow, {
+      key: index,
+      row,
+      index,
+      balance
+    })), h('div', {
+      className: 'revtot'
+    }, h('span', null, 'Total repartido'), h('b', null, '100%'))), h('div', {
+      className: 'state warn',
+      style: {
+        marginTop: 16
+      }
+    }, benIcon('info'), h('div', null, h('b', null, 'Sustituye la designación anterior'), h('s', null, 'La distribución vigente será reemplazada. Su registro histórico se conserva.'))), signButton(), h('label', {
+      className: 'consent'
+    }, h('input', {
+      type: 'checkbox',
+      checked: accepted,
+      disabled: busy || !signature,
+      onChange: e => {
+        setAccepted(e.target.checked);
+        attempt.current = null;
+      }
+    }), 'Autorizo esta distribución de mi ahorro entre los beneficiarios indicados en caso de fallecimiento.')) : h(React.Fragment, null, rows.length >= 2 && h('button', {
+      type: 'button',
+      className: 'smart nuevo',
+      onClick: () => {
+        const base = Math.floor(10000 / rows.length);
+        setRows(a => a.map((r, i) => ({
+          ...r,
+          percentage: String((i === a.length - 1 ? 10000 - base * (a.length - 1) : base) / 100)
+        })));
+        reset();
+      }
+    }, h('span', {
+      className: 'sheen'
+    }), h('span', {
+      className: 'ic'
+    }, benIcon('users', 20)), h('span', null, h('b', null, 'Repartir en partes iguales'), h('s', null, 'Reparto exacto del 100%'))), rows.map((r, i) => h('fieldset', {
+      className: 'ed',
+      key: i,
+      disabled: busy
+    }, h('div', {
+      className: 'edhead'
+    }, h('span', {
+      className: 'n',
+      style: {
+        background: benColor(i)
+      }
+    }, i + 1), h('b', null, r.full_name || 'Beneficiario ' + (i + 1)), h('button', {
+      type: 'button',
+      className: 'icobtn danger',
+      'aria-label': 'Quitar beneficiario ' + (i + 1),
+      onClick: () => setRemove(i)
+    }, benIcon('trash'))), h('label', null, h('span', {
+      className: 'lab'
+    }, 'Nombre completo'), h('input', {
+      className: 'field',
+      value: r.full_name,
+      maxLength: 180,
+      placeholder: 'Nombre como aparece en su identificación',
+      autoComplete: 'off',
+      onChange: e => update(i, 'full_name', e.target.value)
+    })), h('span', {
+      className: 'lab'
+    }, 'PARENTESCO'), h('div', {
+      className: 'chips',
+      role: 'group',
+      'aria-label': 'Parentesco de beneficiario ' + (i + 1)
+    }, ['Cónyuge', 'Hijo(a)', 'Madre', 'Padre', 'Hermano(a)', 'Otro'].map(p => h('button', {
+      type: 'button',
+      className: 'tag',
+      key: p,
+      'aria-pressed': r.relationship === p,
+      onClick: () => update(i, 'relationship', r.relationship === p ? '' : p)
+    }, p))), r.relationship && !['Cónyuge', 'Hijo(a)', 'Madre', 'Padre', 'Hermano(a)', 'Otro'].includes(r.relationship) && h('p', {
+      className: 'prel'
+    }, 'Parentesco registrado: ' + r.relationship), h('span', {
+      className: 'lab'
+    }, 'LE CORRESPONDE'), h('div', {
+      className: 'pctrow'
+    }, h('button', {
+      type: 'button',
+      className: 'step',
+      'aria-label': 'Bajar 5 por ciento',
+      disabled: Number(r.percentage) <= 0,
+      onClick: () => update(i, 'percentage', String(Math.max(0, Math.round(((Number(r.percentage) || 0) - 5) * 100) / 100)))
+    }, '−5'), h('div', {
+      className: 'pctbox'
+    }, h('input', {
+      'aria-label': 'Porcentaje',
+      inputMode: 'decimal',
+      value: r.percentage,
+      maxLength: 6,
+      onChange: e => update(i, 'percentage', e.target.value.replace(',', '.'))
+    }), h('em', null, '%')), h('button', {
+      type: 'button',
+      className: 'step',
+      'aria-label': 'Subir 5 por ciento',
+      disabled: Number(r.percentage) >= 100,
+      onClick: () => update(i, 'percentage', String(Math.min(100, Math.round(((Number(r.percentage) || 0) + 5) * 100) / 100)))
+    }, '+5')), h('input', {
+      type: 'range',
+      className: 'rng',
+      min: 0,
+      max: 100,
+      step: 0.01,
+      value: Number(r.percentage) || 0,
+      'aria-label': 'Porcentaje con deslizador',
+      onChange: e => update(i, 'percentage', e.target.value)
+    }), h('div', {
+      className: 'money-hint'
+    }, 'Recibiría ', h('b', null, benMoney(benProjection(balance, r.percentage))), ' de tu ahorro actual · estimación'), remaining > 0 && h('div', {
+      className: 'quick'
+    }, h('button', {
+      type: 'button',
+      className: 'tag',
+      onClick: () => update(i, 'percentage', String(Math.round(((Number(r.percentage) || 0) + remaining) * 100) / 100))
+    }, 'Darle el ' + remaining + '% restante')), remove === i && h('div', {
+      className: 'confirm'
+    }, h('span', null, '¿Quitar a esta persona del reparto?'), h('button', {
+      type: 'button',
+      className: 'btn sm sec',
+      onClick: () => setRemove(null)
+    }, 'No'), h('button', {
+      type: 'button',
+      className: 'btn sm pri',
+      onClick: () => {
+        setRows(a => a.filter((_, n) => n !== i));
+        setRemove(null);
+        reset();
+      }
+    }, 'Quitar')))), h('button', {
+      type: 'button',
+      className: 'btn sec block',
+      disabled: busy || rows.length >= 20,
+      onClick: () => {
+        setRows(a => [...a, {
+          full_name: '',
+          relationship: '',
+          percentage: String(Math.max(0, remaining))
+        }]);
+        setRemove(null);
+        reset();
+      }
+    }, benIcon('plus'), rows.length >= 20 ? 'Máximo 20 beneficiarios' : 'Agregar beneficiario'), signButton()), h('div', {
+      className: 'foot'
+    }, benIcon('info', 14), h('span', null, 'Los importes son proyecciones sobre tu saldo actual. Se guardan porcentajes, no cantidades monetarias.')), error && h('p', {
+      role: 'alert'
+    }, error)))), h('footer', {
+      className: 'bar'
+    }, saved ? h('button', {
+      type: 'button',
+      className: 'btn pri block',
+      onClick: onClose
+    }, 'Entendido') : h(React.Fragment, null, h('button', {
+      type: 'button',
+      className: 'btn out',
+      disabled: busy,
+      onClick: () => review ? setReview(false) : setCancel(true)
+    }, review ? 'Volver a editar' : 'Cancelar'), review && !signature ? h('button', {
+      type: 'button',
+      className: 'btn pri',
+      disabled: busy || !valid,
+      onClick: () => {
+        setStroke('');
+        setSigning(true);
+      }
+    }, 'Confirmar y firmar') : h('button', {
+      type: 'submit',
+      'data-beneficiary-submit': 'true',
+      className: 'btn pri',
+      disabled: !valid || busy || review && (!signature || !accepted)
+    }, busy ? 'Guardando…' : review ? 'Confirmar beneficiarios' : 'Revisar cambios')))), signing && h(BenSheet, {
+      title: 'Firma de autorización',
+      onClose: () => {
+        setSigning(false);
+        setStroke('');
+      }
+    }, h('p', null, 'Traza tu firma con el dedo o el mouse. Autoriza la distribución completa; no representa la firma individual de cada beneficiario.'), h(SavingsBeneficiarySignaturePad, {
+      key: signatureRevision,
+      value: stroke,
+      onChange: setStroke
+    }), h('button', {
+      type: 'button',
+      className: 'btn pri block',
+      disabled: !stroke,
+      onClick: () => {
+        setSignature(stroke);
+        setAccepted(false);
+        attempt.current = null;
+        setSigning(false);
+        setStroke('');
+      }
+    }, 'Guardar firma')), cancel && h(BenSheet, {
+      title: '¿Descartar esta propuesta?',
+      onClose: () => setCancel(false)
+    }, h('p', null, 'La designación guardada seguirá vigente.'), h('button', {
+      type: 'button',
+      className: 'btn sec block',
+      onClick: () => setCancel(false)
+    }, 'Seguir editando'), h('button', {
+      type: 'button',
+      className: 'btn pri block',
+      style: {
+        marginTop: 12
+      },
+      onClick: onClose
+    }, 'Descartar cambios')));
+  }
+  window.useSavingsBeneficiaries = useSavingsBeneficiaries;
+  window.SavingsBeneficiarySignatures = SavingsBeneficiarySignatures;
+  window.SavingsBeneficiariesExperience = SavingsBeneficiariesExperience;
+  function joinDate(value) {
+    return value ? new Date(value + (String(value).length === 10 ? 'T12:00:00Z' : '')).toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'America/Hermosillo'
+    }) : 'Por confirmar';
+  }
+  function joinReason(reason) {
+    return {
+      IDENTITY_REVIEW: 'La encargada debe revisar la vinculación de tu Folio.',
+      OPENING_REVIEW: 'Tu registro anterior está en revisión. La encargada debe confirmarlo antes de un nuevo ingreso.',
+      CATEGORY_REQUIRED: 'Falta confirmar tu tipo de trabajador para calcular las fechas. Comunícate con la encargada.',
+      INTAKE_CLOSED: 'Por el momento no se reciben nuevos ingresos al ahorro.',
+      REQUEST_PENDING: 'Hay un ingreso anterior pendiente de resolución. Consulta su seguimiento.'
+    }[reason] || '';
+  }
+  function SavingsJoinSchedule({
+    rows
+  }) {
+    return h('details', {
+      'data-savings-join-schedule': ''
+    }, h('summary', null, 'Próximos descuentos previstos'), h('p', null, 'Proyección de un año. No es saldo recibido y no incluye rendimientos.'), (rows || []).map(r => h('div', {
+      className: 'sav-row',
+      key: r.contribution_date
+    }, h('span', null, joinDate(r.contribution_date)), h('b', null, new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(r.expected_amount)))));
+  }
+  function SavingsJoinAccess({
+    revision,
+    onJoin,
+    existing
+  }) {
+    const [context, setContext] = useState(null),
+      [error, setError] = useState(false),
+      [retry, setRetry] = useState(0);
+    React.useEffect(() => {
+      let alive = true;
+      setContext(null);
+      setError(false);
+      Promise.resolve().then(() => window.SavingsRepository.getJoinContext()).then(v => {
+        if (alive) setContext(v);
+      }).catch(() => {
+        if (alive) setError(true);
+      });
+      return () => {
+        alive = false;
+      };
+    }, [revision, retry]);
+    if (existing && (!context || !context.request && !context.can_join)) return error ? h('p', {
+      role: 'alert'
+    }, 'No se pudo consultar el registro de ingreso.', h('button', {
+      className: 'sav-retry',
+      onClick: () => setRetry(v => v + 1)
+    }, 'Reintentar')) : null;
+    const request = context && context.request,
+      states = {
+        SUBMITTED: 'Recibida',
+        UNDER_REVIEW: 'En revisión',
+        APPROVED: 'Ingreso registrado',
+        REJECTED: 'Rechazada',
+        CANCELLED: 'Cancelada',
+        APPLIED: 'Aplicada'
+      };
+    const pending = request && ['SUBMITTED', 'UNDER_REVIEW'].includes(request.status);
+    if (request && ['SUBMITTED', 'UNDER_REVIEW', 'APPROVED', 'APPLIED'].includes(request.status)) return h('section', {
+      'data-savings-join-access': '',
+      'data-savings-join-pending': pending ? '' : undefined,
+      'data-savings-join-status': request.status,
+      'aria-label': 'Tu solicitud de ingreso',
+      style: {
+        margin: existing ? '12px 16px' : undefined,
+        padding: 16,
+        border: '1px solid #e4e4e8',
+        borderRadius: 17,
+        background: '#fff',
+        boxShadow: '0 3px 8px rgba(20,33,61,.05)',
+        color: 'var(--ink, #14213d)',
+        fontFamily: 'inherit',
+        textAlign: 'left',
+        flexShrink: 0,
+        maxHeight: existing ? '45vh' : undefined,
+        overflowY: 'auto',
+        boxSizing: 'border-box'
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        flexWrap: 'wrap'
+      }
+    }, h('h3', {
+      style: {
+        margin: 0,
+        flex: '1 1 140px',
+        fontSize: 14,
+        fontWeight: 800
+      }
+    }, pending ? 'Seguimiento de tu ingreso' : 'Tu ingreso al ahorro'), h('span', {
+      style: {
+        padding: '5px 9px',
+        borderRadius: 999,
+        background: pending ? '#fff1d5' : '#edf8f1',
+        color: pending ? '#9a6813' : '#157f4a',
+        fontSize: 10,
+        fontWeight: 750
+      }
+    }, pending ? request.status === 'SUBMITTED' ? 'Recibida' : 'En revisi\u00f3n' : states[request.status])), h('p', {
+      style: {
+        margin: '10px 0 14px',
+        fontSize: 12,
+        lineHeight: 1.5,
+        color: 'var(--muted, #85858d)'
+      }
+    }, pending ? 'Este ingreso anterior o asistido sigue pendiente de resolución. Su seguimiento se conserva.' : 'Tu ingreso quedó registrado. Consulta la fecha del primer descuento previsto.'), h('div', {
+      style: {
+        padding: '12px 14px',
+        borderRadius: 12,
+        background: 'var(--pink, #f9edf2)'
+      }
+    }, h('span', {
+      style: {
+        display: 'block',
+        fontSize: 11,
+        color: 'var(--muted, #85858d)',
+        fontWeight: 650
+      }
+    }, 'Monto por descuento'), h('strong', {
+      style: {
+        display: 'block',
+        marginTop: 3,
+        fontSize: 24,
+        fontWeight: 800,
+        fontVariantNumeric: 'tabular-nums',
+        color: 'var(--wine, #a00042)'
+      }
+    }, new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(request.amount))), h('dl', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 12,
+        margin: '14px 0',
+        fontSize: 11
+      }
+    }, [['Registrada', joinDate(request.submitted_at)], ['Primer descuento previsto', joinDate(request.effective_from)]].map(([label, value]) => h('div', {
+      key: label
+    }, h('dt', {
+      style: {
+        color: 'var(--muted, #85858d)',
+        lineHeight: 1.4
+      }
+    }, label), h('dd', {
+      style: {
+        margin: '4px 0 0',
+        fontWeight: 750,
+        lineHeight: 1.4
+      }
+    }, value)))), h('details', {
+      'data-savings-join-schedule': '',
+      style: {
+        borderTop: '1px solid var(--line, #e4e4e8)',
+        paddingTop: 12,
+        fontSize: 12
+      }
+    }, h('summary', {
+      style: {
+        cursor: 'pointer',
+        color: 'var(--wine, #a00042)',
+        fontWeight: 750,
+        lineHeight: 1.5
+      }
+    }, 'Pr\u00f3ximos descuentos previstos'), h('p', {
+      style: {
+        fontSize: 11,
+        lineHeight: 1.5,
+        color: 'var(--muted, #85858d)'
+      }
+    }, 'Proyecci\u00f3n de un a\u00f1o. No es saldo recibido y no incluye rendimientos.'), (context.upcoming || []).map(r => h('div', {
+      className: 'sav-row',
+      key: r.contribution_date
+    }, h('span', null, joinDate(r.contribution_date)), h('b', null, new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(r.expected_amount))))));
+    return h('div', {
+      'data-savings-join-access': '',
+      style: existing ? {
+        margin: '12px 16px'
+      } : undefined
+    }, (!existing || context.can_join) && h('button', {
+      type: 'button',
+      className: 'sav-primary',
+      disabled: !context || !context.can_join,
+      onClick: () => onJoin(context)
+    }, 'Ingresar al ahorro'), !context && !error && !existing && h('p', {
+      role: 'status'
+    }, 'Consultando disponibilidad…'), error && h('p', {
+      role: 'alert'
+    }, 'No se pudo consultar el ingreso al ahorro. ', h('button', {
+      className: 'sav-retry',
+      onClick: () => setRetry(v => v + 1)
+    }, 'Reintentar')), context && joinReason(context.reason) && h('p', null, joinReason(context.reason)), request && h('div', {
+      style: {
+        textAlign: 'left'
+      }
+    }, h('h3', null, 'Tu solicitud de ingreso'), h('p', null, states[request.status] || 'Por confirmar'), h('p', null, 'Registrada: ' + joinDate(request.submitted_at)), h('p', null, 'Monto por descuento: ' + new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN'
+    }).format(request.amount)), h('p', null, 'Primer descuento previsto: ' + joinDate(request.effective_from)), h(SavingsJoinSchedule, {
+      rows: context.upcoming
+    })));
+  }
+  window.SavingsJoinAccess = SavingsJoinAccess;
+  window.SavingsRequestHistory = SavingsRequestHistory;
+  window.SavingsBeneficiariesForm = SavingsBeneficiariesForm;
+  window.SavingsRequestForm = SavingsRequestForm;
 })();
 })();
 /* @@file screens-savings.jsx */
@@ -29306,7 +33638,15 @@ Object.assign(window, {
         fontWeight: 800,
         marginTop: 4
       }
-    }, s.fecha)))),
+    }, s.fecha)))), s.rental && React.createElement(window.RentaCarSummary, {
+      snapshot: {
+        rental: s.rental,
+        product: {
+          name: s.tipo
+        }
+      },
+      showApplicant: false
+    }),
     // rejection reason
     s.motivo && React.createElement('div', {
       style: {
@@ -35646,7 +39986,8 @@ Object.assign(window, {
       estado: rejected ? 'rechazado' : approved ? 'aprobado' : 'revision',
       fecha: new Date(r.created_at).toLocaleDateString('es-MX'),
       plazo: (isLoan || isProductPayment) && r.requested_term && r.requested_term_semantics ? `${r.requested_term} ${r.requested_term_semantics}` : isQuote ? approved ? 'Cotización recibida' : 'Por cotizar' : state === 'requires_financial_processing' ? 'Revisión financiera' : 'Solicitud registrada',
-      subtipo: isLoan ? 'Préstamo' : isProductPayment ? 'Producto vía nómina' : r.empresaNombre || r.program_id || '',
+      rental: r.rental || null,
+      subtipo: r.rental ? 'Renta Car · Contado' : isLoan ? 'Préstamo' : isProductPayment ? 'Producto vía nómina' : r.empresaNombre || r.program_id || '',
       motivo: rejected ? r.decision_comment || 'La solicitud fue cerrada por el área responsable.' : '',
       steps: flow.steps,
       workflowAvailable: flow.available,
@@ -47881,6 +52222,7 @@ Object.assign(window, {
     return events.filter(event => event.at).sort((a, b) => new Date(a.at) - new Date(b.at));
   }
   function humanActionError(error) {
+    if (/RENTA_|23P01/.test(String(error?.message || '') + ' ' + String(error?.code || ''))) return window.rentaCarError(error);
     const code = String(error && (error.code || error.message) || '');
     if (/ADMIN_APPROVAL_REQUIRED|REQUEST_DENIED|PROGRAM_REQUEST_(?:READ|WRITE)_DENIED|42501/.test(code)) return 'No tienes permiso para realizar esta acción.';
     if (/PROGRAM_REQUEST_COMMENT_(?:REQUIRED|INVALID)/.test(code)) return 'La observación debe tener entre 3 y 2,000 caracteres.';
@@ -48692,6 +53034,7 @@ Object.assign(window, {
       if (!detail || !app.admin.has('program_requests.write')) return [];
       const target = nextStage(detail),
         snapshot = detail.financial_submission_snapshot || {},
+        rental = snapshot.contract_version === 'RENTA_CAR_CASH_V1',
         productPayment = snapshot.contract_version === 'PROGRAM_PRODUCT_PAYMENT_V1',
         statusRefs = target && target.status_references || [],
         options = [];
@@ -48704,8 +53047,8 @@ Object.assign(window, {
           id: 'quoteAdvance',
           label: 'Guardar cotización y aprobar etapa'
         });else if (statusRefs.includes('approved') && detail.financial_processing_status != null) options.push({
-          id: productPayment ? 'approveProduct' : 'approveLoan',
-          label: productPayment ? 'Aprobar etapa en Supabase' : 'Aprobar etapa y autorizar préstamo'
+          id: rental ? 'approveRent' : productPayment ? 'approveProduct' : 'approveLoan',
+          label: rental ? 'Aprobar renta y reservar fechas' : productPayment ? 'Aprobar etapa en Supabase' : 'Aprobar etapa y autorizar préstamo'
         });else options.push({
           id: 'advance',
           label: statusRefs.includes('approved') ? 'Aprobar etapa' : 'Avanzar a siguiente etapa'
@@ -48722,6 +53065,10 @@ Object.assign(window, {
       if (detail.program_id === 'prestamo' && detail.status === 'approved' && ['ready_for_handoff', 'failed'].includes(detail.financial_processing_status)) options.push({
         id: 'handoff',
         label: detail.financial_processing_status === 'failed' ? 'Reintentar envío a gestión' : 'Enviar a gestión'
+      });
+      if (rental && detail.status === 'approved') options.push({
+        id: 'cancelRent',
+        label: 'Cancelar renta y liberar fechas'
       });
       options.push({
         id: 'note',
@@ -48852,7 +53199,7 @@ Object.assign(window, {
         });
         return;
       }
-      if (['reject', 'cancel'].includes(action) && actionNote.trim().length < 3) {
+      if (['reject', 'cancel', 'cancelRent'].includes(action) && actionNote.trim().length < 3) {
         setFeedback({
           tone: 'error',
           text: action === 'reject' ? 'Indica el motivo del rechazo.' : 'Indica el motivo de la cancelación.'
@@ -48866,11 +53213,11 @@ Object.assign(window, {
         });
         return;
       }
-      const finalApproval = ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && targetBefore && (targetBefore.status_references || []).includes('approved');
+      const finalApproval = ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan', 'approveRent'].includes(action) && targetBefore && (targetBefore.status_references || []).includes('approved');
       if (!confirmed && action !== 'note') {
-        const warning = ['reject', 'cancel'].includes(action);
-        const label = action === 'reject' ? 'Rechazar solicitud' : action === 'cancel' ? 'Cancelar solicitud' : finalApproval ? 'Autorizar solicitud' : action === 'review' ? 'Iniciar revisión' : action === 'handoff' ? 'Enviar a gestión' : 'Aprobar etapa';
-        const destination = action === 'reject' ? 'Rechazada' : action === 'cancel' ? 'Cancelada' : action === 'review' ? 'En revisión' : targetBefore && targetBefore.label || stageLabel(detail);
+        const warning = ['reject', 'cancel', 'cancelRent'].includes(action);
+        const label = action === 'reject' ? 'Rechazar solicitud' : ['cancel', 'cancelRent'].includes(action) ? 'Cancelar solicitud' : finalApproval ? 'Autorizar solicitud' : action === 'review' ? 'Iniciar revisión' : action === 'handoff' ? 'Enviar a gestión' : 'Aprobar etapa';
+        const destination = action === 'reject' ? 'Rechazada' : ['cancel', 'cancelRent'].includes(action) ? 'Cancelada' : action === 'review' ? 'En revisión' : targetBefore && targetBefore.label || stageLabel(detail);
         setFeedback(null);
         setResolution(null);
         setConfirmation({
@@ -48921,31 +53268,31 @@ Object.assign(window, {
             validUntil: quoteValidUntil
           } : null);
           persistedEvent = result.event;
-        } else if (action === 'approveProduct') await window.ProgramRequestRepository.approveProductPayment(currentId, actionNote.trim(), actionId);else if (action === 'approveLoan') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim());else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
+        } else if (action === 'approveRent' || action === 'cancelRent') await window.RentaCarRepository.admin(currentId, action === 'approveRent' ? 'APPROVE' : 'CANCEL', actionNote.trim(), actionId);else if (action === 'approveProduct') await window.ProgramRequestRepository.approveProductPayment(currentId, actionNote.trim(), actionId);else if (action === 'approveLoan') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim());else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
         const refreshed = await load(true),
           verified = refreshed.find(row => row.id === currentId),
           verifiedDetail = await window.ProgramRequestRepository.adminFlowDetail(currentId),
           verifiedCurrent = currentStage(verifiedDetail);
         let valid = Boolean(verified);
-        if (action === 'review') valid = valid && verified.status === 'in_review';else if (action === 'reject') valid = valid && verified.status === 'rejected' && verifiedCurrent && verifiedCurrent.outcome === 'failure';else if (action === 'cancel') valid = valid && verified.status === 'cancelled';else if (['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action)) valid = valid && targetBefore && verifiedCurrent && verifiedCurrent.id === targetBefore.id;else if (action === 'handoff') valid = valid && verified.status === 'approved' && (verified.financial_processing_status === 'handed_off' || verifiedDetail.google_sync && ['pending', 'processing', 'error'].includes(verifiedDetail.google_sync.phase));
+        if (action === 'review') valid = valid && verified.status === 'in_review';else if (action === 'reject') valid = valid && verified.status === 'rejected' && verifiedCurrent && verifiedCurrent.outcome === 'failure';else if (action === 'cancel' || action === 'cancelRent') valid = valid && verified.status === 'cancelled';else if (['advance', 'quoteAdvance', 'approveProduct', 'approveLoan', 'approveRent'].includes(action)) valid = valid && targetBefore && verifiedCurrent && verifiedCurrent.id === targetBefore.id;else if (action === 'handoff') valid = valid && verified.status === 'approved' && (verified.financial_processing_status === 'handed_off' || verifiedDetail.google_sync && ['pending', 'processing', 'error'].includes(verifiedDetail.google_sync.phase));
         if (valid && persistedEvent) valid = verifiedDetail.admin_events_available && verifiedDetail.admin_events.some(event => event.id === persistedEvent.id);
         if (!valid) throw new Error('FINANCIAL_ACTION_READBACK_FAILED');
         actionAttempts.current.delete(fingerprint);
         setDetail(verifiedDetail);
         setConfirmation(null);
         const authorized = finalApproval && verifiedDetail.status === 'approved' && detail.status !== 'approved';
-        const title = action === 'reject' ? 'Solicitud rechazada' : action === 'cancel' ? 'Solicitud cancelada' : authorized ? '✓ Solicitud autorizada' : action === 'review' ? 'Revisión iniciada' : action === 'note' ? 'Observación guardada' : action === 'handoff' ? 'Gestión actualizada' : '✓ Etapa aprobada';
+        const title = action === 'reject' ? 'Solicitud rechazada' : ['cancel', 'cancelRent'].includes(action) ? 'Solicitud cancelada' : authorized ? '✓ Solicitud autorizada' : action === 'review' ? 'Revisión iniciada' : action === 'note' ? 'Observación guardada' : action === 'handoff' ? 'Gestión actualizada' : '✓ Etapa aprobada';
         setActionResult({
           title,
           kind: authorized ? 'authorized' : action,
-          warning: ['reject', 'cancel'].includes(action),
+          warning: ['reject', 'cancel', 'cancelRent'].includes(action),
           celebrate: authorized,
           folio: detail.folio,
           name: detail.nombre,
-          next: ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && verifiedCurrent && verifiedCurrent.label
+          next: ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan', 'approveRent'].includes(action) && verifiedCurrent && verifiedCurrent.label
         });
         setFeedback({
-          tone: ['reject', 'cancel'].includes(action) ? 'warning' : 'success',
+          tone: ['reject', 'cancel', 'cancelRent'].includes(action) ? 'warning' : 'success',
           text: title
         });
         window.dispatchEvent(new CustomEvent('suti:request-changed'));
@@ -49251,7 +53598,9 @@ Object.assign(window, {
             message: ''
           });
         }
-      }, 'Continuar con nueva solicitud')), renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow()), h('div', {
+      }, 'Continuar con nueva solicitud')), detail.financial_submission_snapshot?.contract_version === 'RENTA_CAR_CASH_V1' ? h(window.RentaCarSummary, {
+        snapshot: detail.financial_submission_snapshot
+      }) : renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && detail.financial_submission_snapshot?.contract_version !== 'RENTA_CAR_CASH_V1' && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow()), h('div', {
         className: 'finwb-detail-column finwb-detail-context'
       }, h(window.FinanceBlockRequestControl, {
         app,
@@ -49381,7 +53730,7 @@ Object.assign(window, {
         value: actionNote,
         disabled: busy || action === 'handoff',
         onChange: event => setActionNote(event.target.value),
-        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : action === 'cancel' ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)',
+        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : ['cancel', 'cancelRent'].includes(action) ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)',
         'aria-label': 'Observación de la acción'
       })), action === 'quoteAdvance' && h('div', {
         className: 'finwb-action-grid',
@@ -49403,7 +53752,7 @@ Object.assign(window, {
         value: quoteValidUntil,
         onChange: event => setQuoteValidUntil(event.target.value),
         'aria-label': 'Vigencia de la cotización'
-      })), nextStage(detail) && ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan'].includes(action) && h('div', {
+      })), nextStage(detail) && ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan', 'approveRent'].includes(action) && h('div', {
         className: 'finwb-next-action',
         'data-financial-next-action': 'true'
       }, 'Confirmar moverá la solicitud de “' + stageLabel(detail) + '” a “' + nextStage(detail).label + '”. Responsable siguiente: ' + (nextStage(detail).responsible || 'Área responsable') + '.'), h('div', {
@@ -58151,38 +62500,19 @@ Object.assign(window, {
 /* @@file savings-withdrawal-history-repository.js */
 (function(){
 /* Read-only withdrawal history. Existing Savings and document authorities remain unchanged. */
-(function () {
-  'use strict';
-
-  async function list({
-    search = '',
-    status = 'all',
-    offset = 0,
-    limit = 20,
-    signal
-  } = {}) {
-    const savings = window.SavingsPanelRepository,
-      context = savings.contextKey(),
-      revision = savings.revision();
-    let request = window.SutiSupabase.getClient().rpc('get_admin_savings_withdrawal_history', {
-      p_search: search,
-      p_status: status,
-      p_offset: offset,
-      p_limit: limit
-    });
-    if (signal) request = request.abortSignal(signal);
-    const {
-      data,
-      error
-    } = await request;
-    if (context !== savings.contextKey() || revision !== savings.revision()) throw Error('SAVINGS_CONTEXT_CHANGED');
-    if (error) throw error;
-    if (!data || !Array.isArray(data.rows) || !Number.isInteger(data.total) || data.total < 0) throw Error('SAVINGS_HISTORY_RESPONSE_INVALID');
-    return data;
-  }
-  window.SavingsWithdrawalHistoryRepository = Object.freeze({
-    list
-  });
+(function(){
+ 'use strict';
+ async function list({search='',status='all',offset=0,limit=20,signal}={}){
+  const savings=window.SavingsPanelRepository,context=savings.contextKey(),revision=savings.revision();
+  let request=window.SutiSupabase.getClient().rpc('get_admin_savings_withdrawal_history',{p_search:search,p_status:status,p_offset:offset,p_limit:limit});
+  if(signal)request=request.abortSignal(signal);
+  const {data,error}=await request;
+  if(context!==savings.contextKey()||revision!==savings.revision())throw Error('SAVINGS_CONTEXT_CHANGED');
+  if(error)throw error;
+  if(!data||!Array.isArray(data.rows)||!Number.isInteger(data.total)||data.total<0)throw Error('SAVINGS_HISTORY_RESPONSE_INVALID');
+  return data;
+ }
+ window.SavingsWithdrawalHistoryRepository=Object.freeze({list});
 })();
 })();
 /* @@file savings-individual-withdrawal-repository.js */
@@ -58200,71 +62530,259 @@ Object.assign(window, {
 /* @@file savings-individual-withdrawal.jsx */
 (function(){
 /* Account-scoped availability; the existing request and payment flows remain authoritative. */
-(function(){
- 'use strict';
- const h=React.createElement,{useState,useRef,useEffect}=React;
- function message(e){const s=String(e&&e.message||'');
-  if(/CHANGED|IDEMPOTENCY_CONFLICT/.test(s))return 'La habilitación cambió. Actualiza su estado y revisa la decisión antes de confirmar.';
-  if(/DENIED|42501/.test(s))return 'Tu cuenta no tiene permiso para habilitar retiros.';
-  if(/DATE_INVALID/.test(s))return 'Selecciona hoy o una fecha posterior para el vencimiento.';
-  if(/NOT_READY|IDENTITY/.test(s))return 'Primero revisa la identidad y la certificación de esta cuenta.';
-  return 'No pudimos confirmar la habilitación. Conservamos tu captura; reintenta o actualiza el estado.';
- }
- function SavingsIndividualWithdrawal({folio,onRequest}){
-  const [state,setState]=useState({loading:true}),[form,setForm]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
-  const generation=useRef(0),lock=useRef(false),attempt=useRef(null),formRef=useRef(null);
-  async function load(){const seq=++generation.current;setState({loading:true});setError('');
-   try{const data=await window.SavingsIndividualWithdrawalRepository.get(folio);if(generation.current===seq)setState({data});}
-   catch(e){if(generation.current===seq)setState({error:message(e)});}
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useRef,
+      useEffect
+    } = React;
+  function message(e) {
+    const s = String(e && e.message || '');
+    if (/CHANGED|IDEMPOTENCY_CONFLICT/.test(s)) return 'La habilitación cambió. Actualiza su estado y revisa la decisión antes de confirmar.';
+    if (/DENIED|42501/.test(s)) return 'Tu cuenta no tiene permiso para habilitar retiros.';
+    if (/DATE_INVALID/.test(s)) return 'Selecciona hoy o una fecha posterior para el vencimiento.';
+    if (/NOT_READY|IDENTITY/.test(s)) return 'Primero revisa la identidad y la certificación de esta cuenta.';
+    return 'No pudimos confirmar la habilitación. Conservamos tu captura; reintenta o actualiza el estado.';
   }
-  useEffect(()=>{setForm(null);setNotice('');attempt.current=null;load();return()=>{generation.current++;};},[folio]);
-  useEffect(()=>{if(form&&formRef.current)formRef.current.focus();},[!!form]);
-  const data=state.data,blocked=busy||state.loading||!!state.error;
-  function open(enabled){attempt.current=null;setError('');setNotice('');setForm({enabled,until:enabled?data.suggested_until:'',reason:'',version:data.version});}
-  function edit(key,value){setForm(old=>({...old,[key]:value}));attempt.current=null;setError('');}
-  async function save(e){e.preventDefault();if(lock.current||blocked)return;lock.current=true;setBusy(true);setError('');setNotice('');
-   const seq=generation.current,values={folio,enabled:form.enabled,until:form.enabled?form.until:null,reason:form.reason.trim(),version:form.version};
-   if(!attempt.current)attempt.current={...values,key:crypto.randomUUID()};
-   try{await window.SavingsIndividualWithdrawalRepository.set(attempt.current);
-    const current=await window.SavingsIndividualWithdrawalRepository.get(folio);
-    if(generation.current!==seq)return;
-    setState({data:current});
-    if(current.enabled!==values.enabled||!current.ready){setError('El estado actual ya cambió. Revisa la habilitación antes de continuar.');return;}
-    attempt.current=null;setForm(null);setNotice(values.enabled?'Retiro habilitado para esta persona. Ya puedes registrar su solicitud.':'Retiro deshabilitado para esta persona. Las solicitudes existentes conservan su historial.');
-   }catch(e){if(generation.current===seq)setError(message(e));}
-   finally{lock.current=false;if(generation.current===seq)setBusy(false);}
+  function SavingsIndividualWithdrawal({
+    folio,
+    onRequest
+  }) {
+    const [state, setState] = useState({
+        loading: true
+      }),
+      [form, setForm] = useState(null),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [notice, setNotice] = useState('');
+    const generation = useRef(0),
+      lock = useRef(false),
+      attempt = useRef(null),
+      formRef = useRef(null);
+    async function load() {
+      const seq = ++generation.current;
+      setState({
+        loading: true
+      });
+      setError('');
+      try {
+        const data = await window.SavingsIndividualWithdrawalRepository.get(folio);
+        if (generation.current === seq) setState({
+          data
+        });
+      } catch (e) {
+        if (generation.current === seq) setState({
+          error: message(e)
+        });
+      }
+    }
+    useEffect(() => {
+      setForm(null);
+      setNotice('');
+      attempt.current = null;
+      load();
+      return () => {
+        generation.current++;
+      };
+    }, [folio]);
+    useEffect(() => {
+      if (form && formRef.current) formRef.current.focus();
+    }, [!!form]);
+    const data = state.data,
+      blocked = busy || state.loading || !!state.error;
+    function open(enabled) {
+      attempt.current = null;
+      setError('');
+      setNotice('');
+      setForm({
+        enabled,
+        until: enabled ? data.suggested_until : '',
+        reason: '',
+        version: data.version
+      });
+    }
+    function edit(key, value) {
+      setForm(old => ({
+        ...old,
+        [key]: value
+      }));
+      attempt.current = null;
+      setError('');
+    }
+    async function save(e) {
+      e.preventDefault();
+      if (lock.current || blocked) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      setNotice('');
+      const seq = generation.current,
+        values = {
+          folio,
+          enabled: form.enabled,
+          until: form.enabled ? form.until : null,
+          reason: form.reason.trim(),
+          version: form.version
+        };
+      if (!attempt.current) attempt.current = {
+        ...values,
+        key: crypto.randomUUID()
+      };
+      try {
+        await window.SavingsIndividualWithdrawalRepository.set(attempt.current);
+        const current = await window.SavingsIndividualWithdrawalRepository.get(folio);
+        if (generation.current !== seq) return;
+        setState({
+          data: current
+        });
+        if (current.enabled !== values.enabled || !current.ready) {
+          setError('El estado actual ya cambió. Revisa la habilitación antes de continuar.');
+          return;
+        }
+        attempt.current = null;
+        setForm(null);
+        setNotice(values.enabled ? 'Retiro habilitado para esta persona. Ya puedes registrar su solicitud.' : 'Retiro deshabilitado para esta persona. Las solicitudes existentes conservan su historial.');
+      } catch (e) {
+        if (generation.current === seq) setError(message(e));
+      } finally {
+        lock.current = false;
+        if (generation.current === seq) setBusy(false);
+      }
+    }
+    const button = (label, onClick, disabled = false, primary = false) => h('button', {
+      type: 'button',
+      className: 'svp-btn' + (primary ? ' primary' : ''),
+      onClick,
+      disabled
+    }, label);
+    const reasons = {
+      IDENTITY: 'Primero revisa la identidad de este expediente.',
+      CERTIFICATION: 'Primero confirma el saldo de esta cuenta en “Saldo, descuentos y conciliación”.',
+      ENROLLMENT: 'Esta persona todavía no tiene una cuenta de ahorro confirmada.'
+    };
+    return h(window.SavingsPanelVisual.Tarjeta, {
+      title: 'Retiro individual',
+      icon: 'download'
+    }, h('div', {
+      'data-individual-withdrawal': folio
+    }, h('p', {
+      className: 'svp-note'
+    }, 'Habilita el retiro únicamente para esta persona. Después registra la solicitud y continúa con su revisión y entrega.'), state.loading && h('p', {
+      role: 'status'
+    }, 'Consultando habilitación…'), state.error && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, state.error), data && h(React.Fragment, null, h('p', {
+      className: 'svp-note'
+    }, h('b', null, data.name || 'Ahorrador'), ' · Folio ' + folio), h('p', {
+      role: 'status',
+      className: 'svp-note'
+    }, !data.ready ? reasons[data.block_reason] || 'Revisa la cuenta antes de habilitar un retiro.' : data.enabled ? 'Retiro habilitado' + (data.ends_at ? ' hasta ' + new Date(new Date(data.ends_at).getTime() - 1).toLocaleString('es-MX', {
+      timeZone: 'America/Hermosillo',
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }) : '') + '.' : 'Retiro no habilitado para esta persona.'), data.ready && !data.can_configure && h('p', {
+      className: 'svp-note'
+    }, 'Para cambiar esta habilitación se necesita permiso de configuración de Ahorro.'), !form && h('div', {
+      className: 'svp-actions'
+    }, data.can_configure && button(data.enabled ? 'Deshabilitar retiro' : 'Habilitar retiro', () => open(!data.enabled), blocked, !data.enabled), data.ready && data.enabled && data.can_create && button('Registrar retiro', onRequest, blocked, true)), form && h('form', {
+      onSubmit: save
+    }, h('p', {
+      className: 'svp-note'
+    }, form.enabled ? 'Se habilitará sólo el retiro de esta persona. Esta acción no entrega dinero ni genera rendimientos.' : 'Se cerrará el retiro sólo para esta persona, aunque exista una apertura general. No cancela solicitudes ni modifica saldos.'), form.enabled && h('label', {
+      className: 'svp-field'
+    }, 'Habilitado hasta · fin del día en Hermosillo', h('input', {
+      type: 'date',
+      required: true,
+      min: data.today,
+      value: form.until,
+      disabled: busy,
+      onChange: e => edit('until', e.target.value)
+    })), h('label', {
+      className: 'svp-field'
+    }, 'Motivo', h('textarea', {
+      'aria-label': 'Motivo',
+      ref: formRef,
+      required: true,
+      minLength: 3,
+      maxLength: 1000,
+      value: form.reason,
+      disabled: busy,
+      onChange: e => edit('reason', e.target.value)
+    })), h('div', {
+      className: 'svp-actions'
+    }, button('Cancelar', () => {
+      setForm(null);
+      attempt.current = null;
+      setError('');
+    }, busy), h('button', {
+      type: 'submit',
+      className: 'svp-btn primary',
+      disabled: blocked || form.reason.trim().length < 3 || form.enabled && !form.until
+    }, busy ? 'Guardando…' : form.enabled ? 'Confirmar habilitación' : 'Confirmar deshabilitación')))), error && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, error), notice && h('p', {
+      role: 'status',
+      className: 'svp-success'
+    }, notice), button('Actualizar habilitación', () => {
+      setForm(null);
+      attempt.current = null;
+      setNotice('');
+      load();
+    }, busy || state.loading)));
   }
-  const button=(label,onClick,disabled=false,primary=false)=>h('button',{type:'button',className:'svp-btn'+(primary?' primary':''),onClick,disabled},label);
-  const reasons={IDENTITY:'Primero revisa la identidad de este expediente.',CERTIFICATION:'Primero confirma el saldo de esta cuenta en “Saldo, descuentos y conciliación”.',ENROLLMENT:'Esta persona todavía no tiene una cuenta de ahorro confirmada.'};
-  return h(window.SavingsPanelVisual.Tarjeta,{title:'Retiro individual',icon:'download'},h('div',{'data-individual-withdrawal':folio},
-   h('p',{className:'svp-note'},'Habilita el retiro únicamente para esta persona. Después registra la solicitud y continúa con su revisión y entrega.'),
-   state.loading&&h('p',{role:'status'},'Consultando habilitación…'),
-   state.error&&h('div',{role:'alert',className:'svp-error'},state.error),
-   data&&h(React.Fragment,null,h('p',{className:'svp-note'},h('b',null,data.name||'Ahorrador'),' · Folio '+folio),
-    h('p',{role:'status',className:'svp-note'},!data.ready?reasons[data.block_reason]||'Revisa la cuenta antes de habilitar un retiro.':data.enabled?'Retiro habilitado'+(data.ends_at?' hasta '+new Date(new Date(data.ends_at).getTime()-1).toLocaleString('es-MX',{timeZone:'America/Hermosillo',dateStyle:'medium',timeStyle:'short'}):'')+'.':'Retiro no habilitado para esta persona.'),
-    data.ready&&!data.can_configure&&h('p',{className:'svp-note'},'Para cambiar esta habilitación se necesita permiso de configuración de Ahorro.'),
-    !form&&h('div',{className:'svp-actions'},data.can_configure&&button(data.enabled?'Deshabilitar retiro':'Habilitar retiro',()=>open(!data.enabled),blocked,!data.enabled),data.ready&&data.enabled&&data.can_create&&button('Registrar retiro',onRequest,blocked,true)),
-    form&&h('form',{onSubmit:save},h('p',{className:'svp-note'},form.enabled?'Se habilitará sólo el retiro de esta persona. Esta acción no entrega dinero ni genera rendimientos.':'Se cerrará el retiro sólo para esta persona, aunque exista una apertura general. No cancela solicitudes ni modifica saldos.'),
-     form.enabled&&h('label',{className:'svp-field'},'Habilitado hasta · fin del día en Hermosillo',h('input',{type:'date',required:true,min:data.today,value:form.until,disabled:busy,onChange:e=>edit('until',e.target.value)})),
-     h('label',{className:'svp-field'},'Motivo',h('textarea',{'aria-label':'Motivo',ref:formRef,required:true,minLength:3,maxLength:1000,value:form.reason,disabled:busy,onChange:e=>edit('reason',e.target.value)})),
-     h('div',{className:'svp-actions'},button('Cancelar',()=>{setForm(null);attempt.current=null;setError('');},busy),h('button',{type:'submit',className:'svp-btn primary',disabled:blocked||form.reason.trim().length<3||(form.enabled&&!form.until)},busy?'Guardando…':form.enabled?'Confirmar habilitación':'Confirmar deshabilitación')))),
-   error&&h('div',{role:'alert',className:'svp-error'},error),notice&&h('p',{role:'status',className:'svp-success'},notice),
-   button('Actualizar habilitación',()=>{setForm(null);attempt.current=null;setNotice('');load();},busy||state.loading)));
- }
- window.SavingsIndividualWithdrawal=SavingsIndividualWithdrawal;
+  window.SavingsIndividualWithdrawal = SavingsIndividualWithdrawal;
 })();
 })();
 /* @@file savings-panel-reference.jsx */
 (function(){
 /* Presentational components reconstructed from the owner-supplied reference.
    No demo store, generated savers, financial calculations or persistence. */
-(function(){
- const I=window.Icon;
- const M=n=>n==null?'Por confirmar':typeof n!=='number'||!Number.isFinite(n)?'Por revisar':new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(n);
- const MD=M;
- const fmt=d=>{if(!d)return 'Sin fecha';const date=new Date(d+'T12:00:00Z');return !/^\d{4}-\d{2}-\d{2}$/.test(d)||Number.isNaN(+date)||date.toISOString().slice(0,10)!==d?'Fecha por revisar':date.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'});};
- const estados={ahorrando:{label:'Ahorrando',fg:'#13794A'},pausado:{label:'Sin descuento',fg:'#9A6100'},baja:{label:'Dejó de ahorrar',fg:'#C0341D'},revision:{label:'Por revisar',fg:'#9A6100'}};
- const St=()=>({fmt,estadoDe:a=>estados[a.estado]||estados.revision,ultimoDescuento:a=>a.ultimo,saldo:a=>a.saldo});
+(function () {
+  const I = window.Icon;
+  const M = n => n == null ? 'Por confirmar' : typeof n !== 'number' || !Number.isFinite(n) ? 'Por revisar' : new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(n);
+  const MD = M;
+  const fmt = d => {
+    if (!d) return 'Sin fecha';
+    const date = new Date(d + 'T12:00:00Z');
+    return !/^\d{4}-\d{2}-\d{2}$/.test(d) || Number.isNaN(+date) || date.toISOString().slice(0, 10) !== d ? 'Fecha por revisar' : date.toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC'
+    });
+  };
+  const estados = {
+    ahorrando: {
+      label: 'Ahorrando',
+      fg: '#13794A'
+    },
+    pausado: {
+      label: 'Sin descuento',
+      fg: '#9A6100'
+    },
+    baja: {
+      label: 'Dejó de ahorrar',
+      fg: '#C0341D'
+    },
+    revision: {
+      label: 'Por revisar',
+      fg: '#9A6100'
+    }
+  };
+  const St = () => ({
+    fmt,
+    estadoDe: a => estados[a.estado] || estados.revision,
+    ultimoDescuento: a => a.ultimo,
+    saldo: a => a.saldo
+  });
   function KPIs({
     k,
     onGo
@@ -58368,7 +62886,7 @@ Object.assign(window, {
     }, M(k.porRecibir))), React.createElement('button', {
       onClick: () => onGo('cobranza', cob.fecha),
       style: tile()
-    }, head('trending', 'ÚLTIMO PERIODO · '+fmt(cob.fecha)), React.createElement('div', {
+    }, head('trending', 'ÚLTIMO PERIODO · ' + fmt(cob.fecha)), React.createElement('div', {
       style: {
         fontSize: 20,
         fontWeight: 900,
@@ -58398,7 +62916,7 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         fontVariantNumeric: 'tabular-nums'
       }
-    }, cob.esperado==null?'Registrado: '+MD(cob.recibido):MD(cob.recibido) + ' de ' + MD(cob.esperado)))), React.createElement('div', {
+    }, cob.esperado == null ? 'Registrado: ' + MD(cob.recibido) : MD(cob.recibido) + ' de ' + MD(cob.esperado)))), React.createElement('div', {
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -58497,7 +63015,10 @@ Object.assign(window, {
     controls
   }) {
     const s = St(),
-      e = a.participant_id && a.estado === 'pausado' ? {...estados.pausado,label:'Sin aportación programada'} : s.estadoDe(a),
+      e = a.participant_id && a.estado === 'pausado' ? {
+        ...estados.pausado,
+        label: 'Sin aportación programada'
+      } : s.estadoDe(a),
       ult = s.ultimoDescuento(a);
     return React.createElement('div', {
       onClick: onOpen,
@@ -58505,7 +63026,14 @@ Object.assign(window, {
       'aria-expanded': expanded,
       'aria-controls': controls,
       className: 'su-press svp-person',
-      role: 'button', tabIndex: 0, onKeyDown: e => {if(e.key==='Enter'||e.key===' '){e.preventDefault();onOpen();}},
+      role: 'button',
+      tabIndex: 0,
+      onKeyDown: e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      },
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -58540,7 +63068,8 @@ Object.assign(window, {
         fontSize: 13.5,
         fontWeight: 800,
         color: 'var(--ink)',
-        whiteSpace: 'normal', overflowWrap: 'anywhere',
+        whiteSpace: 'normal',
+        overflowWrap: 'anywhere',
         overflow: 'hidden',
         textOverflow: 'ellipsis'
       }
@@ -58551,7 +63080,7 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         marginTop: 3
       }
-    }, 'Folio ' + (a.folio || 'SIN REGISTRO') + ' · ' + M(a.aporte) + (a.proceso === 'JUB' ? ' mensual' : ['1','3'].includes(a.proceso) ? ' quincenal' : ' · frecuencia por confirmar')), React.createElement('div', {
+    }, 'Folio ' + (a.folio || 'SIN REGISTRO') + ' · ' + M(a.aporte) + (a.proceso === 'JUB' ? ' mensual' : ['1', '3'].includes(a.proceso) ? ' quincenal' : ' · frecuencia por confirmar')), React.createElement('div', {
       style: {
         fontSize: 11.5,
         fontWeight: 700,
@@ -58691,8 +63220,16 @@ Object.assign(window, {
       }
     }, valor));
   }
-
-window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
+  window.SavingsPanelVisual = {
+    KPIs,
+    Row,
+    Titulo,
+    Tarjeta,
+    Fila,
+    M,
+    fmt,
+    estados
+  };
 })();
 })();
 /* @@file savings-certification-admin.jsx */
@@ -60260,190 +64797,1123 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
 (function(){
 /* H-SICOF-001 integration: explicit origin allocation on existing settlement. */
 /* Savings-only operational forms. Supabase owns decisions, amounts, reports and publication. */
-(function(){
- 'use strict';
- const h=React.createElement,{useState,useEffect,useRef}=React,{Tarjeta,Fila,M,fmt}=window.SavingsPanelVisual;
- const validMoney=v=>v!==''&&v!=null&&/^\d+(?:\.\d{1,2})?$/.test(String(v))&&Number.isFinite(Number(v));
- const validDate=v=>/^\d{4}-\d{2}-\d{2}$/.test(v||'');
-  const types={JOIN:'Ingreso al ahorro',CHANGE_AMOUNT:'Cambio de monto',WITHDRAW:'Retiro de ahorro',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'};
- const states={SUBMITTED:'Recibida',UNDER_REVIEW:'En revisión',APPROVED:'Aprobada',REJECTED:'Rechazada',SETTLED:'Pagada',APPLIED:'Aplicada',CANCELLED:'Cancelada',PENDING:'Pendiente'};
- const columns=[['capital_delivered','Capital entregado'],['yield_delivered','Rendimiento entregado'],['actual_received','Descuentos recibidos'],['yield_credited','Rendimiento abonado']];
- function explain(e){const s=String(e&&e.message||'');
-  if(/WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN/.test(s))return 'Retiro bloqueado por préstamo con saldo atrasado.';
-  if(/LOAN_STATUS_DATA_INCONSISTENCY/.test(s))return 'Los estados del préstamo no coinciden. La entrega queda bloqueada hasta aclarar la información de origen.';
-  if(/LOAN_VERIFICATION_UNAVAILABLE/.test(s))return 'No se pudo comprobar si esta persona tiene adeudos. La entrega queda pendiente hasta que la consulta esté disponible.';
-  if(/42501|DENIED/.test(s))return 'Tu cuenta no tiene permiso para realizar esta acción.';
-  if(/STALE|VERSION|CHANGED/.test(s))return 'La información cambió. Actualiza la consulta y comprueba los datos antes de continuar.';
-  if(/PUBLICATION_REVIEW_REQUIRED/.test(s))return 'Todavía hay expedientes pendientes. Deben resolverse antes de publicar.';
-  if(/IDENTITY|FOLIO|DUPLICATE/.test(s))return 'Revisa el Folio y su coincidencia única en el padrón. No se asignará información a otra persona.';
-  if(/CERTIFICATION|UNCERTIFIED/.test(s))return 'Primero confirma el saldo de este ahorrador en su expediente.';
-  if(/REASON|JUSTIFICATION/.test(s))return 'Esta excepción o rechazo requiere explicar el motivo.';
-  if(/WINDOW|CLOSED|DISABLED|NOT_OPEN/.test(s))return 'Esta operación no está habilitada para esa persona o fecha. Revisa la apertura de Ahorro.';
-  if(/BALANCE|AMOUNT|MINIMUM|COMPONENT/.test(s))return 'Revisa los importes y el saldo disponible. El sistema comprobará que la operación sea válida.';
-  if(/DATE|RANGE|PROCESS/.test(s))return 'Revisa las fechas y el tipo de descuento seleccionados.';
-  if(/STATUS|STATE|ALREADY/.test(s))return 'La solicitud ya cambió de estado. Actualiza la lista antes de continuar.';
-  return 'No se pudo confirmar la operación. Conservamos tu captura; puedes volver a intentar.';
- }
- function Btn({children,tone='',...props}){return h('button',{type:'button',className:'svp-btn '+tone,...props},children);}
- function Field({label,value,onChange,type='text',disabled,...props}){return h('label',{className:'svp-field'},label,h('input',{type,value:value==null?'':String(value),onChange:e=>onChange(e.target.value),disabled,...(type==='number'?{min:0,step:'.01',inputMode:'decimal'}:{}),...props}));}
- function Select({label,value,onChange,disabled,options}){return h('label',{className:'svp-field'},label,h('select',{'aria-label':label,value,disabled,onChange:e=>onChange(e.target.value)},options.map(([value,name])=>h('option',{key:value,value},name))));}
- function Notes({value,onChange,disabled,label='Observaciones (opcional)'}){return h('label',{className:'svp-field'},label,h('textarea',{value,disabled,maxLength:1000,onChange:e=>onChange(e.target.value)}));}
- function useRemote(loader,deps,enabled=true){
-  const [state,setState]=useState({loading:enabled}),[revision,setRevision]=useState(0);
-  useEffect(()=>{if(!enabled)return;let active=true;setState(old=>({...old,loading:true,error:''}));loader().then(data=>{if(active)setState({data,loading:false,error:''});}).catch(error=>{if(active)setState(old=>({...old,loading:false,error:explain(error)}));});return()=>{active=false;};},[...deps,revision,enabled]);
-  return [state,()=>setRevision(x=>x+1)];
- }
- function Feedback({state,reload}){return h(React.Fragment,null,state.loading&&h('p',{role:'status',className:'svp-note'},'Consultando información…'),state.error&&h('div',{role:'alert',className:'svp-error'},state.error,h(Btn,{disabled:state.loading,onClick:reload},'Reintentar consulta')));}
- function useCommand(onSuccess){
-  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');const lock=useRef(false),attempt=useRef(null),alive=useRef(true);
-  useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
-  async function run(method,payload,successText){
-   if(lock.current)return;lock.current=true;setBusy(true);setError('');setNotice('');const signature=JSON.stringify({method,payload});
-   if(!attempt.current||attempt.current.signature!==signature)attempt.current={signature,request:{...payload,key:crypto.randomUUID()}};
-   try{const result=await window.SavingsPanelRepository[method](attempt.current.request);if(!alive.current)return;attempt.current=null;setNotice(successText);await onSuccess(result);}
-   catch(e){if(alive.current)setError(explain(e));}finally{lock.current=false;if(alive.current)setBusy(false);}
-  }
-  return {busy,error,notice,run,clear(){attempt.current=null;setError('');setNotice('');}};
- }
- function Notice({command}){return h(React.Fragment,null,command.error&&h('div',{role:'alert',className:'svp-error'},command.error),command.notice&&h('p',{role:'status',className:'svp-success'},command.notice));}
- function ExceptionDialog({children,onClose,busy}){
-  const ref=useRef(null),close=useRef(onClose);close.current=onClose;
-  useEffect(()=>{const previous=document.activeElement,el=ref.current;el.showModal();return()=>{el.close();previous&&previous.isConnected&&previous.focus();};},[]);
-  return h('dialog',{ref,className:'svp svp-modal',style:{maxWidth:'min(560px, calc(100vw - 32px))',boxSizing:'border-box'},onCancel:e=>{e.preventDefault();if(!busy)close.current();}},h('h2',null,'AUTORIZAR RETIRO EXCEPCIONAL'),children,h(Btn,{disabled:busy,onClick:onClose},'Cerrar'));
- }
- function WithdrawalCheck({row,disabled,onSettle}){
-  const [data,setData]=useState(null),[loading,setLoading]=useState(false),[error,setError]=useState(''),[form,setForm]=useState(null),[revoke,setRevoke]=useState('');
-  const alive=useRef(true),lock=useRef(false);
-  useEffect(()=>()=>{alive.current=false;},[]);
-  async function check(){if(lock.current)return;lock.current=true;setLoading(true);setData(null);setError('');try{const value=await window.SavingsPanelRepository.checkWithdrawal(row.id);if(alive.current)setData(value);}catch(e){if(alive.current)setError(explain(e));}finally{lock.current=false;if(alive.current)setLoading(false);}}
-  const command=useCommand(async()=>{setForm(null);setRevoke('');await check();});
-  const busy=disabled||loading||command.busy,update=(key,value)=>{setForm(old=>({...old,[key]:value}));command.clear();};
-  return h('div',{'data-withdrawal-check':row.id},h(Btn,{disabled:busy,onClick:check},'Comprobar préstamos para entrega'),
-   loading&&h('p',{role:'status'},'Consultando todos los préstamos del ahorrador…'),error&&h('p',{role:'alert',className:'svp-error'},error),
-   data&&h(React.Fragment,null,
-    (data.overdue_loans||[]).length>0&&h('p',{className:'svp-note warn'},data.override?'Existe una autorización excepcional para este retiro.':'Retiro bloqueado por préstamo con saldo atrasado.'),
-    !(data.loans||[]).length&&h('p',{className:'svp-note'},'No se encontraron préstamos para este Folio.'),
-    (data.loans||[]).map(loan=>h('p',{key:loan.id,className:'svp-note'},'Préstamo '+loan.id+' · '+loan.fund+' · '+loan.status)),
-    !data.can_settle&&data.code!=='WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN'&&h('p',{className:'svp-note'},'La entrega sigue pendiente de cumplir los requisitos de la solicitud.'),
-    data.can_settle&&h(Btn,{tone:'primary',disabled:busy,onClick:onSettle},'Registrar entrega'),
-    data.can_override&&!data.override&&h(Btn,{tone:'outline',disabled:busy,onClick:()=>{command.clear();setForm({reason:'',justification:'',confirmed:false});}},'AUTORIZAR RETIRO EXCEPCIONAL'),
-    data.override&&data.can_override&&h('details',null,h('summary',null,'Revocar autorización excepcional'),h(Notes,{label:'Motivo de revocación',value:revoke,onChange:setRevoke,disabled:busy}),h(Btn,{disabled:busy||revoke.trim().length<3,onClick:()=>command.run('revokeException',{eventId:data.override.id,reason:revoke.trim()},'Autorización revocada.')},'Confirmar revocación'))),
-   form&&h(ExceptionDialog,{busy,onClose:()=>setForm(null)},
-    h('p',null,'Esta autorización permitirá continuar el retiro a pesar de existir un préstamo con saldo atrasado. La excepción quedará registrada en la bitácora.'),
-    h(Select,{label:'Motivo de la excepción',value:form.reason,onChange:v=>update('reason',v),disabled:busy,options:[['','Selecciona un motivo'],['DESPIDO','Despido'],['RENUNCIA','Renuncia'],['FALLECIMIENTO','Fallecimiento'],['CONTINGENCIA','Contingencia / Emergencia'],['OTRO','Otro caso especial']]}),
-    h(Notes,{label:form.reason==='OTRO'?'Justificación obligatoria':'Justificación (opcional)',value:form.justification,onChange:v=>update('justification',v),disabled:busy}),
-    h('label',{className:'svp-note'},h('input',{type:'checkbox',checked:form.confirmed,disabled:busy,onChange:e=>update('confirmed',e.target.checked)}),'Confirmo la autorización excepcional de este retiro.'),
-    h(Notice,{command}),h(Btn,{tone:'primary',disabled:busy||!form.reason||!form.confirmed||(form.reason==='OTRO'&&form.justification.trim().length<3),onClick:()=>command.run('authorizeWithdrawal',{requestId:row.id,command:{...form,justification:form.justification.trim(),fingerprint:data.fingerprint}},'Excepción autorizada para esta solicitud.')},'Confirmar autorización excepcional')),
-   !form&&h(Notice,{command}));
- }
- function RequestForm({draft,setDraft,disabled,fixedFolio=false}){
-  const update=(key,value)=>setDraft(old=>({...old,[key]:value}));
-  const contribution=['JOIN','CHANGE_AMOUNT'].includes(draft.type),withdrawal=draft.type==='WITHDRAW';
-  return h(React.Fragment,null,h(Field,{label:'Folio exacto del ahorrador',value:draft.folio,onChange:v=>update('folio',v),disabled,readOnly:fixedFolio,autoComplete:'off'}),
-   h(Select,{label:'Operación',value:draft.type,onChange:v=>update('type',v),disabled,options:Object.entries(types).filter(([code])=>code!=='EXTRAORDINARY_WITHDRAWAL')}),
-   contribution&&h(Field,{label:'Nueva aportación por descuento',type:'number',value:draft.new_amount,onChange:v=>update('new_amount',v),disabled}),
-   draft.type==='JOIN'&&h(Select,{label:'Tipo de descuento',value:draft.process,onChange:v=>update('process',v),disabled,options:[['','Selecciona una opción'],['PROCESS_1','Quincenal · Clave 1'],['PROCESS_3','Quincenal · Suplente variable'],['JUB','Mensual · Jubilado o pensionado']]}),
-   withdrawal&&h(Field,{label:'Importe solicitado para retirar',type:'number',value:draft.amount,onChange:v=>update('amount',v),disabled}),
-   draft.type==='WITHDRAW'&&h(Select,{label:'Después del retiro',value:draft.continue_saving?'true':'false',onChange:v=>update('continue_saving',v==='true'),disabled,options:[['true','Continuará ahorrando'],['false','Dejará de ahorrar']]}),
-   withdrawal&&h('p',{className:'svp-note'},'El sistema comprueba el saldo disponible. Un retiro parcial conserva la aportación; una solicitud no reserva dinero.'),
-   draft.type==='TERMINATE'&&h('p',{className:'svp-note'},'Esta solicitud detiene los descuentos futuros y conserva el dinero ahorrado. Para retirar dinero, registra una solicitud de retiro.'),
-   contribution&&h('p',{className:'svp-note'},'La fecha de aplicación se calculará con el plazo y el calendario de descuentos de esa persona.'),
-   h(Notes,{value:draft.observation,onChange:v=>update('observation',v),disabled}));
- }
-  function RequestDocuments({requestId}){
-   const [opened,setOpened]=useState(false);
-   return h('details',{onToggle:event=>{if(event.target===event.currentTarget)setOpened(event.currentTarget.open);}},h('summary',{className:'svp-note'},'Documentos de esta operación'),opened&&h(window.GeneratedDocuments,{domain:'savings',operationId:requestId,admin:true}));
-  }
-  function Requests({onSaved,expanded=false,folio=null,requestId=null,onOpenPerson,initialNavigation,onNavigationChange,withdrawalIntent=0}){
-  const [filter,setFilter]=useState(folio||initialNavigation?.filter||''),[query,setQuery]=useState(folio||initialNavigation?.query||''),[limit,setLimit]=useState(initialNavigation?.limit||8),[draft,setDraft]=useState(null),[action,setAction]=useState(null);
-  const [category,setCategory]=useState(initialNavigation?.category||'ALL'),[statusFilter,setStatusFilter]=useState(initialNavigation?.statusFilter||(expanded&&!folio?'pending':'all'));
-  const [focusedRequest,setFocusedRequest]=useState(requestId);
-  const focus=useRef(null);
-  useEffect(()=>{if(onNavigationChange)onNavigationChange({filter,query,limit,category,statusFilter});},[filter,query,limit,category,statusFilter,onNavigationChange]);
+(function () {
+  'use strict';
 
-  const [state,reload]=useRemote(()=>window.SavingsPanelRepository.runtimeRequests(query||undefined),[query]);
-  const command=useCommand(async()=>{setDraft(null);setAction(null);reload();if(onSaved)await onSaved();});
-  const data=state.data,allRows=(data&&data.requests||[]).map(row=>({...row,request_code:row.folio,folio:row.saver_folio,type:row.request_type,amount:row.requested_amount,new_amount:row.new_contribution_amount,effective_date:row.effective_from})),blocked=command.busy||state.loading||!!state.error;
-  const handledIntent=useRef(0),withdrawalField=useRef(null);
-  useEffect(()=>{if(withdrawalIntent&&withdrawalIntent!==handledIntent.current&&folio&&data&&data.can_create&&!blocked){handledIntent.current=withdrawalIntent;if(draft&&draft.type==='WITHDRAW'&&draft.folio===folio)return;if((draft||action)&&!window.confirm('Hay una captura abierta. ¿Quieres descartarla para registrar el retiro?'))return;setAction(null);setFocusedRequest(null);setDraft({folio,type:'WITHDRAW',amount:'',new_amount:'',continue_saving:true,process:'',observation:''});command.clear();}},[withdrawalIntent,folio,data,blocked]);
-  useEffect(()=>{if(draft&&draft.type==='WITHDRAW'&&withdrawalIntent&&withdrawalField.current){const el=withdrawalField.current.querySelector('input[type=number]');if(el){el.focus();el.scrollIntoView({block:'center',behavior:'smooth'});}}},[!!draft,withdrawalIntent]);
-  const needsAttention=row=>['SUBMITTED','UNDER_REVIEW'].includes(row.status)||(row.status==='APPROVED'&&['WITHDRAW','EXTRAORDINARY_WITHDRAWAL'].includes(row.type));
-  const rows=allRows.filter(row=>(category==='ALL'||row.type===category)&&(statusFilter==='all'||needsAttention(row)));
-  // A request deep link always reveals its current state after readback, even after approval.
-  const visibleRows=focusedRequest?allRows.filter(row=>row.id===focusedRequest):rows.slice(0,limit);
-  useEffect(()=>{if(requestId&&focus.current)focus.current.focus();},[requestId,!!data]);
-  const changeDraft=update=>{setDraft(update);command.clear();};
-  function select(row,kind){setDraft(null);setAction({row,kind,decision:'APPROVE',effective_date:'',process:row.process||'',observation:'',capital:'',yield:'',confirmed:false,origins:{ready:false}});command.clear();}
-  function changeAction(key,value){setAction(old=>({...old,[key]:value}));command.clear();}
-  function submit(){const c={kind:'SUBMIT',folio:draft.folio,type:draft.type,observation:draft.observation};
-   if(['JOIN','CHANGE_AMOUNT'].includes(draft.type))c.new_amount=Number(draft.new_amount);
-   if(draft.type==='JOIN')c.process=draft.process;
-   if(draft.type==='WITHDRAW'){c.amount=Number(draft.amount);c.continue_saving=draft.continue_saving;}
-   if(draft.type==='TERMINATE'){c.amount=0;c.continue_saving=false;}
-   command.run('operation',{command:c},'Solicitud guardada. Puedes seguirla en esta lista.');
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React,
+    {
+      Tarjeta,
+      Fila,
+      M,
+      fmt
+    } = window.SavingsPanelVisual;
+  const validMoney = v => v !== '' && v != null && /^\d+(?:\.\d{1,2})?$/.test(String(v)) && Number.isFinite(Number(v));
+  const validDate = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '');
+  const types = {
+    JOIN: 'Ingreso al ahorro',
+    CHANGE_AMOUNT: 'Cambio de monto',
+    WITHDRAW: 'Retiro de ahorro',
+    TERMINATE: 'Dejar de ahorrar',
+    EXTRAORDINARY_WITHDRAWAL: 'Retiro especial'
+  };
+  const states = {
+    SUBMITTED: 'Recibida',
+    UNDER_REVIEW: 'En revisión',
+    APPROVED: 'Aprobada',
+    REJECTED: 'Rechazada',
+    SETTLED: 'Pagada',
+    APPLIED: 'Aplicada',
+    CANCELLED: 'Cancelada',
+    PENDING: 'Pendiente'
+  };
+  const columns = [['capital_delivered', 'Capital entregado'], ['yield_delivered', 'Rendimiento entregado'], ['actual_received', 'Descuentos recibidos'], ['yield_credited', 'Rendimiento abonado']];
+  function explain(e) {
+    const s = String(e && e.message || '');
+    if (/WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN/.test(s)) return 'Retiro bloqueado por préstamo con saldo atrasado.';
+    if (/LOAN_STATUS_DATA_INCONSISTENCY/.test(s)) return 'Los estados del préstamo no coinciden. La entrega queda bloqueada hasta aclarar la información de origen.';
+    if (/LOAN_VERIFICATION_UNAVAILABLE/.test(s)) return 'No se pudo comprobar si esta persona tiene adeudos. La entrega queda pendiente hasta que la consulta esté disponible.';
+    if (/42501|DENIED/.test(s)) return 'Tu cuenta no tiene permiso para realizar esta acción.';
+    if (/STALE|VERSION|CHANGED/.test(s)) return 'La información cambió. Actualiza la consulta y comprueba los datos antes de continuar.';
+    if (/PUBLICATION_REVIEW_REQUIRED/.test(s)) return 'Todavía hay expedientes pendientes. Deben resolverse antes de publicar.';
+    if (/IDENTITY|FOLIO|DUPLICATE/.test(s)) return 'Revisa el Folio y su coincidencia única en el padrón. No se asignará información a otra persona.';
+    if (/CERTIFICATION|UNCERTIFIED/.test(s)) return 'Primero confirma el saldo de este ahorrador en su expediente.';
+    if (/REASON|JUSTIFICATION/.test(s)) return 'Esta excepción o rechazo requiere explicar el motivo.';
+    if (/WINDOW|CLOSED|DISABLED|NOT_OPEN/.test(s)) return 'Esta operación no está habilitada para esa persona o fecha. Revisa la apertura de Ahorro.';
+    if (/BALANCE|AMOUNT|MINIMUM|COMPONENT/.test(s)) return 'Revisa los importes y el saldo disponible. El sistema comprobará que la operación sea válida.';
+    if (/DATE|RANGE|PROCESS/.test(s)) return 'Revisa las fechas y el tipo de descuento seleccionados.';
+    if (/STATUS|STATE|ALREADY/.test(s)) return 'La solicitud ya cambió de estado. Actualiza la lista antes de continuar.';
+    return 'No se pudo confirmar la operación. Conservamos tu captura; puedes volver a intentar.';
   }
-  const valid=draft&&draft.folio!==''&&(draft.type==='TERMINATE'||(['JOIN','CHANGE_AMOUNT'].includes(draft.type)?validMoney(draft.new_amount):validMoney(draft.amount)))&&(draft.type!=='JOIN'||!!draft.process);
-  return h(Tarjeta,{title:folio?'Solicitudes de esta persona':'Solicitudes de ahorro',icon:'receipt'},h(expanded?'div':'details',null,!expanded&&h('summary',{className:'svp-note'},'Abrir solicitudes nuevas y su seguimiento'),
-    h('p',{className:'svp-note'},folio?'Consulta las operaciones de esta persona y actúa sólo cuando requieren una decisión.':data?.auto_join_enabled?'Los ingresos válidos de autoservicio se incorporan automáticamente. Aquí se atienden cambios, retiros y solicitudes anteriores que aún requieren una decisión.':'Consulta las operaciones que requieren una decisión y su seguimiento.'),
-   !folio&&h(expanded?'details':React.Fragment,expanded?{className:'svp-request-search'}:null,expanded&&h('summary',{className:'svp-note'},'Buscar solicitudes por Folio'),h(Field,{label:'Buscar operaciones por Folio exacto',value:filter,disabled:blocked,onChange:setFilter,autoComplete:'off'}),h(Btn,{disabled:blocked,onClick:()=>{setQuery(filter);setLimit(8);command.clear();}},'Buscar operaciones')),h(Btn,{disabled:blocked,onClick:reload},'Actualizar operaciones'),h(Feedback,{state,reload}),
-   expanded&&!focusedRequest&&h('div',{className:'svp-request-filters'},h(Select,{label:'Tipo de solicitud',value:category,disabled:blocked||!!draft||!!action,onChange:v=>{setCategory(v);setLimit(8);},options:[['ALL','Todas las solicitudes'],...Object.entries(types)]}),h(Select,{label:'Estado de las solicitudes',value:statusFilter,disabled:blocked||!!draft||!!action,onChange:v=>{setStatusFilter(v);setLimit(8);},options:[['pending','Pendientes de atención'],['all','Todos los estados']]})),
-    expanded&&!folio&&data&&!state.loading&&!state.error&&allRows.some(r=>r.type==='JOIN'&&needsAttention(r))&&h('p',{className:'svp-note'},allRows.filter(r=>r.type==='JOIN'&&needsAttention(r)).length+' ingreso(s) pendientes de resolución. Su historial y las autorizaciones de captura asistida se conservan.'),
-   focusedRequest&&folio&&!draft&&!action&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>setFocusedRequest(null)},'Ver todas las solicitudes de esta persona'),
-    data&&data.can_create&&!draft&&!action&&h('details',null,h('summary',{className:'svp-note'},'Registrar una operación asistida'),h('p',{className:'svp-note'},'Usa esta opción cuando necesitas capturar una operación por la persona. Conserva sus validaciones y autorizaciones.'),h(Btn,{tone:'outline',disabled:blocked,onClick:()=>{setDraft({folio:query,type:folio?'WITHDRAW':'JOIN',new_amount:'',amount:'',continue_saving:true,process:'',observation:''});command.clear();}},'Registrar operación')),
-   draft&&h('div',{ref:withdrawalField},h(RequestForm,{draft,setDraft:changeDraft,disabled:blocked,fixedFolio:!!folio&&!!withdrawalIntent}),h('div',{className:'svp-actions'},h(Btn,{disabled:blocked,onClick:()=>{setDraft(null);command.clear();}},'Cancelar captura'),h(Btn,{tone:'primary',disabled:blocked||!valid,onClick:submit},'Guardar solicitud'))),
-   data&&!state.loading&&!state.error&&!visibleRows.length&&h('p',{className:'svp-note'},requestId?'Esta solicitud ya no está disponible en la consulta. Actualiza o vuelve a la lista.':statusFilter==='pending'?'Sin solicitudes pendientes para este filtro. Puedes consultar todos los estados.':'No hay operaciones registradas para esta consulta.'),
-   visibleRows.map(row=>h('article',{key:row.id,className:'svp-audit',ref:requestId===row.id?focus:null,tabIndex:requestId===row.id?-1:undefined,'data-request-id':row.id},h('b',null,row.name||'Folio '+row.folio),h('p',{className:'svp-note'},'Folio '+row.folio+' · '+(types[row.type]||'Operación de ahorro')+' · '+(states[row.status]||'Por revisar')),
-     h(RequestDocuments,{requestId:row.id}),
-    row.request_code&&h(Fila,{label:'Solicitud',valor:row.request_code}),row.amount!=null&&h(Fila,{label:'Importe solicitado',valor:M(row.amount)}),row.new_amount!=null&&h(Fila,{label:'Nueva aportación',valor:M(row.new_amount)}),['WITHDRAW','EXTRAORDINARY_WITHDRAWAL'].includes(row.type)&&h(Fila,{label:'Después del retiro',valor:row.continue_saving===true?'Continuará ahorrando':row.continue_saving===false?'Dejará de ahorrar':'Por confirmar'}),row.effective_date&&h(Fila,{label:'Fecha de aplicación',valor:fmt(row.effective_date)}),row.settlement_block_reason&&h('p',{className:'svp-note warn'},row.settlement_block_reason),
-     !draft&&!action&&onOpenPerson&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>onOpenPerson(row)},'Ver persona y operación'),
-    !onOpenPerson&&!draft&&!action&&h('div',{className:'svp-actions'},row.can_review===true&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>select(row,'REVIEW')},'Revisar solicitud'),row.can_settle===true&&h(Btn,{tone:'primary',disabled:blocked,onClick:()=>select(row,'SETTLE')},'Registrar entrega'),row.can_cancel===true&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>select(row,'CANCEL')},'Cancelar solicitud')),
-    !onOpenPerson&&!draft&&!action&&row.requires_loan_verification===true&&h(WithdrawalCheck,{key:row.id+':'+row.status,row,disabled:blocked,onSettle:()=>select(row,'SETTLE')}),
-    action&&action.row.id===row.id&&h('div',null,
-     action.kind==='REVIEW'?h(React.Fragment,null,h(Select,{label:'Decisión de la solicitud',value:action.decision,disabled:blocked,onChange:v=>changeAction('decision',v),options:[['APPROVE','Aprobar'],['REJECT','Rechazar']]}),
-      action.decision==='APPROVE'&&['JOIN','CHANGE_AMOUNT'].includes(row.type)&&h(React.Fragment,null,h(Field,{label:'Fecha excepcional (opcional)',type:'date',value:action.effective_date,onChange:v=>changeAction('effective_date',v),disabled:blocked}),h('p',{className:'svp-note'},'Déjala vacía para usar la fecha calculada. Si la cambias, explica el motivo.'),row.type==='JOIN'&&h(Select,{label:'Tipo de descuento autorizado',value:action.process,disabled:blocked,onChange:v=>changeAction('process',v),options:[['','Selecciona una opción'],['PROCESS_1','Quincenal · Clave 1'],['PROCESS_3','Quincenal · Suplente variable'],['JUB','Mensual · Jubilado o pensionado']]})),
-      h(Notes,{label:action.decision==='REJECT'||action.effective_date?'Motivo de esta decisión':'Observaciones (opcional)',value:action.observation,onChange:v=>changeAction('observation',v),disabled:blocked})):action.kind==='CANCEL'?h(React.Fragment,null,h('p',{className:'svp-note'},'La solicitud quedará cancelada y se conservará su historial. Esta acción no registra una entrega de dinero.'),h(Notes,{value:action.observation,onChange:v=>changeAction('observation',v),disabled:blocked})):
-     h(React.Fragment,null,h('p',{className:'svp-note'},'Registra el capital y rendimiento efectivamente entregados. El sistema comprobará el saldo y conservará el pago en el historial.'),h(Field,{label:'Capital que se entrega',type:'number',value:action.capital,onChange:v=>changeAction('capital',v),disabled:blocked}),h(Field,{label:'Rendimiento que se entrega',type:'number',value:action.yield,onChange:v=>changeAction('yield',v),disabled:blocked}),h(window.SavingsWithdrawalOrigins,{participantId:row.participant_id,capital:action.capital,yieldAmount:action.yield,disabled:blocked,onChange:v=>changeAction('origins',v)}),h(Notes,{value:action.observation,onChange:v=>changeAction('observation',v),disabled:blocked}),h('label',{className:'svp-note',style:{display:'flex',gap:8}},h('input',{type:'checkbox',checked:action.confirmed,disabled:blocked,onChange:e=>changeAction('confirmed',e.target.checked)}),'He comprobado los importes de la entrega.')),
-     h('div',{className:'svp-actions'},h(Btn,{disabled:blocked,onClick:()=>{setAction(null);command.clear();}},'Cancelar operación'),h(Btn,{tone:'primary',disabled:blocked||(action.kind==='SETTLE'?(!validMoney(action.capital)||!validMoney(action.yield)||!action.confirmed||!action.origins?.ready):action.kind==='REVIEW'&&((action.decision==='REJECT'||!!action.effective_date)&&!action.observation.trim()||action.decision==='APPROVE'&&row.type==='JOIN'&&!action.process)),onClick:()=>command.run('operation',{command:action.kind==='SETTLE'?{kind:'SETTLE',request_id:row.id,capital:Number(action.capital),yield:Number(action.yield),observation:action.observation,origin_allocations:action.origins.origin_allocations,allocation_version:action.origins.allocation_version}:action.kind==='CANCEL'?{kind:'CANCEL',request_id:row.id,observation:action.observation}:{kind:'REVIEW',request_id:row.id,decision:action.decision,effective_date:action.effective_date||null,process:action.process||null,observation:action.observation}},action.kind==='SETTLE'?'Entrega registrada. Se actualizó el saldo y el historial.':action.kind==='CANCEL'?'Solicitud cancelada. Su historial se conserva.':'Decisión guardada. Se actualizó la solicitud.')},action.kind==='SETTLE'?'Confirmar entrega':action.kind==='CANCEL'?'Confirmar cancelación':'Guardar decisión'))))),
-   !focusedRequest&&rows.length>limit&&h(Btn,{tone:'full',disabled:blocked,onClick:()=>setLimit(x=>x+16)},'Ver más operaciones'),h(Notice,{command})));
- }
- function csvCell(value,folio=false){let s=value==null?'':String(value);if(folio||typeof value==='string'&&/^[\s\u0000-\u001f]*[=+\-@]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
- function downloadReport(data){const rows=[['Folio','Nombre',...columns.map(c=>c[1])],...(data.rows||[]).map(row=>[row.folio,row.name,...columns.map(([key])=>row[key])])];
-  const csv='\uFEFF'+rows.map((row,i)=>row.map((value,j)=>csvCell(value,i>0&&j===0)).join(',')).join('\r\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));const link=document.createElement('a');link.href=url;link.download='Ahorro-'+data.from+'-a-'+data.to+'.csv';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
- }
- function Reports(){
-  const [from,setFrom]=useState(''),[to,setTo]=useState(''),[range,setRange]=useState(null),[limit,setLimit]=useState(8);
-  const [state,reload]=useRemote(()=>window.SavingsPanelRepository.report(range),[range],!!range),d=state.data;
-  return h(Tarjeta,{title:'Reportes de Ahorro',icon:'receipt'},h('details',null,h('summary',{className:'svp-note'},'Consultar descuentos, capital y rendimientos por periodo'),
-   h(Field,{label:'Reporte desde',type:'date',value:from,onChange:setFrom,disabled:state.loading}),h(Field,{label:'Reporte hasta',type:'date',value:to,onChange:setTo,disabled:state.loading}),
-   h(Btn,{tone:'outline',disabled:state.loading||!validDate(from)||!validDate(to)||to<from,onClick:()=>{setLimit(8);setRange({from,to});}},'Consultar reporte'),h(Feedback,{state,reload}),
-   d&&!state.loading&&!state.error&&h(React.Fragment,null,h('p',{className:'svp-note'},fmt(d.from)+' al '+fmt(d.to)),columns.map(([key,label])=>h(Fila,{key,label,valor:M(d.totals&&d.totals[key])})),d.historical_note&&h('p',{className:'svp-note'},d.historical_note),
-    h(Btn,{tone:'outline',onClick:()=>downloadReport(d)},'Descargar reporte CSV'),
-    !(d.rows||[]).length&&h('p',{className:'svp-note'},'No hay movimientos para el periodo consultado.'),
-    (d.rows||[]).slice(0,limit).map(row=>h('article',{key:row.folio,className:'svp-audit'},h('b',null,row.name||'SIN REGISTRO'),h('p',{className:'svp-note'},'Folio '+row.folio),columns.map(([key,label])=>h(Fila,{key,label,valor:M(row[key])})))),
-    (d.rows||[]).length>limit&&h(Btn,{tone:'full',onClick:()=>setLimit(x=>x+20)},'Ver más ahorradores'))));
- }
- function Publication({onSaved}){
-  const [state,reload]=useRemote(()=>window.SavingsPanelRepository.publicationStatus(),[]),[checked,setChecked]=useState(false),[limit,setLimit]=useState(8),[selected,setSelected]=useState(null);
-  const [preview,refreshPreview]=useRemote(()=>(selected.record_id ? window.SavingsPanelRepository.publicationPreview(selected.record_id) : window.SavingsPanelRepository.publicationAccountPreview(selected.participant_id)),[selected],!!selected);
-  const command=useCommand(async()=>{setChecked(false);reload();if(onSaved)await onSaved();});
-  const d=state.data,blocked=state.loading||command.busy||!!state.error,rows=d&&d.rows||[];
-  function refresh(){setChecked(false);setSelected(null);command.clear();reload();}
-  return h(Tarjeta,{title:'Publicación de Ahorro',icon:'checkCircle'},h('details',null,h('summary',{className:'svp-note'},'Comprobar pendientes y preparar la publicación'),h(Feedback,{state,reload:refresh}),
-   d&&h(React.Fragment,null,h(Fila,{label:'Visibilidad',valor:d.mode==='PUBLISHED'?'Publicado a los ahorradores':'Preparación privada'}),h(Fila,{label:'Expedientes comprobados',valor:d.total}),h(Fila,{label:'Expedientes pendientes',valor:d.pending}),h(Btn,{tone:'outline',disabled:blocked,onClick:refresh},'Comprobar pendientes'),
-    h('p',{className:'svp-note'},'La publicación sustituirá juntos los valores de Ahorro que se muestran en Ahorro, Inicio y Finanzas. Primero termina la revisión y las pruebas.'),
-    rows.slice(0,limit).map(row=>h('div',{key:row.record_id||row.participant_id,className:'svp-audit'},h('b',null,'Folio '+row.folio),h('p',{className:'svp-note'},row.ready?'Preparado':(row.reasons||[]).join('. ')||'Pendiente de revisión'),row.ready&&h(Btn,{tone:'outline',disabled:blocked,onClick:()=>setSelected(row)},'Comprobar importes · '+row.folio))),
-    rows.length>limit&&h(Btn,{tone:'full',disabled:blocked,onClick:()=>setLimit(x=>x+24)},'Ver más expedientes'),
-    selected&&h('div',null,h('h3',{style:{fontSize:14}},'Importes que verá el ahorrador · Folio '+selected.folio),h(Feedback,{state:preview,reload:refreshPreview}),preview.data&&!preview.loading&&!preview.error&&h(React.Fragment,null,h(Fila,{label:'Saldo disponible',valor:M(preview.data.balances&&preview.data.balances.total)}),h(Fila,{label:'Capital',valor:M(preview.data.balances&&preview.data.balances.capital)}),h(Fila,{label:'Rendimiento incluido',valor:M(preview.data.balances&&preview.data.balances.yield_amount)}),h(Fila,{label:'Aportación',valor:M(preview.data.enrollment&&preview.data.enrollment.current_contribution_amount)}))),
-    d.mode==='PRIVATE'&&h(React.Fragment,null,!d.ready&&h('p',{className:'svp-note warn'},'La publicación estará disponible cuando todos los expedientes estén preparados.'),d.can_publish&&h('label',{className:'svp-note',style:{display:'flex',gap:8,alignItems:'flex-start'}},h('input',{type:'checkbox',disabled:blocked||!d.ready,checked,onChange:e=>{setChecked(e.target.checked);command.clear();}}),'Ya probé el sistema y autorizo mostrar los saldos definitivos a los ahorradores.'),d.can_publish&&h(Btn,{tone:'primary full',disabled:blocked||!d.ready||!checked,onClick:()=>command.run('publish',{version:d.version,fingerprint:d.fingerprint,confirmed:true},'Ahorro publicado. Los ahorradores ya consultan la información confirmada.')},'Publicar Ahorro para los usuarios'),!d.can_publish&&h('p',{className:'svp-note'},'La publicación requiere permiso de configuración y autorización.'))),h(Notice,{command})));
- }
- function Settings({app,onSaved,defaultOpen=false}){
-  const [opened,setOpened]=useState(defaultOpen),[state,reload]=useRemote(()=>window.SavingsRepository.getAdminDashboard(null),[],opened);
-  async function saved(){reload();if(onSaved)await onSaved();}
-  return h(Tarjeta,{title:'Aperturas, cambios y rendimientos',icon:'calendar'},h('details',{open:opened,onToggle:e=>setOpened(e.currentTarget.open)},h('summary',{className:'svp-note'},'Administrar fechas, opciones y tasa de rendimiento'),opened&&h(React.Fragment,null,h(Feedback,{state,reload}),state.data&&!state.loading&&!state.error&&h(React.Fragment,null,h('p',{className:'svp-note'},'Define la tasa del periodo y revisa quién cumple las reglas. Al abrir retiros puedes elegir todos los ahorradores o sólo una persona. Estos controles no entregan dinero automáticamente.'),h('h3',null,'Habilitar retiros para todos o para una persona'),h(window.SavingsOperationsAdmin,{app,participants:state.data.participants,periods:state.data.yield_periods,onSaved:saved}),h('h3',null,'Tasa y rendimientos por periodo'),h(window.SavingsYieldAdmin,{app,periods:state.data.yield_periods,onSaved:saved})))));
- }
- function SavingsRuntimeAdmin({tab,onSaved,app,onOpenPerson,initialNavigation,onNavigationChange}){return tab==='configuracion'?h(Settings,{app,onSaved,defaultOpen:true}):tab==='reportes'||tab==='cobranza'?h(Reports):tab==='pendientes'?h(Requests,{onSaved,expanded:true,onOpenPerson,initialNavigation,onNavigationChange}):tab==='solicitudes'?h(Requests,{onSaved}):tab==='publicacion'?h(Publication,{onSaved}):tab==='revision'?h(React.Fragment,null,h(Publication,{onSaved}),h(Settings,{app,onSaved})):null;}
- window.SavingsRequestsAdmin=Requests;
- window.SavingsRuntimeAdmin=SavingsRuntimeAdmin;
+  function Btn({
+    children,
+    tone = '',
+    ...props
+  }) {
+    return h('button', {
+      type: 'button',
+      className: 'svp-btn ' + tone,
+      ...props
+    }, children);
+  }
+  function Field({
+    label,
+    value,
+    onChange,
+    type = 'text',
+    disabled,
+    ...props
+  }) {
+    return h('label', {
+      className: 'svp-field'
+    }, label, h('input', {
+      type,
+      value: value == null ? '' : String(value),
+      onChange: e => onChange(e.target.value),
+      disabled,
+      ...(type === 'number' ? {
+        min: 0,
+        step: '.01',
+        inputMode: 'decimal'
+      } : {}),
+      ...props
+    }));
+  }
+  function Select({
+    label,
+    value,
+    onChange,
+    disabled,
+    options
+  }) {
+    return h('label', {
+      className: 'svp-field'
+    }, label, h('select', {
+      'aria-label': label,
+      value,
+      disabled,
+      onChange: e => onChange(e.target.value)
+    }, options.map(([value, name]) => h('option', {
+      key: value,
+      value
+    }, name))));
+  }
+  function Notes({
+    value,
+    onChange,
+    disabled,
+    label = 'Observaciones (opcional)'
+  }) {
+    return h('label', {
+      className: 'svp-field'
+    }, label, h('textarea', {
+      value,
+      disabled,
+      maxLength: 1000,
+      onChange: e => onChange(e.target.value)
+    }));
+  }
+  function useRemote(loader, deps, enabled = true) {
+    const [state, setState] = useState({
+        loading: enabled
+      }),
+      [revision, setRevision] = useState(0);
+    useEffect(() => {
+      if (!enabled) return;
+      let active = true;
+      setState(old => ({
+        ...old,
+        loading: true,
+        error: ''
+      }));
+      loader().then(data => {
+        if (active) setState({
+          data,
+          loading: false,
+          error: ''
+        });
+      }).catch(error => {
+        if (active) setState(old => ({
+          ...old,
+          loading: false,
+          error: explain(error)
+        }));
+      });
+      return () => {
+        active = false;
+      };
+    }, [...deps, revision, enabled]);
+    return [state, () => setRevision(x => x + 1)];
+  }
+  function Feedback({
+    state,
+    reload
+  }) {
+    return h(React.Fragment, null, state.loading && h('p', {
+      role: 'status',
+      className: 'svp-note'
+    }, 'Consultando información…'), state.error && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, state.error, h(Btn, {
+      disabled: state.loading,
+      onClick: reload
+    }, 'Reintentar consulta')));
+  }
+  function useCommand(onSuccess) {
+    const [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [notice, setNotice] = useState('');
+    const lock = useRef(false),
+      attempt = useRef(null),
+      alive = useRef(true);
+    useEffect(() => {
+      alive.current = true;
+      return () => {
+        alive.current = false;
+      };
+    }, []);
+    async function run(method, payload, successText) {
+      if (lock.current) return;
+      lock.current = true;
+      setBusy(true);
+      setError('');
+      setNotice('');
+      const signature = JSON.stringify({
+        method,
+        payload
+      });
+      if (!attempt.current || attempt.current.signature !== signature) attempt.current = {
+        signature,
+        request: {
+          ...payload,
+          key: crypto.randomUUID()
+        }
+      };
+      try {
+        const result = await window.SavingsPanelRepository[method](attempt.current.request);
+        if (!alive.current) return;
+        attempt.current = null;
+        setNotice(successText);
+        await onSuccess(result);
+      } catch (e) {
+        if (alive.current) setError(explain(e));
+      } finally {
+        lock.current = false;
+        if (alive.current) setBusy(false);
+      }
+    }
+    return {
+      busy,
+      error,
+      notice,
+      run,
+      clear() {
+        attempt.current = null;
+        setError('');
+        setNotice('');
+      }
+    };
+  }
+  function Notice({
+    command
+  }) {
+    return h(React.Fragment, null, command.error && h('div', {
+      role: 'alert',
+      className: 'svp-error'
+    }, command.error), command.notice && h('p', {
+      role: 'status',
+      className: 'svp-success'
+    }, command.notice));
+  }
+  function ExceptionDialog({
+    children,
+    onClose,
+    busy
+  }) {
+    const ref = useRef(null),
+      close = useRef(onClose);
+    close.current = onClose;
+    useEffect(() => {
+      const previous = document.activeElement,
+        el = ref.current;
+      el.showModal();
+      return () => {
+        el.close();
+        previous && previous.isConnected && previous.focus();
+      };
+    }, []);
+    return h('dialog', {
+      ref,
+      className: 'svp svp-modal',
+      style: {
+        maxWidth: 'min(560px, calc(100vw - 32px))',
+        boxSizing: 'border-box'
+      },
+      onCancel: e => {
+        e.preventDefault();
+        if (!busy) close.current();
+      }
+    }, h('h2', null, 'AUTORIZAR RETIRO EXCEPCIONAL'), children, h(Btn, {
+      disabled: busy,
+      onClick: onClose
+    }, 'Cerrar'));
+  }
+  function WithdrawalCheck({
+    row,
+    disabled,
+    onSettle
+  }) {
+    const [data, setData] = useState(null),
+      [loading, setLoading] = useState(false),
+      [error, setError] = useState(''),
+      [form, setForm] = useState(null),
+      [revoke, setRevoke] = useState('');
+    const alive = useRef(true),
+      lock = useRef(false);
+    useEffect(() => () => {
+      alive.current = false;
+    }, []);
+    async function check() {
+      if (lock.current) return;
+      lock.current = true;
+      setLoading(true);
+      setData(null);
+      setError('');
+      try {
+        const value = await window.SavingsPanelRepository.checkWithdrawal(row.id);
+        if (alive.current) setData(value);
+      } catch (e) {
+        if (alive.current) setError(explain(e));
+      } finally {
+        lock.current = false;
+        if (alive.current) setLoading(false);
+      }
+    }
+    const command = useCommand(async () => {
+      setForm(null);
+      setRevoke('');
+      await check();
+    });
+    const busy = disabled || loading || command.busy,
+      update = (key, value) => {
+        setForm(old => ({
+          ...old,
+          [key]: value
+        }));
+        command.clear();
+      };
+    return h('div', {
+      'data-withdrawal-check': row.id
+    }, h(Btn, {
+      disabled: busy,
+      onClick: check
+    }, 'Comprobar préstamos para entrega'), loading && h('p', {
+      role: 'status'
+    }, 'Consultando todos los préstamos del ahorrador…'), error && h('p', {
+      role: 'alert',
+      className: 'svp-error'
+    }, error), data && h(React.Fragment, null, (data.overdue_loans || []).length > 0 && h('p', {
+      className: 'svp-note warn'
+    }, data.override ? 'Existe una autorización excepcional para este retiro.' : 'Retiro bloqueado por préstamo con saldo atrasado.'), !(data.loans || []).length && h('p', {
+      className: 'svp-note'
+    }, 'No se encontraron préstamos para este Folio.'), (data.loans || []).map(loan => h('p', {
+      key: loan.id,
+      className: 'svp-note'
+    }, 'Préstamo ' + loan.id + ' · ' + loan.fund + ' · ' + loan.status)), !data.can_settle && data.code !== 'WITHDRAWAL_BLOCKED_BY_OVERDUE_LOAN' && h('p', {
+      className: 'svp-note'
+    }, 'La entrega sigue pendiente de cumplir los requisitos de la solicitud.'), data.can_settle && h(Btn, {
+      tone: 'primary',
+      disabled: busy,
+      onClick: onSettle
+    }, 'Registrar entrega'), data.can_override && !data.override && h(Btn, {
+      tone: 'outline',
+      disabled: busy,
+      onClick: () => {
+        command.clear();
+        setForm({
+          reason: '',
+          justification: '',
+          confirmed: false
+        });
+      }
+    }, 'AUTORIZAR RETIRO EXCEPCIONAL'), data.override && data.can_override && h('details', null, h('summary', null, 'Revocar autorización excepcional'), h(Notes, {
+      label: 'Motivo de revocación',
+      value: revoke,
+      onChange: setRevoke,
+      disabled: busy
+    }), h(Btn, {
+      disabled: busy || revoke.trim().length < 3,
+      onClick: () => command.run('revokeException', {
+        eventId: data.override.id,
+        reason: revoke.trim()
+      }, 'Autorización revocada.')
+    }, 'Confirmar revocación'))), form && h(ExceptionDialog, {
+      busy,
+      onClose: () => setForm(null)
+    }, h('p', null, 'Esta autorización permitirá continuar el retiro a pesar de existir un préstamo con saldo atrasado. La excepción quedará registrada en la bitácora.'), h(Select, {
+      label: 'Motivo de la excepción',
+      value: form.reason,
+      onChange: v => update('reason', v),
+      disabled: busy,
+      options: [['', 'Selecciona un motivo'], ['DESPIDO', 'Despido'], ['RENUNCIA', 'Renuncia'], ['FALLECIMIENTO', 'Fallecimiento'], ['CONTINGENCIA', 'Contingencia / Emergencia'], ['OTRO', 'Otro caso especial']]
+    }), h(Notes, {
+      label: form.reason === 'OTRO' ? 'Justificación obligatoria' : 'Justificación (opcional)',
+      value: form.justification,
+      onChange: v => update('justification', v),
+      disabled: busy
+    }), h('label', {
+      className: 'svp-note'
+    }, h('input', {
+      type: 'checkbox',
+      checked: form.confirmed,
+      disabled: busy,
+      onChange: e => update('confirmed', e.target.checked)
+    }), 'Confirmo la autorización excepcional de este retiro.'), h(Notice, {
+      command
+    }), h(Btn, {
+      tone: 'primary',
+      disabled: busy || !form.reason || !form.confirmed || form.reason === 'OTRO' && form.justification.trim().length < 3,
+      onClick: () => command.run('authorizeWithdrawal', {
+        requestId: row.id,
+        command: {
+          ...form,
+          justification: form.justification.trim(),
+          fingerprint: data.fingerprint
+        }
+      }, 'Excepción autorizada para esta solicitud.')
+    }, 'Confirmar autorización excepcional')), !form && h(Notice, {
+      command
+    }));
+  }
+  function RequestForm({
+    draft,
+    setDraft,
+    disabled,
+    fixedFolio = false
+  }) {
+    const update = (key, value) => setDraft(old => ({
+      ...old,
+      [key]: value
+    }));
+    const contribution = ['JOIN', 'CHANGE_AMOUNT'].includes(draft.type),
+      withdrawal = draft.type === 'WITHDRAW';
+    return h(React.Fragment, null, h(Field, {
+      label: 'Folio exacto del ahorrador',
+      value: draft.folio,
+      onChange: v => update('folio', v),
+      disabled,
+      readOnly: fixedFolio,
+      autoComplete: 'off'
+    }), h(Select, {
+      label: 'Operación',
+      value: draft.type,
+      onChange: v => update('type', v),
+      disabled,
+      options: Object.entries(types).filter(([code]) => code !== 'EXTRAORDINARY_WITHDRAWAL')
+    }), contribution && h(Field, {
+      label: 'Nueva aportación por descuento',
+      type: 'number',
+      value: draft.new_amount,
+      onChange: v => update('new_amount', v),
+      disabled
+    }), draft.type === 'JOIN' && h(Select, {
+      label: 'Tipo de descuento',
+      value: draft.process,
+      onChange: v => update('process', v),
+      disabled,
+      options: [['', 'Selecciona una opción'], ['PROCESS_1', 'Quincenal · Clave 1'], ['PROCESS_3', 'Quincenal · Suplente variable'], ['JUB', 'Mensual · Jubilado o pensionado']]
+    }), withdrawal && h(Field, {
+      label: 'Importe solicitado para retirar',
+      type: 'number',
+      value: draft.amount,
+      onChange: v => update('amount', v),
+      disabled
+    }), draft.type === 'WITHDRAW' && h(Select, {
+      label: 'Después del retiro',
+      value: draft.continue_saving ? 'true' : 'false',
+      onChange: v => update('continue_saving', v === 'true'),
+      disabled,
+      options: [['true', 'Continuará ahorrando'], ['false', 'Dejará de ahorrar']]
+    }), withdrawal && h('p', {
+      className: 'svp-note'
+    }, 'El sistema comprueba el saldo disponible. Un retiro parcial conserva la aportación; una solicitud no reserva dinero.'), draft.type === 'TERMINATE' && h('p', {
+      className: 'svp-note'
+    }, 'Esta solicitud detiene los descuentos futuros y conserva el dinero ahorrado. Para retirar dinero, registra una solicitud de retiro.'), contribution && h('p', {
+      className: 'svp-note'
+    }, 'La fecha de aplicación se calculará con el plazo y el calendario de descuentos de esa persona.'), h(Notes, {
+      value: draft.observation,
+      onChange: v => update('observation', v),
+      disabled
+    }));
+  }
+  function RequestDocuments({
+    requestId
+  }) {
+    const [opened, setOpened] = useState(false);
+    return h('details', {
+      onToggle: event => {
+        if (event.target === event.currentTarget) setOpened(event.currentTarget.open);
+      }
+    }, h('summary', {
+      className: 'svp-note'
+    }, 'Documentos de esta operación'), opened && h(window.GeneratedDocuments, {
+      domain: 'savings',
+      operationId: requestId,
+      admin: true
+    }));
+  }
+  function Requests({
+    onSaved,
+    expanded = false,
+    folio = null,
+    requestId = null,
+    onOpenPerson,
+    initialNavigation,
+    onNavigationChange,
+    withdrawalIntent = 0
+  }) {
+    const [filter, setFilter] = useState(folio || initialNavigation?.filter || ''),
+      [query, setQuery] = useState(folio || initialNavigation?.query || ''),
+      [limit, setLimit] = useState(initialNavigation?.limit || 8),
+      [draft, setDraft] = useState(null),
+      [action, setAction] = useState(null);
+    const [category, setCategory] = useState(initialNavigation?.category || 'ALL'),
+      [statusFilter, setStatusFilter] = useState(initialNavigation?.statusFilter || (expanded && !folio ? 'pending' : 'all'));
+    const [focusedRequest, setFocusedRequest] = useState(requestId);
+    const focus = useRef(null);
+    useEffect(() => {
+      if (onNavigationChange) onNavigationChange({
+        filter,
+        query,
+        limit,
+        category,
+        statusFilter
+      });
+    }, [filter, query, limit, category, statusFilter, onNavigationChange]);
+    const [state, reload] = useRemote(() => window.SavingsPanelRepository.runtimeRequests(query || undefined), [query]);
+    const command = useCommand(async () => {
+      setDraft(null);
+      setAction(null);
+      reload();
+      if (onSaved) await onSaved();
+    });
+    const data = state.data,
+      allRows = (data && data.requests || []).map(row => ({
+        ...row,
+        request_code: row.folio,
+        folio: row.saver_folio,
+        type: row.request_type,
+        amount: row.requested_amount,
+        new_amount: row.new_contribution_amount,
+        effective_date: row.effective_from
+      })),
+      blocked = command.busy || state.loading || !!state.error;
+    const handledIntent = useRef(0),
+      withdrawalField = useRef(null);
+    useEffect(() => {
+      if (withdrawalIntent && withdrawalIntent !== handledIntent.current && folio && data && data.can_create && !blocked) {
+        handledIntent.current = withdrawalIntent;
+        if (draft && draft.type === 'WITHDRAW' && draft.folio === folio) return;
+        if ((draft || action) && !window.confirm('Hay una captura abierta. ¿Quieres descartarla para registrar el retiro?')) return;
+        setAction(null);
+        setFocusedRequest(null);
+        setDraft({
+          folio,
+          type: 'WITHDRAW',
+          amount: '',
+          new_amount: '',
+          continue_saving: true,
+          process: '',
+          observation: ''
+        });
+        command.clear();
+      }
+    }, [withdrawalIntent, folio, data, blocked]);
+    useEffect(() => {
+      if (draft && draft.type === 'WITHDRAW' && withdrawalIntent && withdrawalField.current) {
+        const el = withdrawalField.current.querySelector('input[type=number]');
+        if (el) {
+          el.focus();
+          el.scrollIntoView({
+            block: 'center',
+            behavior: 'smooth'
+          });
+        }
+      }
+    }, [!!draft, withdrawalIntent]);
+    const needsAttention = row => ['SUBMITTED', 'UNDER_REVIEW'].includes(row.status) || row.status === 'APPROVED' && ['WITHDRAW', 'EXTRAORDINARY_WITHDRAWAL'].includes(row.type);
+    const rows = allRows.filter(row => (category === 'ALL' || row.type === category) && (statusFilter === 'all' || needsAttention(row)));
+    // A request deep link always reveals its current state after readback, even after approval.
+    const visibleRows = focusedRequest ? allRows.filter(row => row.id === focusedRequest) : rows.slice(0, limit);
+    useEffect(() => {
+      if (requestId && focus.current) focus.current.focus();
+    }, [requestId, !!data]);
+    const changeDraft = update => {
+      setDraft(update);
+      command.clear();
+    };
+    function select(row, kind) {
+      setDraft(null);
+      setAction({
+        row,
+        kind,
+        decision: 'APPROVE',
+        effective_date: '',
+        process: row.process || '',
+        observation: '',
+        capital: '',
+        yield: '',
+        confirmed: false,
+        origins: {
+          ready: false
+        }
+      });
+      command.clear();
+    }
+    function changeAction(key, value) {
+      setAction(old => ({
+        ...old,
+        [key]: value
+      }));
+      command.clear();
+    }
+    function submit() {
+      const c = {
+        kind: 'SUBMIT',
+        folio: draft.folio,
+        type: draft.type,
+        observation: draft.observation
+      };
+      if (['JOIN', 'CHANGE_AMOUNT'].includes(draft.type)) c.new_amount = Number(draft.new_amount);
+      if (draft.type === 'JOIN') c.process = draft.process;
+      if (draft.type === 'WITHDRAW') {
+        c.amount = Number(draft.amount);
+        c.continue_saving = draft.continue_saving;
+      }
+      if (draft.type === 'TERMINATE') {
+        c.amount = 0;
+        c.continue_saving = false;
+      }
+      command.run('operation', {
+        command: c
+      }, 'Solicitud guardada. Puedes seguirla en esta lista.');
+    }
+    const valid = draft && draft.folio !== '' && (draft.type === 'TERMINATE' || (['JOIN', 'CHANGE_AMOUNT'].includes(draft.type) ? validMoney(draft.new_amount) : validMoney(draft.amount))) && (draft.type !== 'JOIN' || !!draft.process);
+    return h(Tarjeta, {
+      title: folio ? 'Solicitudes de esta persona' : 'Solicitudes de ahorro',
+      icon: 'receipt'
+    }, h(expanded ? 'div' : 'details', null, !expanded && h('summary', {
+      className: 'svp-note'
+    }, 'Abrir solicitudes nuevas y su seguimiento'), h('p', {
+      className: 'svp-note'
+    }, folio ? 'Consulta las operaciones de esta persona y actúa sólo cuando requieren una decisión.' : data?.auto_join_enabled ? 'Los ingresos válidos de autoservicio se incorporan automáticamente. Aquí se atienden cambios, retiros y solicitudes anteriores que aún requieren una decisión.' : 'Consulta las operaciones que requieren una decisión y su seguimiento.'), !folio && h(expanded ? 'details' : React.Fragment, expanded ? {
+      className: 'svp-request-search'
+    } : null, expanded && h('summary', {
+      className: 'svp-note'
+    }, 'Buscar solicitudes por Folio'), h(Field, {
+      label: 'Buscar operaciones por Folio exacto',
+      value: filter,
+      disabled: blocked,
+      onChange: setFilter,
+      autoComplete: 'off'
+    }), h(Btn, {
+      disabled: blocked,
+      onClick: () => {
+        setQuery(filter);
+        setLimit(8);
+        command.clear();
+      }
+    }, 'Buscar operaciones')), h(Btn, {
+      disabled: blocked,
+      onClick: reload
+    }, 'Actualizar operaciones'), h(Feedback, {
+      state,
+      reload
+    }), expanded && !focusedRequest && h('div', {
+      className: 'svp-request-filters'
+    }, h(Select, {
+      label: 'Tipo de solicitud',
+      value: category,
+      disabled: blocked || !!draft || !!action,
+      onChange: v => {
+        setCategory(v);
+        setLimit(8);
+      },
+      options: [['ALL', 'Todas las solicitudes'], ...Object.entries(types)]
+    }), h(Select, {
+      label: 'Estado de las solicitudes',
+      value: statusFilter,
+      disabled: blocked || !!draft || !!action,
+      onChange: v => {
+        setStatusFilter(v);
+        setLimit(8);
+      },
+      options: [['pending', 'Pendientes de atención'], ['all', 'Todos los estados']]
+    })), expanded && !folio && data && !state.loading && !state.error && allRows.some(r => r.type === 'JOIN' && needsAttention(r)) && h('p', {
+      className: 'svp-note'
+    }, allRows.filter(r => r.type === 'JOIN' && needsAttention(r)).length + ' ingreso(s) pendientes de resolución. Su historial y las autorizaciones de captura asistida se conservan.'), focusedRequest && folio && !draft && !action && h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => setFocusedRequest(null)
+    }, 'Ver todas las solicitudes de esta persona'), data && data.can_create && !draft && !action && h('details', null, h('summary', {
+      className: 'svp-note'
+    }, 'Registrar una operación asistida'), h('p', {
+      className: 'svp-note'
+    }, 'Usa esta opción cuando necesitas capturar una operación por la persona. Conserva sus validaciones y autorizaciones.'), h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => {
+        setDraft({
+          folio: query,
+          type: folio ? 'WITHDRAW' : 'JOIN',
+          new_amount: '',
+          amount: '',
+          continue_saving: true,
+          process: '',
+          observation: ''
+        });
+        command.clear();
+      }
+    }, 'Registrar operación')), draft && h('div', {
+      ref: withdrawalField
+    }, h(RequestForm, {
+      draft,
+      setDraft: changeDraft,
+      disabled: blocked,
+      fixedFolio: !!folio && !!withdrawalIntent
+    }), h('div', {
+      className: 'svp-actions'
+    }, h(Btn, {
+      disabled: blocked,
+      onClick: () => {
+        setDraft(null);
+        command.clear();
+      }
+    }, 'Cancelar captura'), h(Btn, {
+      tone: 'primary',
+      disabled: blocked || !valid,
+      onClick: submit
+    }, 'Guardar solicitud'))), data && !state.loading && !state.error && !visibleRows.length && h('p', {
+      className: 'svp-note'
+    }, requestId ? 'Esta solicitud ya no está disponible en la consulta. Actualiza o vuelve a la lista.' : statusFilter === 'pending' ? 'Sin solicitudes pendientes para este filtro. Puedes consultar todos los estados.' : 'No hay operaciones registradas para esta consulta.'), visibleRows.map(row => h('article', {
+      key: row.id,
+      className: 'svp-audit',
+      ref: requestId === row.id ? focus : null,
+      tabIndex: requestId === row.id ? -1 : undefined,
+      'data-request-id': row.id
+    }, h('b', null, row.name || 'Folio ' + row.folio), h('p', {
+      className: 'svp-note'
+    }, 'Folio ' + row.folio + ' · ' + (types[row.type] || 'Operación de ahorro') + ' · ' + (states[row.status] || 'Por revisar')), h(RequestDocuments, {
+      requestId: row.id
+    }), row.request_code && h(Fila, {
+      label: 'Solicitud',
+      valor: row.request_code
+    }), row.amount != null && h(Fila, {
+      label: 'Importe solicitado',
+      valor: M(row.amount)
+    }), row.new_amount != null && h(Fila, {
+      label: 'Nueva aportación',
+      valor: M(row.new_amount)
+    }), ['WITHDRAW', 'EXTRAORDINARY_WITHDRAWAL'].includes(row.type) && h(Fila, {
+      label: 'Después del retiro',
+      valor: row.continue_saving === true ? 'Continuará ahorrando' : row.continue_saving === false ? 'Dejará de ahorrar' : 'Por confirmar'
+    }), row.effective_date && h(Fila, {
+      label: 'Fecha de aplicación',
+      valor: fmt(row.effective_date)
+    }), row.settlement_block_reason && h('p', {
+      className: 'svp-note warn'
+    }, row.settlement_block_reason), !draft && !action && onOpenPerson && h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => onOpenPerson(row)
+    }, 'Ver persona y operación'), !onOpenPerson && !draft && !action && h('div', {
+      className: 'svp-actions'
+    }, row.can_review === true && h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => select(row, 'REVIEW')
+    }, 'Revisar solicitud'), row.can_settle === true && h(Btn, {
+      tone: 'primary',
+      disabled: blocked,
+      onClick: () => select(row, 'SETTLE')
+    }, 'Registrar entrega'), row.can_cancel === true && h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => select(row, 'CANCEL')
+    }, 'Cancelar solicitud')), !onOpenPerson && !draft && !action && row.requires_loan_verification === true && h(WithdrawalCheck, {
+      key: row.id + ':' + row.status,
+      row,
+      disabled: blocked,
+      onSettle: () => select(row, 'SETTLE')
+    }), action && action.row.id === row.id && h('div', null, action.kind === 'REVIEW' ? h(React.Fragment, null, h(Select, {
+      label: 'Decisión de la solicitud',
+      value: action.decision,
+      disabled: blocked,
+      onChange: v => changeAction('decision', v),
+      options: [['APPROVE', 'Aprobar'], ['REJECT', 'Rechazar']]
+    }), action.decision === 'APPROVE' && ['JOIN', 'CHANGE_AMOUNT'].includes(row.type) && h(React.Fragment, null, h(Field, {
+      label: 'Fecha excepcional (opcional)',
+      type: 'date',
+      value: action.effective_date,
+      onChange: v => changeAction('effective_date', v),
+      disabled: blocked
+    }), h('p', {
+      className: 'svp-note'
+    }, 'Déjala vacía para usar la fecha calculada. Si la cambias, explica el motivo.'), row.type === 'JOIN' && h(Select, {
+      label: 'Tipo de descuento autorizado',
+      value: action.process,
+      disabled: blocked,
+      onChange: v => changeAction('process', v),
+      options: [['', 'Selecciona una opción'], ['PROCESS_1', 'Quincenal · Clave 1'], ['PROCESS_3', 'Quincenal · Suplente variable'], ['JUB', 'Mensual · Jubilado o pensionado']]
+    })), h(Notes, {
+      label: action.decision === 'REJECT' || action.effective_date ? 'Motivo de esta decisión' : 'Observaciones (opcional)',
+      value: action.observation,
+      onChange: v => changeAction('observation', v),
+      disabled: blocked
+    })) : action.kind === 'CANCEL' ? h(React.Fragment, null, h('p', {
+      className: 'svp-note'
+    }, 'La solicitud quedará cancelada y se conservará su historial. Esta acción no registra una entrega de dinero.'), h(Notes, {
+      value: action.observation,
+      onChange: v => changeAction('observation', v),
+      disabled: blocked
+    })) : h(React.Fragment, null, h('p', {
+      className: 'svp-note'
+    }, 'Registra el capital y rendimiento efectivamente entregados. El sistema comprobará el saldo y conservará el pago en el historial.'), h(Field, {
+      label: 'Capital que se entrega',
+      type: 'number',
+      value: action.capital,
+      onChange: v => changeAction('capital', v),
+      disabled: blocked
+    }), h(Field, {
+      label: 'Rendimiento que se entrega',
+      type: 'number',
+      value: action.yield,
+      onChange: v => changeAction('yield', v),
+      disabled: blocked
+    }), h(window.SavingsWithdrawalOrigins, {
+      participantId: row.participant_id,
+      capital: action.capital,
+      yieldAmount: action.yield,
+      disabled: blocked,
+      onChange: v => changeAction('origins', v)
+    }), h(Notes, {
+      value: action.observation,
+      onChange: v => changeAction('observation', v),
+      disabled: blocked
+    }), h('label', {
+      className: 'svp-note',
+      style: {
+        display: 'flex',
+        gap: 8
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: action.confirmed,
+      disabled: blocked,
+      onChange: e => changeAction('confirmed', e.target.checked)
+    }), 'He comprobado los importes de la entrega.')), h('div', {
+      className: 'svp-actions'
+    }, h(Btn, {
+      disabled: blocked,
+      onClick: () => {
+        setAction(null);
+        command.clear();
+      }
+    }, 'Cancelar operación'), h(Btn, {
+      tone: 'primary',
+      disabled: blocked || (action.kind === 'SETTLE' ? !validMoney(action.capital) || !validMoney(action.yield) || !action.confirmed || !action.origins?.ready : action.kind === 'REVIEW' && ((action.decision === 'REJECT' || !!action.effective_date) && !action.observation.trim() || action.decision === 'APPROVE' && row.type === 'JOIN' && !action.process)),
+      onClick: () => command.run('operation', {
+        command: action.kind === 'SETTLE' ? {
+          kind: 'SETTLE',
+          request_id: row.id,
+          capital: Number(action.capital),
+          yield: Number(action.yield),
+          observation: action.observation,
+          origin_allocations: action.origins.origin_allocations,
+          allocation_version: action.origins.allocation_version
+        } : action.kind === 'CANCEL' ? {
+          kind: 'CANCEL',
+          request_id: row.id,
+          observation: action.observation
+        } : {
+          kind: 'REVIEW',
+          request_id: row.id,
+          decision: action.decision,
+          effective_date: action.effective_date || null,
+          process: action.process || null,
+          observation: action.observation
+        }
+      }, action.kind === 'SETTLE' ? 'Entrega registrada. Se actualizó el saldo y el historial.' : action.kind === 'CANCEL' ? 'Solicitud cancelada. Su historial se conserva.' : 'Decisión guardada. Se actualizó la solicitud.')
+    }, action.kind === 'SETTLE' ? 'Confirmar entrega' : action.kind === 'CANCEL' ? 'Confirmar cancelación' : 'Guardar decisión'))))), !focusedRequest && rows.length > limit && h(Btn, {
+      tone: 'full',
+      disabled: blocked,
+      onClick: () => setLimit(x => x + 16)
+    }, 'Ver más operaciones'), h(Notice, {
+      command
+    })));
+  }
+  function csvCell(value, folio = false) {
+    let s = value == null ? '' : String(value);
+    if (folio || typeof value === 'string' && /^[\s\u0000-\u001f]*[=+\-@]/.test(s)) s = "'" + s;
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  function downloadReport(data) {
+    const rows = [['Folio', 'Nombre', ...columns.map(c => c[1])], ...(data.rows || []).map(row => [row.folio, row.name, ...columns.map(([key]) => row[key])])];
+    const csv = '\uFEFF' + rows.map((row, i) => row.map((value, j) => csvCell(value, i > 0 && j === 0)).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], {
+      type: 'text/csv;charset=utf-8'
+    }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'Ahorro-' + data.from + '-a-' + data.to + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  function Reports() {
+    const [from, setFrom] = useState(''),
+      [to, setTo] = useState(''),
+      [range, setRange] = useState(null),
+      [limit, setLimit] = useState(8);
+    const [state, reload] = useRemote(() => window.SavingsPanelRepository.report(range), [range], !!range),
+      d = state.data;
+    return h(Tarjeta, {
+      title: 'Reportes de Ahorro',
+      icon: 'receipt'
+    }, h('details', null, h('summary', {
+      className: 'svp-note'
+    }, 'Consultar descuentos, capital y rendimientos por periodo'), h(Field, {
+      label: 'Reporte desde',
+      type: 'date',
+      value: from,
+      onChange: setFrom,
+      disabled: state.loading
+    }), h(Field, {
+      label: 'Reporte hasta',
+      type: 'date',
+      value: to,
+      onChange: setTo,
+      disabled: state.loading
+    }), h(Btn, {
+      tone: 'outline',
+      disabled: state.loading || !validDate(from) || !validDate(to) || to < from,
+      onClick: () => {
+        setLimit(8);
+        setRange({
+          from,
+          to
+        });
+      }
+    }, 'Consultar reporte'), h(Feedback, {
+      state,
+      reload
+    }), d && !state.loading && !state.error && h(React.Fragment, null, h('p', {
+      className: 'svp-note'
+    }, fmt(d.from) + ' al ' + fmt(d.to)), columns.map(([key, label]) => h(Fila, {
+      key,
+      label,
+      valor: M(d.totals && d.totals[key])
+    })), d.historical_note && h('p', {
+      className: 'svp-note'
+    }, d.historical_note), h(Btn, {
+      tone: 'outline',
+      onClick: () => downloadReport(d)
+    }, 'Descargar reporte CSV'), !(d.rows || []).length && h('p', {
+      className: 'svp-note'
+    }, 'No hay movimientos para el periodo consultado.'), (d.rows || []).slice(0, limit).map(row => h('article', {
+      key: row.folio,
+      className: 'svp-audit'
+    }, h('b', null, row.name || 'SIN REGISTRO'), h('p', {
+      className: 'svp-note'
+    }, 'Folio ' + row.folio), columns.map(([key, label]) => h(Fila, {
+      key,
+      label,
+      valor: M(row[key])
+    })))), (d.rows || []).length > limit && h(Btn, {
+      tone: 'full',
+      onClick: () => setLimit(x => x + 20)
+    }, 'Ver más ahorradores'))));
+  }
+  function Publication({
+    onSaved
+  }) {
+    const [state, reload] = useRemote(() => window.SavingsPanelRepository.publicationStatus(), []),
+      [checked, setChecked] = useState(false),
+      [limit, setLimit] = useState(8),
+      [selected, setSelected] = useState(null);
+    const [preview, refreshPreview] = useRemote(() => selected.record_id ? window.SavingsPanelRepository.publicationPreview(selected.record_id) : window.SavingsPanelRepository.publicationAccountPreview(selected.participant_id), [selected], !!selected);
+    const command = useCommand(async () => {
+      setChecked(false);
+      reload();
+      if (onSaved) await onSaved();
+    });
+    const d = state.data,
+      blocked = state.loading || command.busy || !!state.error,
+      rows = d && d.rows || [];
+    function refresh() {
+      setChecked(false);
+      setSelected(null);
+      command.clear();
+      reload();
+    }
+    return h(Tarjeta, {
+      title: 'Publicación de Ahorro',
+      icon: 'checkCircle'
+    }, h('details', null, h('summary', {
+      className: 'svp-note'
+    }, 'Comprobar pendientes y preparar la publicación'), h(Feedback, {
+      state,
+      reload: refresh
+    }), d && h(React.Fragment, null, h(Fila, {
+      label: 'Visibilidad',
+      valor: d.mode === 'PUBLISHED' ? 'Publicado a los ahorradores' : 'Preparación privada'
+    }), h(Fila, {
+      label: 'Expedientes comprobados',
+      valor: d.total
+    }), h(Fila, {
+      label: 'Expedientes pendientes',
+      valor: d.pending
+    }), h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: refresh
+    }, 'Comprobar pendientes'), h('p', {
+      className: 'svp-note'
+    }, 'La publicación sustituirá juntos los valores de Ahorro que se muestran en Ahorro, Inicio y Finanzas. Primero termina la revisión y las pruebas.'), rows.slice(0, limit).map(row => h('div', {
+      key: row.record_id || row.participant_id,
+      className: 'svp-audit'
+    }, h('b', null, 'Folio ' + row.folio), h('p', {
+      className: 'svp-note'
+    }, row.ready ? 'Preparado' : (row.reasons || []).join('. ') || 'Pendiente de revisión'), row.ready && h(Btn, {
+      tone: 'outline',
+      disabled: blocked,
+      onClick: () => setSelected(row)
+    }, 'Comprobar importes · ' + row.folio))), rows.length > limit && h(Btn, {
+      tone: 'full',
+      disabled: blocked,
+      onClick: () => setLimit(x => x + 24)
+    }, 'Ver más expedientes'), selected && h('div', null, h('h3', {
+      style: {
+        fontSize: 14
+      }
+    }, 'Importes que verá el ahorrador · Folio ' + selected.folio), h(Feedback, {
+      state: preview,
+      reload: refreshPreview
+    }), preview.data && !preview.loading && !preview.error && h(React.Fragment, null, h(Fila, {
+      label: 'Saldo disponible',
+      valor: M(preview.data.balances && preview.data.balances.total)
+    }), h(Fila, {
+      label: 'Capital',
+      valor: M(preview.data.balances && preview.data.balances.capital)
+    }), h(Fila, {
+      label: 'Rendimiento incluido',
+      valor: M(preview.data.balances && preview.data.balances.yield_amount)
+    }), h(Fila, {
+      label: 'Aportación',
+      valor: M(preview.data.enrollment && preview.data.enrollment.current_contribution_amount)
+    }))), d.mode === 'PRIVATE' && h(React.Fragment, null, !d.ready && h('p', {
+      className: 'svp-note warn'
+    }, 'La publicación estará disponible cuando todos los expedientes estén preparados.'), d.can_publish && h('label', {
+      className: 'svp-note',
+      style: {
+        display: 'flex',
+        gap: 8,
+        alignItems: 'flex-start'
+      }
+    }, h('input', {
+      type: 'checkbox',
+      disabled: blocked || !d.ready,
+      checked,
+      onChange: e => {
+        setChecked(e.target.checked);
+        command.clear();
+      }
+    }), 'Ya probé el sistema y autorizo mostrar los saldos definitivos a los ahorradores.'), d.can_publish && h(Btn, {
+      tone: 'primary full',
+      disabled: blocked || !d.ready || !checked,
+      onClick: () => command.run('publish', {
+        version: d.version,
+        fingerprint: d.fingerprint,
+        confirmed: true
+      }, 'Ahorro publicado. Los ahorradores ya consultan la información confirmada.')
+    }, 'Publicar Ahorro para los usuarios'), !d.can_publish && h('p', {
+      className: 'svp-note'
+    }, 'La publicación requiere permiso de configuración y autorización.'))), h(Notice, {
+      command
+    })));
+  }
+  function Settings({
+    app,
+    onSaved,
+    defaultOpen = false
+  }) {
+    const [opened, setOpened] = useState(defaultOpen),
+      [state, reload] = useRemote(() => window.SavingsRepository.getAdminDashboard(null), [], opened);
+    async function saved() {
+      reload();
+      if (onSaved) await onSaved();
+    }
+    return h(Tarjeta, {
+      title: 'Aperturas, cambios y rendimientos',
+      icon: 'calendar'
+    }, h('details', {
+      open: opened,
+      onToggle: e => setOpened(e.currentTarget.open)
+    }, h('summary', {
+      className: 'svp-note'
+    }, 'Administrar fechas, opciones y tasa de rendimiento'), opened && h(React.Fragment, null, h(Feedback, {
+      state,
+      reload
+    }), state.data && !state.loading && !state.error && h(React.Fragment, null, h('p', {
+      className: 'svp-note'
+    }, 'Define la tasa del periodo y revisa quién cumple las reglas. Al abrir retiros puedes elegir todos los ahorradores o sólo una persona. Estos controles no entregan dinero automáticamente.'), h('h3', null, 'Habilitar retiros para todos o para una persona'), h(window.SavingsOperationsAdmin, {
+      app,
+      participants: state.data.participants,
+      periods: state.data.yield_periods,
+      onSaved: saved
+    }), h('h3', null, 'Tasa y rendimientos por periodo'), h(window.SavingsYieldAdmin, {
+      app,
+      periods: state.data.yield_periods,
+      onSaved: saved
+    })))));
+  }
+  function SavingsRuntimeAdmin({
+    tab,
+    onSaved,
+    app,
+    onOpenPerson,
+    initialNavigation,
+    onNavigationChange
+  }) {
+    return tab === 'configuracion' ? h(Settings, {
+      app,
+      onSaved,
+      defaultOpen: true
+    }) : tab === 'reportes' || tab === 'cobranza' ? h(Reports) : tab === 'pendientes' ? h(Requests, {
+      onSaved,
+      expanded: true,
+      onOpenPerson,
+      initialNavigation,
+      onNavigationChange
+    }) : tab === 'solicitudes' ? h(Requests, {
+      onSaved
+    }) : tab === 'publicacion' ? h(Publication, {
+      onSaved
+    }) : tab === 'revision' ? h(React.Fragment, null, h(Publication, {
+      onSaved
+    }), h(Settings, {
+      app,
+      onSaved
+    })) : null;
+  }
+  window.SavingsRequestsAdmin = Requests;
+  window.SavingsRuntimeAdmin = SavingsRuntimeAdmin;
 })();
 })();
 /* @@file savings-rh-repository.js */
@@ -75449,6 +80919,573 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
   window.ProgramProductPaymentFlow = ProgramProductPaymentFlow;
 })();
 })();
+/* @@file renta-car.jsx */
+(function(){
+/* Renta Car only. Supabase owns prices, dates, bookings and immutable requests. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React;
+  const money = v => new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(Number(v));
+  const date = v => new Date(v + 'T12:00:00Z').toLocaleDateString('es-MX', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC'
+  });
+  const dayNumber = s => Date.parse(s + 'T00:00:00Z') / 86400000;
+  const days = (start, end) => start && end ? dayNumber(end) - dayNumber(start) + 1 : 0;
+  const overlaps = (start, end, booked) => (booked || []).some(b => start <= b.end && end >= b.start);
+  const contextKey = () => window.PrivateResourceDemand.context();
+  async function rpc(name, data) {
+    const context = contextKey(),
+      r = await window.SutiSupabase.getClient().rpc(name, data);
+    if (context !== contextKey()) throw Error('RENTA_CONTEXT_CHANGED');
+    if (r.error) throw r.error;
+    return r.data;
+  }
+  const refresh = () => {
+    window.operationsStore?.invalidate();
+    window.dispatchEvent(new Event('suti:request-changed'));
+  };
+  const repository = Object.freeze({
+    context: item => rpc('renta_car_context', {
+      p_item: item
+    }),
+    quote: (item, start, end) => rpc('renta_car_quote', {
+      p_item: item,
+      p_start: start,
+      p_end: end
+    }),
+    submit: async v => {
+      await window.FinanceBlocksRepository.assertAllowed();
+      const result = await rpc('renta_car_submit', v);
+      refresh();
+      return result;
+    },
+    admin: async (id, action, comment, actionId) => {
+      const r = await rpc('renta_car_admin', {
+        p_request: id,
+        p_action: action,
+        p_comment: comment,
+        p_action_id: actionId
+      });
+      refresh();
+      return r;
+    },
+    detail: id => rpc('renta_car_detail', {
+      p_request: id
+    })
+  });
+  const message = e => {
+    const code = String(e?.message || e?.code || '');
+    if (/RENTA_DATES_UNAVAILABLE|renta_car_no_overlap/.test(code)) return 'Esas fechas ya están reservadas. Elige otro periodo.';
+    if (/RENTA_DATES_INVALID|RENTA_APPROVAL_INVALID/.test(code)) return 'Revisa las fechas: la entrega no puede ser anterior a hoy y la devolución debe ser igual o posterior.';
+    if (/CONDITIONS_CHANGED/.test(code)) return 'La tarifa cambió. Regresa al calendario para revisar el nuevo total.';
+    if (/REQUIRED_DOCUMENTS_MISSING/.test(code)) return 'Falta un documento vigente. Regresa a Documentos y revisa tu expediente.';
+    if (/RENTA_VEHICLE_UNAVAILABLE/.test(code)) return 'Esta unidad no está disponible para renta.';
+    if (/RENTA_CONTEXT_CHANGED/.test(code)) return 'La sesión cambió. Vuelve a abrir Renta Car.';
+    return 'No se pudo completar la operación. Reintenta; no se enviará una solicitud duplicada.';
+  };
+  const card = {
+    background: 'var(--surface)',
+    borderRadius: 18,
+    padding: 16,
+    boxShadow: 'var(--neo-sm)',
+    marginTop: 16
+  };
+  function Values({
+    rows
+  }) {
+    return h('dl', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 14,
+        margin: '14px 0 0'
+      }
+    }, rows.map(([label, value]) => h('div', {
+      key: label,
+      style: {
+        minWidth: 0
+      }
+    }, h('dt', {
+      style: {
+        fontSize: 12,
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, label), h('dd', {
+      style: {
+        fontSize: 15,
+        fontWeight: 850,
+        margin: '4px 0 0',
+        overflowWrap: 'anywhere'
+      }
+    }, value ?? 'No registrado'))));
+  }
+  function Summary({
+    snapshot,
+    showApplicant = true
+  }) {
+    const r = snapshot.rental || snapshot,
+      a = snapshot.applicant;
+    return h('section', {
+      'data-renta-summary': true,
+      style: card
+    }, h('h3', {
+      style: {
+        margin: 0,
+        fontSize: 18
+      }
+    }, snapshot.product?.name || 'Renta Car'), h(Values, {
+      rows: [['Entrega', date(r.start_date)], ['Devolución', date(r.end_date)], ['Días de renta', r.days], ['Costo por día', money(r.daily_rate)], ['Total de contado', money(r.total)], ['Fecha límite de pago', date(r.payment_due_date)], ['Número de pagos', '1 · Contado']]
+    }), h('p', {
+      style: {
+        fontSize: 13,
+        color: 'var(--ink-2)',
+        lineHeight: 1.5
+      }
+    }, 'El pago completo debe realizarse antes de entregar la unidad. La reserva se confirma al aprobar Finanzas.'), showApplicant && a && h(React.Fragment, null, h('h4', null, 'Datos de la persona firmante'), h(Values, {
+      rows: [['Nombre', a.full_name], ['Número de control', a.numero_control], ['RFC', a.rfc], ['CURP', a.curp], ['Teléfono', a.phone], ['Correo', a.email], ['Domicilio', a.address], ['Ciudad', a.city]]
+    })), h('div', {
+      'data-renta-contract': 'pending',
+      style: {
+        marginTop: 16,
+        borderTop: '1px solid var(--hairline)',
+        paddingTop: 14
+      }
+    }, h('strong', null, 'Contrato de arrendamiento'), h('p', {
+      style: {
+        fontSize: 13,
+        lineHeight: 1.5,
+        marginBottom: 0
+      }
+    }, 'Pendiente de creación. Las fechas, tarifa, total y datos de la persona solicitante quedan registrados. El documento físico requerirá firma original; la firma trazada en la app no se incluirá en el PDF.')));
+  }
+  function Application({
+    item,
+    quote,
+    app,
+    onClose
+  }) {
+    const [step, setStep] = useState('documents'),
+      [documents, setDocuments] = useState({
+        phase: 'loading',
+        requirements: [],
+        rows: []
+      }),
+      [signature, setSignature] = useState(''),
+      [accepted, setAccepted] = useState(false),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [sent, setSent] = useState(null),
+      idem = useRef(crypto.randomUUID());
+    const load = React.useCallback(async () => {
+      setDocuments(s => ({
+        ...s,
+        phase: 'loading'
+      }));
+      try {
+        const [requirements, rows] = await Promise.all([window.DocumentWorkflowRepository.resolveRequirements('PROGRAM', item.id), window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);
+        setDocuments({
+          phase: 'ready',
+          requirements,
+          rows
+        });
+      } catch (e) {
+        setDocuments({
+          phase: 'error',
+          requirements: [],
+          rows: []
+        });
+      }
+    }, [item.id]);
+    useEffect(() => {
+      load();
+    }, [load]);
+    const latest = new Map();
+    documents.rows.forEach(d => {
+      const old = latest.get(d.document_type_id);
+      if (!old || d.created_at > old.created_at || d.created_at === old.created_at && d.id > old.id) latest.set(d.document_type_id, d);
+    });
+    const selected = documents.requirements.filter(r => r.required !== false).map(r => latest.get(r.document_type_id)).filter(d => d?.available === true && ['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED'].includes(d.status));
+    const ready = documents.phase === 'ready' && selected.length === documents.requirements.filter(r => r.required !== false).length;
+    const send = async () => {
+      if (!ready || !signature || !accepted || busy) return;
+      setBusy(true);
+      setError('');
+      try {
+        setSent(await repository.submit({
+          p_item: item.id,
+          p_start: quote.rental.start_date,
+          p_end: quote.rental.end_date,
+          p_daily_rate: quote.rental.daily_rate,
+          p_signature: signature,
+          p_accepted: true,
+          p_documents: selected.map(d => d.id),
+          p_idempotency: idem.current
+        }));
+      } catch (e) {
+        setError(message(e));
+      } finally {
+        setBusy(false);
+      }
+    };
+    if (sent) return h(window.RequestSubmissionSuccess, {
+      app,
+      folio: sent.folio,
+      kind: 'benefit',
+      subject: item.nombre,
+      workflowState: sent.workflow_state,
+      onBack: onClose,
+      fullScreen: true,
+      destination: 'Tu solicitud de Renta Car fue enviada a Finanzas. Las fechas quedarán reservadas cuando sea aprobada.'
+    });
+    return h('div', {
+      'data-renta-application': step,
+      style: {
+        position: 'absolute',
+        inset: 0,
+        zIndex: 88,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }
+    }, h('header', {
+      style: {
+        background: 'var(--surface)',
+        padding: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12
+      }
+    }, h('button', {
+      'aria-label': 'Atrás',
+      onClick: () => step === 'summary' ? setStep('documents') : onClose(),
+      style: {
+        border: 0,
+        borderRadius: 12,
+        padding: 12,
+        background: 'var(--surface-2)'
+      }
+    }, h(window.Icon, {
+      name: 'arrowL',
+      size: 20
+    })), h('div', null, h('strong', null, step === 'documents' ? 'Documentos' : 'Revisa y firma'), h('div', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)'
+      }
+    }, step === 'documents' ? 'Paso 1 de 2 · Expediente vigente' : 'Paso 2 de 2 · Renta Car'))), h('div', {
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        overflowY: 'auto',
+        padding: '0 17px 130px'
+      }
+    }, step === 'documents' ? h(React.Fragment, null, h('p', {
+      style: {
+        color: 'var(--ink-2)',
+        lineHeight: 1.5
+      }
+    }, 'Completa tu expediente con una foto o un archivo. Los requisitos provienen de la configuración vigente.'), h(window.UnifiedDocumentPhase, {
+      requirements: documents.requirements,
+      documents: documents.rows,
+      onChanged: load,
+      phase: documents.phase,
+      onRetry: load,
+      error: 'No fue posible consultar el expediente.',
+      accessPurpose: 'SELF_SERVICE_EXPEDIENTE',
+      title: 'Expediente'
+    })) : h(React.Fragment, null, h(Summary, {
+      snapshot: quote
+    }), h('section', {
+      style: card
+    }, h('h3', null, 'Firma electrónica'), h(window.SignaturePad, {
+      value: signature,
+      onChange: setSignature
+    }), h('label', {
+      style: {
+        display: 'flex',
+        gap: 10,
+        fontSize: 13,
+        lineHeight: 1.5,
+        marginTop: 16
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: accepted,
+      onChange: e => setAccepted(e.target.checked)
+    }), 'Confirmo las fechas y el total de esta solicitud, y que el pago completo debe realizarse antes de la entrega.')), error && h('p', {
+      role: 'alert',
+      style: {
+        color: '#A32921'
+      }
+    }, error))), h('footer', {
+      style: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: '22px 17px calc(16px + env(safe-area-inset-bottom))',
+        background: 'linear-gradient(transparent,var(--surface) 20px)'
+      }
+    }, h(window.Btn, {
+      full: true,
+      size: 'lg',
+      icon: step === 'documents' ? 'arrowR' : 'check',
+      disabled: step === 'documents' ? !ready : busy || !ready || !signature || !accepted,
+      onClick: step === 'documents' ? () => setStep('summary') : send
+    }, step === 'documents' ? 'Continuar al resumen' : busy ? 'Enviando solicitud…' : 'Enviar solicitud')));
+  }
+  function Flow({
+    item,
+    app
+  }) {
+    const [state, setState] = useState({
+        phase: 'loading'
+      }),
+      [month, setMonth] = useState(''),
+      [start, setStart] = useState(''),
+      [end, setEnd] = useState(''),
+      [pickingEnd, setPickingEnd] = useState(false),
+      [error, setError] = useState(''),
+      [busy, setBusy] = useState(false),
+      [quote, setQuote] = useState(null),
+      seq = useRef(0);
+    const load = React.useCallback(async () => {
+      const current = ++seq.current;
+      setState({
+        phase: 'loading'
+      });
+      try {
+        const data = await repository.context(item.id);
+        if (seq.current !== current) return;
+        setState({
+          phase: 'ready',
+          ...data
+        });
+        setMonth(data.today.slice(0, 7));
+      } catch (e) {
+        if (seq.current === current) setState({
+          phase: 'error',
+          error: message(e)
+        });
+      }
+    }, [item.id]);
+    useEffect(() => {
+      load();
+      return () => {
+        seq.current++;
+      };
+    }, [load]);
+    useEffect(() => {
+      const focus = () => load();
+      window.addEventListener('focus', focus);
+      return () => window.removeEventListener('focus', focus);
+    }, [load]);
+    const count = days(start, end),
+      valid = state.phase === 'ready' && count > 0 && start >= state.today && !overlaps(start, end, state.booked);
+    const choose = value => {
+      setError('');
+      if (pickingEnd && value >= start) {
+        if (overlaps(start, value, state.booked)) {
+          setError('El periodo incluye días reservados. Elige fechas continuas disponibles.');
+          return;
+        }
+        setEnd(value);
+        setPickingEnd(false);
+      } else {
+        setStart(value);
+        setEnd(value);
+        setPickingEnd(true);
+      }
+    };
+    const nextMonth = delta => {
+      const [y, m] = month.split('-').map(Number),
+        d = new Date(Date.UTC(y, m - 1 + delta, 1));
+      setMonth(d.toISOString().slice(0, 7));
+    };
+    const continueFlow = async () => {
+      if (!valid || busy) return;
+      setBusy(true);
+      setError('');
+      try {
+        setQuote(await repository.quote(item.id, start, end));
+      } catch (e) {
+        setError(message(e));
+        await load();
+      } finally {
+        setBusy(false);
+      }
+    };
+    if (state.phase === 'loading') return h('section', {
+      style: card,
+      'data-renta-state': 'loading'
+    }, 'Consultando disponibilidad…');
+    if (state.phase === 'error') return h('section', {
+      style: card,
+      'data-renta-state': 'error'
+    }, h('p', {
+      role: 'alert'
+    }, state.error), h(window.Btn, {
+      onClick: load
+    }, 'Reintentar'));
+    const [y, m] = month.split('-').map(Number),
+      offset = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(),
+      last = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    return h(React.Fragment, null, h('section', {
+      'data-renta-calendar': true,
+      style: card
+    }, h('h3', {
+      style: {
+        margin: '0 0 5px'
+      }
+    }, 'Elige tus días de renta'), h('p', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)',
+        marginTop: 0
+      }
+    }, 'Selecciona entrega y devolución. Ambos días se cobran.'), h('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        margin: '16px 0'
+      }
+    }, h('button', {
+      'aria-label': 'Mes anterior',
+      disabled: month <= state.today.slice(0, 7),
+      onClick: () => nextMonth(-1)
+    }, '‹'), h('strong', null, new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('es-MX', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC'
+    })), h('button', {
+      'aria-label': 'Mes siguiente',
+      onClick: () => nextMonth(1)
+    }, '›')), h('div', {
+      role: 'group',
+      'aria-label': 'Calendario de disponibilidad',
+      style: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7,minmax(0,1fr))',
+        gap: 4
+      }
+    }, ['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => h('span', {
+      key: 'h' + i,
+      style: {
+        textAlign: 'center',
+        fontSize: 11,
+        color: 'var(--ink-3)'
+      }
+    }, d)), Array.from({
+      length: offset
+    }, (_, i) => h('span', {
+      key: 'empty' + i
+    })), Array.from({
+      length: last
+    }, (_, i) => {
+      const value = month + '-' + String(i + 1).padStart(2, '0'),
+        booked = overlaps(value, value, state.booked),
+        past = value < state.today,
+        chosen = start && value >= start && value <= end;
+      return h('button', {
+        key: value,
+        type: 'button',
+        'data-renta-day': value,
+        'aria-label': date(value) + (booked ? ' · Reservado' : past ? ' · Fecha pasada' : ''),
+        'aria-pressed': Boolean(chosen),
+        disabled: past || booked,
+        onClick: () => choose(value),
+        style: {
+          minHeight: 44,
+          border: chosen ? '1px solid var(--guinda)' : '1px solid var(--hairline)',
+          borderRadius: 9,
+          background: chosen ? 'var(--guinda)' : booked ? 'var(--surface-2)' : 'var(--surface)',
+          color: chosen ? '#fff' : past || booked ? 'var(--ink-3)' : 'var(--ink)',
+          textDecoration: booked ? 'line-through' : 'none',
+          opacity: past ? .45 : 1,
+          fontFamily: 'inherit',
+          fontWeight: 750
+        }
+      }, i + 1, booked && h('small', {
+        style: {
+          display: 'block',
+          fontSize: 7
+        }
+      }, 'Ocupado'));
+    })), h('p', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)'
+      }
+    }, 'Tachado: reservado · Los días pasados no se pueden elegir.'), start && h('p', {
+      'data-renta-range': true,
+      style: {
+        fontSize: 13,
+        fontWeight: 750
+      }
+    }, date(start) + ' → ' + date(end)), h('div', {
+      'aria-live': 'polite',
+      style: {
+        textAlign: 'center',
+        padding: '15px 0'
+      }
+    }, h('div', {
+      style: {
+        fontSize: 13
+      }
+    }, count + ' ' + (count === 1 ? 'día' : 'días') + ' × ' + money(state.daily_rate)), h('strong', {
+      'data-renta-total': true,
+      style: {
+        display: 'block',
+        fontSize: 32,
+        color: 'var(--guinda)',
+        marginTop: 5
+      }
+    }, money(count * state.daily_rate)), h('small', null, 'Pago único de contado antes de la entrega')), error && h('p', {
+      role: 'alert',
+      style: {
+        fontSize: 13,
+        color: '#A32921'
+      }
+    }, error), h(window.Btn, {
+      full: true,
+      icon: 'arrowR',
+      disabled: !valid || busy,
+      onClick: continueFlow
+    }, busy ? 'Validando fechas…' : 'Continuar con esta simulación')), quote && h(Application, {
+      item,
+      quote,
+      app,
+      onClose: () => {
+        setQuote(null);
+        load();
+      }
+    }));
+  }
+  window.RentaCarRepository = repository;
+  window.RentaCarFlow = Flow;
+  window.RentaCarSummary = Summary;
+  window.RentaCarMath = Object.freeze({
+    days,
+    overlaps
+  });
+  window.rentaCarError = message;
+})();
+})();
 /* @@file screens-catalogo.jsx */
 (function(){
 /* screens-catalogo.jsx — Marketplace del afiliado: rejilla "Disponibles ahora"
@@ -76123,7 +82160,10 @@ window.SavingsPanelVisual={KPIs,Row,Titulo,Tarjeta,Fila,M,fmt,estados};
     }), farma && React.createElement(window.FarmaRequest, {
       item,
       app
-    }), !farma && programItem && !sold && commercialMode !== 'DIRECT_CONTACT' && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow, {
+    }), programItem && item.program_key === 'renta' && !sold && commercialMode !== 'DIRECT_CONTACT' && item.requestMode === 'supabase' && React.createElement(window.RentaCarFlow, {
+      item,
+      app
+    }), !farma && item.program_key !== 'renta' && programItem && !sold && commercialMode !== 'DIRECT_CONTACT' && item.requestMode === 'supabase' && window.ProgramProductPaymentFlow && React.createElement(window.ProgramProductPaymentFlow, {
       item,
       app,
       onRequestQuote: () => setRequestSheet(true)

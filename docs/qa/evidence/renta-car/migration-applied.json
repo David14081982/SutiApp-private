@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "migration": "20261022000100",
+  "migrationSha256": "6d39ddbc312dfe2618b3acbaf7faceac7d1a1008b47384998859f657c953c0e9",
+  "businessRequestsBefore": 431,
+  "businessRequestsAfter": 431,
+  "businessFingerprintUnchanged": true,
+  "newBusinessRows": 0,
+  "lockTimeout": "1s",
+  "statementTimeout": "15s",
+  "newPublicRpcs": 5
+}

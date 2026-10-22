@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "existingPdfsByteIdentical": [
+    "LOAN_APPROVAL",
+    "PROGRAM_FINANCING_APPROVAL",
+    "MEMBERSHIP_APPROVAL",
+    "SAVINGS_ENROLLMENT_APPROVAL",
+    "SAVINGS_CONTRIBUTION_CHANGE",
+    "SAVINGS_CESSATION_APPROVAL",
+    "SAVINGS_WITHDRAWAL_APPROVAL"
+  ],
+  "rentalTotalRendered": true,
+  "rentalPdfIgnoresDigitalSignature": true,
+  "otherProgramsRegisterIdentical": [
+    "prestamo",
+    "caja",
+    "nomina",
+    "auto",
+    "casa",
+    "terrenos",
+    "aires",
+    "puertas",
+    "tours",
+    "solar",
+    "computo",
+    "farma",
+    "donativos",
+    "cirugias",
+    "membership"
+  ],
+  "productionDataWrites": 0
+}

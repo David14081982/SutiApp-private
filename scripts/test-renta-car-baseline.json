@@ -1,0 +1,453 @@
+{
+  "functions": [
+    {
+      "signature": "protect_financial_request_snapshots()",
+      "definition": "CREATE OR REPLACE FUNCTION public.protect_financial_request_snapshots()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin\n  if tg_op='INSERT' and new.financial_processing_status is not null then\n    select jsonb_build_object('affiliate_id',a.id,'numero_control',a.numero_control,'financial_union_code',a.financial_union_code,\n      'financial_union',u.label,'financial_employee_category_code',a.financial_employee_category_code,\n      'financial_employee_category',c.label,'financial_employee_type',a.financial_employee_type,\n      'financial_affiliation_status',a.financial_affiliation_status,'financial_employment_status',a.financial_employment_status,\n      'profile_version',a.financial_profile_version,'captured_at',now()) into new.financial_profile_snapshot\n    from public.affiliates a\n    left join public.segmentation_catalog_entries u on u.catalog_type='union' and u.code=a.financial_union_code and u.enabled\n    left join public.segmentation_catalog_entries c on c.catalog_type='employment_category' and c.code=a.financial_employee_category_code and c.enabled\n    where a.id=new.affiliate_id;\n  elsif tg_op='UPDATE' then\n    if new.financial_profile_snapshot is distinct from old.financial_profile_snapshot or old.financial_approval_snapshot is not null and new.financial_approval_snapshot is distinct from old.financial_approval_snapshot then\n      raise exception 'FINANCIAL_SNAPSHOT_IMMUTABLE' using errcode='P0001';\n    end if;\n    if new.financial_processing_status is not null and new.status='approved' and old.status is distinct from 'approved' and new.financial_approval_snapshot is null then\n      raise exception 'FINANCIAL_APPROVAL_SNAPSHOT_REQUIRED' using errcode='P0001';\n    end if;\n    if old.requested_amount is not null and (new.requested_amount is distinct from old.requested_amount or new.requested_term is distinct from old.requested_term or new.requested_term_semantics is distinct from old.requested_term_semantics) then\n      raise exception 'FINANCIAL_REQUEST_TERMS_IMMUTABLE' using errcode='P0001';\n    end if;\n  end if;\n  return new;\nend $function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "protect_approved_financial_request_state()",
+      "definition": "CREATE OR REPLACE FUNCTION public.protect_approved_financial_request_state()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin\n  if old.financial_approval_snapshot is not null and new.status is distinct from old.status then\n    raise exception 'APPROVED_FINANCIAL_REQUEST_STATUS_IMMUTABLE' using errcode='P0001';\n  end if;\n  return new;\nend $function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "list_self_program_request_history()",
+      "definition": "CREATE OR REPLACE FUNCTION public.list_self_program_request_history()\n RETURNS SETOF jsonb\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_affiliate_id uuid;\nbegin\n  if auth.uid() is null then raise exception 'AUTH_REQUIRED' using errcode='42501'; end if;\n  v_affiliate_id:=public.get_effective_affiliate_id();\n  if v_affiliate_id is null then raise exception 'AFFILIATE_REQUIRED' using errcode='42501'; end if;\n  return query\n  select jsonb_strip_nulls(jsonb_build_object(\n    'id',r.id,'folio',r.folio,'program_id',r.program_id,'program_item_id',r.program_item_id,'product_id',r.product_id,\n    'membership_offering_id',r.membership_offering_id,'company_id',r.company_id,'request_type',r.request_type,'status',r.status,\n    'quantity',r.quantity,'notes',r.notes,'financial_processing_status',r.financial_processing_status,\n    'requested_amount',r.requested_amount,'requested_term',r.requested_term,'requested_term_semantics',r.requested_term_semantics,\n    'quoted_amount',r.quoted_amount,'quote_note',r.quote_note,'valid_until',r.valid_until,'responded_at',r.responded_at,\n    'created_at',r.created_at,'updated_at',r.updated_at,\n    'workflow_state',public.resolve_program_request_workflow_state(r.id),\n    'decision_comment',(select e.comment from public.program_request_admin_events e where e.request_id=r.id and e.action in('REJECT','CANCEL') order by e.created_at desc,e.id desc limit 1),\n    'google_sync',public.get_program_request_google_sync(r.id),\n    'program_item',case when pi.id is null then null else jsonb_build_object('name',pi.name,'program_key',pi.program_key,'price_cash',pi.price_cash) end,\n    'product',case when p.id is null then null else jsonb_build_object('name',p.name,'price',p.price) end,\n    'membership',case when m.id is null then null else jsonb_build_object('company_raw',m.company_raw,'concept',m.concept,'amount',m.amount) end,\n    'company',case when c.id is null then null else jsonb_build_object('display_name',c.display_name) end\n  ))\n  from public.program_requests r\n  left join public.program_catalog_items pi on pi.id=r.program_item_id\n  left join public.marketplace_products p on p.id=r.product_id\n  left join public.membership_offerings m on m.id=r.membership_offering_id\n  left join public.companies c on c.id=r.company_id\n  where r.affiliate_id=v_affiliate_id order by r.created_at desc,r.id desc;\nend $function$\n",
+      "acl": "{postgres=X/postgres,authenticated=X/postgres}"
+    },
+    {
+      "signature": "enforce_personalized_financial_submission()",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_personalized_financial_submission()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin\n  if tg_op='INSERT' and new.program_id='prestamo' then\n    if coalesce(auth.role(),'')<>'service_role' then\n      raise exception 'FINANCIAL_CONFIRMATION_REQUIRED' using errcode='42501';\n    end if;\n    if new.financial_submission_snapshot is null\n       or not(new.financial_submission_snapshot?'financialResult')\n       or not(new.financial_submission_snapshot?'criteria_source_fingerprint')\n       or not(new.financial_submission_snapshot?'profile_fingerprint')\n       or not(new.financial_submission_snapshot?'confirmed_at') then\n      raise exception 'FINANCIAL_SUBMISSION_SNAPSHOT_REQUIRED' using errcode='22023';\n    end if;\n  elsif tg_op='UPDATE' and new.financial_submission_snapshot is distinct from old.financial_submission_snapshot then\n    raise exception 'FINANCIAL_SUBMISSION_SNAPSHOT_IMMUTABLE' using errcode='P0001';\n  end if;\n  return new;\nend $function$\n",
+      "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+    },
+    {
+      "signature": "document_private.capture_event()",
+      "definition": "CREATE OR REPLACE FUNCTION document_private.capture_event()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare op jsonb;identity jsonb;source jsonb;typ text;prog text;af uuid;oid uuid;happened timestamptz;config jsonb;err text;\r\nbegin\r\n if not exists(select 1 from document_private.installation where enabled) then return new;end if;\r\n if tg_table_name='program_request_admin_events' then\r\n  if new.to_status<>'approved' or new.from_status='approved' then return new;end if;\r\n  select to_jsonb(r) into op from public.program_requests r where r.id=new.request_id;\r\n  typ:=case when op->>'membership_offering_id' is not null then 'MEMBERSHIP_APPROVAL'\r\n   when op#>>'{financial_approval_snapshot,approval_contract_version}'='PROGRAM_PRODUCT_PAYMENT_APPROVAL_V1' then 'PROGRAM_FINANCING_APPROVAL'\r\n   when op->>'financial_approval_snapshot' is not null and op->>'program_id' in ('prestamo','caja','nomina') then 'LOAN_APPROVAL' end;\r\n  if typ is null then return new;end if;\r\n  af:=(op->>'affiliate_id')::uuid;oid:=new.request_id;prog:=op->>'program_id';happened:=new.created_at;\r\n  source:=jsonb_build_object('operation',jsonb_build_object('id',oid,'folio',op->>'folio','program',prog,'approved_at',happened,'authorized_by_user',new.actor_auth_user_id,\r\n   'financial',case when typ='MEMBERSHIP_APPROVAL' then op->'financial_submission_snapshot' else op->'financial_approval_snapshot' end,'profile',op->'financial_profile_snapshot','terms_version_id',op->>'terms_version_id','terms_accepted',op->'terms_accepted'));\r\n  if typ='LOAN_APPROVAL' then source:=source||jsonb_build_object('bank',(select jsonb_build_object('bank_name',b.bank_name,'card_last4',right(b.card_number,4),'clabe_last4',right(b.clabe,4),'source','loan_request_deposit_snapshots') from public.loan_request_deposit_snapshots b where b.request_id=oid));end if;\r\n else\r\n  if new.resource<>'savings_runtime' or new.action<>'APPROVE' then return new;end if;\r\n  op:=new.after_data->'result';if op->>'status'<>'APPROVED' or op->>'data_classification'<>'CANONICAL' then return new;end if;\r\n  typ:=case op->>'request_type' when 'JOIN' then 'SAVINGS_ENROLLMENT_APPROVAL' when 'CHANGE_AMOUNT' then 'SAVINGS_CONTRIBUTION_CHANGE' when 'TERMINATE' then 'SAVINGS_CESSATION_APPROVAL' when 'WITHDRAW' then 'SAVINGS_WITHDRAWAL_APPROVAL' end;\r\n  if typ is null then return new;end if;\r\n  af:=new.usuario_contexto_affiliate_id;oid:=(op->>'id')::uuid;prog:='caja';happened:=(op->>'reviewed_at')::timestamptz;\r\n  source:=jsonb_build_object('operation',jsonb_build_object('id',oid,'folio',op->>'folio','program',prog,'approved_at',happened,'authorized_by_user',new.actor_real_auth_user_id,\r\n   'request_type',op->>'request_type','requested_amount',op->'requested_amount','authorized_amount',op->'requested_amount','new_contribution_amount',op->'new_contribution_amount','withdrawal_kind',op->>'withdrawal_kind','component',op->>'component','continue_saving',op->'continue_saving','effective_from',op->>'effective_from','reason',op->>'reason',\r\n   'process',coalesce((select process_snapshot from public.savings_contribution_plans where source_request_id=oid limit 1),op#>>'{metadata,process}'),\r\n   'previous_contribution_amount',(select amount from public.savings_contribution_plans where enrollment_id=(op->>'enrollment_id')::uuid and source_request_id is distinct from oid and effective_to=(op->>'effective_from')::date-1 order by effective_from desc limit 1),\r\n   'date_exception',case when op#>>'{metadata,calculated_date}' is not null and op#>>'{metadata,calculated_date}' is distinct from op->>'effective_from' then new.reason end));\r\n end if;\r\n -- Keep only document contract inputs, never the Google export row, phone or applicant PII.\r\n if source#>'{operation,financial}' is not null and source#>'{operation,financial}'<>'null'::jsonb then\r\n  source:=jsonb_set(source,'{operation,financial}',(select coalesce(jsonb_object_agg(key,value),'{}') from jsonb_each(source#>'{operation,financial}') where key=any(array['contract_version','approval_contract_version','financialResult','product','offering','authorized_price','price_source','down_payment','financed_amount','financing_conditions','payment_schedule'])));\r\n end if;\r\n select jsonb_build_object('affiliate_id',a.id,'numero_control',a.numero_control,'full_name',a.full_name,'union_code',a.financial_union_code,'category_code',a.financial_employee_category_code,'unit',a.unit_raw) into identity from public.affiliates a where a.id=af;\r\n source:=source||jsonb_build_object('identity',identity,'domain',case when tg_table_name='program_request_admin_events' then 'program' else 'savings' end,'event_id',new.id,'document_type',typ,'contract_version','1','renderer_version','pdf-lib-1.17.1/suti-1');\r\n source:=source||jsonb_build_object('layout_scope_version','1'); begin config:=document_private.resolve_scoped_layout(prog,typ,happened,source);exception when others then err:=case when sqlerrm like 'DOCUMENT_%' then sqlerrm else 'DOCUMENT_CONFIGURATION_INVALID' end;end;\r\n insert into document_private.records(domain,operation_id,final_event_id,document_type,affiliate_id,program,folio,occurred_at,source_snapshot,document_snapshot,status,error_code)\r\n values(source->>'domain',oid,new.id::text,typ,af,prog,op->>'folio',happened,source,case when config is not null then source||config end,case when err is null then 'PENDING' else 'FAILED' end,err)\r\n on conflict(domain,operation_id,final_event_id,document_type,business_version) do nothing;return new;\r\nend $function$\n",
+      "acl": "{postgres=X/postgres}"
+    },
+    {
+      "signature": "enforce_program_catalog_requestability()",
+      "definition": "CREATE OR REPLACE FUNCTION public.enforce_program_catalog_requestability()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_item public.program_catalog_items%rowtype;\nbegin\n  if new.program_item_id is null then return new; end if;\n  select * into v_item from public.program_catalog_items where id=new.program_item_id;\n  if v_item.id is null then raise exception 'PROGRAM_PRODUCT_NOT_FOUND' using errcode='P0001'; end if;\n  if v_item.sold then raise exception 'PROGRAM_PRODUCT_SOLD' using errcode='P0001'; end if;\n  if v_item.commercial_mode='DIRECT_CONTACT' then\n    raise exception 'PROGRAM_PRODUCT_DIRECT_CONTACT_ONLY' using errcode='P0001';\n  end if;\n  if v_item.program_key='prestamo' then return new; end if;\n  if v_item.commercial_mode='PAYROLL_QUOTE' and new.request_type='quote'\n     and new.financial_submission_snapshot is null then return new; end if;\n  if new.request_type='benefit'\n     and new.financial_submission_snapshot->>'contract_version'='PROGRAM_PRODUCT_PAYMENT_V1' then return new; end if;\n  raise exception 'PROGRAM_PRODUCT_PAYMENT_FLOW_REQUIRED' using errcode='P0001';\nend $function$\n",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}"
+    }
+  ],
+  "triggers": [
+    "CREATE TRIGGER farma_no_financial_request BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION farma_private.block_financial_request()",
+    "CREATE TRIGGER program_requests_00_deletion_guard BEFORE INSERT OR DELETE OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION guard_request_deletion()",
+    "CREATE TRIGGER program_requests_00_financial_snapshot BEFORE INSERT OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_financial_request_snapshots()",
+    "CREATE TRIGGER program_requests_01_protect_approved_financial_state BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_approved_financial_request_state()",
+    "CREATE TRIGGER program_requests_02_personalized_financial_submission BEFORE INSERT OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enforce_personalized_financial_submission()",
+    "CREATE TRIGGER program_requests_03_membership_payment_contract BEFORE INSERT ON public.program_requests FOR EACH ROW WHEN (((new.program_id = 'membership'::text) OR (new.membership_offering_id IS NOT NULL))) EXECUTE FUNCTION capture_membership_payment_contract()",
+    "CREATE TRIGGER program_requests_admin_audit AFTER INSERT OR DELETE OR UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION audit_admin_write()",
+    "CREATE TRIGGER program_requests_advance_fee_date BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION loan_advance_private.enforce_request_date()",
+    "CREATE TRIGGER program_requests_capture_document_requirements BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_document_requirements_snapshot()",
+    "CREATE TRIGGER program_requests_capture_impersonation BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_impersonation()",
+    "CREATE TRIGGER program_requests_capture_workflow_snapshot BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_workflow_snapshot()",
+    "CREATE TRIGGER program_requests_catalog_requestability BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enforce_program_catalog_requestability()",
+    "CREATE TRIGGER program_requests_google_sync AFTER INSERT OR UPDATE OF status ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enqueue_program_request_google_sync()",
+    "CREATE TRIGGER program_requests_guard_archived_affiliate BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION guard_archived_affiliate_new_operation()",
+    "CREATE TRIGGER program_requests_protect_workflow_snapshot BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION protect_program_request_workflow_snapshot()",
+    "CREATE TRIGGER program_requests_savings_loan_access AFTER INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enforce_savings_loan_request_access()",
+    "CREATE TRIGGER program_requests_sync_workflow_tracking AFTER INSERT OR UPDATE OF status ON public.program_requests FOR EACH ROW EXECUTE FUNCTION sync_program_request_tracking_from_status()",
+    "CREATE TRIGGER program_requests_updated_at BEFORE UPDATE ON public.program_requests FOR EACH ROW EXECUTE FUNCTION set_h0072_updated_at()",
+    "CREATE TRIGGER zz_finance_request_block BEFORE INSERT ON public.program_requests FOR EACH ROW EXECUTE FUNCTION enforce_finance_request_block()"
+  ],
+  "constraints": [
+    {
+      "name": "program_requests_actor_real_auth_user_id_fkey",
+      "definition": "FOREIGN KEY (actor_real_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_affiliate_id_fkey",
+      "definition": "FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_company_id_fkey",
+      "definition": "FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_document_snapshot_check",
+      "definition": "CHECK (((document_requirements_snapshot IS NULL) OR (jsonb_typeof(document_requirements_snapshot) = 'array'::text)))"
+    },
+    {
+      "name": "program_requests_financial_approval_snapshot_check",
+      "definition": "CHECK (((financial_approval_snapshot IS NULL) OR (jsonb_typeof(financial_approval_snapshot) = 'object'::text)))"
+    },
+    {
+      "name": "program_requests_financial_approved_by_fkey",
+      "definition": "FOREIGN KEY (financial_approved_by) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_financial_profile_snapshot_check",
+      "definition": "CHECK (((financial_profile_snapshot IS NULL) OR (jsonb_typeof(financial_profile_snapshot) = 'object'::text)))"
+    },
+    {
+      "name": "program_requests_financial_status_check",
+      "definition": "CHECK (((financial_processing_status IS NULL) OR (financial_processing_status = ANY (ARRAY['pending'::text, 'ready_for_handoff'::text, 'in_progress'::text, 'handed_off'::text, 'failed'::text, 'completed'::text]))))"
+    },
+    {
+      "name": "program_requests_financial_submission_snapshot_check",
+      "definition": "CHECK (((financial_submission_snapshot IS NULL) OR (jsonb_typeof(financial_submission_snapshot) = 'object'::text)))"
+    },
+    {
+      "name": "program_requests_folio_key",
+      "definition": "UNIQUE (folio)"
+    },
+    {
+      "name": "program_requests_idempotency_unique",
+      "definition": "UNIQUE (affiliate_id, idempotency_key)"
+    },
+    {
+      "name": "program_requests_impersonation_session_id_fkey",
+      "definition": "FOREIGN KEY (impersonation_session_id) REFERENCES impersonation_sessions(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_legacy_handoff_check",
+      "definition": "CHECK (((legacy_reference IS NULL) OR (financial_processing_status = 'handed_off'::text)))"
+    },
+    {
+      "name": "program_requests_membership_offering_id_fkey",
+      "definition": "FOREIGN KEY (membership_offering_id) REFERENCES membership_offerings(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_pkey",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "program_requests_product_id_fkey",
+      "definition": "FOREIGN KEY (product_id) REFERENCES marketplace_products(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_program_check",
+      "definition": "CHECK (((length(btrim(program_id)) >= 1) AND (length(btrim(program_id)) <= 80)))"
+    },
+    {
+      "name": "program_requests_program_item_id_fkey",
+      "definition": "FOREIGN KEY (program_item_id) REFERENCES program_catalog_items(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_quantity_check",
+      "definition": "CHECK (((quantity >= 1) AND (quantity <= 999)))"
+    },
+    {
+      "name": "program_requests_quote_check",
+      "definition": "CHECK (((quoted_amount IS NULL) OR ((request_type = 'quote'::text) AND (quoted_amount > (0)::numeric))))"
+    },
+    {
+      "name": "program_requests_requested_amount_check",
+      "definition": "CHECK (((requested_amount IS NULL) OR (requested_amount > (0)::numeric)))"
+    },
+    {
+      "name": "program_requests_requested_term_check",
+      "definition": "CHECK (((requested_term IS NULL) OR (requested_term > (0)::numeric)))"
+    },
+    {
+      "name": "program_requests_responded_by_auth_user_id_fkey",
+      "definition": "FOREIGN KEY (responded_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_status_check",
+      "definition": "CHECK ((status = ANY (ARRAY['submitted'::text, 'in_review'::text, 'approved'::text, 'rejected'::text, 'cancelled'::text, 'requires_financial_processing'::text])))"
+    },
+    {
+      "name": "program_requests_target_check",
+      "definition": "CHECK ((num_nonnulls(program_item_id, product_id, membership_offering_id) = 1))"
+    },
+    {
+      "name": "program_requests_terms_version_id_fkey",
+      "definition": "FOREIGN KEY (terms_version_id) REFERENCES program_terms_versions(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_type_check",
+      "definition": "CHECK ((request_type = ANY (ARRAY['benefit'::text, 'quote'::text, 'interest'::text])))"
+    },
+    {
+      "name": "program_requests_usuario_contexto_affiliate_id_fkey",
+      "definition": "FOREIGN KEY (usuario_contexto_affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_workflow_id_fkey",
+      "definition": "FOREIGN KEY (workflow_id) REFERENCES operational_workflows(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "program_requests_workflow_snapshot_check",
+      "definition": "CHECK (((workflow_snapshot IS NULL) OR (jsonb_typeof(workflow_snapshot) = 'object'::text)))"
+    },
+    {
+      "name": "program_requests_workflow_version_check",
+      "definition": "CHECK (((workflow_version IS NULL) OR (workflow_version >= 1)))"
+    }
+  ],
+  "columns": [
+    {
+      "name": "id",
+      "type": "uuid",
+      "default": "extensions.gen_random_uuid()",
+      "nullable": "NO"
+    },
+    {
+      "name": "folio",
+      "type": "text",
+      "default": "((('SR-'::text || to_char((CURRENT_DATE)::timestamp with time zone, 'YYYY'::text)) || '-'::text) || lpad((nextval('program_request_folio_seq'::regclass))::text, 6, '0'::text))",
+      "nullable": "NO"
+    },
+    {
+      "name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "affiliate_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "numero_control",
+      "type": "text",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "program_id",
+      "type": "text",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "program_item_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "product_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "company_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "request_type",
+      "type": "text",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "status",
+      "type": "text",
+      "default": "'submitted'::text",
+      "nullable": "NO"
+    },
+    {
+      "name": "quantity",
+      "type": "int4",
+      "default": "1",
+      "nullable": "NO"
+    },
+    {
+      "name": "notes",
+      "type": "text",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "signature_data",
+      "type": "text",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "terms_accepted",
+      "type": "bool",
+      "default": "false",
+      "nullable": "NO"
+    },
+    {
+      "name": "source_context",
+      "type": "jsonb",
+      "default": "'{}'::jsonb",
+      "nullable": "NO"
+    },
+    {
+      "name": "financial_processing_status",
+      "type": "text",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "legacy_reference",
+      "type": "text",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "idempotency_key",
+      "type": "uuid",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "quoted_amount",
+      "type": "numeric",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "quote_note",
+      "type": "text",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "valid_until",
+      "type": "date",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "responded_by_auth_user_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "responded_at",
+      "type": "timestamptz",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamptz",
+      "default": "now()",
+      "nullable": "NO"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamptz",
+      "default": "now()",
+      "nullable": "NO"
+    },
+    {
+      "name": "requested_amount",
+      "type": "numeric",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "requested_term",
+      "type": "numeric",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "requested_term_semantics",
+      "type": "text",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "financial_profile_snapshot",
+      "type": "jsonb",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "financial_approval_snapshot",
+      "type": "jsonb",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "financial_approved_at",
+      "type": "timestamptz",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "financial_approved_by",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "impersonation_session_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "impersonation_reason",
+      "type": "text",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "membership_offering_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "terms_version_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "applicant_profile_snapshot",
+      "type": "jsonb",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "financial_submission_snapshot",
+      "type": "jsonb",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "document_requirements_snapshot",
+      "type": "jsonb",
+      "default": null,
+      "nullable": "YES"
+    },
+    {
+      "name": "workflow_id",
+      "type": "uuid",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "workflow_version",
+      "type": "int4",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "workflow_snapshot",
+      "type": "jsonb",
+      "default": null,
+      "nullable": "NO"
+    },
+    {
+      "name": "seen_at",
+      "type": "timestamptz",
+      "default": null,
+      "nullable": "YES"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "checks": [
+    "migration compiles against captured definitions",
+    "inclusive day count and authoritative 2500 × 2 = 5000",
+    "past and reversed dates rejected server-side",
+    "client price tampering rejected",
+    "required dossier cannot be bypassed and failed submission leaves no row",
+    "submit, idempotency and profile snapshot",
+    "pending requests do not block dates",
+    "no cross-affiliate detail or ordinary approval",
+    "authenticated user without affiliate cannot read rental detail",
+    "null admin action cannot cancel a request",
+    "admin module boundary enforced",
+    "approval blocks inclusive overlaps; failed approval leaves pending state",
+    "approved rental cancellation releases dates and preserves snapshot",
+    "approval captures rental document inputs without signature and never uses loan template",
+    "snapshot/date edits forbidden",
+    "non-rental request behavior retained; old requests cannot acquire rental dates",
+    "anonymous and private schema access denied",
+    "recovery preserves requests and prevents new submissions"
+  ],
+  "productionWrites": 0
+}

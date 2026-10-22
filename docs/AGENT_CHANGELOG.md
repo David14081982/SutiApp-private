@@ -4234,3 +4234,25 @@ Owner-requested Historial tab in Ahorro adds request-level withdrawal history, s
 
 
 H-SAVINGS-WITHDRAWAL-HISTORY-001 published acceptance: Pages38510543481 SUCCESS at runtime3a66620/version2026100420. Public bytes exact; real withdrawal record/detail/correct authorization PDF tested at1440/390 with zero page errors, financial writes or document writes. The production data set has one operation; 522-row scale is isolated evidence. Registry full suite PASS. See audit and published/production-browser/live-backend-review evidence for scope and limits; final independent review is recorded separately.
+
+
+## H-RENTA-CAR-CASH-001 RESULT ? 2026-10-22
+
+Status: BLOCKED (production installation requires explicit owner authorization imposed by automatic approval review).
+Files changed: dedicated app/renta-car.jsx; conditional integrations in catalog, Finance, history, document assignments, operations-store; bundle builder and generated bundle; dedicated migration/recovery; rental-only Google projection and document renderer/layout additions; focused tests/audit/evidence and source/decision entries. Isolated release also prepares generated cache identifiers in SutiApp.html/sw.js, preserving their logic. Exact hashes: docs/qa/evidence/renta-car/prepared-release.json.
+Source-of-truth verdict: PASS ? program_requests owns request/reservation; catalog owns tariff; immutable snapshots own agreed identity/conditions; Google is projection; document configuration owns future template. No parallel authority or production fixture.
+Invariant verdict: PASS in isolated SQL (18 checks), release parity and read-only schema inspection. Existing business rows untouched. G/Plazo=1 is the sole payment-count column.
+Build: PASS ? root bundle 155 modules; isolated publication bundle 158 modules based on current main; Pages 31 public files. Publish only isolated release to avoid preexisting workspace changes.
+Tests: PASS ? 18 SQL checks, 20 existing document tests, browser calendar/documents/signature path, literal 5000 PDF, exclusion of applicant signature, 7 existing PDFs byte identical, 15 non-rental register projections identical. Global regression PASS on existing GitHub Pages and isolated local build on permitted origin, with live backend/assets, fullscreen, refresh and with/without SW. Evidence includes verified local bundle hash.
+Security: PASS for scoped guards, auth/effective affiliate, admin capability/module boundary, no-affiliate denial, no browser direct insert/update grants, FORCE RLS private metadata, immutable submissions and zero secret inclusion. Live preflight executed rollback only.
+Legacy impact: rental projection only E/F/G/H/I/J and observation Z; A:AG width unchanged. No Google/Apps Script/formula/historical changes. No production test request submitted.
+Unexpected files changed: no unrelated file edits by this H. Workspace has extensive prior changes; global whitespace check reports preexisting admin_assisted_context.sql whitespace. Isolated release diff --check PASS. Derived registry regeneration may include preexisting source changes; never treat it as deployment evidence.
+Known limitations: contract/template intentionally pending by owner instruction; no actual rental submission/approval or Sheets append performed in production. Supabase migration, Edge deployment and frontend publication NOT applied. Local raw localhost regression is denied by existing CORS; final local static build was tested on the permitted origin without replacing backend responses or altering CORS.
+Evidence: docs/qa/evidence/renta-car/ and docs/audits/H-RENTA-CAR-CASH-001.md.
+
+Automatic review rejected permanent apply: ?Aplica permanentemente una migraci?n en Supabase de producci?n con bloqueo exclusivo y cambios de esquema/RLS; la solicitud de la funcionalidad no autoriza expl?citamente este cambio productivo exacto.? User must explicitly authorize migration 20261022000100, the two scoped Edge deployments, and isolated frontend publication. Next action after authorization: recheck remote/schema baselines, run hash-bound apply.py (1s lock wait, 15s statement timeout, identical business-row fingerprints), deploy the compiled candidates without secret changes, publish isolated reviewed sources, verify RPCs/read-only production UI and global regression. Do not create test requests in production without authorization to retain them.
+
+
+## Publication authorized; backend installed — 2026-10-22
+
+The preceding BLOCKED/prepared-release records are historical. The owner's explicit publication instruction resolved the approval requirement. Migration 20261022000100 is installed; before/after fingerprints of all 431 business requests are identical. No business rows were added. document-generation v20 and financial-legacy v63 are deployed and their active source hashes match the reviewed candidates; secrets and verify_jwt are unchanged. Evidence: migration-applied.json and the two *-deploy.json files. Frontend commit/push and live verification are the remaining publication steps. The actual rental contract remains pending by explicit owner decision.

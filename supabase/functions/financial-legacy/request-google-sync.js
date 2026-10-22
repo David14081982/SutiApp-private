@@ -19,6 +19,16 @@ export function capturedDocumentReferences(documents) {
 export function buildRequestRegisterRow(request, documents, signatureHash) {
   const financial = request.financial_submission_snapshot?.financialResult || {}, profile = request.financial_profile_snapshot || {}, affiliate = request.affiliate || {};
   let observations = request.notes || '';
+  const rental = request.program_id === 'renta' && request.financial_submission_snapshot?.contract_version === 'RENTA_CAR_CASH_V1'
+    ? request.financial_submission_snapshot.rental : null;
+  if (rental) {
+    if (!Number.isInteger(rental.days) || rental.days < 1 || !(Number(rental.daily_rate) > 0) ||
+        Math.round(Number(rental.total) * 100) !== Math.round(Number(rental.daily_rate) * 100) * rental.days ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(rental.start_date || '') || !/^\d{4}-\d{2}-\d{2}$/.test(rental.end_date || '') ||
+        (Date.parse(rental.end_date + 'T00:00:00Z') - Date.parse(rental.start_date + 'T00:00:00Z')) / 86400000 + 1 !== rental.days ||
+        rental.payment_due_date !== rental.start_date) throw Error('RENTA_REGISTER_SNAPSHOT_INVALID');
+    observations = `Renta Car · ${request.financial_submission_snapshot.product?.name || ''} · ${rental.start_date} a ${rental.end_date} · ${rental.days} días · Costo diario: ${rental.daily_rate} MXN · Número de pagos: 1 · Fecha final de pago: ${rental.payment_due_date} · Contado antes de entrega`;
+  }
   if (request.program_id === 'membership' && request.financial_submission_snapshot?.contract_version === 'MEMBERSHIP_PAYMENT_V1') {
     const company = request.financial_submission_snapshot.offering?.company;
     if (typeof company !== 'string' || !company.trim()) throw Error('MEMBERSHIP_COMPANY_SNAPSHOT_REQUIRED');
@@ -34,6 +44,7 @@ export function buildRequestRegisterRow(request, documents, signatureHash) {
     10:category,11:union,12:affiliation,13:number(financial.maxAmount),23:request.terms_accepted == null ? '' : request.terms_accepted,24:'PENDIENTE',25:observations,
     31:signatureHash ? `supabase-request-signature:${request.id}:${signatureHash}` : '',32:request.deposit_notification_phone || request.applicant_profile_snapshot?.phone || affiliate.phone_raw || ''});
   ['profile_photo','ine_front','ine_back','payroll_previous','payroll_latest','guarantor_photo','guarantor_ine_front','guarantor_ine_back','guarantor_payroll_latest'].forEach((code,index)=>{row[14+index]=refs[code]||'';});
+  if (rental) Object.assign(row, {4:'Renta Car',5:0,6:1,7:0,8:Number(rental.total),9:request.created_at});
   return row;
 }
 

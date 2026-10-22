@@ -300,7 +300,7 @@ async function main(){
    const a=await renderer.createRenderer(PDFLib)(sealed,loader),b=await renderer.createRenderer(PDFLib)(sealed,loader);
    assert(a.pages>1,'production signature blocks paginate');assert.equal(Buffer.compare(a.bytes,b.bytes),0);
   }
-  assert.equal(Object.keys(renderer.TITLES).length,7);assert.throws(()=>renderer.documentContract({...synthetic,document_type:'SAVINGS_WITHDRAWAL_SETTLEMENT'}));
+  assert.equal(Object.keys(renderer.TITLES).length,8);assert.throws(()=>renderer.documentContract({...synthetic,document_type:'SAVINGS_WITHDRAWAL_SETTLEMENT'}));
  });
  await test('240 frozen payments, repeat headers, deterministic PDF, real margins',async()=>{
   const s=structuredClone(synthetic);s.operation.financial.payment_schedule.rows=Array.from({length:240},(_,n)=>({number:n+1,date:'2027-01-15',payment:123.45,remaining_total:987.65}));

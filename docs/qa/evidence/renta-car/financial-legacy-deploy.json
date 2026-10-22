@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "mode": "deploy",
+  "slug": "financial-legacy",
+  "version": 63,
+  "sourceHashes": {
+    "index.ts": "81bbbdcd109145dcd69788be621f6b225e8ba8260871115ffff4ee917622f5ad",
+    "visibility-policy.js": "3e622533039ed1fdacfc42abf571fa94f3c87d56490b86c777ad6e5d1bad218e",
+    "request-google-sync.js": "77d2b7c801e2b9c0fbc6d8218a9ce8111582ebc9c4c242047df96d89e08e6aec",
+    "savings-eligibility.ts": "229ae0c7aa13e6be521a4b7b4a48def6f765b879cf002e949a88bbd5bc88e0a1"
+  },
+  "secretChanges": 0,
+  "businessDataWrites": 0
+}

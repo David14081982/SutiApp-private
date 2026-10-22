@@ -1,0 +1,40 @@
+{
+  "status": "BLOCKED",
+  "reason": "AUTO_REVIEW_REQUIRES_EXPLICIT_PRODUCTION_MIGRATION_AUTHORIZATION",
+  "migrationApplied": false,
+  "edgeDeployed": false,
+  "frontendPublished": false,
+  "productionBusinessWrites": 0,
+  "baseCommit": "bb0846df77a697663c4c7cba2e1a7ae56fb20b75",
+  "preparedCacheVersion": "2026102201",
+  "releaseSources": {
+    "app/renta-car.jsx": "ab5227fc0ac852732156fd92976ecc51e01c4912ecc58467adb336a966e24b25",
+    "app/screens-catalogo.jsx": "558a2bdeba2e9f3177476dc94cb8217e494ad9a650a6b3e3e94e2037f348cf65",
+    "app/screens-admin-finanzas.jsx": "47c8ad41ae81755a92575b06dacd37d91904169c31ffa2a3279ddea11c54b78a",
+    "app/screens-historial.jsx": "0154e474fdad82b05b0b525d3181c6bbc7e64c55084c321d4d1a8f67f0df2429",
+    "app/screens-admin-document-generation.jsx": "ed82783a25c7b6d8fac2db6d97db0e11ab1599d94830ca48faba306af5bdac67",
+    "app/operations-store.jsx": "0d36a9e26ff248bcfd187247cc38b8d27b75931b7d086f3f2bf878564d2489cd",
+    "scripts/build-bundle.js": "537b3363425960c58d4020442970c5eccb4fa970b285f53399b173ff2ebe16ac",
+    "app/bundle.js": "97bc13023508f50dacf111b52a5bdef6312d7a8b8ee2e9771576889c2a88e8ff",
+    "supabase/migrations/20261022000100_renta_car_cash.sql": "6d39ddbc312dfe2618b3acbaf7faceac7d1a1008b47384998859f657c953c0e9",
+    "supabase/recovery/20261022000100_renta_car_cash.sql": "84eade2d3475c68a4d45e528fffc6b4cfd54ac85c793b5103756f366529f73bf",
+    "supabase/functions/financial-legacy/request-google-sync.js": "77d2b7c801e2b9c0fbc6d8218a9ce8111582ebc9c4c242047df96d89e08e6aec",
+    "supabase/functions/document-generation/renderer.mjs": "da0d0ff656c350423856b1179308c8976c37b6ad05d8001fa4406fe68d447b06",
+    "supabase/functions/document-generation/layout.mjs": "77b5fa95ab264907bd67072eaab59cd632bb1ac53221f87a920270178a6f1b87",
+    "scripts/test-renta-car.js": "3928dbae1e8fb2e5087f97d35ce0fa9f68a0ff73254263a9bf6d033fbb666ead",
+    "scripts/test-renta-car-surfaces.js": "7c180f12e1103e5c542499241095980f411fe816e55b30293da0c67865b0c08f",
+    "scripts/test-renta-car-release-parity.js": "66a3224025f5182728c7e6f5ce6749623cac9792a7555ef96cb4934ef547a95b",
+    "scripts/test-renta-car-baseline.json": "582fe5d0923c250937378bae2fb6a086102e7a56308c033341a84fdd8bbe514c"
+  },
+  "cacheArtifacts": {
+    "SutiApp.html": "3b3e2a81500e7276a7550bfad3ef714d9bca61c9b64d96d04f0f5d555437bf1b",
+    "sw.js": "379d60c51630bfedcac977c08686aa71d6301bb91a77e0efe376a6560ad53f82"
+  },
+  "isolatedSqlChecks": 18,
+  "sharedDocumentChecks": 20,
+  "existingPdfsIdentical": 7,
+  "otherProgramProjectionsIdentical": 15,
+  "pagesBuild": "PASS (31 public files)",
+  "globalProduction": "PASS",
+  "globalLocalBuild": "PASS (static routing on allowed origin, live backend/assets, actual local bundle hash verified before/after reload)"
+}

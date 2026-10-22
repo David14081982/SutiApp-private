@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "today": "2026-10-22",
+  "dailyRate": 2500,
+  "days": 2,
+  "total": 5000,
+  "paymentCount": 1,
+  "deadlineIsDelivery": true,
+  "pastDatesRejected": true,
+  "anonymousRejected": true,
+  "applicantSignatureExcluded": true,
+  "businessWrites": 0
+}

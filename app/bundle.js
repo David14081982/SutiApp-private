@@ -81065,20 +81065,7 @@ Object.assign(window, {
       }
     }, 'El pago completo debe realizarse antes de entregar la unidad. La reserva se confirma al aprobar Finanzas.'), showApplicant && a && h(React.Fragment, null, h('h4', null, 'Datos de la persona firmante'), h(Values, {
       rows: [['Nombre', a.full_name], ['Número de control', a.numero_control], ['RFC', a.rfc], ['CURP', a.curp], ['Teléfono', a.phone], ['Correo', a.email], ['Domicilio', a.address], ['Ciudad', a.city]]
-    })), h('div', {
-      'data-renta-contract': 'pending',
-      style: {
-        marginTop: 16,
-        borderTop: '1px solid var(--hairline)',
-        paddingTop: 14
-      }
-    }, h('strong', null, 'Contrato de arrendamiento'), h('p', {
-      style: {
-        fontSize: 13,
-        lineHeight: 1.5,
-        marginBottom: 0
-      }
-    }, 'Pendiente de creación. Las fechas, tarifa, total y datos de la persona solicitante quedan registrados. El documento físico requerirá firma original; la firma trazada en la app no se incluirá en el PDF.')));
+    })));
   }
   function Application({
     item,

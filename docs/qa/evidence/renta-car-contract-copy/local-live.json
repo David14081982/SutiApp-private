@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "mode": "local",
+  "verifiedBundleSha256": "02ef10304f5346169f6433240579cc372074a7f9c9de9f3e232ef5b044178012",
+  "membership": {
+    "cards": 4,
+    "loadedThumbnails": 4
+  },
+  "rental": {
+    "cards": 4,
+    "loadedThumbnails": 4,
+    "complete": 4,
+    "viewButtons": 4,
+    "replaceButtons": 4,
+    "viewerOpened": true,
+    "summaryTotal": 5000,
+    "removedContractNotice": true,
+    "signatureCanvasPresent": true
+  },
+  "sameExistingDocumentIds": true,
+  "realBackend": true,
+  "backendResponseOverrides": 0,
+  "uploads": 0,
+  "requestsSubmitted": 0,
+  "browserErrors": 0
+}

@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "realComponents": [
+    "DocumentWorkflowRepository",
+    "UnifiedDocumentPhase",
+    "DocumentRequirementList",
+    "DocumentViewer",
+    "SignaturePad",
+    "RentaCarFlow"
+  ],
+  "checks": [
+    "four cards with three legitimate synthetic thumbnails",
+    "missing upload moves progress from 3/4 to 4/4",
+    "summary blocked until upload",
+    "viewer opens",
+    "replacement refreshes thumbnail and status",
+    "latest four document IDs attached to one synthetic submission",
+    "Membership keeps same cards and completed count"
+  ],
+  "uploads": 2,
+  "productionWrites": 0
+}

@@ -4287,3 +4287,6 @@ Unexpected files changed: none in isolated publication; root's unrelated work pr
 Known limitations: external GitHub deployment remains pending; future vehicles use normal per-target assignments. Contract template remains pending under prior owner decision, independently of these uploaded document images.
 Evidence: docs/qa/evidence/renta-car-documents/publication-pending.json, current-production-live.json, local-live.json, isolated-browser.json, configuration-applied.json, configuration-idempotence.json and bundle-parity.json. Private real screenshots inspected under ignored .tmp; committed images are synthetic.
 Next: when GitHub run finishes, execute .tmp/renta-car/verify-documents-live.js production against exact candidate bundle, record publication result, and then close the visual deployment. No user decision or new permission is required.
+
+
+H-RENTA-CAR-CONTRACT-COPY-003: requested rental contract notice removed; signature and business rules retained. Build, focal browser regression and authenticated local check PASS. See docs/audits/H-RENTA-CAR-CONTRACT-COPY-003.md; publication verification pending.

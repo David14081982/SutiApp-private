@@ -43,8 +43,7 @@
   return h('section',{'data-renta-summary':true,style:card},h('h3',{style:{margin:0,fontSize:18}},snapshot.product?.name||'Renta Car'),
    h(Values,{rows:[['Entrega',date(r.start_date)],['Devolución',date(r.end_date)],['Días de renta',r.days],['Costo por día',money(r.daily_rate)],['Total de contado',money(r.total)],['Fecha límite de pago',date(r.payment_due_date)],['Número de pagos','1 · Contado']]}),
    h('p',{style:{fontSize:13,color:'var(--ink-2)',lineHeight:1.5}},'El pago completo debe realizarse antes de entregar la unidad. La reserva se confirma al aprobar Finanzas.'),
-   showApplicant&&a&&h(React.Fragment,null,h('h4',null,'Datos de la persona firmante'),h(Values,{rows:[['Nombre',a.full_name],['Número de control',a.numero_control],['RFC',a.rfc],['CURP',a.curp],['Teléfono',a.phone],['Correo',a.email],['Domicilio',a.address],['Ciudad',a.city]]})),
-   h('div',{'data-renta-contract':'pending',style:{marginTop:16,borderTop:'1px solid var(--hairline)',paddingTop:14}},h('strong',null,'Contrato de arrendamiento'),h('p',{style:{fontSize:13,lineHeight:1.5,marginBottom:0}},'Pendiente de creación. Las fechas, tarifa, total y datos de la persona solicitante quedan registrados. El documento físico requerirá firma original; la firma trazada en la app no se incluirá en el PDF.')));
+   showApplicant&&a&&h(React.Fragment,null,h('h4',null,'Datos de la persona firmante'),h(Values,{rows:[['Nombre',a.full_name],['Número de control',a.numero_control],['RFC',a.rfc],['CURP',a.curp],['Teléfono',a.phone],['Correo',a.email],['Domicilio',a.address],['Ciudad',a.city]]})));
  }
  function Application({item,quote,app,onClose}){
   const [step,setStep]=useState('documents'),[documents,setDocuments]=useState({phase:'loading',requirements:[],rows:[]}),[signature,setSignature]=useState(''),[accepted,setAccepted]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[sent,setSent]=useState(null),idem=useRef(crypto.randomUUID());

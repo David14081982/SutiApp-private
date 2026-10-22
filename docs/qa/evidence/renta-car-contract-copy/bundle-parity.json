@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "bundleModules": 158,
+  "changedModules": [
+    "renta-car.jsx"
+  ],
+  "unchangedModules": 157,
+  "membershipAndSharedDocumentModulesUnchanged": true,
+  "cacheVersion": "2026102203",
+  "bundleSha256": "02ef10304f5346169f6433240579cc372074a7f9c9de9f3e232ef5b044178012",
+  "pagesBuild": "{\"status\":\"PASS\",\"output\":\"C:\\\\Users\\\\david\\\\Downloads\\\\SutiApp\\\\.tmp\\\\renta-car\\\\release\\\\.tmp\\\\renta-copy-pages-02ef1030\",\"files\":31}"
+}

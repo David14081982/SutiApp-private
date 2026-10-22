@@ -1,42 +1,17 @@
-# ARCHITECT REVIEW
+# ARCHITECT REVIEW — final published result
 
 Task reviewed: H-RENTA-CAR-CASH-001, 2026-10-22.
-Verdict: BLOCKED ? explicit production authorization required by automatic approval review.
+Verdict: APPROVED.
+What Codex did correctly: published only the isolated reviewed Renta Car package. Continuous inclusive calendar, existing documents, cash summary, app signature, finance approval reservation, one-payment Google mapping and original paper signature are preserved.
+Important findings: c3ca64424fadf8c8d91d1a569fa7de6c23662cb4 is deployed by successful Pages run 39804352642. Live navigation reached the actual vehicle, selected two days for $5,000, loaded the existing dossier and summary with signature. No request was submitted. Global production regression passed with the exact candidate bundle hash, legitimate assets/documents, fullscreen, refresh and with/without service worker. Installed RPC rejects past dates and anonymous access. Migration preserved all 431 request fingerprints. Active Edge sources match candidate hashes at versions 20/63.
+Problems detected: no unresolved defect in the authorized scope. Windows checkout line endings required temporary LF SQL normalization for isolated document tests; restored before staging. Registry was regenerated after restoration and final evidence.
+Architecture implications: only rental branches added to shared projections/renderers; new authenticated RPCs and immutable date intervals enforce reservations at approval. Other programs retain existing behavior; seven preexisting PDF bytes and fifteen register projections match baseline.
+Source-of-truth implications: Supabase catalog owns tariff; affiliates owns identity before immutable submission; program_requests owns requests/reservations; assigned document configuration owns the future contract. Google remains the projection, with no new authority/fallback.
+Security implications: backend authorization, effective affiliate, module permissions, document gate, immutable capture and database exclusion verified in isolated SQL. Live read APIs authenticate. No secrets published. No production fixture/business mutation was performed; historical counts and fingerprints preserved by installation transaction.
+Data implications: E Renta Car; F 0; G Plazo/number of payments 1; H 0; I total cash; J original submission timestamp; deadline delivery/start retained in snapshot and observation Z. No Apps Script, formulas or historical Sheets edits.
+Owner decision required: none for this publication. Contract text/template is intentionally pending under the owner's instruction. PDF generation remains unavailable until an authorized RENTA_CAR_APPROVAL template/layout is assigned; no loan contract or invented legal text substitutes it. Its values and exclusion of applicant digital signature are prepared and tested.
+Recommended next action: owner creates/assigns the rental contract in Documentos y Firmas using the prepared values; future contract work is separate. Do not advance another H automatically. WORK_QUEUE_HISTORY.md is absent; this review does not authorize queue advancement.
 
-What Codex did correctly: isolated Renta Car in its own UI/RPCs; preserved existing documents/signature components; used server-derived identity/tariff; froze request values; prevented inclusive overlap through PostgreSQL exclusion at approval; retained pending availability and cancellation release; mapped G/Plazo to the one payment and J to original submission. Kept applicant signature out of captured PDF inputs. Prepared a dedicated document type without assigning the existing loan template. Preserved 7 existing PDF outputs byte-for-byte and 15 non-rental register outputs against captured deployed code.
+CLAUDE UI PRESERVATION REVIEW: PASS. Vehicle gallery/back/favorites remain; real calendar, existing dossier cards and signature canvas, summary and send button verified on published app. Global assets/documents remain functional. Calendar production screenshot visually inspected. No unauthorized redesign. Only the actual contract text is pending by explicit owner decision.
 
-Important findings: captured production counts were 430 requests and zero Supabase rental requests. Authenticated/anon have no direct table writes. Original Supabase definitions are guarded by md5 and copied into private recovery metadata. The same migration compiled in a live rollback-only preflight; no business rows were created. Both Edge bundleOnly compilations preserved active versions (document-generation 19, financial-legacy 62). The isolated release is based on main bb0846df77a697663c4c7cba2e1a7ae56fb20b75; unrelated workspace changes were excluded. Its 158-module build and 31-file Pages package passed. The root's different 155-module bundle is not the publication candidate.
-
-Problems detected: permanent apply was rejected before execution by automatic review because it requires explicit authorization for the exact production schema/RLS migration and exclusive lock. No migration, Edge deployment or frontend publication occurred. Raw localhost could not preview documents because existing CORS rejects local origins; the final local build test served static code on the allowed origin while preserving real backend/auth/assets and validating its hash and execution before/after refresh. Global production and local-build regressions passed. General workspace diff whitespace failures belong to preexisting admin_assisted_context.sql; isolated scoped diff check passes.
-
-Architecture implications: new RentaCarRepository/Flow/Summary, 5 authenticated RPCs, immutable interval columns, exclusion constraint, dedicated document type. The shared financial projection and document renderer take a rental-only branch. No change to auth, shared document access, Storage, business permission catalog, or service-worker logic. The release cache version alone advances to 2026102201.
-
-Source-of-truth implications: catalog owns price; affiliates owns identity until immutable capture; program_requests owns requests/reservations; document configuration owns the future template; Google is a projection limited to A:AG. No browser persistence or mock production authority.
-
-Security implications: RLS and RPC guards, admin permission/module boundary, no-affiliate and cross-affiliate denial, authoritative price, doc gate, immutable request, and non-destructive recovery verified in isolated SQL. Management credentials remain in ignored supabase.env. No secrets in tracked candidate/evidence. Tests do not authorize production fixtures.
-
-Data implications: E=Renta Car, F=0, G=1, H=0, I=day count ? daily price, J=created_at. Payment deadline is rental start and recorded in snapshot/observation Z. No formula, historical row, Apps Script or additional payment-count-column changes. Completed legacy reservations are not migrated.
-
-Owner decision required: no business ambiguity remains. Explicit approval is required only to install migration 20261022000100, deploy the two compiled rental patches, and publish the isolated frontend. Actual contract text/template remains intentionally pending per the owner's instruction; no fabricated legal clauses are required for this scope.
-
-Recommended next action: after explicit authorization, revalidate schema/remote function hashes and main head; execute `.tmp/renta-car/apply.py`, deploy exact candidates via `.tmp/renta-car/edge-release.js deploy`, publish only `.tmp/renta-car/release`, verify the installed APIs and production UI/global assets without creating a production request. Preserve rollback/backup artifacts. Never rerun a rejected production action via an alternative transport.
-
-Evidence: sql-isolated.json (18), surfaces.json, release-parity.json, supabase-preflight.json, document-generation-compile.json, financial-legacy-compile.json, global-isolated-build.json, global-production-before.json, prepared-release.json, screenshots and synthetic PDFs in this folder. Shared document tests: 20 passed. WORK_QUEUE_HISTORY.md is absent; this review does not authorize advancing that queue.
-
-CLAUDE UI PRESERVATION REVIEW
-
-Screen: Renta Car catalog/detail, request documents/review, Finance and history.
-Original sections: vehicle gallery/detail/favorites/back, document progress/cards/view/replace, signing and submit, Finance queue/detail/actions, history tracking.
-Current sections: preserved; rental-only calendar, cash summary and explicit pending contract added.
-Missing sections: none found in scoped review; actual contract text is intentionally pending by owner decision.
-Added sections: continuous calendar, dates/day count/tariff/total/deadline, applicant values, pending contract notice, rent approval/cancellation actions and dedicated document scope.
-Interactions preserved: existing document component and real signature pad exercised; shared images/gallery/fullscreen/SW/refresh passed global tests.
-Navigation preserved: documents then summary then normal success/history.
-Visual structure preserved: PASS for scoped change; synthetic calendar/summary/PDF inspected visually.
-Unauthorized redesign: NO.
-Verdict: PASS for prepared UI; production release remains BLOCKED.
-
-
-## Publication authorized; backend installed — 2026-10-22
-
-The preceding BLOCKED/prepared-release records are historical. The owner's explicit publication instruction resolved the approval requirement. Migration 20261022000100 is installed; before/after fingerprints of all 431 business requests are identical. No business rows were added. document-generation v20 and financial-legacy v63 are deployed and their active source hashes match the reviewed candidates; secrets and verify_jwt are unchanged. Evidence: migration-applied.json and the two *-deploy.json files. Frontend commit/push and live verification are the remaining publication steps. The actual rental contract remains pending by explicit owner decision.
+Evidence: publication.json, pages-workflow.json, global-production-after.json, live-ui.json, live-rpc.json, calendar-production.png, migration-applied.json, both *-deploy.json, document-core-release.json (23 checks), sql-isolated.json (18), surfaces.json, release-parity.json and global-isolated-build.json. Prior prepared-release BLOCKED record is historical and superseded by this review.

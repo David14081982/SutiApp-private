@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "target": "GITHUB_PAGES_PRODUCTION",
+  "realNavigation": "Finanzas > Renta Car > Nissan Urvan 2023",
+  "calendar": true,
+  "pastDisabled": true,
+  "continuousDays": 2,
+  "total": 5000,
+  "existingDocumentsReady": true,
+  "summary": true,
+  "signatureInApp": true,
+  "contractPendingByOwnerDecision": true,
+  "requestSubmitted": false,
+  "businessWrites": 0,
+  "browserErrors": 0
+}

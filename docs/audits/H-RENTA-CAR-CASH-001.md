@@ -127,3 +127,18 @@ El propietario respondi? a la solicitud expl?cita de instalaci?n productiva: ?ha
 ## Publication authorized; backend installed — 2026-10-22
 
 The preceding BLOCKED/prepared-release records are historical. The owner's explicit publication instruction resolved the approval requirement. Migration 20261022000100 is installed; before/after fingerprints of all 431 business requests are identical. No business rows were added. document-generation v20 and financial-legacy v63 are deployed and their active source hashes match the reviewed candidates; secrets and verify_jwt are unchanged. Evidence: migration-applied.json and the two *-deploy.json files. Frontend commit/push and live verification are the remaining publication steps. The actual rental contract remains pending by explicit owner decision.
+
+
+## H-RENTA-CAR-CASH-001 RESULT — published 2026-10-22
+
+Status: PASS. Supersedes all earlier preparation/authorization states in this audit.
+Files changed: 50 scoped files in commit c3ca644; final evidence/governance/derived registry follow in documentation-only commit. Existing document test expectation updated from 7 to 8 document types. No unrelated workspace changes published.
+Source-of-truth verdict: PASS. Catalog tariff, affiliate identity, immutable request/reservation, assigned document template and Google projection retain their declared authority.
+Invariant verdict: PASS. 431 existing requests unchanged by migration; no production request created; rental-only changes. E=Renta Car, F=0, G/Plazo=1, H=0, I=cash total, J=submitted at.
+Build: PASS. Isolated 158-module bundle and 31 public files; Pages workflow 39804352642 passed backend compatibility, build, deployment and production checks.
+Tests: PASS. 18 isolated SQL checks; 23 document-core release checks; focused browser/Google/PDF checks; seven old PDFs and fifteen non-rental register projections unchanged. Real published calendar/documents/summary/signature path passed at 2 x 2500 = 5000. Required global local-build and GitHub Pages image/document/fullscreen/refresh/SW comparisons passed with exact bundle hash.
+Security: PASS. No credentials published; authenticated read API and past-date rejection verified; scoped RPC authorization/RLS and immutable snapshots tested; active Edge hashes verified; secrets unchanged.
+Legacy impact: rental Google projection only, A:AG unchanged; no Apps Script, formulas, existing Sheet rows or other program behavior edited.
+Unexpected files changed: none in publication. Temporary test checkout line endings restored before staging; root's preexisting changes preserved.
+Known limitations: contract is not yet created/assigned by owner. Actual contract PDF printing awaits that configuration; prepared values and exclusion of applicant digital signature tested. No real submission/approval/Sheets append was performed solely to test production.
+Evidence: docs/qa/evidence/renta-car/publication.json and architect-review.md (APPROVED). https://david14081982.github.io/SutiApp-private/

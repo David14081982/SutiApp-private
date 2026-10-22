@@ -26,3 +26,19 @@ Isolated test uses the real repository, upload callback, shared tiles, viewer, s
 Build: 158 modules; only renta-car.jsx differs, other 157 chunks byte-identical. Pages 31 files; cache token 2026102202. No shared repository/viewer/Auth/Storage or SW logic changes. Global regression NOT APPLICABLE for this focal correction; direct shared dependencies and Membership were exercised. Registry structural regeneration NOT APPLICABLE: no architecture change; prior lookup was FRESH. Its later source hashes can be stale for this scoped CSS/copy/test/evidence change without representing a runtime authority change.
 
 Release publication and final production checks follow; the previously published rental contract remains intentionally pending creation and is outside this correction.
+
+
+## H-RENTA-CAR-DOCUMENTS-002 RESULT — 2026-10-22
+
+Status: BLOCKED only for new visual deployment. Functional document correction is active and verified PASS on current public app. Commit/push 551033c complete; Pages run 39815130019 remains queued/waiting without a runner, steps, timer or required reviewer. GitHub's official incident reports Actions degraded; no workaround bypasses deployment controls.
+Files changed: rental wrapper/styles, generated bundle/cache tokens, focal test/configuration operation and audit/evidence. Membership/shared document code unchanged.
+Source-of-truth verdict: PASS. Existing canonical configuration, private expediente and audited writer retained; no browser fallback.
+Invariant verdict: PASS. Four rental rules applied, four audit events, zero changes to protected histories/other scopes in consistent snapshot. Repeating operation adds zero rules/events. Existing request requirement snapshots are preserved.
+Build: PASS, 158 modules/31 public files; only renta-car.jsx differs; other 157 chunks identical. New cache 2026102202 is prepared, not yet public.
+Tests: PASS for scoped functional behavior. Real current public app and local build each show four Membership/rental images from identical existing documents, viewer/replace controls and $5,000 summary. Isolated upload changes 3/4 to 4/4 and enables continuation; replacement attaches latest IDs. New visual local build additionally verifies labels do not overlap buttons. Public app still executes prior bundle 97bc1302; do not claim new visual build published.
+Security: PASS. Authenticated documents.write writer/actor audit; no schema/RLS/grants/Storage/Edge/credential changes; 17 committed files scanned for private environment credentials. Production tests create zero files or requests.
+Legacy impact: NOT APPLICABLE; no Google, Apps Script or financial calculation changes.
+Unexpected files changed: none in isolated publication; root's unrelated work preserved. Registry structural update NOT APPLICABLE for scoped copy/CSS/configuration/tests without architecture change; source-hash staleness is documented.
+Known limitations: external GitHub deployment remains pending; future vehicles use normal per-target assignments. Contract template remains pending under prior owner decision, independently of these uploaded document images.
+Evidence: docs/qa/evidence/renta-car-documents/publication-pending.json, current-production-live.json, local-live.json, isolated-browser.json, configuration-applied.json, configuration-idempotence.json and bundle-parity.json. Private real screenshots inspected under ignored .tmp; committed images are synthetic.
+Next: when GitHub run finishes, execute .tmp/renta-car/verify-documents-live.js production against exact candidate bundle, record publication result, and then close the visual deployment. No user decision or new permission is required.

@@ -28,6 +28,15 @@
   return 'No se pudo completar la operación. Reintenta; no se enviará una solicitud duplicada.';
  };
  const card={background:'var(--surface)',borderRadius:18,padding:16,boxShadow:'var(--neo-sm)',marginTop:16};
+ const DOCUMENT_CSS=`
+  [data-renta-application] .mr-doc-pick{aspect-ratio:1/1;min-height:185px;padding:12px;font-family:inherit}
+  [data-renta-application] .has-thumbnail .mr-doc-badge{display:none}
+  [data-renta-application] .has-thumbnail .mr-doc-meta{margin-top:auto;padding-bottom:90px;text-shadow:0 1px 3px rgba(0,0,0,.58)}
+  [data-renta-application] .has-thumbnail .mr-doc-meta strong{color:#fff;font-weight:800}
+  [data-renta-application] .has-thumbnail .mr-doc-file{display:none}
+  [data-renta-application] .mr-doc-replace{bottom:30px}
+  [data-renta-application] .mr-doc-status{left:8px;right:8px;bottom:8px;border-radius:99px;background:rgba(255,255,255,.92);padding:4px 6px;font-size:10px;line-height:1.2}
+ `;
  function Values({rows}){return h('dl',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,margin:'14px 0 0'}},rows.map(([label,value])=>h('div',{key:label,style:{minWidth:0}},h('dt',{style:{fontSize:12,fontWeight:700,color:'var(--ink-3)'}},label),h('dd',{style:{fontSize:15,fontWeight:850,margin:'4px 0 0',overflowWrap:'anywhere'}},value??'No registrado'))));}
  function Summary({snapshot,showApplicant=true}){
   const r=snapshot.rental||snapshot,a=snapshot.applicant;
@@ -47,8 +56,9 @@
   const send=async()=>{if(!ready||!signature||!accepted||busy)return;setBusy(true);setError('');try{setSent(await repository.submit({p_item:item.id,p_start:quote.rental.start_date,p_end:quote.rental.end_date,p_daily_rate:quote.rental.daily_rate,p_signature:signature,p_accepted:true,p_documents:selected.map(d=>d.id),p_idempotency:idem.current}));}catch(e){setError(message(e));}finally{setBusy(false);}};
   if(sent)return h(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'benefit',subject:item.nombre,workflowState:sent.workflow_state,onBack:onClose,fullScreen:true,destination:'Tu solicitud de Renta Car fue enviada a Finanzas. Las fechas quedarán reservadas cuando sea aprobada.'});
   return h('div',{'data-renta-application':step,style:{position:'absolute',inset:0,zIndex:88,background:'var(--bg)',display:'flex',flexDirection:'column',overflow:'hidden'}},
+   h('style',null,DOCUMENT_CSS),
    h('header',{style:{background:'var(--surface)',padding:'16px',display:'flex',alignItems:'center',gap:12}},h('button',{'aria-label':'Atrás',onClick:()=>step==='summary'?setStep('documents'):onClose(),style:{border:0,borderRadius:12,padding:12,background:'var(--surface-2)'}},h(window.Icon,{name:'arrowL',size:20})),h('div',null,h('strong',null,step==='documents'?'Documentos':'Revisa y firma'),h('div',{style:{fontSize:12,color:'var(--ink-3)'}},step==='documents'?'Paso 1 de 2 · Expediente vigente':'Paso 2 de 2 · Renta Car'))),
-   h('div',{className:'su-app-scroll',style:{flex:1,overflowY:'auto',padding:'0 17px 130px'}},step==='documents'?h(React.Fragment,null,h('p',{style:{color:'var(--ink-2)',lineHeight:1.5}},'Completa tu expediente con una foto o un archivo. Los requisitos provienen de la configuración vigente.'),h(window.UnifiedDocumentPhase,{requirements:documents.requirements,documents:documents.rows,onChanged:load,phase:documents.phase,onRetry:load,error:'No fue posible consultar el expediente.',accessPurpose:'SELF_SERVICE_EXPEDIENTE',title:'Expediente'})):
+   h('div',{className:'su-app-scroll',style:{flex:1,overflowY:'auto',padding:'16px 17px 130px'}},step==='documents'?h(window.UnifiedDocumentPhase,{requirements:documents.requirements,documents:documents.rows,onChanged:load,phase:documents.phase,onRetry:load,error:'No fue posible consultar el expediente.',accessPurpose:'SELF_SERVICE_EXPEDIENTE',title:'Verifica tus documentos'}):
     h(React.Fragment,null,h(Summary,{snapshot:quote}),h('section',{style:card},h('h3',null,'Firma electrónica'),h(window.SignaturePad,{value:signature,onChange:setSignature}),h('label',{style:{display:'flex',gap:10,fontSize:13,lineHeight:1.5,marginTop:16}},h('input',{type:'checkbox',checked:accepted,onChange:e=>setAccepted(e.target.checked)}),'Confirmo las fechas y el total de esta solicitud, y que el pago completo debe realizarse antes de la entrega.')),error&&h('p',{role:'alert',style:{color:'#A32921'}},error))),
    h('footer',{style:{position:'absolute',bottom:0,left:0,right:0,padding:'22px 17px calc(16px + env(safe-area-inset-bottom))',background:'linear-gradient(transparent,var(--surface) 20px)'}},h(window.Btn,{full:true,size:'lg',icon:step==='documents'?'arrowR':'check',disabled:step==='documents'?!ready:busy||!ready||!signature||!accepted,onClick:step==='documents'?()=>setStep('summary'):send},step==='documents'?'Continuar al resumen':busy?'Enviando solicitud…':'Enviar solicitud')));
  }

@@ -81002,6 +81002,15 @@ Object.assign(window, {
     boxShadow: 'var(--neo-sm)',
     marginTop: 16
   };
+  const DOCUMENT_CSS = `
+  [data-renta-application] .mr-doc-pick{aspect-ratio:1/1;min-height:185px;padding:12px;font-family:inherit}
+  [data-renta-application] .has-thumbnail .mr-doc-badge{display:none}
+  [data-renta-application] .has-thumbnail .mr-doc-meta{margin-top:auto;padding-bottom:90px;text-shadow:0 1px 3px rgba(0,0,0,.58)}
+  [data-renta-application] .has-thumbnail .mr-doc-meta strong{color:#fff;font-weight:800}
+  [data-renta-application] .has-thumbnail .mr-doc-file{display:none}
+  [data-renta-application] .mr-doc-replace{bottom:30px}
+  [data-renta-application] .mr-doc-status{left:8px;right:8px;bottom:8px;border-radius:99px;background:rgba(255,255,255,.92);padding:4px 6px;font-size:10px;line-height:1.2}
+ `;
   function Values({
     rows
   }) {
@@ -81161,7 +81170,7 @@ Object.assign(window, {
         flexDirection: 'column',
         overflow: 'hidden'
       }
-    }, h('header', {
+    }, h('style', null, DOCUMENT_CSS), h('header', {
       style: {
         background: 'var(--surface)',
         padding: '16px',
@@ -81191,14 +81200,9 @@ Object.assign(window, {
       style: {
         flex: 1,
         overflowY: 'auto',
-        padding: '0 17px 130px'
+        padding: '16px 17px 130px'
       }
-    }, step === 'documents' ? h(React.Fragment, null, h('p', {
-      style: {
-        color: 'var(--ink-2)',
-        lineHeight: 1.5
-      }
-    }, 'Completa tu expediente con una foto o un archivo. Los requisitos provienen de la configuración vigente.'), h(window.UnifiedDocumentPhase, {
+    }, step === 'documents' ? h(window.UnifiedDocumentPhase, {
       requirements: documents.requirements,
       documents: documents.rows,
       onChanged: load,
@@ -81206,8 +81210,8 @@ Object.assign(window, {
       onRetry: load,
       error: 'No fue posible consultar el expediente.',
       accessPurpose: 'SELF_SERVICE_EXPEDIENTE',
-      title: 'Expediente'
-    })) : h(React.Fragment, null, h(Summary, {
+      title: 'Verifica tus documentos'
+    }) : h(React.Fragment, null, h(Summary, {
       snapshot: quote
     }), h('section', {
       style: card

@@ -1,0 +1,241 @@
+{
+  "rental": [],
+  "programKey": {
+    "error": "DOCUMENT_SCOPE_NOT_AVAILABLE"
+  },
+  "memberships": [
+    {
+      "name": "RiveraGas",
+      "ok": true,
+      "requirements": [
+        {
+          "code": "profile_photo",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "ffebe743-7f1c-4657-a6ff-5b39cce13672"
+        },
+        {
+          "code": "ine_front",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "ffebe743-7f1c-4657-a6ff-5b39cce13672"
+        },
+        {
+          "code": "ine_back",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "ffebe743-7f1c-4657-a6ff-5b39cce13672"
+        },
+        {
+          "code": "payroll_latest",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "ffebe743-7f1c-4657-a6ff-5b39cce13672"
+        }
+      ]
+    },
+    {
+      "name": "Sams Club",
+      "ok": true,
+      "requirements": [
+        {
+          "code": "profile_photo",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "1bf3d552-189a-4c34-aa29-f8105fa3ad7c"
+        },
+        {
+          "code": "ine_front",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "1bf3d552-189a-4c34-aa29-f8105fa3ad7c"
+        },
+        {
+          "code": "ine_back",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "1bf3d552-189a-4c34-aa29-f8105fa3ad7c"
+        },
+        {
+          "code": "payroll_latest",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "1bf3d552-189a-4c34-aa29-f8105fa3ad7c"
+        }
+      ]
+    },
+    {
+      "name": "Costco",
+      "ok": true,
+      "requirements": [
+        {
+          "code": "profile_photo",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "fc8cc2cb-dba0-4735-8128-034557407294"
+        },
+        {
+          "code": "ine_front",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "fc8cc2cb-dba0-4735-8128-034557407294"
+        },
+        {
+          "code": "ine_back",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "fc8cc2cb-dba0-4735-8128-034557407294"
+        },
+        {
+          "code": "payroll_latest",
+          "required": true,
+          "sourceType": "MEMBERSHIP",
+          "sourceKey": "fc8cc2cb-dba0-4735-8128-034557407294"
+        }
+      ]
+    }
+  ],
+  "catalog": [
+    {
+      "id": "c121155a-c53b-48b8-a4ba-23e973183e19",
+      "code": "ine_back",
+      "required_by_default": true,
+      "enabled": true
+    },
+    {
+      "id": "02a83837-6194-4216-9001-7e00c87741a7",
+      "code": "tribunal_form",
+      "required_by_default": true,
+      "enabled": true
+    },
+    {
+      "id": "f1db1d43-282a-4c19-97d3-1babef4526ce",
+      "code": "ine_front",
+      "required_by_default": true,
+      "enabled": true
+    },
+    {
+      "id": "5b2cbd37-c01e-4115-93ef-327e6922ecd4",
+      "code": "payroll_latest",
+      "required_by_default": true,
+      "enabled": true
+    },
+    {
+      "id": "4d6e052a-68a0-4bac-b2a5-38a5ad6e7f07",
+      "code": "payroll_previous",
+      "required_by_default": true,
+      "enabled": true
+    },
+    {
+      "id": "d63a7e93-f0d1-4482-81aa-4cd178615634",
+      "code": "profile_photo",
+      "required_by_default": true,
+      "enabled": true
+    },
+    {
+      "id": "a8a954d3-4094-4d5a-b0dc-73aa73fb1dee",
+      "code": "membership_form",
+      "required_by_default": true,
+      "enabled": true
+    },
+    {
+      "id": "2ef7ecbd-e7d6-4f10-8279-8a2b47d7edf2",
+      "code": "affiliate_credential",
+      "required_by_default": true,
+      "enabled": true
+    },
+    {
+      "id": "ca19cabb-c516-4bea-a640-b80c759b13fd",
+      "code": "guarantor_photo",
+      "required_by_default": false,
+      "enabled": true
+    },
+    {
+      "id": "e92a7a7a-192d-41a1-8d1a-1776cf92e87c",
+      "code": "guarantor_ine_front",
+      "required_by_default": false,
+      "enabled": true
+    },
+    {
+      "id": "ca9330d2-18c6-48b9-8ab5-34d0eaaac950",
+      "code": "guarantor_ine_back",
+      "required_by_default": false,
+      "enabled": true
+    },
+    {
+      "id": "3f2fc8ac-9556-4788-bbba-e849a9b0e699",
+      "code": "guarantor_payroll_latest",
+      "required_by_default": false,
+      "enabled": true
+    },
+    {
+      "id": "735caeed-01c0-43dc-8172-3e339f6b1a63",
+      "code": "qqqq",
+      "required_by_default": false,
+      "enabled": true
+    }
+  ],
+  "documents": [
+    {
+      "code": "payroll_previous",
+      "status": "PENDING_REVIEW",
+      "available": true
+    },
+    {
+      "code": "profile_photo",
+      "status": "PENDING_REVIEW",
+      "available": true
+    },
+    {
+      "code": "guarantor_ine_back",
+      "status": "REJECTED",
+      "available": true
+    },
+    {
+      "code": "guarantor_ine_front",
+      "status": "REJECTED",
+      "available": true
+    },
+    {
+      "code": "guarantor_photo",
+      "status": "REJECTED",
+      "available": true
+    },
+    {
+      "code": "payroll_previous",
+      "status": "REJECTED",
+      "available": true
+    },
+    {
+      "code": "profile_photo",
+      "status": "REJECTED",
+      "available": true
+    },
+    {
+      "code": "profile_photo",
+      "status": "VERIFIED",
+      "available": true
+    },
+    {
+      "code": "affiliate_credential",
+      "status": "VERIFIED",
+      "available": true
+    },
+    {
+      "code": "payroll_latest",
+      "status": "VERIFIED",
+      "available": true
+    },
+    {
+      "code": "ine_front",
+      "status": "VERIFIED",
+      "available": true
+    },
+    {
+      "code": "ine_back",
+      "status": "VERIFIED",
+      "available": true
+    }
+  ],
+  "businessWrites": 0
+}

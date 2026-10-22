@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "applied": false,
+  "mode": "ROLLBACK_PREFLIGHT",
+  "rulesCreated": 0,
+  "scopeType": "PROGRAM",
+  "scopeKey": "9fe940a0-616c-555e-839a-63fd20bc9b41",
+  "documentCodes": [
+    "profile_photo",
+    "ine_front",
+    "ine_back",
+    "payroll_latest"
+  ],
+  "auditEvents": 0,
+  "actor": "AUTHENTICATED_DOCUMENT_ADMIN",
+  "protectedTables": {
+    "public.program_requests": {
+      "rows": 436,
+      "fingerprintUnchanged": true
+    },
+    "public.affiliate_documents": {
+      "rows": 5021,
+      "fingerprintUnchanged": true
+    },
+    "public.affiliate_files": {
+      "rows": 12917,
+      "fingerprintUnchanged": true
+    },
+    "public.document_types": {
+      "rows": 13,
+      "fingerprintUnchanged": true
+    }
+  },
+  "otherProgramRulesUnchanged": true,
+  "membershipReferenceUnchanged": true,
+  "schemaChanges": 0,
+  "uploadedFiles": 0,
+  "testRequests": 0
+}

@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "mode": "local",
+  "verifiedBundleSha256": "0a6feb3c30b722c91ade0b1a118c08a19e6607470c876a023bf13262e125b126",
+  "membership": {
+    "cards": 4,
+    "loadedThumbnails": 4
+  },
+  "rental": {
+    "cards": 4,
+    "loadedThumbnails": 4,
+    "complete": 4,
+    "viewButtons": 4,
+    "replaceButtons": 4,
+    "viewerOpened": true,
+    "summaryTotal": 5000
+  },
+  "sameExistingDocumentIds": true,
+  "realBackend": true,
+  "backendResponseOverrides": 0,
+  "uploads": 0,
+  "requestsSubmitted": 0,
+  "browserErrors": 0
+}

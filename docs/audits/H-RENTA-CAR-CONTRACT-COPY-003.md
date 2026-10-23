@@ -34,3 +34,10 @@ Screen: Renta Car summary. Original/current sections: vehicle, dates, prices, ap
 ## ARCHITECT REVIEW
 
 Verdict: APPROVED for scoped implementation. Read-only diff inspection confirms removal of exactly one static block, no shared module or backend modifications, no authority or financial impact. Build chunk parity and real browser evidence substantiate the result. Owner decision required: no. Next authorized action: commit/push and verify the resulting public bundle; record its actual publication status before claiming release completion.
+
+
+## Publication verified
+
+Status: PASS. Code commit 5ac2186d155423bc9d069a8aea615ecea3beaabb published successfully by GitHub Pages run 39821920665. Public bundle SHA-256 equals the local candidate 02ef10304f5346169f6433240579cc372074a7f9c9de9f3e232ef5b044178012. Authenticated public browser confirms the contract heading/paragraph are absent, the signature canvas remains, the two-day total is $5,000, and all four document images/view/replace controls remain. Zero uploads, requests or browser errors. Initial pre-completion probe correctly rejected the older public bundle; final production check PASS supersedes that deployment-in-progress result.
+Evidence: docs/qa/evidence/renta-car-contract-copy/production-live.json; https://github.com/David14081982/SutiApp-private/actions/runs/39821920665.
+Final architect verdict: APPROVED. No remaining action or owner decision for this request.

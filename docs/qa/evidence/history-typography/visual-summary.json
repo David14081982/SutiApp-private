@@ -1,0 +1,710 @@
+{
+  "task": "H-HISTORY-TYPOGRAPHY-001",
+  "status": "PASS",
+  "scope": "Isolated synthetic visual QA; no production data or backend verification",
+  "source": {
+    "baselineCommit": "abc0723",
+    "finalBytesSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb",
+    "finalNormalizedLFSha256": "92b7d164d629652911c355a999a7bfde9d44e7d39c859861bee20c104c346be7",
+    "cssSha256": "d87ef810dc3cf4b3fc0cf42c3607e63edee81ada0eddb2f83ab44a09695a7acf"
+  },
+  "coverage": {
+    "matrixCases": 10,
+    "finalOrdinalCases": 4,
+    "finalBranchCases": 6,
+    "violations": 0,
+    "rendering": "Actual application CSS, components and cached Nunito; synthetic authorized-only fixtures; all browser network blocked",
+    "nunito": "Nunito ExtraBold confirmed as custom font by Chromium CSS.getPlatformFontsForNode",
+    "matrixReuse": "The full matrix preceded two bounded typography corrections. Exact byte reconstruction verifies the only subsequent differences: two progress amount font clamps, then the fixed-size quota badge font cap. The clamp was rerendered at all three 320 preferences; at widths >=360 it computes the original 18px. The final badge was rerendered with ordinal210 at320/430 normal/largest. Prior screenshots retain their actual source hash.",
+    "sourceReconstruction": {
+      "finalToClampedShaMatches": true,
+      "clampedToInitialShaMatches": true,
+      "changedDeclarations": 3
+    },
+    "preserved": [
+      "DOM structure",
+      "text and controls",
+      "colors",
+      "backgrounds",
+      "borders",
+      "radii",
+      "shadows",
+      "margins",
+      "padding",
+      "quota gaps",
+      "alignment",
+      "fixture financial values"
+    ],
+    "helpersOutsideDetail": "PASS; HistorySourceState and ApprovalClock unchanged in loaded, loading and failure observations",
+    "businessRequests": 0,
+    "authSessions": 0,
+    "backendVerified": false
+  },
+  "matrix": [
+    {
+      "viewport": 320,
+      "preference": "normal",
+      "status": "PASS",
+      "renderedSourceSha256": "f3cae2856198252e7f140f00416c2c464610b9dc98972615d86d4d07b6a12ec3",
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [
+          16
+        ],
+        "rowAmount": [
+          18
+        ],
+        "paid": [
+          16
+        ],
+        "balance": [
+          16
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 360,
+      "preference": "normal",
+      "status": "PASS",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699",
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [
+          16
+        ],
+        "rowAmount": [
+          18
+        ],
+        "paid": [
+          18
+        ],
+        "balance": [
+          18
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 375,
+      "preference": "normal",
+      "status": "PASS",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699",
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [
+          16
+        ],
+        "rowAmount": [
+          18
+        ],
+        "paid": [
+          18
+        ],
+        "balance": [
+          18
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 390,
+      "preference": "normal",
+      "status": "PASS",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699",
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [
+          16
+        ],
+        "rowAmount": [
+          18
+        ],
+        "paid": [
+          18
+        ],
+        "balance": [
+          18
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 414,
+      "preference": "normal",
+      "status": "PASS",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699",
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [
+          16
+        ],
+        "rowAmount": [
+          18
+        ],
+        "paid": [
+          18
+        ],
+        "balance": [
+          18
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 430,
+      "preference": "normal",
+      "status": "PASS",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699",
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [
+          16
+        ],
+        "rowAmount": [
+          18
+        ],
+        "paid": [
+          18
+        ],
+        "balance": [
+          18
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 320,
+      "preference": "small",
+      "status": "PASS",
+      "renderedSourceSha256": "f3cae2856198252e7f140f00416c2c464610b9dc98972615d86d4d07b6a12ec3",
+      "computedPx": {
+        "title": [
+          17.5
+        ],
+        "principal": [
+          29.75
+        ],
+        "fund": [
+          14
+        ],
+        "rowTitle": [
+          14
+        ],
+        "rowAmount": [
+          15.75
+        ],
+        "paid": [
+          14
+        ],
+        "balance": [
+          14
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 320,
+      "preference": "largest",
+      "status": "PASS",
+      "renderedSourceSha256": "f3cae2856198252e7f140f00416c2c464610b9dc98972615d86d4d07b6a12ec3",
+      "computedPx": {
+        "title": [
+          27
+        ],
+        "principal": [
+          45.9
+        ],
+        "fund": [
+          21.6
+        ],
+        "rowTitle": [
+          21.6
+        ],
+        "rowAmount": [
+          24.3
+        ],
+        "paid": [
+          21.6
+        ],
+        "balance": [
+          21.6
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 430,
+      "preference": "small",
+      "status": "PASS",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699",
+      "computedPx": {
+        "title": [
+          17.5
+        ],
+        "principal": [
+          29.75
+        ],
+        "fund": [
+          14
+        ],
+        "rowTitle": [
+          14
+        ],
+        "rowAmount": [
+          15.75
+        ],
+        "paid": [
+          15.75
+        ],
+        "balance": [
+          15.75
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    },
+    {
+      "viewport": 430,
+      "preference": "largest",
+      "status": "PASS",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699",
+      "computedPx": {
+        "title": [
+          27
+        ],
+        "principal": [
+          45.9
+        ],
+        "fund": [
+          21.6
+        ],
+        "rowTitle": [
+          21.6
+        ],
+        "rowAmount": [
+          24.3
+        ],
+        "paid": [
+          24.3
+        ],
+        "balance": [
+          24.3
+        ]
+      },
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "fixtureUnchanged": true
+    }
+  ],
+  "finalOrdinals": [
+    {
+      "viewport": 320,
+      "preference": "normal",
+      "status": "PASS",
+      "computedPx": 14,
+      "badge": {
+        "width": 34,
+        "height": 38
+      },
+      "text": {
+        "width": 25.203125,
+        "height": 19,
+        "lines": 1,
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "fixtureUnchanged": true,
+      "screenshot": "final-320-normal-ordinal210.png"
+    },
+    {
+      "viewport": 320,
+      "preference": "largest",
+      "status": "PASS",
+      "computedPx": 18,
+      "badge": {
+        "width": 34,
+        "height": 38
+      },
+      "text": {
+        "width": 32.40625,
+        "height": 24,
+        "lines": 1,
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "fixtureUnchanged": true,
+      "screenshot": "final-320-largest-ordinal210.png"
+    },
+    {
+      "viewport": 430,
+      "preference": "normal",
+      "status": "PASS",
+      "computedPx": 14,
+      "badge": {
+        "width": 34,
+        "height": 38
+      },
+      "text": {
+        "width": 25.203125,
+        "height": 19,
+        "lines": 1,
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "fixtureUnchanged": true,
+      "screenshot": "final-430-normal-ordinal210.png"
+    },
+    {
+      "viewport": 430,
+      "preference": "largest",
+      "status": "PASS",
+      "computedPx": 18,
+      "badge": {
+        "width": 34,
+        "height": 38
+      },
+      "text": {
+        "width": 32.40625,
+        "height": 24,
+        "lines": 1,
+        "leftOverflow": 0,
+        "rightOverflow": 0,
+        "bottomOverflow": 0
+      },
+      "fixtureUnchanged": true,
+      "screenshot": "final-430-largest-ordinal210.png"
+    }
+  ],
+  "finalBranches": [
+    {
+      "branch": "loading",
+      "viewport": 320,
+      "preference": "normal",
+      "status": "PASS",
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [],
+        "fund": [],
+        "rowTitle": [],
+        "rowAmount": [],
+        "paid": [],
+        "balance": []
+      }
+    },
+    {
+      "branch": "error-empty",
+      "viewport": 320,
+      "preference": "normal",
+      "status": "PASS",
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [],
+        "fund": [],
+        "rowTitle": [],
+        "rowAmount": [],
+        "paid": [],
+        "balance": []
+      }
+    },
+    {
+      "branch": "error-retained",
+      "viewport": 320,
+      "preference": "normal",
+      "status": "PASS",
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [
+          16
+        ],
+        "rowAmount": [
+          18
+        ],
+        "paid": [
+          16
+        ],
+        "balance": [
+          16
+        ]
+      }
+    },
+    {
+      "branch": "preparing",
+      "viewport": 320,
+      "preference": "normal",
+      "status": "PASS",
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [],
+        "rowAmount": [],
+        "paid": [
+          16
+        ],
+        "balance": [
+          16
+        ]
+      }
+    },
+    {
+      "branch": "request",
+      "viewport": 320,
+      "preference": "normal",
+      "status": "PASS",
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [],
+        "rowAmount": [],
+        "paid": [],
+        "balance": []
+      }
+    },
+    {
+      "branch": "request",
+      "viewport": 430,
+      "preference": "normal",
+      "status": "PASS",
+      "violations": 0,
+      "structureAndStyleParity": true,
+      "helpersOutsideUnchanged": true,
+      "computedPx": {
+        "title": [
+          20
+        ],
+        "principal": [
+          34
+        ],
+        "fund": [
+          16
+        ],
+        "rowTitle": [],
+        "rowAmount": [],
+        "paid": [],
+        "balance": []
+      }
+    }
+  ],
+  "badgeFinal": {
+    "normalPx": 14,
+    "largestPx": 18,
+    "smallPxDerivedFromExistingScale": 12.25,
+    "box": [
+      34,
+      38
+    ],
+    "note": "Only the ordinal is capped at18px to fit three digits; quota title continues to scale normally."
+  },
+  "screenshots": [
+    {
+      "file": "final-320-largest-ordinal210.png",
+      "sha256": "67497830ef07b6328969fe3ba1f644aa82a8333ab0fa6094b07fc838de89da7c",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-320-normal-ordinal210.png",
+      "sha256": "119391781b16b8f39f765f2cf18996e1069eedc7804f0e49bf44ea002abc8822",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-430-largest-ordinal210.png",
+      "sha256": "ca6e7a9f9b35f14ae3ab764ad65f1f54bad55b1285924731b2dd242fb7937762",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-430-normal-ordinal210.png",
+      "sha256": "5c6ee0fb314886ecf5891bb3173dbf02bf20d5ff91d0bb378e1c26f2ab08cb43",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-error-empty-320-summary.png",
+      "sha256": "7f3322648861ea29defaa09a9ca9b766daa02b2ba4e1dad555f80758b790ed74",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-error-retained-320-closure.png",
+      "sha256": "74f1bbc2ea67609b7ffde1a88c38a7ce83a3dfa0eb62368e2da90159ee10bc6c",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-error-retained-320-quotas.png",
+      "sha256": "77534dd04103c49f213647700c460daedd85de4da6b708d611b73a5216491899",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-error-retained-320-summary.png",
+      "sha256": "022ed9e926397f2473957a7dc5e5bac3141c69dccdb82090b3ff1b1d294a3ac8",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-loading-320-summary.png",
+      "sha256": "815ec941f0dca3797ab9fc7c7bd447beac9a14d50d8d1ac9385f8d6073ddbf6d",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-preparing-320-summary.png",
+      "sha256": "001edf89b5314486c3680950b86b98285e1c7eaf7cbc799f9700e0ff49ef9ad5",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-request-320-summary.png",
+      "sha256": "c36e2017b506201785f916ae765770eb6da5e3025b4e5711c88a2a9891f46793",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "final-request-430-summary.png",
+      "sha256": "25ffe22ebc76f3e2a964f124b56100a90b02d4e80753c719444bb1e7291d8661",
+      "renderedSourceSha256": "c57659198fef4640865e61d521f3f6984f5f1bc79a3efd1fd6f5ec0c6a9bbddb"
+    },
+    {
+      "file": "after-320-normal-summary.png",
+      "sha256": "c1003cfff277db8ae406584db91760e4a28b05a21fbdb4e0ce5742a3341ffb3a",
+      "renderedSourceSha256": "f3cae2856198252e7f140f00416c2c464610b9dc98972615d86d4d07b6a12ec3"
+    },
+    {
+      "file": "after-320-largest-summary.png",
+      "sha256": "ae9c5a9012408141c5c13cd9dbe91626b42923e6c87450cbdb4896dd961ee8c8",
+      "renderedSourceSha256": "f3cae2856198252e7f140f00416c2c464610b9dc98972615d86d4d07b6a12ec3"
+    },
+    {
+      "file": "after-430-normal-summary.png",
+      "sha256": "c19dfd58263dab7dcea1abd156a6a747726c72bf5d5e130c46913b0f09171a1e",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699"
+    },
+    {
+      "file": "after-430-largest-summary.png",
+      "sha256": "aca9a6421c980e3d12b4e20aa6108c70dcba4944005bfe37f0076a52835c8f3e",
+      "renderedSourceSha256": "82a061cdf16dfdeabfd0e27cd771ff0cce8cdfbd4b2bc571447decdf80d5b699"
+    }
+  ],
+  "privateReports": [
+    "compare.json",
+    "compare-final-320.json",
+    "focal-final.json",
+    "ordinal-natural-widths.json"
+  ],
+  "commands": [
+    "node .tmp/history-typography/visual-qa.cjs --compare",
+    "node .tmp/history-typography/visual-qa.cjs --compare --changed-only",
+    "node .tmp/history-typography/visual-qa.cjs --focal"
+  ]
+}

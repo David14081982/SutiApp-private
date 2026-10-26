@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "version": 2,
+  "previous": 1,
+  "verifyJwt": true,
+  "sourceFiles": [
+    {
+      "name": "index.ts",
+      "sha256": "efb44b7247666c0b12522dbbfea464b9d9376833d14a80233bce9c6748f84004"
+    },
+    {
+      "name": "history.mjs",
+      "sha256": "df3c77b04717aaba90a024e7e705b6c3bdf6185dd0f718d1e1550d976270c885"
+    },
+    {
+      "name": "source.mjs",
+      "sha256": "861bdfe0293f736451fed20fdcac3fd2ace53551ff44945a5aebc796d92e4df4"
+    }
+  ],
+  "businessWrites": 0
+}

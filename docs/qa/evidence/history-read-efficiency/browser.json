@@ -1,0 +1,104 @@
+{
+  "status": "PASS",
+  "scope": "synthetic isolated browser; real history, UI and operations source modules; header/notice/Farma harness stand-ins",
+  "checks": [
+    {
+      "width": 390,
+      "actualOperationsStore": true,
+      "initialCalls": {
+        "summary": 1,
+        "detail": 0,
+        "native": 1,
+        "realtime": 0
+      },
+      "filterCalls": 0,
+      "idle60SecondsCalls": 0,
+      "realtimeCalls": 0,
+      "localApprovalExpiry": true,
+      "summaryBytes": 1310,
+      "fullFixtureBytes": 7414,
+      "bytesAre": "uncompressed synthetic JSON, not billed egress",
+      "detailOwnKeyOnly": true,
+      "nativeVisibleWhilePending": true,
+      "nativeVisibleOnSourceError": true,
+      "retryScoped": true,
+      "mutationBurstCoalesced": true,
+      "obsoleteNativeResponseDiscardedWhileFollowupPending": true,
+      "contextRace": true,
+      "logoutRace": true,
+      "timelinePreserved": true,
+      "liquidatedGreen": true,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 320,
+      "actualOperationsStore": true,
+      "initialCalls": {
+        "summary": 1,
+        "detail": 0,
+        "native": 1,
+        "realtime": 0
+      },
+      "filterCalls": 0,
+      "idle60SecondsCalls": 0,
+      "realtimeCalls": 0,
+      "localApprovalExpiry": true,
+      "summaryBytes": 1310,
+      "fullFixtureBytes": 7414,
+      "bytesAre": "uncompressed synthetic JSON, not billed egress",
+      "detailOwnKeyOnly": true,
+      "nativeVisibleWhilePending": true,
+      "nativeVisibleOnSourceError": true,
+      "retryScoped": true,
+      "mutationBurstCoalesced": true,
+      "obsoleteNativeResponseDiscardedWhileFollowupPending": true,
+      "contextRace": true,
+      "logoutRace": true,
+      "timelinePreserved": true,
+      "liquidatedGreen": true,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 1440,
+      "actualOperationsStore": true,
+      "initialCalls": {
+        "summary": 1,
+        "detail": 0,
+        "native": 1,
+        "realtime": 0
+      },
+      "filterCalls": 0,
+      "idle60SecondsCalls": 0,
+      "realtimeCalls": 0,
+      "localApprovalExpiry": true,
+      "summaryBytes": 1310,
+      "fullFixtureBytes": 7414,
+      "bytesAre": "uncompressed synthetic JSON, not billed egress",
+      "detailOwnKeyOnly": true,
+      "nativeVisibleWhilePending": true,
+      "nativeVisibleOnSourceError": true,
+      "retryScoped": true,
+      "mutationBurstCoalesced": true,
+      "obsoleteNativeResponseDiscardedWhileFollowupPending": true,
+      "contextRace": true,
+      "logoutRace": true,
+      "timelinePreserved": true,
+      "liquidatedGreen": true,
+      "noHorizontalOverflow": true
+    }
+  ],
+  "overlayChecks": [
+    {
+      "width": 390,
+      "historyRetainedUnderRoute": true,
+      "detailAddsOnlyOneDetailCall": true,
+      "backAddsNoCalls": true,
+      "trackingSharesNativeSubscription": true,
+      "mutationBurstCoalescedAcrossLayers": true,
+      "pendingBaseAndDetailDiscardedOnContextChange": true
+    }
+  ],
+  "productionWrites": 0,
+  "network": "BLOCKED",
+  "timing": "Playwright clock advanced 60 seconds without a wall-clock sleep"
+}

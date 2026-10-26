@@ -415,3 +415,13 @@ loan/clock/privacy cases passed isolated tests; live authorized account has no
 loans. The proposed assisted-user probe was rejected by automatic approval review
 and never executed. Evidence: docs/qa/evidence/history-loan-payments/deployment.json
 and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md.
+
+### H-HISTORY-READ-EFFICIENCY-001 — contrato de lectura, 2026-10-25
+
+La optimización autorizada amplía el lector de Historial: `SUMMARY` devuelve las tarjetas propias sin cuotas; `DETAIL` acepta exclusivamente una clave exacta `loan:ID` o `request:ID` para seleccionar un registro dentro del historial autorizado. Se conserva `LOAD` para compatibilidad con clientes abiertos. Esta ampliación sustituye únicamente la restricción anterior de aceptar solo `{action:LOAD}`.
+
+Ninguna acción acepta Folio, afiliado, actor, rangos u otra identidad elegida por el navegador. JWT, Folio TEXT exacto y contexto efectivo se validan en backend antes y después de consultar Google. Una clave ajena devuelve cero registros; los cambios de contexto descartan la respuesta. No se amplían grants, RLS, roles ni acceso a documentos.
+
+Historial consulta al entrar, cambiar contexto, confirmar una operación relevante o reintentar. Los filtros y el contador no consultan la red; no se agrega réplica, sincronización periódica ni caché financiero persistente. Las respuestas pendientes obsoletas se descartan; un error de fuente sigue visible sin fallback.
+
+Google Sheets conserva su autoridad y contenido. Solo se optimiza el código lector de filas propias; los writers, fórmulas, cuotas, estados y triggers no cambian. Backend instalado y verificado: Apps Script 21 y loan-history 2. Build y pruebas locales PASS; el estado de publicación y la evidencia posterior se registran en [H-HISTORY-READ-EFFICIENCY-001](audits/H-HISTORY-READ-EFFICIENCY-001.md).

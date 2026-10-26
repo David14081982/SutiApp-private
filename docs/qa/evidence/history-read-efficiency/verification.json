@@ -1,0 +1,11 @@
+{
+  "status": "PASS_LOCAL_PUBLICATION_PENDING",
+  "architectureSuite": "PASS generation freshness stale lookup screen table column reverse admin permissions tests fallback incremental secrets determinism",
+  "localGlobalRegression": "PASS",
+  "localLive": "PASS",
+  "publishedFrontend": "NOT_RUN_APPROVAL_REQUIRED",
+  "applicationCommit": "21046e4",
+  "branch": "codex/history-read-efficiency",
+  "sheetWrites": 0,
+  "businessWrites": 0
+}

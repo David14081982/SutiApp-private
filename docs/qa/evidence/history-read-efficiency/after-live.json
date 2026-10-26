@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "action": "SUMMARY",
+  "elapsedMs": 16598,
+  "jsonBytes": 192,
+  "entries": 0,
+  "noStore": true,
+  "businessWrites": 0,
+  "identityAssistanceWrites": 0,
+  "summaryExcludesSchedules": true,
+  "forgedTargetStatus": 400,
+  "anonymousStatus": 401,
+  "detailOwnSelection": true,
+  "detailEntries": 0,
+  "populatedLiveAccount": false
+}

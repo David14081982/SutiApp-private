@@ -7,7 +7,7 @@ const focal=['history-loans-repository.js','history-loans.jsx','operations-store
 const files=focal.map(n=>'app/'+n).concat(['supabase/functions/loan-history/history.mjs','google-apps-script/financial-handoff/Code.gs',
  'scripts/test-history-efficiency-backend.js','scripts/test-history-efficiency-receiver.js','scripts/test-history-efficiency-browser.js',
  'scripts/test-loan-history.js','scripts/test-loan-history-receiver.js','scripts/test-loan-history-browser.js',
- 'scripts/package-history-efficiency.js','scripts/release-history-efficiency.js','scripts/verify-history-efficiency-live.js','docs/audits/H-HISTORY-READ-EFFICIENCY-001.md']);
+ 'scripts/package-history-efficiency.js','scripts/release-history-efficiency.js','scripts/verify-history-efficiency-live.js','docs/audits/H-HISTORY-READ-EFFICIENCY-001.md','docs/SECURITY_RULES.md']);
 const context={};vm.createContext(context);vm.runInContext(fs.readFileSync('C:/tmp/sutiapp-babel-7.28.4.min.js','utf8'),context);
 const chunks=s=>new Map([...s.replace(/\r/g,'').matchAll(/\/\* @@file (.*?) \*\/\n([\s\S]*?)(?=\/\* @@file |$)/g)].map(m=>[m[1],m[2]]));
 function patchBundle(original){
@@ -33,7 +33,12 @@ if(process.argv[2]==='build'){
   const file=path.join(base,'app/bundle.js');fs.writeFileSync(file,patchBundle(fs.readFileSync(file,'utf8')));
   for(const name of ['SutiApp.html','sw.js']){const file=path.join(base,name),source=fs.readFileSync(file,'utf8');fs.writeFileSync(file,source.replace(/app\/bundle\.js\?v=\d+/g,'app/bundle.js?v=2026102507').replace(/sutiapp-v\d+/g,'sutiapp-v2026102507'));}
  }
- for(const file of files){const target=path.join(release,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(root,file),target);}
+ for(const file of files){const target=path.join(release,file);fs.mkdirSync(path.dirname(target),{recursive:true});
+  if(file==='docs/SECURITY_RULES.md'){
+   const marker='### H-HISTORY-READ-EFFICIENCY-001',section=read(file).slice(read(file).indexOf(marker));assert(section.startsWith(marker));
+   const prior=fs.readFileSync(target,'utf8'),at=prior.indexOf(marker);fs.writeFileSync(target,(at<0?prior:prior.slice(0,at)).trimEnd()+'\n\n'+section);
+  }else fs.copyFileSync(path.join(root,file),target);
+ }
  const manifest={status:'PASS',phase:'CANDIDATE',focalChunks:focal,files:files.concat(['app/bundle.js','SutiApp.html','sw.js']).map(file=>({file,sha256:sha(fs.readFileSync(path.join(release,file)))}))};
  fs.writeFileSync(path.join(out,'candidate.json'),JSON.stringify(manifest,null,2)+'\n');console.log(JSON.stringify({status:'PASS',files:manifest.files.length,otherChunksUnchanged:true}));
 }

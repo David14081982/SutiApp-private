@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "fixtureRows": {
+    "loans": 20001,
+    "requests": 2801
+  },
+  "original": {
+    "calls": 7,
+    "cells": 2312981,
+    "financialCells": 2312800,
+    "foreignFinancialCells": 2311942,
+    "noteCells": 2801,
+    "writes": 0
+  },
+  "optimized": {
+    "calls": 42,
+    "cells": 46866,
+    "financialCells": 1146,
+    "foreignFinancialCells": 0,
+    "noteCells": 6,
+    "writes": 0
+  },
+  "checks": [
+    "unchanged typed contract",
+    "exact formatted owner",
+    "own contiguous ranges",
+    "no foreign financial reads or notes",
+    "own data/display/notes/header/selection consistency",
+    "insert/remove/move/new-own-row detection",
+    "strict secret and fixed sheets",
+    "unchanged writer code",
+    "zero Sheet writes"
+  ]
+}

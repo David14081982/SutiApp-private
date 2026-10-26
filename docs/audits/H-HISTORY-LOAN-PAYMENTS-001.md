@@ -175,3 +175,45 @@ Legacy impact: additive read-only candidate; zero live writes/deployments.
 Unexpected files changed: none intentionally; pre-existing working-tree changes retained.
 Known limitations: not published; historical missing clock/link and generation latency as above.
 Evidence: docs/qa/evidence/history-loan-payments/{core,receiver,browser,build,catalog,preflight,candidate}.json
+
+### H-HISTORY-LOAN-PAYMENTS-001 RESULT — published activation
+
+This result supersedes the historical candidate-only result above.
+
+Status: PASS
+Files changed: 56 files in isolated release commit 3dce4afb55af6f1cfb3cad34b18f0d68044b858e;
+  three focal frontend modules, additive SQL/Edge/Google reader, associated build
+  entries/cache version, tests, evidence/governance and derived Registry. No
+  unrelated working-tree changes were committed. Follow-up closure is docs only.
+Source-of-truth verdict: PASS; authoritative Google quotas/status, existing
+  Finance approval instant and exact authenticated business identity retained.
+Invariant verdict: PASS; repeatable-read transaction compared requests, events,
+  affiliates and protected functions before/after. No financial data writes.
+Build: PASS; local and GitHub Pages artifacts; published bundle SHA-256
+  9d5a21f3a5a68b961298b3dfc0417e9a43738255c86f4ca63d6136519eb6d696.
+Tests: PASS; core SQL/JS, new and existing receiver suites, isolated 320/390/1440
+  UI, architecture determinism/freshness suite, live deployment contracts, local
+  and production authenticated browser with service worker both enabled/blocked.
+Security: PASS for tested scope; anonymous endpoint/RPC rejected (401), forged
+  target rejected (400), untrusted origin rejected (403), no-store response.
+  Cross-user filtering and delayed-context races passed isolated tests.
+Legacy impact: Google version 20, previous version 19 backed up; exact reader
+  source readback, unchanged manifest/deployment configuration, old reader PASS.
+  Zero Sheet cell/formula/property/trigger writes. SQL migration 20261025000100
+  and JWT-verified loan-history Edge version 1 installed.
+Unexpected files changed: none in isolated release; root's prior changes retained.
+Known limitations: the authorized production account has no loans. Production
+  empty-history and denial checks passed; populated cards, payment dates and
+  clock expiry were verified using isolated fixtures. Automatic approval review
+  rejected the proposed two-real-user assisted probe as beyond publication scope;
+  it was removed and never executed. No identity session/audit writes occurred.
+  Historical missing approval/link evidence and source-generation latency remain
+  explicit as described above; no fabricated timestamps or installments.
+Evidence: docs/qa/evidence/history-loan-payments/{deployment,google-deployed,
+  database-deployed,edge-deployed,backend-live,release-prepared,release-build,
+  release-local-browser,production-live,core,receiver,browser}.json.
+Publication: https://sutiapp.com/ — version 2026102506.
+GitHub Pages run 40268683772: completed/success, including post-deploy checks.
+Architecture registry: full suite PASS; final check FRESH. Changes to cache
+  literals preserve worker logic exactly; global image regression NOT APPLICABLE
+  under AGENTS.md generated-artifact exception.

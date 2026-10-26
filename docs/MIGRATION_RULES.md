@@ -458,3 +458,16 @@ One additive STABLE SECURITY DEFINER reader, authenticated-only behind savings.r
 
 
 Activation authorized by owner on 2026-10-25. Google v20 and migration 20261025000100 installed; loan-history Edge v1 active. No business records or Sheet cells changed. See history-loan-payments deployment and live evidence for current verification.
+
+
+### H-HISTORY-LOAN-PAYMENTS-001 ? published 2026-10-25
+
+Owner-authorized activation completed: Google reader v20, additive migration
+20261025000100, loan-history Edge v1 and Pages commit 3dce4af (version 2026102506).
+The existing approval timestamp remains authoritative; Google cuotas/X and exact
+authenticated Folio retain authority. Zero financial/Sheet/identity-session writes.
+Production filters, refresh, auth denial checks and bundle hash verified. Populated
+loan/clock/privacy cases passed isolated tests; live authorized account has no
+loans. The proposed assisted-user probe was rejected by automatic approval review
+and never executed. Evidence: docs/qa/evidence/history-loan-payments/deployment.json
+and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md.

@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "bundleSha256": "9d5a21f3a5a68b961298b3dfc0417e9a43738255c86f4ca63d6136519eb6d696",
+  "checks": [
+    "six filters, refresh, mobile layout, no page errors; service worker block",
+    "six filters, refresh, mobile layout, no page errors; service worker allow"
+  ],
+  "businessWrites": 0,
+  "privateContentLogged": false,
+  "populatedCards": "isolated browser suite; authorized live account has no loans"
+}

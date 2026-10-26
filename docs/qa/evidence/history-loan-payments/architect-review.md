@@ -60,3 +60,37 @@ and existing Finance writer. Publish only after production activation is authori
 then follow candidate.json's exact reader-first order and recovery plan. Run real
 read-only endpoint/UI checks, including anonymous and forged-target denials, and
 report installation separately from this local approval. Do not advance to other H work.
+
+## Published activation review — 2026-10-25
+
+Task reviewed: owner-authorized surgical publication of H-HISTORY-LOAN-PAYMENTS-001.
+Verdict: APPROVED for the implemented and verified scope.
+Review method: direct inspection of isolated release diff, live response evidence,
+source hashes, migration grants/integrity proof, browser results and Pages run;
+no independent subagent was used or claimed.
+
+What Codex did correctly: started from remote main 6c9fdb5, retained other modules,
+published only three focal bundle chunks, preserved existing receiver code and
+worker logic, reused immutable approval timestamps and exact authenticated Folio.
+Important findings: Google v20 readback and legacy reader PASS; additive migration
+and Edge v1 active; Pages commit 3dce4af succeeded. Live bundle hash equals the
+verified release artifact. Six filters/refresh/mobile browser PASS with and
+without service worker. Isolated populated cards/detail/24h expiry PASS.
+Problems detected: no unresolved implementation regression in tested scope.
+Architecture implications: additive self-history boundary; no shared router/Auth,
+Storage, financial writer or other frontend component changes. Registry suite PASS.
+Source-of-truth implications: no alternative source, browser persistence or invented
+approval clock. Shared-sheet export is a verification input only, not app fallback.
+Security implications: anonymous/forged target/untrusted origin rejected live;
+cross-user and context-race checks pass isolated. The production test account has
+no loans; no claim of populated two-user production coverage is made.
+Data implications: zero financial/Sheet/identity-session writes. Automatic approval
+review rejected the proposed assisted-user probe; it was not executed and removed.
+Owner decision required: none to retain this release. Any future assisted-user
+verification needs explicit authorization covering those accounts and audit effects.
+Recommended next action: report the published release and verification limitation.
+
+RESPONSE TO CODEX: Keep the verified production release. Deliver the publication
+link and evidence. Do not advance to another H, create production test loans or
+execute the rejected assisted-user probe. No further implementation is required
+for this authorized publication.

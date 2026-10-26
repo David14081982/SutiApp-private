@@ -1,0 +1,147 @@
+{
+  "status": "PASS",
+  "classification": "DERIVED_TECHNICAL_INDEX",
+  "runtime_authority": false,
+  "generator_modified": false,
+  "production_calls": 0,
+  "resources": [
+    {
+      "type": "table",
+      "name": "public.loan_history_approval_publication",
+      "files": [
+        "supabase/migrations/20261026000200_loan_history_approvals.sql"
+      ],
+      "confidence": "EXPLICIT"
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_self_loan_history_approvals",
+      "files": [
+        "supabase/migrations/20261026000200_loan_history_approvals.sql"
+      ],
+      "confidence": "EXPLICIT"
+    },
+    {
+      "type": "trigger",
+      "name": "loan_history_approval_revision",
+      "files": [
+        "supabase/migrations/20261026000200_loan_history_approvals.sql"
+      ],
+      "confidence": "DECLARED"
+    },
+    {
+      "type": "rpc",
+      "name": "loan_history_private.publish_approval_revision",
+      "files": [
+        "supabase/migrations/20261026000200_loan_history_approvals.sql"
+      ],
+      "confidence": "EXPLICIT"
+    },
+    {
+      "type": "table",
+      "name": "loan_history_private.approval_context_backup",
+      "files": [
+        "supabase/migrations/20261026000200_loan_history_approvals.sql"
+      ],
+      "confidence": "EXPLICIT"
+    }
+  ],
+  "relationships": [
+    {
+      "from": "loan-history",
+      "to": "public.get_self_loan_history_approvals",
+      "type": "CALLS"
+    },
+    {
+      "from": "public.program_requests",
+      "to": "loan_history_approval_revision",
+      "type": "TRIGGERS"
+    },
+    {
+      "from": "loan_history_approval_revision",
+      "to": "loan_history_private.publish_approval_revision",
+      "type": "CALLS"
+    },
+    {
+      "from": "loan_history_private.publish_approval_revision",
+      "to": "public.loan_history_approval_publication",
+      "type": "WRITES"
+    },
+    {
+      "from": "LoanHistory",
+      "to": "public.loan_history_approval_publication",
+      "type": "READS"
+    }
+  ],
+  "lookups": [
+    {
+      "query": "historial",
+      "freshness": "FRESH",
+      "primary_files": [
+        "app/screens-historial.jsx",
+        "app/savings-panel-admin.jsx",
+        "app/history-loans-repository.js",
+        "app/history-sync-admin.js",
+        "app/savings-withdrawal-history-repository.js",
+        "scripts/verify-savings-withdrawal-history-live.js",
+        "supabase/migrations/20261026000200_loan_history_approvals.sql",
+        "app/history-loans.jsx",
+        "supabase/migrations/20261026000100_loan_history_snapshot.sql",
+        "app/savings-certification-admin.jsx"
+      ],
+      "mapped_resources": [
+        "public.loan_history_approval_publication"
+      ]
+    },
+    {
+      "query": "public.get_self_loan_history_approvals",
+      "freshness": "FRESH",
+      "primary_files": [
+        "supabase/migrations/20261026000200_loan_history_approvals.sql",
+        "supabase/migrations/20261025000100_self_loan_history.sql",
+        "supabase/migrations/20261026000100_loan_history_snapshot.sql",
+        "supabase/functions/loan-history/history.mjs",
+        "app/history-loans-repository.js",
+        "scripts/test-loan-history.js",
+        "scripts/test-admin-financial-requests-workbench.js",
+        "scripts/test-finance-request-process.js",
+        "scripts/test-finance-requests-flow-protected-contract.js",
+        "scripts/test-financial-request-admin-events.js"
+      ],
+      "mapped_resources": [
+        "loan_history_private.approval_context_backup",
+        "loan_history_private.publish_approval_revision",
+        "public.get_self_loan_history_approvals",
+        "public.loan_history_approval_publication"
+      ]
+    },
+    {
+      "query": "loan_history_approval_revision",
+      "freshness": "FRESH",
+      "primary_files": [
+        "supabase/migrations/20261026000200_loan_history_approvals.sql",
+        "app/history-loans-repository.js",
+        "supabase/migrations/20261025000100_self_loan_history.sql",
+        "supabase/functions/loan-history/index.ts",
+        "scripts/test-loan-history.js",
+        "scripts/test-loan-approval-resolution.js",
+        "scripts/test-admin-financial-requests-workbench.js",
+        "scripts/test-finance-request-process.js",
+        "scripts/test-finance-requests-flow-protected-contract.js",
+        "scripts/test-financial-request-admin-events.js"
+      ],
+      "mapped_resources": [
+        "loan_history_private.approval_context_backup",
+        "loan_history_private.publish_approval_revision",
+        "public.get_self_loan_history_approvals",
+        "loan_history_approval_revision",
+        "public.loan_history_approval_publication"
+      ]
+    }
+  ],
+  "suite": {
+    "command": "python scripts/test-architecture-registry.py",
+    "result": "PASS generation freshness stale lookup screen table column reverse admin permissions tests fallback incremental secrets determinism"
+  },
+  "finalization": "This evidence is written before final generation/check. Any subsequent tracked source or evidence change requires regeneration/check."
+}

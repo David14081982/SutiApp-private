@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "modules": [
+    {
+      "file": "index.ts",
+      "astEquivalent": true,
+      "sourceSha256": "38b241d1f4f18a60705c60b360c98cabe9916e053bc68932cced00e4810ad88e"
+    },
+    {
+      "file": "history.mjs",
+      "astEquivalent": true,
+      "sourceSha256": "c9dabe06554c95972a479a48fc389574d7d09c177f1f04889b4019e506bc78e2"
+    },
+    {
+      "file": "snapshot.mjs",
+      "astEquivalent": true,
+      "sourceSha256": "49e9152015df7e4f0212b878bea4da533ccd9e96df9459e332629463f9887153"
+    }
+  ]
+}

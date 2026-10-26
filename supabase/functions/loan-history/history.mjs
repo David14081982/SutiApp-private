@@ -8,9 +8,25 @@ export function businessDay(now){return new Intl.DateTimeFormat('en-CA',{timeZon
 export function category(status,approvedAt,now){
  const s=norm(status);
  if(['LIQUIDADO','PAGO DE MAS'].includes(s))return 'Liquidadas';
- if(!['AL CORRIENTE','SALDO ATRASADO'].includes(s))return 'Estado por revisar';
  const approved=instant(approvedAt),elapsed=approved?Date.parse(now)-Date.parse(approved):Infinity;
- return elapsed>=0&&elapsed<86400000?'Aprobadas':'En pago';
+ if(elapsed>=0&&elapsed<86400000)return 'Aprobadas';
+ return ['AL CORRIENTE','SALDO ATRASADO'].includes(s)?'En pago':'Estado por revisar';
+}
+// Confirmed native approval is independent of the published Google schedule.
+// Only allowlisted immutable card fields leave this own authenticated context.
+export function projectApprovals(context){
+ if(!context?.actor||!context.affiliate_id||!context.folio||!instant(context.server_now)||!Array.isArray(context.requests))fail('SOURCE_INVALID');
+ const identities=new Set(),ids=new Set(),approvals=[];
+ for(const r of context.requests){
+  if(identities.has(r.folio)||ids.has(r.id))fail('REQUEST_IDENTITY_AMBIGUOUS');
+  identities.add(r.folio);ids.add(r.id);
+  const approved=instant(r.approved_at),display=r.approval_display;
+  if(r.financial!==true||r.status!=='approved'||!approved||Date.parse(approved)>Date.parse(context.server_now)||!/^SR-/.test(r.folio)||!display||typeof display!=='object'||Array.isArray(display))continue;
+  approvals.push({id:r.folio,sourceId:r.id,approved_at:approved,expires_at:new Date(Date.parse(approved)+86400000).toISOString(),
+   fund:typeof display.fund==='string'&&display.fund?display.fund:'Solicitud de financiamiento',principal:money(display.principal),
+   total:money(display.total),term:money(display.term),date:instant(r.created_at)?businessDay(r.created_at):null});
+ }
+ return approvals;
 }
 export function projectHistory(source,context,now){
  if(!instant(now)||!context?.folio||!Array.isArray(context.requests)||!Array.isArray(source?.loans)||!Array.isArray(source?.requests)||source.folio!==context.folio)fail('SOURCE_INVALID');

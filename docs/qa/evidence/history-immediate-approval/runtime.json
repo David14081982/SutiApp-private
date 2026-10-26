@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "exact24h": true,
+  "blankAndUnknownExpiry": true,
+  "settledPrecedence": true,
+  "noAmountsOrQuotasChanged": true,
+  "noOwnerSelectors": true,
+  "lightweightOwnRpc": true,
+  "noScheduleInApprovalPayload": true,
+  "immutableApprovalAllowlist": true,
+  "noGoogleReads": true
+}

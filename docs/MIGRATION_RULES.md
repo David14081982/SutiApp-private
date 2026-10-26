@@ -475,3 +475,8 @@ and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-
 ### H-HISTORY-SNAPSHOT-001
 
 20261026000100_loan_history_snapshot.sql is additive and installs disabled. It creates private observations/staging/run/lease state, metadata-only publication, own/admin/service RPCs and one 22:00 UTC cron schedule after verifying cron UTC/GMT. Configure Vault + worker before enabling; populate and verify the first complete publication before switching the user Edge reader. Recovery disables the schedule and entry points while retaining observations and all business/source records. No cleanup deletes historical business data. Current state: candidate tested locally; production DDL not applied.
+
+
+## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
+
+20261026000200_loan_history_approvals adds own opaque approval revisions, a private exact SQL-definition backup, the approval trigger and own metadata RPC, and extends context display fields. It performs no business-row backfill or financial DML, no cron/global-publication change and no Google operation. Recovery first rolls frontend/Edge back, restores the exact saved context definition with OID/owner/ACL checks, then removes only this metadata infrastructure. Local PostgreSQL must verify grants/RLS, exact controls, targeted events, no-op suppression, cascades and recovery before production installation. Installation status is recorded in the focused audit/evidence.

@@ -65,13 +65,17 @@ async function setup(browser,width){
   window.nativeRows=[{id:'pending',folio:'SR-PENDING',program_id:'prestamo',status:'submitted',financial_processing_status:'pending',created_at:now,requested_amount:3000,requested_term:6,workflow_state:{available:true,stages:[{id:'one',label:'Solicitud enviada',state:'done'},{id:'two',label:'Revisión',state:'current'}]}},
    {id:'quote',folio:'COT-TEST',program_id:'convenio',request_type:'quote',status:'submitted',productoNombre:'Cotización nativa',created_at:now,workflow_state:{available:true,stages:[]}}];
   window.makePayload=()=>({...clone(payload),server_now:new Date().toISOString(),...(identity==='A'&&control==='0007'?{}:{entries:[loan(identity==='B'?'B':'CONTROL','En pago','AL CORRIENTE')],covered_request_ids:[],financial_request_ids:[]})});
+  window.approvalCalls=[];window.approvalMetadataCalls=0;window.refreshSerial=0;
   window.SutiSupabase={getClient:()=>({functions:{invoke:async(name,args)=>{
+   if(name==='loan-history'&&args.body.action==='APPROVALS'){approvalCalls.push({identity,control});return {data:{version:1,server_now:new Date().toISOString(),approval_revision:null,approvals:[]}};}
    if(name!=='loan-history'||JSON.stringify(args.body)!==JSON.stringify({action:'LOAD'}))throw Error('UNEXPECTED_HISTORY_REQUEST');
    const response=failHistory?{error:Object.assign(Error('SYNTHETIC_SOURCE_FAILURE'),{context:{status:failureStatus}})}:{data:makePayload()};historyCalls.push({action:args.body.action,identity,control});
    if(delayHistory)return new Promise(resolve=>delayed.push({resolve,response}));return response;
-  }},channel:()=>{const item={closed:false,on:(type,filter,fn)=>{item.filter=filter;item.notify=fn;return item;},subscribe:()=>item};channels.push(item);return item;},removeChannel:async item=>{item.closed=true;},from:table=>{if(table!=='loan_history_publication')throw Error('BAD_META_TABLE');return {select:fields=>{if(fields!=='version,source_updated_at')throw Error('BAD_META_FIELDS');return {eq:(column,id)=>{if(column!=='id'||id!==true)throw Error('BAD_META_ID');return {maybeSingle:async()=>{metadataCalls++;return {data:{version:publication,source_updated_at:payload.source_updated_at}};}};}};}};}})};
+  }},channel:()=>{const item={closed:false,handlers:[],on:(type,filter,fn)=>{item.handlers.push({filter,fn});return item;},subscribe:fn=>{item.notifyStatus=fn;return item;}};channels.push(item);return item;},removeChannel:async item=>{item.closed=true;},from:table=>{
+   if(table==='loan_history_approval_publication')return {select:fields=>{if(fields!=='version')throw Error('BAD_APPROVAL_FIELDS');return {eq:(column,id)=>{if(column!=='affiliate_id'||id!==identity)throw Error('BAD_APPROVAL_OWNER');return {maybeSingle:async()=>{approvalMetadataCalls++;return {data:null};}};}};}};
+   if(table!=='loan_history_publication')throw Error('BAD_META_TABLE');return {select:fields=>{if(fields!=='version,source_updated_at')throw Error('BAD_META_FIELDS');return {eq:(column,id)=>{if(column!=='id'||id!==true)throw Error('BAD_META_ID');return {maybeSingle:async()=>{metadataCalls++;return {data:{version:publication,source_updated_at:payload.source_updated_at}};}};}};}};}})};
   window.ProgramRequestRepository={listHistory:async()=>{nativeCalls.push({identity,control});return clone(identity==='A'&&control==='0007'?nativeRows:[]);}};
-  window.publishVersion=version=>{publication=version;payload.sync_version=version;channels.filter(x=>!x.closed).forEach(x=>x.notify({new:{version}}));};window.resolveHistory=()=>delayed.splice(0).forEach(item=>item.resolve(item.response));
+  window.publishVersion=version=>{publication=version;payload.sync_version=version;channels.filter(x=>!x.closed).forEach(x=>x.handlers.filter(h=>h.filter.table==='loan_history_publication').forEach(h=>h.fn({new:{version}})));};window.resolveHistory=()=>delayed.splice(0).forEach(item=>item.resolve(item.response));
   window.authChanged=()=>authListeners.slice().forEach(fn=>fn());
  },width);
  for(const name of ['admin-repository.js','private-resource-demand.js','operations-store.jsx','history-loans-repository.js','history-statement.js','history-loans.jsx','screens-historial.jsx'])await page.addScriptTag({content:read('app/'+name)});
@@ -174,25 +178,25 @@ async function main(){
   await page.evaluate(()=>{delayHistory=false;resolveHistory();});await flush(page);assert.equal(await detail.locator('[data-monetary-progress]').innerText(),'50%');assert.equal(await scroll.evaluate(el=>el.scrollTop),scrollBefore);
   const afterSignal=await count(page);await page.evaluate(()=>publishVersion('v2'));await flush(page);assert.deepEqual(await count(page),afterSignal,'duplicate signal performs no fetch');
   // Transient failure is visible beside retained, timestamped publication.
-  await page.evaluate(()=>{failHistory=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+  await page.evaluate(()=>{failHistory=true;publishVersion('refresh-'+(++refreshSerial));});await flush(page);
   assert.equal(await detail.locator('[data-history-source=error]').count(),1);assert.equal(await detail.locator('[data-installment]').count(),12);
   assert((await detail.locator('[data-history-source]').innerText()).includes('última publicación completa'));
   await page.evaluate(()=>{failHistory=false;});await detail.getByRole('button',{name:'Reintentar',exact:true}).click();await flush(page);
   // Backend synchronization failure preserves source timestamp and explicit state.
-  await page.evaluate(()=>{payload.sync_state.status='FAILED';window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+  await page.evaluate(()=>{payload.sync_state.status='FAILED';publishVersion('refresh-'+(++refreshSerial));});await flush(page);
   assert((await detail.locator('[data-history-source]').innerText()).includes('última actualización no se completó'));assert.equal(await detail.locator('[data-installment]').count(),12);
   await page.evaluate(()=>{payload.sync_state.status='READY';});await detail.getByRole('button',{name:'Reintentar',exact:true}).click();await flush(page);
   // Request mutation burst rejects an older response without clearing content.
-  const beforeBurst=await count(page);await page.evaluate(()=>{delayHistory=true;payload.entries[0].fund='Obsoleto';window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
-  await page.evaluate(()=>{payload.entries[0].fund='Actualizado';for(let i=0;i<3;i++)window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);assert.equal((await count(page)).history,beforeBurst.history+1);
+  const beforeBurst=await count(page);await page.evaluate(()=>{delayHistory=true;payload.entries[0].fund='Obsoleto';publishVersion('refresh-'+(++refreshSerial));});await flush(page);
+  await page.evaluate(()=>{payload.entries[0].fund='Actualizado';for(let i=0;i<3;i++)publishVersion('refresh-'+(++refreshSerial));});await flush(page);assert.equal((await count(page)).history,beforeBurst.history+1);
   await page.evaluate(()=>resolveHistory());await flush(page);assert.equal((await count(page)).history,beforeBurst.history+2);assert.equal(await detail.getByText('Obsoleto',{exact:true}).count(),0);assert.equal(await detail.locator('[data-installment]').count(),12);
   await page.evaluate(()=>{delayHistory=false;resolveHistory();});await flush(page);assert.equal(await detail.getByText('Actualizado',{exact:true}).count(),1);
   // Auth denial is different: immediately remove every authorized financial row.
-  await page.evaluate(()=>{failureStatus=403;failHistory=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+  await page.evaluate(()=>{failureStatus=403;failHistory=true;publishVersion('refresh-'+(++refreshSerial));});await flush(page);
   assert.equal(await detail.locator('[data-installment]').count(),0);assert.equal(await base.locator('.su-history-entry').count(),0,'active Aprobadas filter contains no native quote');assert.equal((await count(page)).active,0);
   await page.evaluate(()=>{failureStatus=0;failHistory=false;});await detail.getByRole('button',{name:'Reintentar',exact:true}).click();await flush(page);assert.equal(await detail.locator('[data-installment]').count(),12);
   // Switching exact control A-B-A while transports are pending never accepts old A.
-  const beforeCycle=await count(page);await page.evaluate(()=>{delayHistory=true;payload.entries[0].fund='Old A';window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+  const beforeCycle=await count(page);await page.evaluate(()=>{delayHistory=true;payload.entries[0].fund='Old A';publishVersion('refresh-'+(++refreshSerial));});await flush(page);
   await page.evaluate(()=>{control='0008';authChanged();});await flush(page);assert.equal(await detail.locator('[data-installment]').count(),0);
   await page.evaluate(()=>{payload.entries[0].fund='New A';control='0007';authChanged();});await flush(page);assert.equal((await count(page)).history,beforeCycle.history+3);
   await page.evaluate(()=>{const old=delayed.shift();old.resolve(old.response);});await flush(page);assert.equal(await detail.getByText('Old A',{exact:true}).count(),0);assert.equal(await detail.locator('[data-installment]').count(),0);
@@ -226,4 +230,5 @@ async function main(){
  }}finally{await browser.close();}
  const result={status:'PASS',checks,sourceHashes:Object.fromEntries(['app/history-loans-repository.js','app/history-loans.jsx','app/history-statement.js','scripts/test-history-snapshot-browser.js'].map(file=>[file,crypto.createHash('sha256').update(read(file)).digest('hex')]))};fs.writeFileSync(path.join(evidence,'browser.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
 }
-main().catch(error=>{console.error(error);process.exitCode=1;});
+if(require.main===module)main().catch(error=>{console.error(error);process.exitCode=1;});
+module.exports={setup,flush,count};

@@ -496,3 +496,8 @@ and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-
 ### H-HISTORY-SNAPSHOT-001
 
 Complete both-sheet observations are validated, grouped by exact raw TEXT Folio, hashed, staged privately and published atomically. Unchanged bodies are not rewritten. Lease fencing and coalescing prevent concurrent publication. Raw empty/zero/whitespace owners are retained privately and counted as unaddressable owners, never assigned by name/email or trimmed into another account. Malformed transfer receipts fail only the affected owner's read. Accounts without Auth remain in the complete private observation. A same-identity refresh retains visible content/scroll; actual context change, logout or access denial purges it. No browser persistent financial storage, per-user Google read, five-minute polling or silent fallback exists. Monetary progress uses V/K; missing values are explicit.
+
+
+## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
+
+A confirmed approval may appear for its original financial_approved_at plus 24 hours, including blank or unknown X; settled source states retain liquidation precedence. Expiry uses real X: AL CORRIENTE/SALDO ATRASADO become En pago; absent/unknown X stays Estado por revisar. Never infer a financial state from the clock. Approval events publish only an opaque own-affiliate version; no global publication or schedule refresh is allowed. An open amortization retains source values and scroll during approval updates. Identity changes purge both channels. SR-to-loan continuity requires the existing verified sourceId link. A recent genuine approval may have a preparing card without published quotas; older missing records cannot return from a later complete source observation.

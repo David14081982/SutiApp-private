@@ -989,3 +989,8 @@ The authorized candidate uses one authenticated LOAD for own cards and schedules
 ### H-HISTORY-SNAPSHOT-001
 
 Google HISTORIAL P V2 and Historial de solicitudes remain authoritative for loan/request financial values. By the owner's explicit 2026-10-26 request, Supabase may hold a private, complete, versioned derived observation for own Historial and amortization. This scoped decision supersedes the earlier prohibition on persistent history copies, not Google financial authority. Identity and original financial_approved_at remain Supabase authorities. The only copy writer is the service worker; the own read RPC accepts no affiliate/Folio selector. User requests do not read Google. Last successful observation/time remains visible if synchronization fails. Source absence in a complete observation invalidates that derived group; it cannot return from a browser store or an older observation.
+
+
+## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
+
+The owner authorizes immediate own approval presentation from the existing confirmed Supabase Finance decision and its immutable financial_approval_snapshot display fields. This narrowly supersedes the requirement that an approval card wait for the next Google-derived observation. It does not authorize another source for installments, balances, paid amounts or the real loan status: those remain exclusively the published Google observation. The approval channel transfers no schedule and does not read Google or initiate synchronization. Absent/malformed data remains explicit; no browser persistence or error fallback is introduced.

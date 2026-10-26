@@ -69,3 +69,72 @@ Owner decision: NO.
 Next action: final package/registry checks and authorized publication verification; no unrelated automatic continuation.
 
 Response generated for Codex: YES.
+
+## Final published review — 2026-10-25
+
+This dated review supersedes the publication-pending boundary above. It preserves the earlier local review and its independence disclosure. No application code changed during this final verification; the reviewer made no network calls, account changes or business writes.
+
+# ARCHITECT REVIEW
+
+Task reviewed: H-HISTORY-READ-EFFICIENCY-001, published PR #2.
+
+Verdict: APPROVED.
+
+What Codex did correctly:
+
+- Obtained the owner's explicit publication instruction after the earlier automatic approval rejection, then merged the exact reviewed head `35af6267e5d60d48c286be5e087559eaa1b99660` as `7852980652de852ceae43eb3bf143799e9f46925`. An independent local Git comparison confirmed that the merge tree equals the reviewed head tree.
+- Published version `2026102507`. The bundle extracted directly from that merge commit, build evidence, publication evidence, focal production checks and global production checks all agree on SHA-256 `b96656248e0130d77f365c9f628bbf5a9d94d6884ae753fefb902a66ea9bde9b`.
+- Recorded successful Pages run `40276927559` and Membership contract run `40276927536`, both for that exact merge. The deployment receipt includes successful Auth/request compatibility, artifact build/deploy and production request-contract steps.
+- Completed the focal production Historial checks in both service-worker modes: SUMMARY without schedules, six filters, zero additional history calls from changing filters and zero page errors. The controlled own account has zero entries, explicitly distinguished from populated isolated tests.
+- Completed the mandatory global regression against GitHub Pages production with legitimate assets and deployed editorial authority. Login seal, profile/credential, Admin photos and thumbnails, Membership/loan documents, catalog/gallery, Marketplace, fullscreen and refresh passed. Fresh-profile/no-service-worker comparison passed. A legitimate existing PDF separately passed HTTP 200, PDF MIME and open verification; the empty initial self-PDF slot is not counted as PDF coverage.
+
+Important findings:
+
+- The reviewer read publication.json, production-live.json, global-production.json, verification.json and the final audit. Parsed the original UTF-16LE global-production log and confirmed deep equality with its normalized JSON artifact; this is a verification of the recorded result, not a new execution.
+- All required global asset families and surfaces report PASS, with zero browser errors, zero production data mutations and zero raw private URLs logged. The public bundle identity remains exact.
+- The prior local, backend, receiver, privacy, context/mutation-race and overlapping-route evidence remains applicable because the published application code is unchanged. No new production loan, impersonation session, Sheet edit or financial test operation was created for final acceptance.
+- Final audit and verification.json now report PASS while preserving the earlier publication gate as history. The initial approval rejection is resolved by the later explicit owner instruction and successful reviewed publication.
+
+Problems detected: no remaining blocking defect or missing product verification gate within this H. Final evidence/index packaging is the remaining administrative closeout action, not a change to the published application.
+
+Architecture implications: the already reviewed existing read path and three frontend chunks are published; no new replica, background synchronization, business writer, database migration or persistent financial cache. Final evidence changes require the planned sequential derived Registry refresh/check, not another application build or repeated production tests.
+
+Source-of-truth implications: SAFE. Google remains authoritative for the existing financial history fields, while Supabase retains identity, native workflow and the persisted approval timestamp. No new authority or failure fallback.
+
+Security implications: PASS within the evidence boundary. Existing server ownership/context checks and live anonymous/forged-target checks remain intact; final production verification used only the controlled own account and authorized asset access. Populated cross-user production sessions were not exercised or claimed.
+
+Data implications: zero Sheet/business mutations in the change and publication evidence. All financial writers, historical rows, formulas, triggers and approved display semantics remain outside the modification scope.
+
+Known limitations: the live history account is empty; populated loans/amortization are covered by isolated fixtures. A single earlier empty-account read measured 16.6 seconds. No claim is made of instantaneous first load, populated-account latency, 1,000-user concurrency capacity or measured billed Supabase savings. Synthetic JSON and receiver cell-read reductions retain their documented units and scope.
+
+Owner decision required: NO.
+
+Recommended next action: finish the final evidence-only package, refresh/check the derived Registry sequentially, preserve the exact application tree and close this H with its measured limitations. Do not advance automatically to unrelated work.
+
+# RESPONSE TO CODEX
+
+Se aprueba el cierre productivo de H-HISTORY-READ-EFFICIENCY-001. Conserva este historial de revisión, incorpora sólo la evidencia final al clon aislado y termina el refresh/check secuencial del Registry y la comprobación del diff documental. Publica únicamente ese cierre documental ya autorizado, sin cambiar ni volver a desplegar el código aprobado. Informa que Historial conserva sus flujos y Google Sheets intactos, distingue las pruebas pobladas aisladas de la cuenta real vacía y no promete carga inmediata ni ahorro facturado sin medición. No se requiere otra decisión del propietario ni nuevas pruebas financieras. Esta respuesta no autoriza otra H.
+
+SUTIAPP ARCHITECT REVIEW
+
+Task: H-HISTORY-READ-EFFICIENCY-001.
+
+Verdict: APPROVED.
+
+Critical findings: none remaining within the authorized task; publication and required production regression are now evidenced.
+
+Source of truth: SAFE; existing authorities preserved.
+
+Architecture: PASS; bounded read changes, no new authority or synchronization.
+
+Security: PASS within disclosed isolated/live coverage.
+
+Data: PASS; zero business/Sheet writes.
+
+Legacy: PASS; read adapter only, protected writers and historical data unchanged.
+
+Owner decision: NO.
+
+Next action: final evidence/Registry closeout and user-facing completion with limitations; no unrelated automatic continuation.
+
+Response generated for Codex: YES.

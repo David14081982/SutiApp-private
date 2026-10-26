@@ -54,7 +54,7 @@ Scope update before edit: docs/SECURITY_RULES.md requires a dated additive contr
 - Registry regeneration/test initially raced concurrent evidence creation. Re-run after evidence stabilizes; do not call stale index FRESH.
 - Frontend publication and final published regression pending at this checkpoint.
 
-## Publication gate and current result
+## Initial publication gate and result (historical)
 
 The application commit is `21046e4` on remote review branch `codex/history-read-efficiency`. Automatic approval review rejected direct push to `main`: implementation authorization did not explicitly confirm publishing to that shared branch. No bypass or merge was attempted. A separate review branch is the approved safer alternative; the currently published frontend remains unchanged. Google reader 21 and loan-history Edge 2 are already installed and backwards-compatible with its LOAD requests.
 
@@ -73,4 +73,35 @@ Legacy impact: read adapter only; Sheet cells/formulas/quotas/statuses/triggers/
 Unexpected files changed: none introduced outside declared scope; pre-existing unrelated work preserved
 Known limitations: first source load still measured 16.6 seconds in one empty-account observation; no billing savings or concurrent-user capacity claim; updated frontend/publication checks pending
 Evidence: docs/qa/evidence/history-read-efficiency/ and isolated commit 21046e4
+```
+
+## Explicit publication authorization — 2026-10-25
+
+After the explanation of merging PR #2 and publishing its reviewed changes, the owner explicitly replied "si hazlo". This authorizes merging PR #2 into main and the resulting Pages deployment. The earlier publication gate is resolved; Google Sheets contents and financial workflows remain outside the mutation scope. Merge is guarded by the reviewed head 35af6267e5d60d48c286be5e087559eaa1b99660. Published-bundle verification and global Pages regression remain required before final PASS.
+
+## Final published verification — 2026-10-25
+
+The owner-authorized PR #2 was merged as `7852980652de852ceae43eb3bf143799e9f46925`, preserving the exact reviewed tree of `35af626`. Pages run [40276927559](https://github.com/David14081982/SutiApp-private/actions/runs/40276927559) and the Membership contract run both completed successfully. All deployment steps, including Auth/request compatibility and the production request contract, passed.
+
+The published frontend version is `2026102507`; the actual public bundle SHA-256 is `b96656248e0130d77f365c9f628bbf5a9d94d6884ae753fefb902a66ea9bde9b`, identical to the verified candidate. The earlier BLOCKED result above is historical and is superseded by this published result.
+
+- `node scripts/verify-history-efficiency-live.js https://sutiapp.com/`: PASS, both service-worker modes, all six filters, SUMMARY without schedules, zero extra history calls from changing filters, zero page errors. Controlled own account: zero history entries; no populated-production detail claim.
+- `scripts/test-global-image-regression-production-live.js` against GitHub Pages with the exact expected bundle hash: PASS. Legitimate assets, login seal, profile, Admin photos/document thumbnails, Membership/loan documents, catalog/gallery, Marketplace, fullscreen, refresh, with/without service worker and a legitimate PDF passed. Deployed editorial authority; no data substitution. Zero production business mutations.
+- No application code changed during this publication turn. Final additions are authorization/publication/test evidence and derived index freshness only. Existing unrelated root work remains excluded from the isolated release.
+- Financial source, raw Folio ownership checks, approval rules, Sheet contents/formulas/triggers and existing workflows remain unchanged. Previous backend deployment remains Google reader 21 and Edge 2; no redeployment or database migration was needed.
+- Limits: the one measured empty-account read of 16.6 seconds remains a single observation; this work does not guarantee immediate first load, populated-account latency, 1,000-user capacity or billed Supabase savings. Populated loans and detail behavior are covered by isolated tests.
+
+```text
+H-HISTORY-READ-EFFICIENCY-001 RESULT
+Status: PASS
+Files changed: reviewed PR #2 implementation; final audit/publication/evidence and derived architecture index
+Source-of-truth verdict: PASS — existing Google/Supabase authorities retained
+Invariant verdict: PASS — exact own Folio, filters, workflows and financial display rules preserved
+Build: PASS — reviewed bundle identity verified in published production
+Tests: PASS — focal and compatibility, local/global/browser, Pages/global production and workflow contracts
+Security: PASS — existing own/anonymous/forged-target/context-race checks; no new permissions or business writes
+Legacy impact: read adapter only; no Google Sheets contents/formulas/triggers/writer changes
+Unexpected files changed: none in isolated release; unrelated root changes excluded
+Known limitations: controlled live history account empty; populated cases isolated; first load not instant; no billed-egress or concurrency benchmark
+Evidence: publication.json, production-live.json, global-production.json, verification.json and prior evidence in docs/qa/evidence/history-read-efficiency/
 ```

@@ -1,0 +1,109 @@
+{
+  "status": "PASS",
+  "ownerAuthorization": "Explicit si hazlo after explanation of merging PR #2 and publishing",
+  "prUrl": "https://github.com/David14081982/SutiApp-private/pull/2",
+  "reviewedHead": "35af6267e5d60d48c286be5e087559eaa1b99660",
+  "mergeCommit": "7852980652de852ceae43eb3bf143799e9f46925",
+  "frontendVersion": "2026102507",
+  "bundleSha256": "b96656248e0130d77f365c9f628bbf5a9d94d6884ae753fefb902a66ea9bde9b",
+  "runs": [
+    {
+      "id": 40276927536,
+      "name": "Membership Google contract",
+      "head_sha": "7852980652de852ceae43eb3bf143799e9f46925",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/David14081982/SutiApp-private/actions/runs/40276927536",
+      "updated_at": "2026-10-26T05:56:20Z"
+    },
+    {
+      "id": 40276927559,
+      "name": "Deploy SutiApp to GitHub Pages",
+      "head_sha": "7852980652de852ceae43eb3bf143799e9f46925",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/David14081982/SutiApp-private/actions/runs/40276927559",
+      "updated_at": "2026-10-26T05:56:27Z"
+    }
+  ],
+  "deployJobs": [
+    {
+      "id": 121421532046,
+      "name": "deploy",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 40276927559,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Verify Auth backend compatibility",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Verify critical request backend compatibility",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Build public artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Configure Pages",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Upload Pages artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Deploy Pages",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Verify critical request production deployment",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        }
+      ]
+    }
+  ],
+  "businessWrites": 0,
+  "sheetWrites": 0
+}

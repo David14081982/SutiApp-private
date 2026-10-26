@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "applied": true,
+  "checks": [
+    "additive migration installs",
+    "authenticated Admin edit -> canonical user reader with same UUID",
+    "availability stored using existing enabled flag",
+    "stale version denied",
+    "invalid year denied",
+    "unknown metadata field denied",
+    "other program payload denied",
+    "other program ID denied",
+    "direct browser DML denied",
+    "non-admin denied",
+    "anonymous denied",
+    "all preexisting writer and rental-flow definitions unchanged",
+    "recovery removes new writer and preserves metadata/history"
+  ],
+  "protectedTables": {
+    "public.program_requests": {
+      "rows": 459,
+      "unchanged": true
+    },
+    "public.program_catalog_item_assets": {
+      "rows": 269,
+      "unchanged": true
+    },
+    "public.affiliate_documents": {
+      "rows": 5103,
+      "unchanged": true
+    }
+  },
+  "otherCatalogRowsUnchanged": true,
+  "rentalExistingValuesUnchanged": true,
+  "promotedFields": [
+    "year",
+    "seats"
+  ],
+  "missingValuesNotInvented": [
+    "engine",
+    "vehicle_type",
+    "tank"
+  ],
+  "syntheticValuesPersisted": 0,
+  "migrationSha256": "4b876ff06ab8e1de0e3945686cfc0f76fb46b0889860e43b509c033e240d212e"
+}

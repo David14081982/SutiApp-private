@@ -19305,7 +19305,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const admin=Boolean(options&&options.admin);
     if(admin&&(!window.AdminRepository||!window.AdminRepository.has('program_catalog.read')))throw new Error('PROGRAM_CATALOG_READ_REQUIRED');
     const api=db(),settings=options||{};
-    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at'+(admin?',financing_config':'')).order('program_key',{ascending:true}).order('sort_order',{ascending:true});
+    let itemQuery=api.from('program_catalog_items').select('id,program_key,name,description,rental_specs,category_raw,quantity_raw,presentation_raw,contact_url_raw,price_cash,requires_quote,commercial_mode,sold,sold_at,request_mode,legacy_boundary,enabled,sort_order,record_origin,source_sheet,source_row_ordinal,source_snapshot_hash,created_at,updated_at'+(admin?',financing_config':'')).order('program_key',{ascending:true}).order('sort_order',{ascending:true});
     if(!admin)itemQuery=itemQuery.eq('enabled',true);
     if(settings.programKey)itemQuery=itemQuery.eq('program_key',settings.programKey);
     if(settings.itemId)itemQuery=itemQuery.eq('id',settings.itemId);
@@ -19392,6 +19392,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const payload={program_key:item.program_key||item.scopeId,name:String(item.nombre||item.name||'').trim(),description:String(item.desc||item.description||'').trim()||null,category_raw:String(item.category_raw||'').trim()||null,price_cash:item.precio==null?null:Number(item.precio),requires_quote:mode==='PAYROLL_QUOTE',commercial_mode:mode,sold:item.sold===true,enabled:item.activo!==false,sort_order:Number(item.orden||item.sort_order)};
     const links=(assets||[]).map((asset)=>asset.link_id?{link_id:asset.link_id}:{public_asset_id:asset.public_asset_id});
     if(payload.program_key==='farma')return window.FarmaRepository.save({item_id:item.id||null,product:payload,assets:links,quantity:item.farmaQuantity,unit:item.farmaUnit,presentation:item.presentation_raw||'',version:item.farmaInventory&&item.farmaInventory.version});
+    if(payload.program_key==='renta'){const out=await db().rpc('save_renta_car_catalog_item',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links,p_specs:item.rental_specs||{},p_expected_updated_at:item.updated_at||null});if(out.error)throw out.error;return Object.freeze(out.data||{});}
     const bootstrap=item.id==null&&item.bootstrapProgram==='cirugias';
     const out=Object.prototype.hasOwnProperty.call(item,'financingDraft')
       ?await db().rpc('save_program_catalog_item_financing',{p_item_id:item.id||null,p_payload:payload,p_asset_links:links,p_config:item.financingDraft,p_expected_config:item.financing_config||null,p_bootstrap:bootstrap})
@@ -28390,6 +28391,15 @@ Object.assign(window, {
     React.useEffect(() => {
       if (quoteReady && !quote.visto) qs.markVisto(quote.id);
     }, [quoteReady, quote && quote.id]);
+    if (params.id === 'renta') return React.createElement(window.RentaCarCatalog, {
+      app,
+      it,
+      hue,
+      cs,
+      metadata,
+      favorite: fav,
+      onFavorite: () => setFav(!fav)
+    });
     if (managed && metadata.phase !== 'loaded') return React.createElement('div', {
       'data-program-info-state': metadata.phase,
       style: {
@@ -81477,6 +81487,337 @@ Object.assign(window, {
   window.rentaCarError = message;
 })();
 })();
+/* @@file renta-car-catalog.jsx */
+(function(){
+/* Rental presentation only. Existing catalog, media, routing and rental flow remain authoritative. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useRef,
+      useEffect
+    } = React;
+  const labels = [['engine', 'Motor'], ['vehicle_type', 'Tipo'], ['seats', 'Asientos'], ['tank', 'Tanque']];
+  const price = item => item.precio != null && !item.cotiza ? window.money(item.precio) + '/día' : 'Precio por confirmar';
+  const css = `
+ [data-rental-catalog],[data-rental-sheet],[data-rental-admin]{font-size:16px}
+ [data-rental-catalog] *,[data-rental-sheet] *,[data-rental-admin] *{box-sizing:border-box}
+ :is([data-rental-catalog],[data-rental-sheet],[data-rental-admin]){--text-9:14px;--text-9-5:14px;--text-10:14px;--text-10-5:14px;--text-11:14px;--text-11-5:14px;--text-12:14px;--text-12-5:14px;--text-13:14px;--text-13-5:14px}
+ :is([data-rental-catalog],[data-rental-sheet],[data-rental-admin]) :is([style*="font-size: 9px"],[style*="font-size: 9.5px"],[style*="font-size: 10px"],[style*="font-size: 10.5px"],[style*="font-size: 11px"],[style*="font-size: 11.5px"],[style*="font-size: 12px"],[style*="font-size: 12.5px"],[style*="font-size: 13px"],[style*="font-size: 13.5px"]){font-size:14px!important}
+ [data-rental-catalog] button,[data-rental-sheet] button{font-family:inherit}
+ .rc-catalog{position:absolute;inset:0;background:var(--bg);overflow-y:auto;padding:18px 16px 40px}
+ .rc-catalog header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+ .rc-catalog h1{font-size:26px;line-height:1.2;margin:0;font-weight:850}
+ .rc-catalog header p{font-size:14px;color:var(--ink-2);margin:5px 0 0}
+ .rc-icon{width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:14px;background:var(--surface);color:var(--ink);flex-shrink:0;cursor:pointer}
+ .rc-card{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--hairline);border-radius:24px;overflow:hidden;padding:0;margin:0 0 20px;color:var(--ink);box-shadow:var(--neo-sm);cursor:pointer}
+ .rc-card:focus-visible,.rc-icon:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}
+ .rc-card-head{display:flex;justify-content:space-between;gap:12px;padding:20px 18px 14px;align-items:flex-start}
+ .rc-card-name{font-size:21px;font-weight:850;line-height:1.25;overflow-wrap:anywhere}
+ .rc-year{display:block;font-size:16px;color:var(--ink-2);margin-top:5px}
+ .rc-price{font-size:18px;font-weight:850;color:var(--guinda);white-space:nowrap}
+ .rc-photo{position:relative;width:100%;aspect-ratio:16/10;background:var(--surface-2)}
+ .rc-photo img{display:block;width:100%;height:100%;object-fit:contain}
+ .rc-photo-empty{height:100%;display:grid;place-items:center;color:var(--ink-2);padding:24px}
+ .rc-specs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 12px;margin:0;padding:20px 18px}
+ .rc-specs div{min-width:0}.rc-specs dt{font-size:14px;line-height:1.4;color:var(--ink-2);margin-bottom:5px}
+ .rc-specs dd{font-size:16px;font-weight:750;line-height:1.4;margin:0;overflow-wrap:anywhere}
+ .rc-specs .rc-spec-price{grid-column:span 2}.rc-spec-price dd{color:var(--guinda)}
+ .rc-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--hairline);padding:14px 18px;color:var(--guinda);font-size:14px;font-weight:800}
+ .rc-info{margin-top:24px;padding-top:38px}.rc-info [data-category-header-icon]{margin-top:0!important}
+ .rc-overlay{position:absolute;inset:0;display:flex;align-items:flex-end;background:rgba(20,16,25,.4);z-index:1}
+ .rc-sheet{position:relative;display:flex;flex-direction:column;background:var(--bg);width:100%;height:76%;border-radius:26px 26px 0 0;overflow:hidden;box-shadow:0 -10px 35px rgba(20,16,25,.18);animation:rc-rise .28s ease-out;transition:height .25s ease,transform .2s ease}
+ .rc-sheet[data-expanded=true]{height:98%}.rc-sheet-head{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--hairline);flex-shrink:0;touch-action:none;user-select:none}
+ .rc-grip{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;gap:10px;border:0;background:transparent;color:var(--ink-2);font-size:14px;font-weight:700;cursor:ns-resize}
+ .rc-grip:before{content:'';width:38px;height:5px;background:var(--ink-3);opacity:.5;border-radius:9px}
+ .rc-sheet-body{position:relative;flex:1;min-height:0}.rc-sheet-body>div{height:100%}
+ [data-rental-sheet] [data-renta-calendar] button{font-size:14px;min-width:0}
+ [data-rental-sheet] [data-renta-calendar] small{font-size:14px!important}
+ [data-rental-sheet] [data-renta-calendar] button small{font-size:14px!important;overflow:hidden;text-indent:-9999px;height:3px;background:currentColor;margin:2px 5px 0}
+ [data-rental-sheet] [data-renta-calendar] [aria-label="Mes anterior"],[data-rental-sheet] [data-renta-calendar] [aria-label="Mes siguiente"]{width:44px;height:44px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);color:var(--ink);font-size:24px}
+ [data-rental-admin] label{font-size:14px!important}.rc-admin-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}.rc-admin-fields label{display:flex;flex-direction:column;gap:7px;font-weight:750;min-width:0}
+ .rc-admin-fields input{width:100%;min-height:44px;padding:11px 13px;border:1px solid var(--hairline);border-radius:12px;font:inherit;background:var(--surface);color:var(--ink)}
+ @keyframes rc-rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+ @media(prefers-reduced-motion:reduce){.rc-sheet{animation:none;transition:none}}
+ `;
+  function Specs({
+    item,
+    includePrice = true
+  }) {
+    const specs = item.rental_specs || {};
+    return h('dl', {
+      className: 'rc-specs',
+      'data-rental-specs': true
+    }, labels.map(([key, label]) => h('div', {
+      key
+    }, h('dt', null, label), h('dd', {
+      'data-rental-spec': key
+    }, specs[key] || 'No registrado'))), includePrice && h('div', {
+      className: 'rc-spec-price'
+    }, h('dt', null, 'Precio por día'), h('dd', null, price(item))));
+  }
+  function VehicleCard({
+    item,
+    onOpen
+  }) {
+    const asset = window.ProgramCatalogRepository.imageAssets(item)[0];
+    return h('button', {
+      type: 'button',
+      className: 'rc-card',
+      'data-rental-card': item.id,
+      onClick: () => onOpen(item),
+      'aria-label': 'Ver ' + item.nombre
+    }, h('div', {
+      className: 'rc-card-head'
+    }, h('div', null, h('div', {
+      className: 'rc-card-name'
+    }, item.nombre), h('span', {
+      className: 'rc-year'
+    }, item.rental_specs?.year ? 'Año ' + item.rental_specs.year : 'Año no registrado')), h('div', {
+      className: 'rc-price'
+    }, price(item))), h('div', {
+      className: 'rc-photo'
+    }, asset ? h(window.ProgramCatalogImage, {
+      asset,
+      alt: item.nombre
+    }) : h('div', {
+      className: 'rc-photo-empty'
+    }, 'Imagen no registrada')), h(Specs, {
+      item
+    }), h('div', {
+      className: 'rc-card-foot'
+    }, h('span', null, item.sold ? 'No disponible' : 'Ver vehículo y disponibilidad'), h(window.Icon, {
+      name: 'arrowR',
+      size: 20
+    })));
+  }
+  function Catalog({
+    app,
+    it,
+    hue,
+    cs,
+    metadata,
+    favorite,
+    onFavorite
+  }) {
+    const state = cs ? cs.state() : {
+        phase: 'loading'
+      },
+      items = cs ? cs.live('fin', 'renta') : [],
+      available = items.filter(x => !x.sold),
+      unavailable = items.filter(x => x.sold);
+    useEffect(() => {
+      const refresh = () => cs && cs.retry();
+      window.addEventListener('focus', refresh);
+      return () => window.removeEventListener('focus', refresh);
+    }, [cs]);
+    const open = item => app.push('catitem', {
+      item,
+      ctx: {
+        id: it.id,
+        label: it.label,
+        icon: it.icon,
+        hue
+      }
+    });
+    return h('div', {
+      'data-rental-catalog': true,
+      className: 'rc-catalog su-app-scroll'
+    }, h('style', null, css), h('header', null, h('button', {
+      className: 'rc-icon',
+      onClick: app.back,
+      'aria-label': 'Atrás'
+    }, h(window.Icon, {
+      name: 'arrowL',
+      size: 23
+    })), h('div', null, h('h1', null, it.label || 'Renta Car'), h('p', null, 'Elige tu vehículo y consulta las fechas'))), state.phase === 'loading' || state.phase === 'idle' ? h('p', {
+      role: 'status'
+    }, 'Cargando vehículos…') : state.phase === 'error' ? h('div', {
+      role: 'alert'
+    }, h('p', null, 'No pudimos consultar los vehículos.'), h(window.Btn, {
+      onClick: () => cs.retry()
+    }, 'Reintentar')) : h(React.Fragment, null, h('h2', {
+      style: {
+        fontSize: 18,
+        margin: '0 0 14px'
+      }
+    }, 'Vehículos disponibles'), available.length ? available.map(item => h(VehicleCard, {
+      key: item.id,
+      item,
+      onOpen: open
+    })) : h('p', null, 'No hay vehículos disponibles por el momento.'), unavailable.length > 0 && h('section', null, h('h2', {
+      style: {
+        fontSize: 18
+      }
+    }, 'No disponibles'), unavailable.map(item => h(VehicleCard, {
+      key: item.id,
+      item,
+      onOpen: open
+    })))), h('section', {
+      className: 'rc-info',
+      'aria-label': 'Información y contacto de Renta Car'
+    }, metadata.row ? h(window.ProgramGeneralInfo.PublicHeader, {
+      row: metadata.row,
+      favorite,
+      onFavorite,
+      notify: app.toast
+    }) : h(window.ProgramGeneralInfo.InfoState, {
+      state: metadata
+    })));
+  }
+  function DetailSheet({
+    app,
+    children
+  }) {
+    const [expanded, setExpanded] = useState(false),
+      [drag, setDrag] = useState(0),
+      gesture = useRef(null),
+      grip = useRef(null),
+      closed = useRef(false),
+      moved = useRef(false),
+      dialog = useRef(null);
+    const close = () => {
+      if (!closed.current) {
+        closed.current = true;
+        app.back();
+      }
+    };
+    useEffect(() => {
+      grip.current?.focus({
+        preventScroll: true
+      });
+      const key = e => {
+        if (document.querySelector('[role=dialog]:not([data-rental-sheet])')) return;
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          close();
+        }
+        if (e.key === 'Tab') {
+          const controls = [...dialog.current.querySelectorAll('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href],[tabindex="0"]')].filter(n => n.getClientRects().length),
+            first = controls[0],
+            last = controls[controls.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last?.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first?.focus();
+          }
+        }
+      };
+      window.addEventListener('keydown', key);
+      return () => window.removeEventListener('keydown', key);
+    }, []);
+    const down = e => {
+      if (e.target.closest('[data-rental-close]')) return;
+      moved.current = false;
+      gesture.current = {
+        y: e.clientY,
+        id: e.pointerId
+      };
+      e.target.setPointerCapture(e.pointerId);
+    };
+    const move = e => {
+      if (gesture.current) setDrag(e.clientY - gesture.current.y);
+    };
+    const up = e => {
+      if (!gesture.current) return;
+      const delta = e.clientY - gesture.current.y;
+      gesture.current = null;
+      moved.current = Math.abs(delta) > 10;
+      setDrag(0);
+      if (delta < -45) setExpanded(true);else if (delta > 90) {
+        if (expanded) setExpanded(false);else close();
+      }
+    };
+    return h('div', {
+      className: 'rc-overlay',
+      onClick: e => {
+        if (e.target === e.currentTarget) close();
+      }
+    }, h('style', null, css), h('section', {
+      ref: dialog,
+      role: 'dialog',
+      'aria-modal': true,
+      'aria-label': 'Detalle del vehículo',
+      'data-rental-sheet': true,
+      className: 'rc-sheet',
+      'data-expanded': expanded,
+      style: drag > 0 ? {
+        transform: 'translateY(' + Math.min(drag, 160) + 'px)',
+        transition: 'none'
+      } : undefined
+    }, h('div', {
+      className: 'rc-sheet-head',
+      onPointerDown: down,
+      onPointerMove: move,
+      onPointerUp: up,
+      onPointerCancel: () => {
+        gesture.current = null;
+        setDrag(0);
+      }
+    }, h('button', {
+      ref: grip,
+      className: 'rc-grip',
+      type: 'button',
+      'aria-expanded': expanded,
+      onClick: e => {
+        if (e.detail === 0 || !moved.current) setExpanded(x => !x);
+      }
+    }, expanded ? 'Reducir detalle' : 'Expandir detalle'), h('button', {
+      'data-rental-close': true,
+      className: 'rc-icon',
+      onClick: close,
+      'aria-label': 'Cerrar detalle'
+    }, h(window.Icon, {
+      name: 'close',
+      size: 23
+    }))), h('div', {
+      className: 'rc-sheet-body'
+    }, children)));
+  }
+  function Fields({
+    draft,
+    set
+  }) {
+    return h(React.Fragment, null, h('style', null, css), h('fieldset', {
+      style: {
+        border: 0,
+        padding: 0,
+        margin: 0
+      }
+    }, h('legend', {
+      style: {
+        fontSize: 18,
+        fontWeight: 850
+      }
+    }, 'Características del vehículo'), h('div', {
+      className: 'rc-admin-fields'
+    }, [['year', 'Año'], ...labels].map(([key, label]) => h('label', {
+      key
+    }, label, h('input', {
+      'data-rental-field': key,
+      type: key === 'year' ? 'number' : 'text',
+      min: key === 'year' ? 1900 : undefined,
+      max: key === 'year' ? 2100 : undefined,
+      maxLength: key === 'year' ? undefined : key === 'engine' ? 120 : key === 'vehicle_type' ? 80 : 40,
+      value: draft.rental_specs?.[key] ?? '',
+      onChange: e => set('rental_specs', {
+        ...(draft.rental_specs || {}),
+        [key]: key === 'year' ? e.target.value === '' ? null : Number(e.target.value) : e.target.value
+      })
+    }))))));
+  }
+  Object.assign(window, {
+    RentaCarCatalog: Catalog,
+    RentaCarDetailSheet: DetailSheet,
+    RentaCarSpecs: Specs,
+    RentaCarFields: Fields
+  });
+})();
+})();
 /* @@file screens-catalogo.jsx */
 (function(){
 /* screens-catalogo.jsx — Marketplace del afiliado: rejilla "Disponibles ahora"
@@ -81930,6 +82271,7 @@ Object.assign(window, {
     const [requestSheet, setRequestSheet] = useState(false);
     const programItem = item.catalogSource === 'program';
     const farma = programItem && item.program_key === 'farma';
+    const rental = programItem && item.program_key === 'renta';
     const commercialMode = programItem ? item.commercialMode || item.commercial_mode || (item.cotiza ? 'PAYROLL_QUOTE' : 'PAYROLL_FIXED') : null;
     const sold = programItem && item.sold === true;
     const cotiza = programItem ? commercialMode === 'PAYROLL_QUOTE' : item.precio == null || item.cotiza;
@@ -82002,7 +82344,9 @@ Object.assign(window, {
       },
       onClick: () => setSheet(true)
     }, 'Simular monto'));
-    return React.createElement(React.Fragment, null, React.createElement('div', {
+    return React.createElement(rental ? window.RentaCarDetailSheet : React.Fragment, rental ? {
+      app
+    } : null, React.createElement('div', {
       style: {
         position: 'absolute',
         inset: 0,
@@ -82117,14 +82461,22 @@ Object.assign(window, {
         letterSpacing: '-.03em',
         marginTop: 10
       }
-    }, window.money(item.precio)) : React.createElement('div', {
+    }, window.money(item.precio) + (rental ? '/día' : '')) : React.createElement('div', {
       style: {
         fontSize: 'var(--text-13-5, 13.5px)',
         fontWeight: 800,
         color: 'var(--ink-3)',
         marginTop: 12
       }
-    }, 'Consulta disponibilidad'), sold && React.createElement('div', {
+    }, 'Consulta disponibilidad'), rental && React.createElement('div', {
+      'data-rental-year': true,
+      style: {
+        fontSize: 16,
+        marginTop: 8
+      }
+    }, item.rental_specs?.year ? 'Año ' + item.rental_specs.year : 'Año no registrado'), rental && React.createElement(window.RentaCarSpecs, {
+      item
+    }), sold && React.createElement('div', {
       'data-program-product-sold-badge': 'detail',
       style: {
         display: 'inline-flex',
@@ -82237,7 +82589,7 @@ Object.assign(window, {
         fontWeight: 600,
         lineHeight: 1.5
       }
-    }, farma ? 'Donación sujeta a disponibilidad y confirmación de Suti Farma. Pronto nos pondremos en contacto para tu atención personalizada.' : programItem ? sold ? 'Este artículo permanece visible como referencia, pero ya no está disponible para nuevas solicitudes, cotizaciones o contacto de adquisición.' : commercialMode === 'DIRECT_CONTACT' ? 'Este precio es informativo. La atención y cualquier forma de pago se acuerdan directamente con el área responsable; SutiApp no ofrece financiamiento para este artículo.' : item.requestMode === 'supabase' ? item.legacyBoundary ? 'El precio y las condiciones de pago por nómina se validan antes de registrar tu solicitud financiera.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.' : 'Este beneficio no está disponible para nuevas solicitudes en este momento.' : cotiza ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.' : 'Solicítalo con descuento vía nómina y condiciones preferentes gracias a tu sindicato.')))), cta && React.createElement('div', {
+    }, farma ? 'Donación sujeta a disponibilidad y confirmación de Suti Farma. Pronto nos pondremos en contacto para tu atención personalizada.' : programItem ? sold ? 'Este artículo permanece visible como referencia, pero ya no está disponible para nuevas solicitudes, cotizaciones o contacto de adquisición.' : commercialMode === 'DIRECT_CONTACT' ? 'Este precio es informativo. La atención y cualquier forma de pago se acuerdan directamente con el área responsable; SutiApp no ofrece financiamiento para este artículo.' : item.requestMode === 'supabase' ? rental ? 'La renta se liquida antes de entregar la unidad. Finanzas confirma la reserva al aprobar tu solicitud.' : item.legacyBoundary ? 'El precio y las condiciones de pago por nómina se validan antes de registrar tu solicitud financiera.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.' : 'Este beneficio no está disponible para nuevas solicitudes en este momento.' : cotiza ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.' : 'Solicítalo con descuento vía nómina y condiciones preferentes gracias a tu sindicato.')))), cta && React.createElement('div', {
       style: {
         position: 'absolute',
         left: 0,
@@ -82808,6 +83160,8 @@ Object.assign(window, {
   }
   function saveErrorMessage(error) {
     const value = [error && error.message, error && error.code, error && error.details, error && error.hint].filter(Boolean).join(' ').toUpperCase();
+    if (value.includes('RENTA_CATALOG_CHANGED')) return 'Otra persona actualizó este vehículo. Cierra y vuelve a abrirlo antes de guardar.';
+    if (value.includes('RENTA_SPECS_INVALID')) return 'Revisa las características: año entre 1900 y 2100; Motor hasta 120 caracteres, Tipo hasta 80 y Asientos/Tanque hasta 40.';
     if (value.includes('PRODUCT_FINANCING_CHANGED')) return 'Otra persona cambió las condiciones. Cierra y vuelve a abrir el producto antes de guardar.';
     if (value.includes('PRODUCT_RATE_AUDIENCE_CONFLICT')) return 'Coinciden tasas distintas por sindicato y categoría. Agrega una regla con esa combinación para definir cuál aplica.';
     if (value.includes('PRODUCT_RATE_RULE_DUPLICATE')) return 'Hay dos reglas para el mismo sindicato y categoría. Conserva una sola.';
@@ -83171,7 +83525,8 @@ Object.assign(window, {
     onClose,
     onSaved
   }) {
-    const farma = item.program_key === 'farma';
+    const farma = item.program_key === 'farma',
+      rental = item.program_key === 'renta';
     const editorRef = useRef(null);
     React.useLayoutEffect(() => {
       // The catalog may be scrolled to its last row when this absolute editor opens.
@@ -83189,7 +83544,10 @@ Object.assign(window, {
     const store = window.programCatalogAdminStore,
       [draft, setDraft] = useState(() => Object.assign({}, item, {
         financingDraft: item.financing_config || null
-      })),
+      }, rental && !item.id ? {
+        commercialMode: 'PAYROLL_FIXED',
+        cotiza: false
+      } : null)),
       [media, setMedia] = useState(() => (item.imagenAssets || []).map(asset => ({
         kind: 'existing',
         asset,
@@ -83285,6 +83643,7 @@ Object.assign(window, {
     };
     return React.createElement('div', {
       ref: editorRef,
+      'data-rental-admin': rental || undefined,
       'data-program-product-editor': item.id || 'new',
       style: {
         position: 'absolute',
@@ -83472,6 +83831,9 @@ Object.assign(window, {
         resize: 'vertical',
         lineHeight: 1.5
       })
+    }), rental && React.createElement(window.RentaCarFields, {
+      draft,
+      set
     }), farma && React.createElement(window.FarmaStockFields, {
       draft,
       set
@@ -83521,7 +83883,7 @@ Object.assign(window, {
       }, sub));
     })), !farma && React.createElement('label', {
       style: label
-    }, draft.commercialMode === 'PAYROLL_FIXED' ? 'Precio fijo obligatorio' : draft.commercialMode === 'DIRECT_CONTACT' ? 'Precio informativo (opcional)' : 'Precio importado/referencial (opcional)'), !farma && React.createElement('input', {
+    }, rental ? 'Precio por día' : draft.commercialMode === 'PAYROLL_FIXED' ? 'Precio fijo obligatorio' : draft.commercialMode === 'DIRECT_CONTACT' ? 'Precio informativo (opcional)' : 'Precio importado/referencial (opcional)'), !farma && React.createElement('input', {
       'data-program-product-field': 'price',
       type: 'number',
       min: 0,
@@ -83531,7 +83893,7 @@ Object.assign(window, {
       style: Object.assign({}, field, {
         marginBottom: 12
       })
-    }), !farma && React.createElement(ProductFinancingEditor, {
+    }), !farma && !rental && React.createElement(ProductFinancingEditor, {
       value: Object.prototype.hasOwnProperty.call(draft, 'financingDraft') ? draft.financingDraft : draft.financing_config,
       onChange: value => set('financingDraft', value),
       direct: draft.commercialMode === 'DIRECT_CONTACT'
@@ -83568,7 +83930,7 @@ Object.assign(window, {
         fontSize: 14,
         fontWeight: 850
       }
-    }, farma ? 'Visible para los usuarios' : 'Activo en la app'), React.createElement('div', {
+    }, rental ? draft.activo !== false ? 'Disponible' : 'No disponible' : farma ? 'Visible para los usuarios' : 'Activo en la app'), React.createElement('div', {
       style: {
         fontSize: 11.5,
         fontWeight: 600,

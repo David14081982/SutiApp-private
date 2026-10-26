@@ -4292,3 +4292,6 @@ Next: when GitHub run finishes, execute .tmp/renta-car/verify-documents-live.js 
 H-RENTA-CAR-CONTRACT-COPY-003: requested rental contract notice removed; signature and business rules retained. Build, focal browser regression and authenticated local check PASS. See docs/audits/H-RENTA-CAR-CONTRACT-COPY-003.md; publication verification pending.
 
 H-RENTA-CAR-CONTRACT-COPY-003 final: PASS. Pages run 39821920665 success; exact public bundle verified. Requested text absent, signature present, four images and $5,000 summary preserved. No production writes.
+
+
+H-RENTACAR-CATALOG-UI-ADMIN-001: rental-only large cards and expandable existing-detail wrapper; canonical Admin metadata extension. Backend preflight/apply and focal 390/430 browser checks PASS; isolated Admin edits update user cards/cover/availability. Existing rental documents/signature regression PASS. Publication verification pending. Evidence: docs/qa/evidence/rentacar-catalog/. No global suites by explicit owner instruction.

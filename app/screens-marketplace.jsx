@@ -60,6 +60,7 @@
     const quoteReady = quote && quote.estado === 'cotizada';
     React.useEffect(() => { if (quoteReady && !quote.visto) qs.markVisto(quote.id); }, [quoteReady, quote && quote.id]);
 
+    if(params.id==='renta')return React.createElement(window.RentaCarCatalog,{app,it,hue,cs,metadata,favorite:fav,onFavorite:()=>setFav(!fav)});
     if(managed && metadata.phase!=='loaded') return React.createElement('div',{'data-program-info-state':metadata.phase,style:{position:'absolute',inset:0,background:'var(--bg)',overflowY:'auto'}},React.createElement(window.Btn,{onClick:app.back,variant:'outline'},'Volver'),React.createElement(window.ProgramGeneralInfo.InfoState,{state:metadata}));
     if(!found && !metadata.row) return null;
     return React.createElement(React.Fragment, null,

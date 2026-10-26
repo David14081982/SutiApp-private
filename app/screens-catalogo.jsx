@@ -101,6 +101,7 @@
 
     const programItem = item.catalogSource === 'program';
     const farma=programItem&&item.program_key==='farma';
+    const rental=programItem&&item.program_key==='renta';
     const commercialMode=programItem?(item.commercialMode||item.commercial_mode||(item.cotiza?'PAYROLL_QUOTE':'PAYROLL_FIXED')):null;
     const sold=programItem&&item.sold===true;
     const cotiza = programItem ? commercialMode==='PAYROLL_QUOTE' : (item.precio == null || item.cotiza);
@@ -129,7 +130,7 @@
       React.createElement(window.Btn, { size: 'lg', variant: 'outline', icon: 'plus', style: { flex: 1, minWidth: 0, padding: '0 12px', fontSize: 'var(--text-13, 13px)' }, onClick: () => setQSheet(true) }, 'Nueva cotización'),
       React.createElement(window.Btn, { size: 'lg', icon: 'cash', style: { flex: 1, minWidth: 0, padding: '0 12px', fontSize: 'var(--text-13, 13px)' }, onClick: () => setSheet(true) }, 'Simular monto'));
 
-    return React.createElement(React.Fragment, null,
+    return React.createElement(rental?window.RentaCarDetailSheet:React.Fragment, rental?{app}:null,
       React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
         React.createElement('div', { className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto' } },
           React.createElement('div', { style: { position: 'relative' } },
@@ -145,8 +146,10 @@
                 React.createElement(I, { name: 'doc', size: 16, stroke: 2.2, style: { color: 'var(--guinda)' } }),
                 React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink-2)' } }, 'Precio a cotizar'))
               : item.precio != null
-                ? React.createElement('div', { style: { fontSize: 'var(--text-30, 30px)', fontWeight: 900, color: 'var(--guinda)', letterSpacing: '-.03em', marginTop: 10 } }, window.money(item.precio))
+                ? React.createElement('div', { style: { fontSize: 'var(--text-30, 30px)', fontWeight: 900, color: 'var(--guinda)', letterSpacing: '-.03em', marginTop: 10 } }, window.money(item.precio)+(rental?'/día':''))
                 : React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink-3)', marginTop: 12 } }, 'Consulta disponibilidad'),
+            rental&&React.createElement('div',{'data-rental-year':true,style:{fontSize:16,marginTop:8}},item.rental_specs?.year?'Año '+item.rental_specs.year:'Año no registrado'),
+            rental&&React.createElement(window.RentaCarSpecs,{item}),
             sold&&React.createElement('div',{'data-program-product-sold-badge':'detail',style:{display:'inline-flex',alignItems:'center',gap:6,marginTop:12,background:'#FCE8E6',color:'#B3261E',fontSize: 'var(--text-12, 12px)',fontWeight:950,letterSpacing:'.08em',padding:'7px 11px',borderRadius:999}},React.createElement(I,{name:'close',size:14,stroke:2.4}),'VENDIDO'),
             quote && React.createElement(QuoteBanner, { quote }),
             !farma&&programItem&&!sold&&commercialMode==='DIRECT_CONTACT'&&React.createElement(DirectContactPanel,{item,app}),
@@ -172,7 +175,7 @@
                     : commercialMode==='DIRECT_CONTACT'
                       ? 'Este precio es informativo. La atención y cualquier forma de pago se acuerdan directamente con el área responsable; SutiApp no ofrece financiamiento para este artículo.'
                       : item.requestMode === 'supabase'
-                    ? (item.legacyBoundary ? 'El precio y las condiciones de pago por nómina se validan antes de registrar tu solicitud financiera.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.')
+                    ? (rental ? 'La renta se liquida antes de entregar la unidad. Finanzas confirma la reserva al aprobar tu solicitud.' : item.legacyBoundary ? 'El precio y las condiciones de pago por nómina se validan antes de registrar tu solicitud financiera.' : 'Tu solicitud quedará registrada de inmediato y vinculada a tu afiliación.')
                     : 'Este beneficio no está disponible para nuevas solicitudes en este momento.'
                   : cotiza
                     ? 'Este beneficio se cotiza primero. Envía tu solicitud y, cuando el proveedor cargue el presupuesto, podrás simular tu financiamiento vía nómina.'

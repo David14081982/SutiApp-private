@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "syntheticTransportOnly": true,
+  "productionWrites": 0,
+  "checks": [
+    "dynamic cards",
+    "inactive excluded / sold unavailable",
+    "existing catitem handler and ID",
+    "existing rental flow retained",
+    "Admin edit all metadata/name/description/price/order",
+    "existing image reorder -> principal image",
+    "same save RPC scope with no financing fields",
+    "Admin changes reflected in catalog",
+    "Admin availability reflected",
+    "direct-contact handler retained",
+    "sold unit cannot request",
+    "non-rental fixture unchanged"
+  ]
+}

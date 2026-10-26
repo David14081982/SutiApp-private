@@ -94,7 +94,7 @@
     });y+=height;
    }
    pair({label:'Monto original del préstamo',value:money(entry.principal),size:18},{label:'Total a pagar',value:money(entry.total),size:18});
-   pair({label:'Monto amortizado',value:money(entry.paid_to_date),size:18,fill:color.green},{label:'Saldo pendiente',value:money(m.balance),size:22,fill:color.wine});
+   pair({label:'Total pagado',value:money(entry.paid_to_date),size:18,fill:color.green},{label:'Saldo pendiente',value:money(m.balance),size:22,fill:color.wine});
    y+=3;text(ops,'Progreso de liquidación',left,y+4,11,true);text(ops,progress,562,y,18,true,color.wine,'right');
    y+=25;rect(ops,left,y,512,7,color.line);
    if(m.progress!=null)rect(ops,left,y,512*Math.min(100,Math.max(0,m.progress))/100,7,color.wine);

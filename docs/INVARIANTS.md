@@ -501,3 +501,7 @@ Complete both-sheet observations are validated, grouped by exact raw TEXT Folio,
 ## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
 
 A confirmed approval may appear for its original financial_approved_at plus 24 hours, including blank or unknown X; settled source states retain liquidation precedence. Expiry uses real X: AL CORRIENTE/SALDO ATRASADO become En pago; absent/unknown X stays Estado por revisar. Never infer a financial state from the clock. Approval events publish only an opaque own-affiliate version; no global publication or schedule refresh is allowed. An open amortization retains source values and scroll during approval updates. Identity changes purge both channels. SR-to-loan continuity requires the existing verified sourceId link. A recent genuine approval may have a preparing card without published quotas; older missing records cannot return from a later complete source observation.
+
+## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
+
+Every distinct source cuota row contributes once to its exact own loan; never deduplicate legitimate equal dates/amounts/quota numbers. Complete valid future-only schedules yield Total pagado=0. Missing/preparing/empty schedules or any invalid date/amount remain unavailable, including aggregate overflow; they never become invented zero. Date comparison uses the server-anchored Hermosillo calendar day. Raw individual amounts are not rounded or mutated. Existing balance/progress/excess formulas consume this sum; approval changes, source synchronization, routing, PDF pagination and ownership remain independent.

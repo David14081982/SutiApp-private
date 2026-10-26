@@ -5,6 +5,27 @@ const money=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0?v:null;
 const day=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;const d=new Date(v+'T12:00:00Z');return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===v?v:null;};
 const instant=v=>typeof v==='string'&&/T.*(?:Z|[+-]\d\d:\d\d)$/.test(v)&&Number.isFinite(Date.parse(v))?v:null;
 export function businessDay(now){return new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now));}
+// A/B are authoritative for this presentation total. Validate future rows too:
+// an incomplete schedule must remain unavailable rather than look fully paid.
+export function paidThrough(schedule,today){
+ if(!Array.isArray(schedule)||!schedule.length||!day(today))return null;
+ let units=0n,scale=0;
+ for(const row of schedule){
+  const date=day(row?.date),amount=money(row?.amount);
+  if(!date||amount===null)return null;
+  if(date<=today){
+   // Add the supplied decimal literals exactly; binary addition can invent
+   // a small overpayment when, for example, 0.1 + 0.2 should equal 0.3.
+   const [mantissa,exponent='0']=String(amount).split('e');
+   const places=(mantissa.split('.')[1]?.length||0)-Number(exponent);
+   const coefficient=BigInt(mantissa.replace('.',''));
+   if(places>scale){units*=10n**BigInt(places-scale);scale=places;}
+   units+=coefficient*10n**BigInt(scale-places);
+  }
+ }
+ const paid=Number(units.toString()+'e-'+scale);
+ return Number.isFinite(paid)?paid:null;
+}
 export function category(status,approvedAt,now){
  const s=norm(status);
  if(['LIQUIDADO','PAGO DE MAS'].includes(s))return 'Liquidadas';
@@ -85,7 +106,7 @@ export function projectHistory(source,context,now){
   entries.push({key:'loan:'+id,id,sourceId:request?.id||null,kind:'loan',fund:uniform('fund')||'Financiamiento',
    principal:money(uniform('principal')),total:money(uniform('total')),term:money(uniform('term')),date:day(uniform('authorized'))||schedule[0]?.date||null,
    status,category:bucket,approved_at:approved,expires_at:approved?new Date(Date.parse(approved)+86400000).toISOString():null,
-   paid_to_date:money(uniform('paid_to_date')),expected_to_date:money(uniform('expected_to_date')),schedule});
+   paid_to_date:paidThrough(schedule,today),expected_to_date:money(uniform('expected_to_date')),schedule});
  }
  for(const r of source.requests){
   const request=byLoan.get(r.id);if(groups.has(r.id)||!request||!['APROBADO','INICIADO'].includes(norm(r.status)))continue;
@@ -93,7 +114,7 @@ export function projectHistory(source,context,now){
   entries.push({key:'request:'+r.id,id:r.id,sourceId:request.id,kind:'loan',fund:r.fund||'Financiamiento',principal:money(r.principal),
    total:money(r.total),term:money(r.term),date:day(r.date),status:null,
    category:Date.parse(now)>=Date.parse(approved)&&Date.parse(now)<Date.parse(approved)+86400000?'Aprobadas':'Estado por revisar',
-   approved_at:approved,expires_at:new Date(Date.parse(approved)+86400000).toISOString(),schedule:[],preparing:true});
+   approved_at:approved,expires_at:new Date(Date.parse(approved)+86400000).toISOString(),paid_to_date:null,schedule:[],preparing:true});
  }
  return {version:1,server_now:now,business_day:today,entries:entries.sort((a,b)=>(b.approved_at||b.date||'').localeCompare(a.approved_at||a.date||'')||b.id.localeCompare(a.id)),
   covered_request_ids:[...covered],financial_request_ids:context.requests.filter(r=>r.financial).map(r=>r.id)};

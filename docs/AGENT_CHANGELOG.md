@@ -4376,3 +4376,7 @@ Include an own SR/Pendiente source request in En proceso before its native finan
 ## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
 
 Prepared two independently updated history channels: the existing Google-derived amortization observation and confirmed native approval presentation. Immediate approval events transfer only own metadata; the 24-hour window respects blank X and expiry follows real source state. Daily/manual worker, Google, financial values and UI structure remain unchanged. Validation/publication state and sanitized evidence: audits/H-HISTORY-IMMEDIATE-APPROVAL-001.md and qa/evidence/history-immediate-approval.
+
+## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
+
+Implement the owner-approved Total pagado presentation from dated published quotas, replacing V only in own loan history/detail/statement. Preserve source values, exact ownership, approval window, status, quota numbering, PDF design and daily/manual publication. Scope, validation and release state: audits/H-HISTORY-TOTAL-PAID-001.md and qa/evidence/history-total-paid.

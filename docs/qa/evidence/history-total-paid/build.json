@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "version": "2026102607",
+  "build": "scripts/build-bundle.js with Babel 7.28.4",
+  "modules": 163,
+  "changedModules": [
+    "history-loans-repository.js",
+    "history-statement.js",
+    "history-loans.jsx"
+  ],
+  "unchangedModules": 160,
+  "detailAndPdfLabelOnly": true,
+  "htmlAndServiceWorkerVersionOnly": true,
+  "protectedPathsUnchanged": [
+    "app/history-sync-admin.js",
+    "app/screens-admin-finanzas.jsx",
+    "app/program-request-repository.js",
+    "app/admin-finance-queue-repository.js",
+    "app/affiliate-auth.js",
+    "app/screens-historial.jsx",
+    "supabase/migrations",
+    "supabase/functions/loan-history/index.ts",
+    "supabase/functions/loan-history/snapshot.mjs",
+    "supabase/functions/loan-history/snapshot-source.mjs",
+    "supabase/functions/loan-history-sync",
+    "google-apps-script"
+  ],
+  "bundleSha256": "7b40ab8a27950136fe0fca1d1ab42b4982a1df02030332bd6c4e0ece02fa27f4",
+  "pagesPwa": "PASS scripts/test-pages-deployment.js",
+  "globalImageRegression": "NOT APPLICABLE: focal history computation and generated artifacts only; shared assets/Auth/routing/SW logic unchanged"
+}

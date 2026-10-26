@@ -89,7 +89,7 @@ async function main(){
   await base.getByRole('button',{name:'Aprobadas',exact:true}).click();await flush(page);assert.equal(await base.locator('.su-history-entry').count(),4);
   assert(!(await base.locator('[data-approval-countdown]').first().innerText()).includes('En pago en'));
   await page.evaluate(()=>setRoute({loanKey:'request:SR-PENDING'}));await flush(page);assert.equal(await detail.locator('[data-installment]').count(),0);
-  const preparing=await page.evaluate(async()=>LoanHistory.project(await LoanHistory.load('request:SR-PENDING'),0)[0]);assert.equal(preparing.preparing,true);assert.equal(preparing.paid_to_date,undefined);
+  const preparing=await page.evaluate(async()=>LoanHistory.project(await LoanHistory.load('request:SR-PENDING'),0)[0]);assert.equal(preparing.preparing,true);assert.equal(preparing.paid_to_date,null);
   await scroll.evaluate(el=>{window.pendingScroll=el;});
   await page.evaluate(()=>{
    const linked=loan('501','Aprobadas','AL CORRIENTE');linked.sourceId='pending';

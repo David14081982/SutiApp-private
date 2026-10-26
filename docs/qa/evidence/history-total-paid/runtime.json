@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "checks": [
+    "paid total uses past/today A/B once, never repeated V or future rows",
+    "helper validates the entire schedule and preserves literal decimal precision",
+    "exact decimal sum equals K without a phantom overpayment and preserves sub-cent values",
+    "decimal exponent notation, tiny values and large values use one final Number conversion",
+    "complete future-only schedules and valid zero quotas yield zero",
+    "missing, malformed and impossible dates anywhere make the paid total unavailable",
+    "missing, negative, nonnumeric and nonfinite amounts invalidate past and future rows",
+    "aggregate overflow is unavailable while uncounted finite future amounts remain valid",
+    "Hermosillo calendar midnight includes today immediately, without changing the schedule",
+    "conflicting or missing V cannot override valid A/B; W, source values and order remain intact",
+    "each exact loan ID is independent; equal dates, amounts and quota numbers are not merged",
+    "foreign owners and source Folio mismatches still fail before a total is exposed",
+    "existing snapshot boundary rejects duplicate source rows and isolates owners sharing a loan ID",
+    "preparing loans have no paid total and approvals remain independent of amortization",
+    "owned LOAD and DETAIL share the derived total through the same single snapshot RPC"
+  ],
+  "authority": "Published own Google A/B rows grouped by exact Folio D and loan ID C",
+  "algorithm": "Validate all date/amount rows; add decimal String(B) coefficients/scales exactly with BigInt for A <= Hermosillo today; convert to Number only at the end; no per-row rounding or fixed decimal restriction; unavailable for incomplete/empty/final overflow",
+  "noGoogleCalls": true,
+  "noDatabaseWrites": true,
+  "noNewRequests": true,
+  "noSourceMutation": true,
+  "noLoanOrQuotaRenumbering": true
+}

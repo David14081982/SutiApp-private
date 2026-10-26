@@ -994,3 +994,7 @@ Google HISTORIAL P V2 and Historial de solicitudes remain authoritative for loan
 ## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
 
 The owner authorizes immediate own approval presentation from the existing confirmed Supabase Finance decision and its immutable financial_approval_snapshot display fields. This narrowly supersedes the requirement that an approval card wait for the next Google-derived observation. It does not authorize another source for installments, balances, paid amounts or the real loan status: those remain exclusively the published Google observation. The approval channel transfers no schedule and does not read Google or initiate synchronization. Absent/malformed data remains explicit; no browser persistence or error fallback is introduced.
+
+## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
+
+For own Historial, detail and its statement, the owner now explicitly authorizes Total pagado as the sum of published HISTORIAL P V2 column B for rows whose valid column A date is on/before the current America/Hermosillo day, grouped by loan C within the exact effective Folio D. This supersedes V as this display aggregate, including the former V/K progress statement. Principal J, total K, source rows, real X status and the independent confirmed approval clock remain unchanged authorities. V/W are preserved in observations and other financial consumers. No persisted derived total, new source, fallback or source write is introduced.

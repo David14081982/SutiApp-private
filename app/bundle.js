@@ -33379,8 +33379,8 @@ Object.assign(window, {
   if(m.overpaid>0)lines.push('Pago excedente registrado: '+money(m.overpaid));
   if(observation.sync_state?.status==='FAILED')lines.push('La última actualización falló. Se muestra la última publicación completa.');
   lines.push('','Cuotas registradas');
-  for(const row of entry.schedule||[]){
-   lines.push('Cuota '+(row.number??'sin número')+' | '+date(row.date)+' | '+money(row.amount)+' | '+row.state);
+  for(const [index,row] of (entry.schedule||[]).entries()){
+   lines.push('Cuota '+(index+1)+' | '+date(row.date)+' | '+money(row.amount)+' | '+row.state);
    if(row.upcoming)lines.push('Próxima a vencer');
    if(row.closure)lines.push('Cierre de contrato: '+date(row.date));
   }
@@ -33827,7 +33827,7 @@ Object.assign(window, {
       style: {
         margin: 0
       }
-    }, 'Las fechas futuras corresponden a cuotas programadas vía deducción de nómina.')), entry.preparing ? h('div', {
+    }, 'Historial')), entry.preparing ? h('div', {
       role: 'status',
       style: {
         padding: 18,
@@ -33871,7 +33871,7 @@ Object.assign(window, {
         background: row.upcoming ? '#FEF3C7' : row.state === 'Pagada' ? '#ECFDF5' : '#F1F5F9',
         color: row.upcoming ? '#92400E' : row.state === 'Pagada' ? '#059669' : muted
       }
-    }, row.number ?? '—'), h('div', {
+    }, i + 1), h('div', {
       style: {
         flex: 1,
         minWidth: 0
@@ -33882,7 +33882,7 @@ Object.assign(window, {
         fontWeight: 800,
         marginBottom: 4
       }
-    }, row.number == null ? 'Cuota' : 'Cuota ' + row.number), row.upcoming && chip('Próxima a vencer', '#92400E', '#FEF3C7'), row.closure && chip('Cierre de contrato', muted, '#F1F5F9'), h('div', {
+    }, 'Cuota ' + (i + 1)), row.upcoming && chip('Próxima a vencer', '#92400E', '#FEF3C7'), row.closure && chip('Cierre de contrato', muted, '#F1F5F9'), h('div', {
       style: {
         fontSize: 10,
         color: row.upcoming ? '#B45309' : '#94A3B8',

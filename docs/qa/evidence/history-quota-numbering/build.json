@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "version": "2026102603",
+  "baseline": "87679c3e10ed8d9c1ef9c4213cc58fc7e4ad74aa",
+  "changedBundleChunks": [
+    "history-loans.jsx",
+    "history-statement.js"
+  ],
+  "unchangedBundleChunks": 161,
+  "bundleSha256": "d07286278b659ede83c3019f3be3abc1cdf855d221a3911efd3e06420c9076b9",
+  "sourceHashes": {
+    "app/history-loans.jsx": "f4fba64bc997980a3ca46ae40d43b60fb051a44188391a7e9c5aa1859c083633",
+    "app/history-statement.js": "158c2e7f645ec078ae2a516d1da23d56b9df779067d382a927cb3ecfa27f6d1f"
+  },
+  "htmlAndServiceWorkerOnlyVersionChanges": true,
+  "syntax": true,
+  "pages": {
+    "status": "PASS",
+    "pwa": true,
+    "forbiddenFiles": 0
+  },
+  "globalImageRegression": "NOT APPLICABLE: only focal display/export modules and generated version references",
+  "googleSheetWrites": 0,
+  "backendChanges": 0,
+  "sourceHashNormalization": "UTF-8 text with CRLF normalized to LF",
+  "bundleHashNormalization": "Raw UTF-8 bytes; generated bundle uses LF"
+}

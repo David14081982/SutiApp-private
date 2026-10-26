@@ -4354,3 +4354,8 @@ One own authenticated LOAD serves cards and immediate amortizations with bounded
 ### H-HISTORY-SNAPSHOT-001
 
 Candidate prepared in an isolated checkout based on 85c78e138515851823843994c781e83b56071c7e. New private synchronization pipeline, own RPC-backed reader, Finance refresh control, stable history memory, amortization design and local paginated PDF. Tests/evidence: docs/qa/evidence/history-snapshot and scripts/test-history-snapshot-*. Global Auth, routing, shared demand helper, private assets/viewer and SW logic are unchanged; bundle/version updates are generated focal artifacts. Production preflight GET/read-only backed up Google v21 and loan-history Edge v2. Automatic approval rejected remote compilation through the production deployment endpoint; that action was removed from read-only preflight. No production deployment, migration, Sheet write or real-user performance claim in this candidate.
+
+
+## H-HISTORY-QUOTA-NUMBERING-001 - 2026-10-26
+
+Correct installment display/PDF ordinals independently per loan using the existing ordered schedule, including zero/future rows; replace the requested explanatory paragraph with Historial. No source numbers, amounts, dates, statuses, requests, backend or Google data change. Focal browser/PDF regression, old-source negative reproduction, build/Pages/PWA and generated-chunk parity PASS. See audits/H-HISTORY-QUOTA-NUMBERING-001.md and qa/evidence/history-quota-numbering.

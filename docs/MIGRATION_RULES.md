@@ -450,3 +450,11 @@ Focal migration replaces only two scope conditions and one comment in document_p
 ## 20261014000200 -- savings_withdrawal_history -- APPLIED / VERIFIED
 
 One additive STABLE SECURITY DEFINER reader, authenticated-only behind savings.read and fixed empty search_path. It has bounded pages and an independent complete filtered count; no table, index, trigger, existing function, writer or business-row change. Recovery validates the exact installed definition before dropping only the new signature, without CASCADE. Roll the focal frontend back before removal. Isolated tests cover 522 withdrawals, permissions, search/status/identity/nulls and recovery drift/reapply. Application/readback status is recorded in audits/H-SAVINGS-WITHDRAWAL-HISTORY-001.md and qa/evidence/savings-withdrawal-history/applied.json.
+
+
+## H-HISTORY-LOAN-PAYMENTS-001 ? candidato local, 2026-10-25
+
+20261025000100_self_loan_history: PREPARED, NOT APPLIED. Solo agrega funci?n autenticada de lectura; no tablas, columnas, triggers, backfill ni DML financiero. El cat?logo vivo confirm? existencia de financial_approved_at y 267/267 solicitudes financieras aprobadas con hora. Pruebas PostgreSQL aisladas verificaron grants, controles exactos/duplicados, archivo y recovery sin p?rdida de solicitudes. Recovery elimina solo la funci?n nueva. Revalidar colisi?n de versi?n y cat?logo antes de instalar.
+
+
+Activation authorized by owner on 2026-10-25. Google v20 and migration 20261025000100 installed; loan-history Edge v1 active. No business records or Sheet cells changed. See history-loan-payments deployment and live evidence for current verification.

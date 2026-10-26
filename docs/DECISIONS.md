@@ -1454,3 +1454,11 @@ The owner requires the corrected withdrawal PDF to use the assigned person and s
 ## H-RENTA-CAR-CASH-001 ? instrucciones del propietario, 2026-10-22
 
 Renta Car es arrendamiento de contado, aislado del financiamiento de los dem?s programas. Periodo continuo, inclusivo, sin fechas anteriores a hoy (America/Hermosillo). La reserva adquiere exclusividad al aprobar Finanzas; pendientes no bloquean, canceladas liberan. Tarifa de program_catalog_items y total se validan en servidor y congelan al enviar. Pago ?nico completo antes de entregar; fecha l?mite igual al inicio. Historial Google: E Renta Car, F 0, G Plazo/n?mero de pagos 1, H 0, I total de contado, J env?o original. No crear otra columna para pagos. El contrato a?n no existe por confirmaci?n expresa: conservar valores y estado pendiente, sin texto jur?dico inventado ni plantilla de pr?stamo. Firma del solicitante permanece en la app y queda excluida de los inputs del PDF; documento f?sico requiere firma original. La futura plantilla espec?fica se asigna a renta/RENTA_CAR_APPROVAL en Documentos y Firmas. No reescribir solicitudes ni reservas hist?ricas.
+
+
+## H-HISTORY-LOAN-PAYMENTS-001 ? candidato local, 2026-10-25
+
+Instrucci?n expl?cita del propietario: Todas ? En proceso ? Aprobadas ? En pago ? Liquidadas ? No aprobadas; Aprobadas dura 24 horas desde aprobaci?n por Finanzas y permite consultar amortizaci?n inmediatamente cuando existe en la fuente. X AL CORRIENTE/SALDO ATRASADO -> En pago; LIQUIDADO/PAG? DE M?S -> Liquidada verde, sin etiqueta adicional. Todos los financiamientos propios de HISTORIAL P V2. Para este detalle de usuario, A <= hoy (Hermosillo) significa cuota pagada; A futura, pendiente, seg?n mantenimiento manual de la encargada. Esta sem?ntica no modifica SICOF ni reglas contables. Se reutiliza el instante durable de aprobaci?n ya existente; nunca medianoche inventada, fecha de consulta ni localStorage.
+
+
+Activation authorized by owner on 2026-10-25. Google v20 and migration 20261025000100 installed; loan-history Edge v1 active. No business records or Sheet cells changed. See history-loan-payments deployment and live evidence for current verification.

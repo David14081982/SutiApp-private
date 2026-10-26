@@ -471,3 +471,11 @@ By explicit owner instruction on 2026-10-07, new membership / MEMBERSHIP_APPROVA
 ## Withdrawal document correction -- H-SAVINGS-DOCUMENT-SIGNERS-UX-001
 
 A new caja / SAVINGS_WITHDRAWAL_APPROVAL revision uses the name, title, role and signature asset from the same effective version of each assigned signer, in configured order. Never mix current names with historical signature images. Preserve previous PDFs and the financial source_snapshot; only its revision envelope changes. Reissue does not approve or deliver money. Loans and other excluded types retain historical signers; Membership retains its earlier exception. This explicitly adds withdrawals to the previously Membership-only exception above.
+
+
+## H-HISTORY-LOAN-PAYMENTS-001 ? candidato local, 2026-10-25
+
+El contador no reinicia por refresh/login y no escribe estados financieros al vencer. Identidad backend exacta, ?nica y activa; rechazo de Folio 0/ambiguo, usuario an?nimo, target enviado por browser y cambio de contexto durante lectura. Backend/receiver excluyen filas ajenas antes de responder. UI descarta respuestas tard?as al cambiar identidad. J/K/V/W repetidos son valores de pr?stamo, nunca sumas por cuota. Hist?ricos sin hora verificable no reciben aprobaci?n nueva artificial.
+
+
+Activation authorized by owner on 2026-10-25. Google v20 and migration 20261025000100 installed; loan-history Edge v1 active. No business records or Sheet cells changed. See history-loan-payments deployment and live evidence for current verification.

@@ -15,15 +15,19 @@
 
   function HistorialScreen({ app }) {
     const operations=window.useOperationsStore();
+    const history=window.LoanHistory.useHistory();
     const [filter, setFilter] = useState('Todas');
-    const filters = ['Todas', 'En proceso', 'Aprobadas', 'No aprobadas'];
-    const mine = operations.all();
+    const filters = ['Todas', 'En proceso', 'Aprobadas', 'En pago', 'Liquidadas', 'No aprobadas'];
+    const mine = window.LoanHistory.merge(operations.all(),history.data,history.elapsed);
     let list = mine.slice();
     if (filter === 'En proceso') list = list.filter((s) => s.estado === 'revision');
     if (filter === 'Aprobadas') list = list.filter((s) => s.estado === 'aprobado' || s.estado === 'depositado');
+    if (filter === 'En pago') list = list.filter((s) => s.estado === 'en_pago');
+    if (filter === 'Liquidadas') list = list.filter((s) => s.estado === 'liquidada');
     if (filter === 'No aprobadas') list = list.filter((s) => s.estado === 'rechazado');
 
-    const activa = mine.find((s) => s.estado === 'revision');
+    const activa = mine.find((s) => s.estado === 'revision' && s.sourceId && s.steps.length);
+    const openEntry=s=>app.push('tracking',s.history&&(s.history.kind==='loan'||!s.sourceId)?{loanKey:s.historyKey}:{s});
     // El progreso se LLENA al aparecer (una sola vez): la barra deja de leerse
     // como gráfico y pasa a leerse como avance.
     const progRef = React.useRef(null);
@@ -38,7 +42,7 @@
 
     return React.createElement('div', { className: 'su-route', style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'historial' }),
-      React.createElement(window.RequestAuthorizationNotice, { app, requests: mine }),
+      React.createElement(window.RequestAuthorizationNotice, { app, requests: operations.all() }),
       React.createElement(window.FarmaHistory,{app}),
       // active tracker hero
       activa && React.createElement('div', { style: { padding: '4px 16px 0' } },
@@ -59,10 +63,11 @@
       React.createElement(window.ChipBar, { items: filters, value: filter, onChange: setFilter, style: { padding: '16px 16px 2px' } }),
       React.createElement('div',{style:{margin:'12px 16px 0',background:'#EEF3FF',border:'1px solid #D6E2FB',borderRadius:14,padding:'11px 13px',fontSize: 'var(--text-11-5, 11.5px)',fontWeight:650,color:'var(--ink-2)',lineHeight:1.45}},'Aquí puedes consultar tus solicitudes, cotizaciones y su avance.'),
       operations.state().phase==='loading'&&React.createElement('div',{'data-operations-state':'loading',style:{padding:24,textAlign:'center',fontWeight:700,color:'var(--ink-3)'}},'Cargando solicitudes…'),
+      React.createElement(window.HistorySourceState,{history}),
       operations.state().phase==='error'&&React.createElement('div',{'data-operations-state':'error',style:{padding:24,textAlign:'center',fontWeight:700,color:'#A32921'}},'No pudimos cargar tu historial. ',React.createElement('button',{onClick:operations.retry},'Reintentar')),
       // list
       React.createElement('div', { style: { padding: '16px 16px 0', display: 'flex', flexDirection: 'column', gap: 12 } },
-        list.map((s) => React.createElement('div', { key: s.id, onClick: () => app.push('tracking', { s }), className: 'su-press su-history-entry', style: { display: 'flex', gap: 13, alignItems: 'center', background: 'var(--surface)', borderRadius: 18, padding: 14, boxShadow: 'var(--neo-sm)', cursor: 'pointer' } },
+        list.map((s) => React.createElement('div', { key: s.historyKey||s.id, onClick: () => openEntry(s), className: 'su-press su-history-entry', style: { display: 'flex', gap: 13, alignItems: 'center', background: 'var(--surface)', borderRadius: 18, padding: 14, boxShadow: 'var(--neo-sm)', cursor: 'pointer' } },
           React.createElement(window.IconTile, { icon: s.icon, size: 50 }),
           React.createElement('div', { style: { flex: 1, minWidth: 0 } },
             React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 } },
@@ -70,14 +75,19 @@
               React.createElement('span', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 700, fontFamily: 'var(--mono)' } }, s.id)),
             React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 } },
               React.createElement('span', { style: { fontSize: 'var(--text-16, 16px)', fontWeight: 800, color: 'var(--guinda)' } }, s.monto==null?'Por cotizar':window.money(s.monto)),
-              React.createElement(StatusPill, { estado: s.estado, requestStatus: s.requestStatus })),
+              s.history?React.createElement(window.HistoryPill,{entry:s.history}):React.createElement(StatusPill, { estado: s.estado, requestStatus: s.requestStatus })),
+            s.history&&React.createElement(window.ApprovalClock,{entry:s.history}),
             React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 5 } }, s.fecha + ' · ' + s.plazo + (s.subtipo ? ' · ' + s.subtipo : '') + ((s.steps.find(step => step.active) || {}).label ? ' · Etapa: ' + s.steps.find(step => step.active).label : ''))))),
-          list.length === 0 && React.createElement(window.EmptyState, { icon: 'receipt', title: 'Sin solicitudes aquí', sub: 'Cuando solicites un beneficio aparecerá en esta lista.' })),
+          list.length === 0 && history.phase==='loaded' && operations.state().phase==='loaded' && React.createElement(window.EmptyState, { icon: 'receipt', title: 'Sin solicitudes aquí', sub: 'Cuando solicites un beneficio aparecerá en esta lista.' })),
     );
   }
 
   // ---------- TRACKING DETAIL ----------
   function TrackingScreen({ app, params }) {
+    if(params.loanKey)return React.createElement(window.LoanHistoryDetail,{app,loanKey:params.loanKey});
+    return React.createElement(RequestTrackingScreen,{app,params});
+  }
+  function RequestTrackingScreen({ app, params }) {
     const operations=window.useOperationsStore();
     const requestId=params.s&&params.s.sourceId;
     const s=operations.all().find((row)=>row.sourceId===requestId);

@@ -33185,6 +33185,336 @@ Object.assign(window, {
   Object.assign(window, { RequestEventNotifications: { list, markSeen }, useRequestNotifications, RequestAuthorizationNotice });
 })();
 })();
+/* @@file history-loans-repository.js */
+(function(){
+/* Own loan history. Component memory only; no persistent cache or client target. */
+(function(){
+ 'use strict';
+ const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase();
+ const formatDate=v=>v?new Date(v.length===10?v+'T12:00:00-07:00':v).toLocaleDateString('es-MX',{timeZone:'America/Hermosillo'}):'Fecha no registrada';
+ function project(data,elapsed){
+  const now=Date.parse(data.server_now)+Math.max(0,elapsed),today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(now));
+  return data.entries.map(entry=>{
+   let category=entry.category;
+   if(category==='Aprobadas'&&entry.expires_at&&now>=Date.parse(entry.expires_at))category=entry.preparing?'Estado por revisar':'En pago';
+   return {...entry,category,remaining:category==='Aprobadas'?Math.max(0,Date.parse(entry.expires_at)-now):null,
+    schedule:entry.schedule.map(row=>({...row,state:row.date?row.date<=today?'Pagada':'Pendiente':'Fecha por revisar'}))};
+  });
+ }
+ function merge(existing,data,elapsed){
+  if(!data)return [];
+  const financial=new Set(data?data.financial_request_ids:[]),covered=new Set(data?data.covered_request_ids:[]);
+  const originals=new Map(existing.map(row=>[row.sourceId,row]));
+  const rows=existing.filter(row=>row.kind!=='loan'&&!financial.has(row.sourceId)&&!covered.has(row.sourceId));
+  for(const entry of data?project(data,elapsed):[]){
+   const original=originals.get(entry.sourceId),state={'En proceso':'revision','Aprobadas':'aprobado','En pago':'en_pago','Liquidadas':'liquidada','No aprobadas':'rechazado'}[entry.category]||'por_revisar';
+   rows.push({...original,id:entry.id,sourceId:entry.sourceId,historyKey:entry.key,history:entry,kind:'history',
+    tipo:entry.fund,icon:original?.icon||'receipt',monto:entry.principal,estado:state,requestStatus:undefined,
+    fecha:formatDate(entry.date),plazo:entry.term==null?'Plazo no registrado':entry.term+' pagos',subtipo:'',
+    steps:original?.steps||[],ts:Date.parse(entry.approved_at||entry.date||'')||0});
+  }
+  return rows.sort((a,b)=>b.ts-a.ts);
+ }
+ async function load(){return window.PrivateResourceDemand.run('self-loan-history',async()=>{
+  const {data,error}=await window.SutiSupabase.getClient().functions.invoke('loan-history',{body:{action:'LOAD'}});
+  if(error||!data||data.error||data.version!==1||!Array.isArray(data.entries)||!Array.isArray(data.covered_request_ids)||!Array.isArray(data.financial_request_ids)||!Number.isFinite(Date.parse(data.server_now)))throw Error('HISTORY_UNAVAILABLE');
+  return data;
+ });}
+ function useHistory(){
+  const epoch=window.PrivateResourceDemand.useContext(),[result,setResult]=React.useState(null),[retry,setRetry]=React.useState(0),[,tick]=React.useState(0);
+  React.useEffect(()=>{
+   if(epoch===null){setResult(null);return;}
+   let active=true,busy=false;
+   async function refresh(){
+    if(busy||document.hidden)return;busy=true;
+    try{const data=await load();if(active&&window.PrivateResourceDemand.context()===epoch)setResult({epoch,data,anchor:performance.now(),phase:'loaded'});}
+    catch(_){if(active&&window.PrivateResourceDemand.context()===epoch)setResult({epoch,data:null,phase:'error'});}
+    finally{busy=false;}
+   }
+   refresh();const timer=setInterval(refresh,60000),clock=setInterval(()=>tick(n=>n+1),1000);
+   const foreground=()=>{if(!document.hidden)refresh();};
+   window.addEventListener('focus',foreground);document.addEventListener('visibilitychange',foreground);window.addEventListener('suti:request-changed',foreground);
+   return()=>{active=false;clearInterval(timer);clearInterval(clock);window.removeEventListener('focus',foreground);document.removeEventListener('visibilitychange',foreground);window.removeEventListener('suti:request-changed',foreground);};
+  },[epoch,retry]);
+  const current=result&&result.epoch===epoch?result:null;
+  return {data:current?.data||null,elapsed:current?.anchor==null?0:Math.max(0,performance.now()-current.anchor),phase:current?.phase||'loading',retry:()=>{setResult(null);setRetry(n=>n+1);}};
+ }
+ window.LoanHistory=Object.freeze({load,project,merge,formatDate,normalize,useHistory});
+})();
+})();
+/* @@file history-loans.jsx */
+(function(){
+(function () {
+  const h = React.createElement;
+  function HistoryPill({
+    entry
+  }) {
+    const overdue = window.LoanHistory.normalize(entry.status) === 'SALDO ATRASADO';
+    const meta = {
+      'En proceso': ['amber', 'clock', 'En revisión'],
+      'Aprobadas': ['green', 'checkCircle', 'Aprobada'],
+      'En pago': [overdue ? 'amber' : 'blue', 'clock', 'En pago'],
+      'Liquidadas': ['green', 'checkCircle', 'Liquidada'],
+      'No aprobadas': ['red', 'close', 'No aprobada']
+    }[entry.category] || ['amber', 'info', 'Por revisar'];
+    return h(window.Badge, {
+      tone: meta[0],
+      icon: meta[1]
+    }, meta[2]);
+  }
+  function ApprovalClock({
+    entry
+  }) {
+    if (entry.category !== 'Aprobadas' || entry.remaining == null) return null;
+    const seconds = Math.ceil(entry.remaining / 1000),
+      hours = Math.floor(seconds / 3600),
+      minutes = Math.floor(seconds % 3600 / 60);
+    return h('div', {
+      'data-approval-countdown': '',
+      style: {
+        fontSize: 'var(--text-11-5, 11.5px)',
+        color: 'var(--ink-3)',
+        marginTop: 5,
+        fontWeight: 600
+      }
+    }, 'En pago en ' + String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0'));
+  }
+  function HistorySourceState({
+    history
+  }) {
+    if (history.phase === 'loaded') return null;
+    return h('div', {
+      'data-history-source': history.phase,
+      role: 'status',
+      style: {
+        padding: '18px 20px',
+        fontSize: 13,
+        color: history.phase === 'error' ? '#A32921' : 'var(--ink-3)',
+        textAlign: 'center'
+      }
+    }, history.phase === 'error' ? 'No pudimos consultar tus préstamos y solicitudes financieras. ' : 'Consultando tus préstamos y solicitudes financieras…', history.phase === 'error' && h('button', {
+      onClick: history.retry,
+      style: {
+        color: 'inherit',
+        fontWeight: 700
+      }
+    }, 'Reintentar'));
+  }
+  function LoanHistoryDetail({
+    app,
+    loanKey
+  }) {
+    const history = window.LoanHistory.useHistory(),
+      entry = history.data ? window.LoanHistory.project(history.data, history.elapsed).find(row => row.key === loanKey) : null;
+    const money = v => v == null ? 'No registrado' : window.money(v),
+      cell = (label, value) => h('div', null, h('div', {
+        style: {
+          fontSize: 12,
+          color: 'var(--ink-3)',
+          fontWeight: 600
+        }
+      }, label), h('div', {
+        style: {
+          fontSize: 17,
+          fontWeight: 800,
+          marginTop: 4
+        }
+      }, value));
+    return h('div', {
+      className: 'su-route',
+      'data-loan-history-detail': '',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        padding: '8px 12px',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, h('button', {
+      onClick: app.back,
+      'aria-label': 'Volver al historial',
+      style: {
+        width: 40,
+        height: 40,
+        border: 0,
+        background: 'transparent',
+        color: 'var(--ink)'
+      }
+    }, h(window.Icon, {
+      name: 'arrowL',
+      size: 22
+    })), h('span', {
+      style: {
+        fontSize: 17,
+        fontWeight: 800
+      }
+    }, entry?.kind === 'request' ? 'Solicitud' : 'Amortización de pagos')), h('div', {
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        minHeight: 0,
+        overflowY: 'auto',
+        padding: 20
+      }
+    }, h(HistorySourceState, {
+      history
+    }), !entry && history.phase === 'loaded' && h('p', {
+      role: 'status'
+    }, 'El registro no está disponible en tu historial.'), entry && h(React.Fragment, null, h('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 20,
+        padding: 18,
+        boxShadow: 'var(--neo-md)'
+      }
+    }, h('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12
+      }
+    }, h(window.IconTile, {
+      icon: 'receipt',
+      size: 50
+    }), h('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, h('div', {
+      style: {
+        fontSize: 17,
+        fontWeight: 800,
+        overflowWrap: 'anywhere'
+      }
+    }, entry.fund), h('div', {
+      style: {
+        fontFamily: 'var(--mono)',
+        fontSize: 12,
+        color: 'var(--ink-3)'
+      }
+    }, 'Préstamo ' + entry.id)), h(HistoryPill, {
+      entry
+    })), h('div', {
+      style: {
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: 16,
+        marginTop: 18,
+        paddingTop: 16,
+        borderTop: '1px solid var(--hairline)'
+      }
+    }, cell('Monto del préstamo', money(entry.principal)), cell('Total a pagar', money(entry.total)), entry.kind === 'loan' && cell('Pagado a hoy', money(entry.paid_to_date)), cell('Plazo', entry.term == null ? 'No registrado' : entry.term + ' pagos')), entry.approved_at && h('div', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)',
+        marginTop: 14
+      }
+    }, 'Aprobada: ' + new Date(entry.approved_at).toLocaleString('es-MX', {
+      timeZone: 'America/Hermosillo'
+    })), h(ApprovalClock, {
+      entry
+    }), entry.category === 'En pago' && h('div', {
+      style: {
+        marginTop: 10,
+        fontSize: 13,
+        fontWeight: 700,
+        color: window.LoanHistory.normalize(entry.status) === 'SALDO ATRASADO' ? '#9A6B16' : '#2456C7'
+      }
+    }, window.LoanHistory.normalize(entry.status) === 'SALDO ATRASADO' ? 'Saldo atrasado' : 'Al corriente')), entry.kind === 'loan' && h('div', {
+      style: {
+        marginTop: 22
+      }
+    }, h(window.SectionHead, {
+      title: 'Amortización de pagos',
+      icon: 'receipt'
+    }), h('p', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)',
+        lineHeight: 1.5
+      }
+    }, 'Las cuotas con fecha de hoy o anterior figuran como pagadas conforme al registro de Finanzas. Las fechas futuras corresponden a cuotas pendientes.'), entry.preparing && h('div', {
+      role: 'status',
+      style: {
+        padding: 18,
+        background: 'var(--surface)',
+        borderRadius: 18
+      }
+    }, 'Finanzas aprobó tu solicitud. La amortización aún está en preparación. ', h('button', {
+      onClick: history.retry
+    }, 'Actualizar')), !entry.preparing && h('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 18,
+        boxShadow: 'var(--neo-sm)',
+        overflow: 'hidden'
+      }
+    }, entry.schedule.map((row, i) => h('div', {
+      key: row.source_row,
+      'data-installment': row.state,
+      style: {
+        padding: '14px 16px',
+        borderTop: i ? '1px solid var(--hairline)' : 'none',
+        display: 'flex',
+        gap: 12,
+        alignItems: 'center'
+      }
+    }, h('div', {
+      style: {
+        flex: 1
+      }
+    }, h('div', {
+      style: {
+        fontSize: 13,
+        fontWeight: 800
+      }
+    }, row.number == null ? 'Cuota' : 'Cuota ' + row.number), h('div', {
+      style: {
+        fontSize: 12,
+        color: 'var(--ink-3)',
+        marginTop: 4
+      }
+    }, window.LoanHistory.formatDate(row.date))), h('div', {
+      style: {
+        textAlign: 'right'
+      }
+    }, h('div', {
+      style: {
+        fontSize: 15,
+        fontWeight: 800,
+        color: 'var(--guinda)',
+        marginBottom: 5
+      }
+    }, money(row.amount)), h(window.Badge, {
+      tone: row.state === 'Pagada' ? 'green' : 'amber'
+    }, row.state)))))), h(window.Btn, {
+      full: true,
+      size: 'lg',
+      variant: 'outline',
+      icon: 'headset',
+      style: {
+        marginTop: 22
+      },
+      onClick: () => window.open('https://wa.me/526626727130', '_blank', 'noopener,noreferrer')
+    }, 'Contactar a un asesor'))));
+  }
+  Object.assign(window, {
+    HistoryPill,
+    ApprovalClock,
+    HistorySourceState,
+    LoanHistoryDetail
+  });
+})();
+})();
 /* @@file screens-historial.jsx */
 (function(){
 /* screens-historial.jsx — Mi Historial: solicitudes + tracking timeline */
@@ -33240,14 +33570,22 @@ Object.assign(window, {
     app
   }) {
     const operations = window.useOperationsStore();
+    const history = window.LoanHistory.useHistory();
     const [filter, setFilter] = useState('Todas');
-    const filters = ['Todas', 'En proceso', 'Aprobadas', 'No aprobadas'];
-    const mine = operations.all();
+    const filters = ['Todas', 'En proceso', 'Aprobadas', 'En pago', 'Liquidadas', 'No aprobadas'];
+    const mine = window.LoanHistory.merge(operations.all(), history.data, history.elapsed);
     let list = mine.slice();
     if (filter === 'En proceso') list = list.filter(s => s.estado === 'revision');
     if (filter === 'Aprobadas') list = list.filter(s => s.estado === 'aprobado' || s.estado === 'depositado');
+    if (filter === 'En pago') list = list.filter(s => s.estado === 'en_pago');
+    if (filter === 'Liquidadas') list = list.filter(s => s.estado === 'liquidada');
     if (filter === 'No aprobadas') list = list.filter(s => s.estado === 'rechazado');
-    const activa = mine.find(s => s.estado === 'revision');
+    const activa = mine.find(s => s.estado === 'revision' && s.sourceId && s.steps.length);
+    const openEntry = s => app.push('tracking', s.history && (s.history.kind === 'loan' || !s.sourceId) ? {
+      loanKey: s.historyKey
+    } : {
+      s
+    });
     // El progreso se LLENA al aparecer (una sola vez): la barra deja de leerse
     // como gráfico y pasa a leerse como avance.
     const progRef = React.useRef(null);
@@ -33279,7 +33617,7 @@ Object.assign(window, {
       variant: 'historial'
     }), React.createElement(window.RequestAuthorizationNotice, {
       app,
-      requests: mine
+      requests: operations.all()
     }), React.createElement(window.FarmaHistory, {
       app
     }),
@@ -33421,7 +33759,9 @@ Object.assign(window, {
         fontWeight: 700,
         color: 'var(--ink-3)'
       }
-    }, 'Cargando solicitudes…'), operations.state().phase === 'error' && React.createElement('div', {
+    }, 'Cargando solicitudes…'), React.createElement(window.HistorySourceState, {
+      history
+    }), operations.state().phase === 'error' && React.createElement('div', {
       'data-operations-state': 'error',
       style: {
         padding: 24,
@@ -33441,10 +33781,8 @@ Object.assign(window, {
         gap: 12
       }
     }, list.map(s => React.createElement('div', {
-      key: s.id,
-      onClick: () => app.push('tracking', {
-        s
-      }),
+      key: s.historyKey || s.id,
+      onClick: () => openEntry(s),
       className: 'su-press su-history-entry',
       style: {
         display: 'flex',
@@ -33497,17 +33835,21 @@ Object.assign(window, {
         fontWeight: 800,
         color: 'var(--guinda)'
       }
-    }, s.monto == null ? 'Por cotizar' : window.money(s.monto)), React.createElement(StatusPill, {
+    }, s.monto == null ? 'Por cotizar' : window.money(s.monto)), s.history ? React.createElement(window.HistoryPill, {
+      entry: s.history
+    }) : React.createElement(StatusPill, {
       estado: s.estado,
       requestStatus: s.requestStatus
-    })), React.createElement('div', {
+    })), s.history && React.createElement(window.ApprovalClock, {
+      entry: s.history
+    }), React.createElement('div', {
       style: {
         fontSize: 'var(--text-12, 12px)',
         color: 'var(--ink-3)',
         fontWeight: 600,
         marginTop: 5
       }
-    }, s.fecha + ' · ' + s.plazo + (s.subtipo ? ' · ' + s.subtipo : '') + ((s.steps.find(step => step.active) || {}).label ? ' · Etapa: ' + s.steps.find(step => step.active).label : ''))))), list.length === 0 && React.createElement(window.EmptyState, {
+    }, s.fecha + ' · ' + s.plazo + (s.subtipo ? ' · ' + s.subtipo : '') + ((s.steps.find(step => step.active) || {}).label ? ' · Etapa: ' + s.steps.find(step => step.active).label : ''))))), list.length === 0 && history.phase === 'loaded' && operations.state().phase === 'loaded' && React.createElement(window.EmptyState, {
       icon: 'receipt',
       title: 'Sin solicitudes aquí',
       sub: 'Cuando solicites un beneficio aparecerá en esta lista.'
@@ -33516,6 +33858,19 @@ Object.assign(window, {
 
   // ---------- TRACKING DETAIL ----------
   function TrackingScreen({
+    app,
+    params
+  }) {
+    if (params.loanKey) return React.createElement(window.LoanHistoryDetail, {
+      app,
+      loanKey: params.loanKey
+    });
+    return React.createElement(RequestTrackingScreen, {
+      app,
+      params
+    });
+  }
+  function RequestTrackingScreen({
     app,
     params
   }) {

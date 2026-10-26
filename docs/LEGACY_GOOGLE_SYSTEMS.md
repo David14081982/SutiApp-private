@@ -157,3 +157,11 @@ Estado verificado de esta adenda (SICOF latency activation receipt): migraciones
 Cambiar filtros compatibles trabaja sobre la observación ya autorizada y el contexto canónico recibido; no genera consultas Google ni altera el job compartido de cuatro minutos. El lector, libro, columnas, fórmulas, fechas de amortización y huellas conservan su contrato. El motor financiero permanece idéntico en servidor y simulador local.
 
 La vista previa expira como máximo a los cinco minutos y antes si vence su fuente. Otro inicio o corte histórico requiere contexto canónico suficiente; no se reconstruyen políticas faltantes a partir de los gráficos. Exportar o guardar conserva la comprobación del servidor y falla ante una fuente modificada o vencida. No se introducen writers legacy, polling por filtro ni una segunda autoridad de préstamos.
+
+
+## H-HISTORY-LOAN-PAYMENTS-001 ? candidato local, 2026-10-25
+
+Se prepar? read_self_history como acci?n aditiva de solo lectura del receptor existente, limitada al libro SutiApp Final y pesta?as HISTORIAL P V2 / Historial de solicitudes. Lee notas de identidad existentes, no crea notas. Inversa estructural SHA-256 demuestra conservaci?n exacta del receptor anterior; suite SICOF preservada. No se cambiaron celdas, f?rmulas, triggers, transferencias, pagos ni propiedades. La regla de fechas de autoservicio del propietario queda limitada al nuevo lector/pantalla. Sin publicaci?n externa realizada.
+
+
+Activation authorized by owner on 2026-10-25. Google v20 and migration 20261025000100 installed; loan-history Edge v1 active. No business records or Sheet cells changed. See history-loan-payments deployment and live evidence for current verification.

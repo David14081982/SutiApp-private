@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "baseCommit": "6c9fdb5d62c5ea8f6563c289ad13b6fdfca1e5e9",
+  "bundleSha256": "9d5a21f3a5a68b961298b3dfc0417e9a43738255c86f4ca63d6136519eb6d696",
+  "previousBundleSha256": "005b71e218e6f9f0c848396e2f9b7ba95bc4fbfa65a752d92c79b09bd7cc8528",
+  "changedChunks": [
+    "history-loans-repository.js",
+    "history-loans.jsx",
+    "screens-historial.jsx"
+  ],
+  "otherChunksPreserved": true
+}

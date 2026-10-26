@@ -959,3 +959,11 @@ Cat?logo/tarifa: program_catalog_items; identidad: affiliates. Solicitud, interv
 ## H-RENTACAR-CATALOG-UI-ADMIN-001 - rental catalog specifications
 
 program_catalog_items remains the sole vehicle authority. Its nullable rental_specs contains year, engine, vehicle_type, seats and tank only for program_key=renta. Historical source year/seats are promoted once; absent technical values stay unknown until Admin supplies real values. Runtime never reads source_payload as fallback. Existing price_cash/enabled/sold/sort_order and program_catalog_item_assets keep price, availability, order and principal/gallery authority. save_renta_car_catalog_item is a rental-only adapter to the unchanged canonical catalog writer, with program_catalog.write, locked scope, optimistic updated_at, validation and actor audit. No secondary catalog, requests, finance rules or Storage policy changes. See docs/audits/H-RENTACAR-CATALOG-UI-ADMIN-001.md.
+
+
+## H-HISTORY-LOAN-PAYMENTS-001 ? candidato local, 2026-10-25
+
+Para la nueva proyecci?n de autoservicio, HISTORIAL P V2 conserva autoridad sobre cuotas y X sobre estado; Historial de solicitudes A/B/Y define solicitudes SR pendientes/rechazadas. La identidad se deriva de affiliates y el instante exacto de aprobaci?n de program_requests.financial_approved_at. El plazo de 24 horas es derivado. La nota SUTI_LOAN_TRANSFER_V1 es la evidencia de v?nculo SR/ID; no se une por nombre, monto o fecha. No cambia la autoridad del workflow ni otros consumidores. Candidato probado localmente; a?n no instalado.
+
+
+Activation authorized by owner on 2026-10-25. Google v20 and migration 20261025000100 installed; loan-history Edge v1 active. No business records or Sheet cells changed. See history-loan-payments deployment and live evidence for current verification.

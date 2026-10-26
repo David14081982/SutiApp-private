@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "slug": "loan-history",
+  "version": 1,
+  "verifyJwt": true,
+  "remoteStatus": "ACTIVE",
+  "sourceFiles": [
+    {
+      "file": "index.ts",
+      "sha256": "efb44b7247666c0b12522dbbfea464b9d9376833d14a80233bce9c6748f84004"
+    },
+    {
+      "file": "history.mjs",
+      "sha256": "33960f23043b6f6e65821f37f286da966be93ad1446ac62e089691a8f3e6481d"
+    },
+    {
+      "file": "source.mjs",
+      "sha256": "861bdfe0293f736451fed20fdcac3fd2ace53551ff44945a5aebc796d92e4df4"
+    }
+  ]
+}

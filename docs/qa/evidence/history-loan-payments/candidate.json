@@ -1,0 +1,107 @@
+{
+  "status": "PASS",
+  "scope": "LOCAL_CANDIDATE_NOT_DEPLOYED",
+  "checks": {
+    "focalBundleSyntax": true,
+    "focalSourceParity": true,
+    "unchangedOtherBundleChunks": true,
+    "edgeTypeScriptSyntax": true
+  },
+  "bundleChanges": [
+    "history-loans-repository.js",
+    "history-loans.jsx",
+    "screens-historial.jsx"
+  ],
+  "files": [
+    {
+      "file": "app/history-loans-repository.js",
+      "sha256": "f4f5db4846dcb0b143e1012de3c5a4e1d2580fa8c4fce25bb362b50346bb636e"
+    },
+    {
+      "file": "app/history-loans.jsx",
+      "sha256": "96a775263aecf88b155e5bc8ba0e72964e7caf613978fe396ed1a5d0e22be723"
+    },
+    {
+      "file": "app/screens-historial.jsx",
+      "sha256": "d8436681cb74338527c1254577b6237a91fa460d2f5f02a6898fdf1cba58eba4"
+    },
+    {
+      "file": "scripts/build-bundle.js",
+      "sha256": "e81bd9416a909e0b0e4c4741c0177b95231586fb689fb4bcfd8b55d256db5de9"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "9b544326883b66aa48e238b6273ba62145baf8660f6699c1d6f83cb0ed473bb2"
+    },
+    {
+      "file": "SutiApp.html",
+      "sha256": "00740a27a440214b955f3b52651d1db086e79a55654c2c133ea0218a4b60943b"
+    },
+    {
+      "file": "supabase/functions/loan-history/index.ts",
+      "sha256": "efb44b7247666c0b12522dbbfea464b9d9376833d14a80233bce9c6748f84004"
+    },
+    {
+      "file": "supabase/functions/loan-history/history.mjs",
+      "sha256": "33960f23043b6f6e65821f37f286da966be93ad1446ac62e089691a8f3e6481d"
+    },
+    {
+      "file": "supabase/functions/loan-history/source.mjs",
+      "sha256": "861bdfe0293f736451fed20fdcac3fd2ace53551ff44945a5aebc796d92e4df4"
+    },
+    {
+      "file": "supabase/migrations/20261025000100_self_loan_history.sql",
+      "sha256": "38384294ad95e2341f0a9ef68e7d21263209d1d136eb1443c1eb7346583ad7a1"
+    },
+    {
+      "file": "supabase/recovery/20261025000100_self_loan_history.sql",
+      "sha256": "64048906c600aeca5a32a9797bf531a0bf3e32612a48963370748dbe5dfe19e1"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "sha256": "35409e01046e4cc5c943444978e00f1bfc9fb00d2516d930e78db6362c28c9ca"
+    },
+    {
+      "file": "scripts/inspect-loan-history.js",
+      "sha256": "bde2686c5fbc5adf0fb7159c0278d4a0e7f9f67e2ff3c003603782266d304cf5"
+    },
+    {
+      "file": "scripts/test-loan-history.js",
+      "sha256": "2fdc8f034fc59428964355e3ed0dfdb3d872f775adced955803f1825a0488139"
+    },
+    {
+      "file": "scripts/test-loan-history-receiver.js",
+      "sha256": "2fc2cd107d5f6d1a362d641526dad1e6d5ab81afc10319cd29ed07cb9920cee9"
+    },
+    {
+      "file": "scripts/test-loan-history-browser.js",
+      "sha256": "5da25f69fa9e86c84cd27d0bd46360c714c9151d015278771ab232e058c9763b"
+    },
+    {
+      "file": "scripts/test-sicof-loan-receiver.js",
+      "sha256": "35566700a94c3e453f3e7a5b8ef96e93aab6871ce5b78449c518424d3dd1dbaa"
+    },
+    {
+      "file": "scripts/package-loan-history.js",
+      "sha256": "eac860ed5d44448ed112c99883007a1c604a2f88607070261c9ad1e6e466bda6"
+    },
+    {
+      "file": "scripts/preflight-loan-history.js",
+      "sha256": "158cd663c59f6d9569b27d35317581acd9ad9741f41caf774db3ac8ec6a4fca8"
+    }
+  ],
+  "productionChanges": 0,
+  "activationOrder": [
+    "Readback remote baseline and back up receiver deployment; reject drift",
+    "Publish additive read_self_history receiver; preserve all existing code/manifest/properties",
+    "Apply additive SQL reader with migration collision and approval-history guards",
+    "Deploy loan-history Edge with JWT verification and existing server secrets",
+    "Verify real own/anonymous/forged target reads without test loans",
+    "Publish only focal frontend and generated chunks; verify actual browser and identity isolation"
+  ],
+  "recovery": [
+    "Disable new reader and revert focal UI/Edge",
+    "Restore prior Google deployment version only if no concurrent change",
+    "Run additive SQL recovery; preserve all requests, approval timestamps, notes and installments"
+  ]
+}

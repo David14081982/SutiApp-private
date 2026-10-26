@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "mode": "LIVE_READ_ONLY",
+  "approvalCounts": {
+    "approved": 267,
+    "timestamped": 267
+  },
+  "latestObservedMigrations": [
+    "20261022000100",
+    "20261020000100",
+    "20261015000100",
+    "20261014000200",
+    "20261014000100",
+    "20261007000300",
+    "20261007000200",
+    "20261007000100"
+  ],
+  "approvedAtType": "timestamp with time zone",
+  "newMigrationApplied": false,
+  "productionWrites": 0
+}

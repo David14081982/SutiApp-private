@@ -446,9 +446,57 @@ function readSicofFinancial_(payload) {
     source_fingerprint:hexDigest_(JSON.stringify({headers:headers,rows:rows})),observed_at:new Date().toISOString()});
 }
 
+// Focal self-history read. Only the authenticated backend supplies the exact Folio.
+// No writes, balances, triggers or financial calculations are introduced here.
+function readSelfHistory_(payload) {
+  const secret=PropertiesService.getScriptProperties().getProperty(HANDOFF_SECRET_PROPERTY);
+  if(!secret||!constantTimeEqual_(payload.secret,secret))return failure_('UNAUTHORIZED');
+  if(Object.keys(payload).some(function(k){return !['action','secret','contract_version','folio'].includes(k);})||
+    payload.contract_version!=='SELF_HISTORY_READ_V1'||typeof payload.folio!=='string'||!payload.folio||
+    payload.folio!==payload.folio.trim()||payload.folio==='0'||payload.folio.length>100)return failure_('INVALID_REQUEST');
+  const book=SpreadsheetApp.openById(HANDOFF_SPREADSHEET_ID),loans=book.getSheetByName('HISTORIAL P V2'),requests=book.getSheetByName('Historial de solicitudes');
+  if(!loans||!requests||loans.getSheetId()!==1245291756||requests.getSheetId()!==10616270)return failure_('LOAN_SOURCE_UNAVAILABLE');
+  const zone=book.getSpreadsheetTimeZone(),dates=new Map();
+  function date(v){
+    if(Object.prototype.toString.call(v)==='[object Date]'&&!isNaN(v.getTime())){
+      const key=v.getTime();if(!dates.has(key))dates.set(key,Utilities.formatDate(v,zone,'yyyy-MM-dd'));return dates.get(key);
+    }
+    if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v))return v;
+    if(typeof v==='string'&&/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)){const p=v.split('/');return p[2]+'-'+('0'+p[1]).slice(-2)+'-'+('0'+p[0]).slice(-2);}
+    return null;
+  }
+  function scan(sheet,width,ownerColumn){
+    const count=sheet.getLastRow();if(count<1)throw new Error('LOAN_SOURCE_UNAVAILABLE');
+    const range=sheet.getRange(1,1,count,width),values=range.getValues(),display=range.getDisplayValues();
+    const notes=sheet===requests?sheet.getRange(1,1,count,1).getNotes():null;
+    if(count!==sheet.getLastRow()||JSON.stringify(values)!==JSON.stringify(range.getValues()))throw new Error('HISTORY_SOURCE_CHANGED');
+    return {header:display[0],rows:values.map(function(row,i){return {row:row,display:display[i],note:notes?notes[i][0]:'',source_row:i+1};})
+      .filter(function(r){return r.source_row>1&&r.display[ownerColumn]===payload.folio;})};
+  }
+  const l=scan(loans,35,3),r=scan(requests,25,1);
+  if(l.header[0]!=='Fecha'||l.header[1]!=='Cuotas'||l.header[2]!=='ID'||l.header[3]!=='Folio'||l.header[23]!=='Estatus del prestamo'||
+    r.header[0]!=='ID'||r.header[1]!=='Número de control'||r.header[24]!=='Estado')return failure_('LOAN_SOURCE_UNAVAILABLE');
+  const loanRows=l.rows.map(function(item){const v=item.row,d=item.display;
+    // S is formatted as a date in the legacy sheet, though its serial is the quota number.
+    let number=v[18];if(Object.prototype.toString.call(number)==='[object Date]'){
+      const iso=date(number);number=iso?Math.round((Date.parse(iso+'T00:00:00Z')-Date.UTC(1899,11,30))/86400000):null;
+    }
+    return {source_row:item.source_row,id:d[2],owner:d[3],date:date(v[0]),amount:v[1]===''?null:v[1],fund:d[6],
+      term:v[16]===''?null:v[16],principal:v[9]===''?null:v[9],total:v[10]===''?null:v[10],scheduled:v[14]===''?null:v[14],
+      number:number===''?null:number,paid_to_date:v[21]===''?null:v[21],expected_to_date:v[22]===''?null:v[22],status:d[23],authorized:date(v[34])};});
+  const requestRows=r.rows.map(function(item){const v=item.row,d=item.display;let receipt=null;
+    const markers=String(item.note||'').split('\n').filter(function(line){return line.indexOf('SUTI_LOAN_TRANSFER_V1:')===0;});
+    if(markers.length>1)throw new Error('HISTORY_TRANSFER_IDENTITY_INVALID');
+    if(markers.length){try{receipt=JSON.parse(markers[0].slice('SUTI_LOAN_TRANSFER_V1:'.length));}catch(_){throw new Error('HISTORY_TRANSFER_IDENTITY_INVALID');}}
+    return {id:d[0],owner:d[1],fund:d[4],term:v[6]===''?null:v[6],principal:v[7]===''?null:v[7],total:v[8]===''?null:v[8],date:date(v[9]),status:d[24],receipt:receipt};});
+  return jsonResponse_({ok:true,action:'read_self_history',contract_version:'SELF_HISTORY_READ_V1',workbook_id:HANDOFF_SPREADSHEET_ID,
+    loan_sheet_id:1245291756,request_sheet_id:10616270,folio:payload.folio,loans:loanRows,requests:requestRows});
+}
+
 function doPost(event) {
   try {
     const payload=JSON.parse(event&&event.postData&&event.postData.contents||'{}');
+    if(payload.action==='read_self_history')return readSelfHistory_(payload);
     if(payload.action==='read_sicof_financial')return readSicofFinancial_(payload);
     if(payload.action==='read_loan_status')return readLoanStatus_(payload);
     if(payload.action==='sync_request')return receiveRequestSync_(payload);

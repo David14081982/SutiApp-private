@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "authenticatedSelfRead": true,
+  "ownLoanCount": 0,
+  "ownQuotaCount": 0,
+  "sourceCoverageExact": true,
+  "ownRequestLinksOnly": true,
+  "anonymousStatus": 401,
+  "anonymousRpcStatus": 401,
+  "forgedTargetStatus": 400,
+  "untrustedOriginStatus": 403,
+  "noStore": true,
+  "verificationMs": 35698,
+  "dateRuleVerifiedForReturnedRows": true,
+  "classificationVerifiedForReturnedRows": true,
+  "businessWrites": 0,
+  "identitySessionWrites": 0,
+  "privateContentLogged": false,
+  "limitation": "Controlled account has no loans; populated cards and cross-user races verified with isolated fixtures. Assisted real-user probe not executed: automatic approval review rejected scope."
+}

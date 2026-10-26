@@ -16,3 +16,7 @@ supabase/migrations/20260928000400_document_layout_refinement.sql -text
 supabase/recovery/20260928000400_document_layout_refinement.sql -text
 supabase/migrations/20260928000500_document_deposit_authorization.sql -text
 supabase/recovery/20260928000500_document_deposit_authorization.sql -text
+
+supabase/migrations/20261025000100_self_loan_history.sql -text
+supabase/recovery/20261025000100_self_loan_history.sql -text
+google-apps-script/financial-handoff/Code.gs -text

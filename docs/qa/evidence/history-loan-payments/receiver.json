@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "checks": [
+    "secret checked before opening",
+    "fixed sources",
+    "exact leading-zero Folio",
+    "other users excluded in receiver",
+    "receipt linkage",
+    "quota serial read",
+    "source-change rejection",
+    "existing code exact inverse"
+  ],
+  "sheetWrites": 0
+}

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "version": 20,
+  "previous": 19,
+  "exactReadback": true,
+  "entrypointsPreserved": true,
+  "manifestPreserved": true,
+  "legacyReader": "PASS",
+  "sheetWrites": 0
+}

@@ -394,3 +394,11 @@ EXPORT y SAVE_SCENARIO reciben únicamente las fechas base, parámetros y huella
 ## H-HISTORY-PRIVATE-DOCUMENTS-001 — 2026-10-05
 
 Owner authorizes removing authorization PDFs from affiliate History/Tracking and reserving program request documents for administrators. Tracking no longer mounts GeneratedDocuments. document_private.visible denies all program self-context LIST/ACCESS, retaining program_requests.read and admin_request_module_boundary for admin access. Savings document visibility, generation, immutable records and private Storage remain unchanged. Migration 20261005000200 is guarded and reversible; production readback preserves function OID/owner/ACL and all 84 existing document records. Edge denies self context (403) and serves a legitimate admin PDF (200). See [audit](audits/H-HISTORY-PRIVATE-DOCUMENTS-001.md) and focal evidence. Commit/push/Pages publication explicitly authorized; only this H is packaged.
+
+
+## H-HISTORY-LOAN-PAYMENTS-001 ? candidato local, 2026-10-25
+
+Nuevo lector get_self_loan_history_context() sin par?metros, SECURITY DEFINER con search_path vac?o y grant solo authenticated. Usa get_effective_affiliate_id existente y valida control exacto sin duplicados activos. Edge loan-history verifica usuario y contexto antes/despu?s de Google; solo admite {action:LOAD}, sin Folio/affiliate_id del browser. Receptor read_self_history exige secreto server-side, contrato fijo y filtra el Folio autorizado. Cero service_role frontend, credenciales nuevas o bypass Admin. Verificado aislado; no afirmar protecci?n desplegada antes de instalaci?n/readback.
+
+
+Activation authorized by owner on 2026-10-25. Google v20 and migration 20261025000100 installed; loan-history Edge v1 active. No business records or Sheet cells changed. See history-loan-payments deployment and live evidence for current verification.

@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "migration": "20261025000100",
+  "sha256": "38384294ad95e2341f0a9ef68e7d21263209d1d136eb1443c1eb7346583ad7a1",
+  "result": [
+    {
+      "integrity": "PASS",
+      "compared_domains": 4
+    }
+  ],
+  "grants": {
+    "anon": false,
+    "authenticated": true,
+    "service_role": false
+  },
+  "businessWrites": 0,
+  "approvalWriterUnchanged": true
+}

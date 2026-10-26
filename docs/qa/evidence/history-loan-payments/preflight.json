@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "mode": "READ_ONLY_PREFLIGHT",
+  "googleActiveVersion": 19,
+  "googleBaselineMatches": true,
+  "googleBackupSha256": "413131bc96c4c52058fd3b63721a0c96ae4274da801f072948f8a0ebfdb2c028",
+  "migrationAvailable": true,
+  "edgeBundled": true,
+  "edgeInstalled": false,
+  "productionWrites": 0
+}

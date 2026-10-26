@@ -40,7 +40,7 @@ assert(!/setValues|setValue\(|flush\(|createTrigger|LockService|receiveRequest|r
 // Structural inverse is exact: new dispatch/helper removal restores prior source.
 const backup='.tmp/sicof/loan-reader/Code.gs.before';
 if(fs.existsSync(backup)){
-  const inverse=source.replace(/\r/g,'').replace(/\/\/ SICOF is a separate, fixed read contract\.[\s\S]*?(?=function doPost\(event\))/, '').replace("    if(payload.action==='read_sicof_financial')return readSicofFinancial_(payload);\n",'');
+  const inverse=source.replace(/\r/g,'').replace(/\/\/ SICOF is a separate, fixed read contract\.[\s\S]*?(?=function doPost\(event\))/, '').replace("    if(payload.action==='read_sicof_financial')return readSicofFinancial_(payload);\n",'').replace("    if(payload.action==='read_self_history')return readSelfHistory_(payload);\n",'');
   const hash=text=>crypto.createHash('sha256').update(text).digest('hex');
   assert.equal(hash(inverse),hash(fs.readFileSync(backup,'utf8').replace(/\r/g,'')),'EXISTING_RECEIVER_CHANGED');
 }

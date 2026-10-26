@@ -4324,3 +4324,11 @@ Removed the generic Information/category block only from Renta Car detail,
 as requested. Single rental render guard; calendar, workflow, backend and other
 programs unchanged. Build, source/bundle parity and existing focal browser test PASS.
 See audits/H-RENTACAR-INFO-REMOVE-004.md.
+
+
+## H-HISTORY-LOAN-PAYMENTS-001 ? candidato local, 2026-10-25
+
+Implementaci?n local de filtros, contador desde aprobaci?n persistida, tarjetas y detalle de amortizaci?n, con lector propio SQL/Edge/GAS. Pruebas: test-loan-history.js, test-loan-history-receiver.js, test-sicof-loan-receiver.js, test-loan-history-browser.js (320/390/1440), build y paridad focal. Lectura real de cat?logo ?nicamente; cero cambios productivos. El bundle focal conserva los bytes preexistentes de Renta Car: su fuente ya estaba modificada sin regenerar al inicio. Evidencia y alcance: docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md y docs/qa/evidence/history-loan-payments/.
+
+
+Activation authorized by owner on 2026-10-25. Google v20 and migration 20261025000100 installed; loan-history Edge v1 active. No business records or Sheet cells changed. See history-loan-payments deployment and live evidence for current verification.

@@ -1484,3 +1484,7 @@ Owner authorized daily synchronization at 15:00 America/Hermosillo (22:00 UTC), 
 ## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
 
 The owner explicitly authorized two corrections: immediate affected-user approval visibility without waiting for 15:00, and the 24-hour Aprobadas window even when X is blank. Daily/manual full synchronization and independent amortization updates must remain unchanged. The implementation reads confirmed native approvals separately and emits a metadata-only own signal; it never triggers a global or per-user Google synchronization. Existing loan amounts, source quotas, financial writers, historical records and Google content are outside the write scope. See the focused audit and release evidence for installation status.
+
+## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
+
+Owner explicitly confirmed the A/B/C/D rule and requested a focused implementation, label Total pagado, commit, push and publication. The rule replaces the V-based own-history paid summary, not the financial legacy, accounting ledger or existing loan process. Dates on/before today represent payments manually corroborated by the program manager; future dates remain scheduled. Invalid data must be reviewed rather than coerced to zero. UI and statement use the same projected total. No Google Sheets, historical records, source amounts, quota states/numbering or synchronization changes are authorized.

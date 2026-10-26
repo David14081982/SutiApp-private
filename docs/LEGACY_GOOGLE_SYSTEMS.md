@@ -182,3 +182,7 @@ and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-
 ### H-HISTORY-SNAPSHOT-001
 
 The sole Apps Script addition is fixed read_history_snapshot/HISTORY_SNAPSHOT_READ_V1 plus its dispatch. It reads the two fixed history tabs, types/display values and request transfer notes, detects changed observations and preserves the old financial readers/writers byte-for-byte outside the addition. It never writes cells/notes/properties/formulas/triggers. Source snapshots retain required financial fields and minimal transfer identity only; names, documents and unrelated columns are not copied. Both sheets are observed again before acceptance; this detects observed changes but is not a Google transaction lock. Daily/manual worker reads only, never one global read per user.
+
+## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
+
+This change reads the already published A/B/C/D observation only. It does not alter Google Sheets, Apps Script, formulas, triggers, snapshots, quotas, dates, amounts, J/K, V/W or X. The owner-authorized own-history presentation sum uses A<=today Hermosillo and B, by exact own C/D. Existing legacy readers, writers, loan calculations outside this display and daily/manual publication remain byte-identical. Recovery restores the prior reader/frontend; no business-data recovery is needed.

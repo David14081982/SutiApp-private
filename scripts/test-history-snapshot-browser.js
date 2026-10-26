@@ -119,10 +119,10 @@ async function main(){
   assert.equal(await detail.getByText('Próxima a vencer',{exact:true}).count(),9);
   assert.equal(await detail.getByText('Cierre de contrato',{exact:true}).count(),1);
   assert.equal(await detail.locator('[data-installment]').last().getAttribute('data-installment'),'Pendiente','last future zero is not liquidation');
-  assert.equal(await detail.locator('[data-monetary-progress]').innerText(),'25%','progress uses V/K, never example or quota count');
+  assert.equal(await detail.locator('[data-monetary-progress]').innerText(),'50%','progress uses dated A/B payments divided by K, ignoring conflicting V');
   assert((await detail.locator('[data-loan-principal]').innerText()).includes('700'));
   assert((await detail.locator('[data-loan-total]').innerText()).includes('1,000'));
-  assert((await detail.locator('[data-loan-balance]').innerText()).includes('750'));
+  assert((await detail.locator('[data-loan-balance]').innerText()).includes('500'));
   assert.equal(await detail.locator('[data-history-updated]').count(),1);
   assert(await scroll.evaluate(el=>el.scrollWidth<=el.clientWidth+1),'no horizontal overflow');
   await page.screenshot({path:path.join(evidence,'detail-'+width+'.png')});
@@ -143,7 +143,7 @@ async function main(){
     const parsed=await readStatementPdf(await LoanHistoryStatement.create(entry,own).arrayBuffer(),true);
     return {...parsed,expectedRows:expectedStatementRows(entry),rawUnchanged:JSON.stringify(entry)===rawEntryBefore};
    });
-   assert(parsed.pages>5);assert(parsed.text.includes('Nómina (prueba) \\ línea'));assert(parsed.text.includes('25%'));assert(parsed.text.includes('750'));assert(parsed.rendered>1000);
+   assert(parsed.pages>5);assert(parsed.text.includes('Nómina (prueba) \\ línea'));assert(parsed.text.includes('50%'));assert(parsed.text.includes('500'));assert(parsed.rendered>1000);
    assert.equal((parsed.text.match(/W/g)||[]).length,280);assert.equal((parsed.text.match(/@/g)||[]).length,180);assert(parsed.maxRight<=576.01,'every rendered PDF line stays inside the Letter page right margin');
    assert.deepEqual(parsed.rows.map(row=>Number(row.number)),Array.from({length:210},(_,i)=>i+1),'PDF ordinal continues across pages although all source numbers are one');
    assert.deepEqual(parsed.rows,parsed.expectedRows,'all 210 rows retain their date, amount and state');assert(parsed.rawUnchanged,'standalone PDF generation preserves every source value and row');
@@ -172,10 +172,10 @@ async function main(){
   await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await flush(page);const visible=await count(page);
   assert.equal(visible.metadata,beforeTime.metadata+1);assert.equal(visible.history,beforeTime.history,'same publication transfers metadata only');
   // One signal publishes both mounted consumers atomically; no intermediate blank.
-  const beforeSignal=await count(page);await page.evaluate(()=>{delayHistory=true;payload.entries[0].paid_to_date=500;publishVersion('v2');});await flush(page);
-  assert.equal((await count(page)).history,beforeSignal.history+1);assert.equal(await detail.locator('[data-installment]').count(),12);assert.equal(await detail.locator('[data-monetary-progress]').innerText(),'25%');
+  const beforeSignal=await count(page);await page.evaluate(()=>{delayHistory=true;payload.entries[0].paid_to_date=999;payload.entries[0].schedule[2].amount=750;publishVersion('v2');});await flush(page);
+  assert.equal((await count(page)).history,beforeSignal.history+1);assert.equal(await detail.locator('[data-installment]').count(),12);assert.equal(await detail.locator('[data-monetary-progress]').innerText(),'50%');
   await page.evaluate(()=>publishVersion('v2'));await flush(page);assert.equal((await count(page)).history,beforeSignal.history+1,'duplicate in-flight publication is coalesced');
-  await page.evaluate(()=>{delayHistory=false;resolveHistory();});await flush(page);assert.equal(await detail.locator('[data-monetary-progress]').innerText(),'50%');assert.equal(await scroll.evaluate(el=>el.scrollTop),scrollBefore);
+  await page.evaluate(()=>{delayHistory=false;resolveHistory();});await flush(page);assert.equal(await detail.locator('[data-monetary-progress]').innerText(),'75%');assert.equal(await scroll.evaluate(el=>el.scrollTop),scrollBefore);
   const afterSignal=await count(page);await page.evaluate(()=>publishVersion('v2'));await flush(page);assert.deepEqual(await count(page),afterSignal,'duplicate signal performs no fetch');
   // Transient failure is visible beside retained, timestamped publication.
   await page.evaluate(()=>{failHistory=true;publishVersion('refresh-'+(++refreshSerial));});await flush(page);

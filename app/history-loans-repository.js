@@ -3,6 +3,23 @@
  'use strict';
  const normalize=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toUpperCase();
  const formatDate=v=>v?new Date(v.length===10?v+'T12:00:00-07:00':v).toLocaleDateString('es-MX',{timeZone:'America/Hermosillo'}):'Fecha no registrada';
+ function paidThrough(schedule,today){
+  const validDay=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value+'T12:00:00Z'))&&new Date(value+'T12:00:00Z').toISOString().slice(0,10)===value;
+  if(!validDay(today)||!Array.isArray(schedule)||!schedule.length)return null;
+  let units=0n,scale=0;
+  for(const row of schedule){
+   if(!row||!validDay(row.date)||typeof row.amount!=='number'||!Number.isFinite(row.amount)||row.amount<0)return null;
+   if(row.date<=today){
+    // Sum the recorded decimal representations without rounding each quota
+    // or introducing binary-float residuals that look like an excess payment.
+    const [mantissa,exponent='0']=String(row.amount).split('e'),fraction=(mantissa.split('.')[1]||'').length,places=fraction-Number(exponent);
+    if(places>scale){units*=10n**BigInt(places-scale);scale=places;}
+    units+=BigInt(mantissa.replace('.',''))*10n**BigInt(scale-places);
+   }
+  }
+  const total=Number(units.toString()+'e-'+scale);
+  return Number.isFinite(total)?total:null;
+ }
  function approvalCategory(entry,now){
   const status=normalize(entry.status),approved=Date.parse(entry.approved_at),age=now-approved;
   if(['LIQUIDADO','PAGO DE MAS'].includes(status))return 'Liquidadas';
@@ -38,7 +55,7 @@
   return compose(data,now).map(entry=>{
    let category=entry.category;
    if(entry.kind==='loan'&&(entry.approved_at||category==='Aprobadas'))category=approvalCategory(entry,now);
-   return {...entry,category,remaining:category==='Aprobadas'?Math.max(0,Date.parse(entry.expires_at)-now):null,
+   return {...entry,category,...(entry.kind==='loan'?{paid_to_date:entry.preparing?null:paidThrough(entry.schedule,today)}:{}),remaining:category==='Aprobadas'?Math.max(0,Date.parse(entry.expires_at)-now):null,
     schedule:(entry.schedule||[]).map((row,index,rows)=>({...row,
      state:!row.date?'Fecha por revisar':row.date>today?'Pendiente':row.amount===0?'No se descontó':typeof row.amount==='number'&&row.amount>0?'Pagada':'Importe por revisar',
      upcoming:!!row.date&&row.date>today,closure:index===rows.length-1}))};

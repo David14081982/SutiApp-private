@@ -1,0 +1,59 @@
+{
+  "status": "PASS",
+  "classification": "DERIVED_TECHNICAL_INDEX",
+  "runtime_authority": false,
+  "generator_modified": false,
+  "production_calls": 0,
+  "resources": [
+    {
+      "type": "repository",
+      "name": "LoanHistory",
+      "file": "app/history-loans-repository.js",
+      "alias": "Total pagado",
+      "source_of_truth": "DERIVED",
+      "authority": "Published Google A/B rows for exact own Folio D and loan ID C; V does not determine this display total",
+      "evidence": "docs/audits/H-HISTORY-TOTAL-PAID-001.md"
+    }
+  ],
+  "lookups": [
+    {
+      "query": "Total pagado",
+      "freshness": "FRESH",
+      "fallback_required": false,
+      "first_primary_file": "app/history-loans-repository.js",
+      "mapped_resources": [
+        "LoanHistory",
+        "LoanHistoryDetail",
+        "loan-history",
+        "public.get_self_loan_history_snapshot"
+      ],
+      "focal_primary_files": [
+        "app/history-loans-repository.js",
+        "scripts/test-history-total-paid-runtime.js",
+        "docs/audits/H-HISTORY-TOTAL-PAID-001.md"
+      ],
+      "cross_domain_impact": {
+        "domains": [],
+        "consumers": []
+      },
+      "note": "Broad token matches also return existing unrelated total/accounting references; the exact alias ranks LoanHistory first. Lookup is navigation, not a claim that those resources changed."
+    }
+  ],
+  "suite": {
+    "command": "python scripts/test-architecture-registry.py",
+    "exit_code": 0,
+    "result": "PASS generation freshness stale lookup screen table column reverse admin permissions tests fallback incremental secrets determinism"
+  },
+  "post_suite_check": {
+    "command": "python scripts/generate-architecture-registry.py check --json",
+    "status": "FRESH",
+    "changed": [],
+    "added": [],
+    "removed": []
+  },
+  "fixture_cleanup": {
+    "path": "app/__navigator_incremental_fixture__.js",
+    "exists": false
+  },
+  "finalization": "This evidence is written before final generation/check. Any subsequent tracked source or evidence change requires regeneration/check."
+}

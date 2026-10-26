@@ -1,0 +1,123 @@
+{
+  "task": "H-HISTORY-STATEMENT-DESIGN-001",
+  "status": "PASS",
+  "reviewer": "snapshot_architect",
+  "verified_at": "2026-10-26T19:33:47.266Z",
+  "source_file": "app/history-statement.js",
+  "source_raw_sha256": "0df5f96e9a05c2aab97b1d21b7d357cd5a134427e0cf2c0269b6459521153ffb",
+  "source_lf_sha256": "0d8c508c9e7ffd321306a1608054c5bffd7ef2b1a6e7ca59c83eb9a529866e65",
+  "method": "Extract exact production paginate function into isolated Node VM; no product mutation, PDF generation or external calls",
+  "checks": [
+    {
+      "name": "tall_summary_25_rows_minimal_three_pages",
+      "status": "PASS",
+      "rows": 25,
+      "firstStart": 730,
+      "nextStart": 150,
+      "closingHeight": 180,
+      "pageCount": 3,
+      "rowsPerPage": [
+        0,
+        17,
+        8
+      ],
+      "orderedWholeRows": true,
+      "allPagesWithinBottom742": true,
+      "inputUnchanged": true
+    },
+    {
+      "name": "no_rows_close_on_continuation",
+      "status": "PASS",
+      "rows": 0,
+      "firstStart": 730,
+      "nextStart": 150,
+      "closingHeight": 180,
+      "pageCount": 2,
+      "rowsPerPage": [
+        0,
+        0
+      ],
+      "orderedWholeRows": true,
+      "allPagesWithinBottom742": true,
+      "inputUnchanged": true
+    },
+    {
+      "name": "no_rows_single_page",
+      "status": "PASS",
+      "rows": 0,
+      "firstStart": 335,
+      "nextStart": 150,
+      "closingHeight": 180,
+      "pageCount": 1,
+      "rowsPerPage": [
+        0
+      ],
+      "orderedWholeRows": true,
+      "allPagesWithinBottom742": true,
+      "inputUnchanged": true
+    },
+    {
+      "name": "normal_10_rows_stay_single_page",
+      "status": "PASS",
+      "rows": 10,
+      "firstStart": 335,
+      "nextStart": 150,
+      "closingHeight": 180,
+      "pageCount": 1,
+      "rowsPerPage": [
+        10
+      ],
+      "orderedWholeRows": true,
+      "allPagesWithinBottom742": true,
+      "inputUnchanged": true
+    },
+    {
+      "name": "first_page_uses_row_when_it_fits",
+      "status": "PASS",
+      "rows": 25,
+      "firstStart": 700,
+      "nextStart": 150,
+      "closingHeight": 180,
+      "pageCount": 3,
+      "rowsPerPage": [
+        1,
+        16,
+        8
+      ],
+      "orderedWholeRows": true,
+      "allPagesWithinBottom742": true,
+      "inputUnchanged": true
+    },
+    {
+      "name": "first_header_exceeds_page",
+      "status": "PASS",
+      "explicitError": "HISTORY_STATEMENT_ROW_EXCEEDS_PAGE",
+      "inputUnchanged": true
+    },
+    {
+      "name": "closing_block_exceeds_continuation_capacity",
+      "status": "PASS",
+      "explicitError": "HISTORY_STATEMENT_ROW_EXCEEDS_PAGE",
+      "inputUnchanged": true
+    },
+    {
+      "name": "continuation_header_exceeds_page",
+      "status": "PASS",
+      "explicitError": "HISTORY_STATEMENT_ROW_EXCEEDS_PAGE",
+      "inputUnchanged": true
+    },
+    {
+      "name": "indivisible_row_exceeds_page",
+      "status": "PASS",
+      "explicitError": "HISTORY_STATEMENT_ROW_EXCEEDS_PAGE",
+      "inputUnchanged": true
+    }
+  ],
+  "limits": [
+    "Function-level pagination review; visual/render and actual browser download evidence are separate.",
+    "Explicit thrown errors use the unchanged download UI error handler; no additional authenticated or production test."
+  ],
+  "businessRequests": 0,
+  "authSessions": 0,
+  "productWrites": 0
+}

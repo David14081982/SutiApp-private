@@ -7,6 +7,40 @@ const root=path.resolve(__dirname,'..'),read=name=>fs.readFileSync(path.join(roo
 const css=[...read('SutiApp.html').matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m=>m[1]).join('\n');
 const flush=async page=>{await page.clock.runFor(40);await page.evaluate(()=>Promise.resolve());};
 const count=page=>page.evaluate(()=>({history:historyCalls.length,native:nativeCalls.length,metadata:metadataCalls,active:channels.filter(x=>!x.closed).length}));
+async function installStatementReader(page){
+ const urls=['pdf.min.mjs','pdf.worker.min.mjs'].map(name=>'data:text/javascript;base64,'+Buffer.from(read('app/vendor/pdfjs-5.4.149/'+name)).toString('base64'));
+ await page.evaluate(async urls=>{
+  globalThis.pdfjsWorker=await import(urls[1]);const pdfjs=await import(urls[0]);
+  window.expectedStatementRows=entry=>{
+   const date=new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'America/Hermosillo'});
+   return entry.schedule.map((row,index)=>({number:String(index+1),date:row.date?date.format(new Date(row.date.length===10?row.date+'T12:00:00-07:00':row.date)):LoanHistory.formatDate(row.date),amount:typeof row.amount==='number'&&Number.isFinite(row.amount)?new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(row.amount):'No registrado',state:row.state}));
+  };
+  window.readStatementPdf=async(raw,render=false)=>{
+   const document=await pdfjs.getDocument({data:new Uint8Array(raw),useSystemFonts:true}).promise,rows=[];let text='',maxRight=0;
+   for(let pageNumber=1;pageNumber<=document.numPages;pageNumber++){
+    const pdfPage=await document.getPage(pageNumber),items=(await pdfPage.getTextContent()).items.filter(item=>item.str.trim()),lines=[];
+    text+=items.map(item=>item.str).join(' ')+' ';
+    for(const item of items){maxRight=Math.max(maxRight,item.transform[4]+item.width);let line=lines.find(line=>Math.abs(line.y-item.transform[5])<1);if(!line){line={y:item.transform[5],items:[]};lines.push(line);}line.items.push(item);}
+    lines.sort((a,b)=>b.y-a.y);lines.forEach(line=>line.items.sort((a,b)=>a.transform[4]-b.transform[4]));
+    // Infer the columns from the rendered table headings, not PDF operators,
+    // source-specific coordinates or the old pipe-delimited line format.
+    const heading=lines.findIndex(line=>['Cuota','Fecha','Importe','Estado'].every(label=>line.items.some(item=>item.str===label)));
+    if(heading<0)continue;
+    const labels=['Cuota','Fecha','Importe','Estado'],anchors=labels.map(label=>lines[heading].items.find(item=>item.str===label).transform[4]);
+    const boundaries=anchors.slice(1).map((x,index)=>(x+anchors[index])/2);let active=null;
+    for(const line of lines.slice(heading+1)){
+     if(line.items[0].transform[4]<anchors[0]-1)break;
+     const cells=['','','',''];for(const item of line.items){const column=boundaries.findIndex(boundary=>item.transform[4]<boundary),index=column<0?3:column;cells[index]+=(cells[index]?' ':'')+item.str;}
+     if(/^\d+$/.test(cells[0])){active={number:cells[0],date:cells[1],amount:cells[2],state:cells[3]};rows.push(active);}
+     else if(active&&cells[0]==='')for(const [index,key]of ['number','date','amount','state'].entries())if(cells[index])active[key]+=(active[key]?' ':'')+cells[index];
+    }
+   }
+   let rendered=0;
+   if(render){const canvas=window.document.createElement('canvas'),pdfPage=await document.getPage(1),viewport=pdfPage.getViewport({scale:1});canvas.width=viewport.width;canvas.height=viewport.height;await pdfPage.render({canvasContext:canvas.getContext('2d'),viewport}).promise;rendered=canvas.toDataURL('image/png').length;}
+   return {pages:document.numPages,text,maxRight,rendered,rows};
+  };
+ },urls);
+}
 async function setup(browser,width){
  const page=await browser.newPage({viewport:{width,height:900}}),errors=[],external=[];
  page.on('pageerror',error=>errors.push(error.message));await page.route('**/*',route=>{external.push(route.request().url());return route.abort();});
@@ -41,6 +75,7 @@ async function setup(browser,width){
   window.authChanged=()=>authListeners.slice().forEach(fn=>fn());
  },width);
  for(const name of ['admin-repository.js','private-resource-demand.js','operations-store.jsx','history-loans-repository.js','history-statement.js','history-loans.jsx','screens-historial.jsx'])await page.addScriptTag({content:read('app/'+name)});
+ await installStatementReader(page);
  await page.evaluate(()=>{
   AdminRepository.primeAccessContext({full_access:true,role_code:'admin',technical_permissions:[],section_actions:[]});
   const h=React.createElement;
@@ -91,24 +126,23 @@ async function main(){
   assert.deepEqual(await page.evaluate(()=>opened[0]),['https://api.whatsapp.com/send/?phone=526626727130&text&type=phone_number&app_absent=0','_blank','noopener,noreferrer']);
   const downloadPromise=page.waitForEvent('download');await detail.getByRole('button',{name:'Descargar estado de cuenta',exact:true}).click();const download=await downloadPromise;
   const pdfPath=path.join(evidence,'statement-'+width+'.pdf');await download.saveAs(pdfPath);const pdfBytes=fs.readFileSync(pdfPath);assert.equal(pdfBytes.subarray(0,8).toString(),'%PDF-1.4');
-  assert.deepEqual([...pdfBytes.toString('latin1').matchAll(/\(Cuota (\d+) \|/g)].map(match=>match[1]),ordinals,'actual downloaded PDF matches all visible quota ordinals');
+  const downloaded=await page.evaluate(bytes=>readStatementPdf(bytes),Array.from(pdfBytes));
+  const expectedPdfRows=await page.evaluate(async()=>expectedStatementRows(LoanHistory.project(await LoanHistory.load('loan:1'),0)[0]));
+  assert.deepEqual(downloaded.rows.map(row=>row.number),ordinals,'actual downloaded PDF matches all visible quota ordinals');
+  assert.deepEqual(downloaded.rows,expectedPdfRows,'downloaded table preserves every date, amount and state in order');
   // Parse every page of a long, escaped statement with the real local PDF.js.
   if(width===390){
-   const pdfModules=['pdf.min.mjs','pdf.worker.min.mjs'].map(name=>'data:text/javascript;base64,'+Buffer.from(read('app/vendor/pdfjs-5.4.149/'+name)).toString('base64'));
-   const parsed=await page.evaluate(async urls=>{
-    globalThis.pdfjsWorker=await import(urls[1]);const pdfjs=await import(urls[0]);
+   const parsed=await page.evaluate(async()=>{
     const own=await LoanHistory.load('loan:1'),entry=LoanHistory.project(own,0)[0];
     entry.fund='Nómina (prueba) \\ línea '+('W'.repeat(280))+' '+('@'.repeat(180));entry.schedule=Array.from({length:210},(_,i)=>({...entry.schedule[i%12],number:1,closure:i===209}));
     const rawEntryBefore=JSON.stringify(entry);
-    const document=await pdfjs.getDocument({data:new Uint8Array(await LoanHistoryStatement.create(entry,own).arrayBuffer()),useSystemFonts:true}).promise;
-    let text='',maxRight=0;for(let i=1;i<=document.numPages;i++){const items=(await(await document.getPage(i)).getTextContent()).items;text+=items.map(item=>item.str).join(' ')+' ';for(const item of items)maxRight=Math.max(maxRight,item.transform[4]+item.width);}
-    const canvas=window.document.createElement('canvas'),pdfPage=await document.getPage(1),viewport=pdfPage.getViewport({scale:1});canvas.width=viewport.width;canvas.height=viewport.height;
-    await pdfPage.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
-    return {pages:document.numPages,text,maxRight,rendered:canvas.toDataURL('image/png').length,rawUnchanged:JSON.stringify(entry)===rawEntryBefore};
-   },pdfModules);
-   assert(parsed.pages>5);assert(parsed.text.includes('Cuota 210'));assert(parsed.text.includes('Nómina (prueba) \\ línea'));assert(parsed.text.includes('25%'));assert(parsed.text.includes('750'));assert(parsed.rendered>1000);
-   assert.equal((parsed.text.match(/W/g)||[]).length,280);assert.equal((parsed.text.match(/@/g)||[]).length,180);assert(parsed.maxRight<=570,'every rendered PDF line stays inside the right margin');
-   assert.deepEqual([...parsed.text.matchAll(/\bCuota (\d+) \|/g)].map(match=>Number(match[1])),Array.from({length:210},(_,i)=>i+1),'PDF ordinal continues across pages although all source numbers are one');assert(parsed.rawUnchanged,'standalone PDF generation preserves every source value and row');
+    const parsed=await readStatementPdf(await LoanHistoryStatement.create(entry,own).arrayBuffer(),true);
+    return {...parsed,expectedRows:expectedStatementRows(entry),rawUnchanged:JSON.stringify(entry)===rawEntryBefore};
+   });
+   assert(parsed.pages>5);assert(parsed.text.includes('Nómina (prueba) \\ línea'));assert(parsed.text.includes('25%'));assert(parsed.text.includes('750'));assert(parsed.rendered>1000);
+   assert.equal((parsed.text.match(/W/g)||[]).length,280);assert.equal((parsed.text.match(/@/g)||[]).length,180);assert(parsed.maxRight<=576.01,'every rendered PDF line stays inside the Letter page right margin');
+   assert.deepEqual(parsed.rows.map(row=>Number(row.number)),Array.from({length:210},(_,i)=>i+1),'PDF ordinal continues across pages although all source numbers are one');
+   assert.deepEqual(parsed.rows,parsed.expectedRows,'all 210 rows retain their date, amount and state');assert(parsed.rawUnchanged,'standalone PDF generation preserves every source value and row');
   }
   assert.deepEqual(await page.evaluate(async()=>({payload:JSON.stringify(payload),observation:JSON.stringify(await LoanHistory.load('loan:1'))})),rawBefore,'UI/project/export preserve raw numbers, row order, dates, amounts and source-row identities');
   assert.deepEqual(await count(page),initial,'PDF export does not add reads');
@@ -118,8 +152,8 @@ async function main(){
   assert.deepEqual(await visibleOrdinals(),ordinals.map(n=>({badge:n,title:'Cuota '+n})),'each loan independently restarts its full row sequence');
   assert.equal(await detail.locator('[data-installment]').last().getAttribute('data-installment'),'Fecha por revisar');
   assert.equal(await detail.getByText('Fecha no registrada',{exact:true}).count(),1);assert.equal(await detail.getByText('Cierre de contrato',{exact:true}).count(),1);
-  const second=await page.evaluate(async()=>{const own=await LoanHistory.load('loan:2'),before=JSON.stringify(own),entry=LoanHistory.project(own,0)[0],bytes=new Uint8Array(await LoanHistoryStatement.create(entry,own).arrayBuffer());return {pdf:Array.from(bytes,x=>String.fromCharCode(x)).join(''),rawUnchanged:before===JSON.stringify(own),rows:entry.schedule.map(row=>({source_row:row.source_row,date:row.date,amount:row.amount,number:row.number}))};});
-  assert.deepEqual([...second.pdf.matchAll(/\(Cuota (\d+) \|/g)].map(match=>match[1]),ordinals);assert(second.rawUnchanged);
+  const second=await page.evaluate(async()=>{const own=await LoanHistory.load('loan:2'),before=JSON.stringify(own),entry=LoanHistory.project(own,0)[0],parsed=await readStatementPdf(await LoanHistoryStatement.create(entry,own).arrayBuffer());return {pdfRows:parsed.rows,expectedRows:expectedStatementRows(entry),rawUnchanged:before===JSON.stringify(own),rows:entry.schedule.map(row=>({source_row:row.source_row,date:row.date,amount:row.amount,number:row.number}))};});
+  assert.deepEqual(second.pdfRows.map(row=>row.number),ordinals);assert.deepEqual(second.pdfRows,second.expectedRows,'second loan retains all values, including its missing date');assert(second.rawUnchanged);
   assert.deepEqual(second.rows,await page.evaluate(()=>payload.entries[1].schedule.map(({source_row,date,amount,number})=>({source_row,date,amount,number}))),'ties/missing dates do not reorder or remove source rows');
   await page.evaluate(()=>setRoute({loanKey:'loan:1'}));await flush(page);assert.deepEqual(await count(page),initial,'switching owned details only uses existing memory');
   // Same identity refresh/token rotation keeps the same scroll element and rows.

@@ -159,7 +159,7 @@
               React.createElement(window.SectionHead, { title: 'Descripción' }),
               React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.6 } },
                 String(item.desc).split(/\n{2,}/).map((p, i) => React.createElement('p', { key: i, style: { margin: i ? '12px 0 0' : 0 } }, p)))),
-            info.length > 0 && React.createElement('div', { style: { marginTop: 20 } },
+            !rental && info.length > 0 && React.createElement('div', { style: { marginTop: 20 } },
               React.createElement(window.SectionHead, { title: 'Información' }),
               React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, padding: '4px 15px', boxShadow: 'var(--neo-sm)' } },
                 info.map(([k, v], i) => React.createElement('div', { key: k, style: { display: 'flex', justifyContent: 'space-between', gap: 14, padding: '11px 0', borderBottom: i === info.length - 1 ? 'none' : '1px solid var(--hairline)' } },

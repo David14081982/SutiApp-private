@@ -82441,7 +82441,7 @@ Object.assign(window, {
       style: {
         margin: i ? '12px 0 0' : 0
       }
-    }, p)))), info.length > 0 && React.createElement('div', {
+    }, p)))), !rental && info.length > 0 && React.createElement('div', {
       style: {
         marginTop: 20
       }

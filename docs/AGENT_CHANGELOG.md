@@ -4316,3 +4316,11 @@ Published 2d95e54; Pages run 40254472396 successful. Exact public bundle and
 Rental CTA now reads "Continuar con esta solicitud". Literal-only source/bundle
 parity and existing documents test PASS. No behavior, data or other program changes.
 See audits/H-RENTACAR-CTA-COPY-003.md.
+
+
+## H-RENTACAR-INFO-REMOVE-004
+
+Removed the generic Information/category block only from Renta Car detail,
+as requested. Single rental render guard; calendar, workflow, backend and other
+programs unchanged. Build, source/bundle parity and existing focal browser test PASS.
+See audits/H-RENTACAR-INFO-REMOVE-004.md.

@@ -178,3 +178,7 @@ loan/clock/privacy cases passed isolated tests; live authorized account has no
 loans. The proposed assisted-user probe was rejected by automatic approval review
 and never executed. Evidence: docs/qa/evidence/history-loan-payments/deployment.json
 and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md.
+
+### H-HISTORY-SNAPSHOT-001
+
+The sole Apps Script addition is fixed read_history_snapshot/HISTORY_SNAPSHOT_READ_V1 plus its dispatch. It reads the two fixed history tabs, types/display values and request transfer notes, detects changed observations and preserves the old financial readers/writers byte-for-byte outside the addition. It never writes cells/notes/properties/formulas/triggers. Source snapshots retain required financial fields and minimal transfer identity only; names, documents and unrelated columns are not copied. Both sheets are observed again before acceptance; this detects observed changes but is not a Google transaction lock. Daily/manual worker reads only, never one global read per user.

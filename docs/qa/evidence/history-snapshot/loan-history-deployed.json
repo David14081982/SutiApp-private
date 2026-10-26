@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "slug": "loan-history",
+  "version": 4,
+  "previous": 3,
+  "verifyJwt": true,
+  "businessWrites": 0
+}

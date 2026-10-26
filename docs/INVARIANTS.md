@@ -492,3 +492,7 @@ loan/clock/privacy cases passed isolated tests; live authorized account has no
 loans. The proposed assisted-user probe was rejected by automatic approval review
 and never executed. Evidence: docs/qa/evidence/history-loan-payments/deployment.json
 and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md.
+
+### H-HISTORY-SNAPSHOT-001
+
+Complete both-sheet observations are validated, grouped by exact raw TEXT Folio, hashed, staged privately and published atomically. Unchanged bodies are not rewritten. Lease fencing and coalescing prevent concurrent publication. Raw empty/zero/whitespace owners are retained privately and counted as unaddressable owners, never assigned by name/email or trimmed into another account. Malformed transfer receipts fail only the affected owner's read. Accounts without Auth remain in the complete private observation. A same-identity refresh retains visible content/scroll; actual context change, logout or access denial purges it. No browser persistent financial storage, per-user Google read, five-minute polling or silent fallback exists. Monetary progress uses V/K; missing values are explicit.

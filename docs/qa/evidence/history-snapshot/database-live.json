@@ -1,0 +1,60 @@
+{
+  "status": "PASS",
+  "checks": {
+    "cron_utc": true,
+    "no_staging_left": true,
+    "single_daily_job": true,
+    "tables_rls_grants": true,
+    "migration_recorded": true,
+    "vault_names_unique": true,
+    "ready_without_lease": true,
+    "stored_hashes_valid": true,
+    "stored_owners_exact": true,
+    "public_rpc_contracts": true,
+    "realtime_marker_only": true,
+    "counts_match_metadata": true,
+    "own_context_unchanged": true,
+    "private_schema_denied": true,
+    "single_state_and_marker": true,
+    "private_functions_denied": true,
+    "quota_source_rows_unique": true,
+    "no_unpublished_current_groups": true,
+    "public_marker_only_three_columns": true,
+    "completed_run_matches_publication": true
+  },
+  "coverage": {
+    "groups": 813,
+    "issues": 0,
+    "loan_rows": 19778,
+    "request_rows": 2793,
+    "manifest_digest": "2caf8068027de7aa3b824102009cb0ad8537bd3ef32a7f40f9816f5ff8b18243",
+    "malformed_hashes": 0,
+    "unaddressable_owner_rows": 1,
+    "unaddressable_owner_groups": 1
+  },
+  "sourceMetadata": {
+    "issues": 0,
+    "loan_rows": 19778,
+    "group_count": 813,
+    "request_rows": 2793,
+    "loan_source_rows": 19778,
+    "source_fingerprint": "11B0B85F300A2B6ED93BB8A4874287DBEBA4DA05D4F93743200FA2AD6E813844",
+    "request_source_rows": 2803,
+    "ignored_blank_loan_rows": 0,
+    "unaddressable_owner_rows": 1,
+    "ignored_blank_request_rows": 10,
+    "unaddressable_owner_groups": 1
+  },
+  "sourceUpdatedAt": "2026-10-26T16:34:12.174+00:00",
+  "run": {
+    "id": "afe6b243-530c-4063-8069-6038efb8d8fc",
+    "kind": "SCHEDULE",
+    "status": "SUCCEEDED",
+    "error_code": null,
+    "started_at": "2026-10-26T16:33:30.7441+00:00",
+    "finished_at": "2026-10-26T16:34:14.71071+00:00",
+    "requested_at": "2026-10-26T16:33:29.933035+00:00",
+    "has_real_actor": false
+  },
+  "independentGoogleCoverage": "PENDING external comparison of manifest_digest and source fingerprint"
+}

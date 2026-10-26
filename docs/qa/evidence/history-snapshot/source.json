@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "fixtureRows": {
+    "loans": 20000,
+    "requests": 2800
+  },
+  "snapshotReadCalls": 10,
+  "groupCount": 5,
+  "unaddressableOwnerRows": 5,
+  "checks": [
+    "same per-owner typed projection as actual self reader",
+    "both fixed sheets",
+    "whole-source raw/display/note recheck",
+    "cross-sheet mutation detection",
+    "exact zero/blank/whitespace owners preserved",
+    "incomplete historical values preserved",
+    "bad receipt isolated to group issues",
+    "valid other owners still project",
+    "complete deletion manifest",
+    "fingerprints and coverage counts verified",
+    "unchanged legacy readers/writers/manifest",
+    "no PII names or private document fields in response",
+    "worker transport has no client selectors or fallback"
+  ],
+  "liveReads": 0,
+  "SheetWrites": 0
+}

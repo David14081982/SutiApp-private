@@ -471,3 +471,7 @@ loan/clock/privacy cases passed isolated tests; live authorized account has no
 loans. The proposed assisted-user probe was rejected by automatic approval review
 and never executed. Evidence: docs/qa/evidence/history-loan-payments/deployment.json
 and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md.
+
+### H-HISTORY-SNAPSHOT-001
+
+20261026000100_loan_history_snapshot.sql is additive and installs disabled. It creates private observations/staging/run/lease state, metadata-only publication, own/admin/service RPCs and one 22:00 UTC cron schedule after verifying cron UTC/GMT. Configure Vault + worker before enabling; populate and verify the first complete publication before switching the user Edge reader. Recovery disables the schedule and entry points while retaining observations and all business/source records. No cleanup deletes historical business data. Current state: candidate tested locally; production DDL not applied.

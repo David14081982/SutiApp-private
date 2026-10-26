@@ -1,0 +1,59 @@
+{
+  "status": "PASS_STRUCTURAL",
+  "scope": "Offline structural projection only; no Auth/access/approval-clock certification",
+  "sync_version": "f5f99d4d-dc8b-4824-9e63-b2dd13aeb4f9",
+  "source_updated_at": "2026-10-26T16:34:12.174+00:00",
+  "observed_state": "READY",
+  "projector_sha256": "bd55d38611fed6a0b21d88c731c3cf091029dbe14c4e012ae0a4bff04435f970",
+  "groups": 813,
+  "addressable_groups": 812,
+  "unaddressable_groups": 1,
+  "groups_projected": 813,
+  "groups_failed": 0,
+  "addressable_groups_failed": 0,
+  "source_loan_rows": 19778,
+  "source_request_rows": 2793,
+  "source_loan_ids_per_owner": 2519,
+  "projected_loan_cards": 2519,
+  "projected_quota_rows": 19778,
+  "projected_request_cards": 158,
+  "source_issues": 0,
+  "owners_pending_resync": 0,
+  "errors": {},
+  "findings": {
+    "UNFINISHED_REQUEST_ROW_PRESERVED": 25,
+    "INVALID_REQUEST_ID": 133,
+    "NUMERIC_REQUEST_WITHOUT_PV2_LOAN": 9,
+    "NONUNIFORM_LOAN_FIELD": 3,
+    "DUPLICATE_REQUEST_ID": 1
+  },
+  "categories": {
+    "En pago": 781,
+    "Liquidadas": 1738,
+    "No aprobadas": 152,
+    "En proceso": 6
+  },
+  "quota_states": {
+    "No se descontó": 762,
+    "Pagada": 13248,
+    "Pendiente": 5767,
+    "Importe por revisar": 1
+  },
+  "source_request_states": {
+    "LIQUIDADO": 1693,
+    "INICIADO": 782,
+    "RECHAZADO": 283,
+    "EMPTY": 25,
+    "PENDIENTE": 10
+  },
+  "global_loan_ids_shared_between_owners": 1,
+  "global_quota_source_rows_duplicated": 0,
+  "limitations": [
+    "Context uses literal Folio and requests:[]; no authentication, effective identity, permission or approval timestamp is simulated.",
+    "Stored issues are excluded only from this diagnostic projection; affected owners still require a successful corrected resync before the production reader can serve them.",
+    "The source is the currently published derived copy, not an independent Google read. No financial/source correction is performed."
+  ],
+  "structural_coverage_pass": true,
+  "full_loan_rows_projected": true,
+  "full_loan_ids_projected": true
+}

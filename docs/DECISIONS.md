@@ -1475,3 +1475,7 @@ loan/clock/privacy cases passed isolated tests; live authorized account has no
 loans. The proposed assisted-user probe was rejected by automatic approval review
 and never executed. Evidence: docs/qa/evidence/history-loan-payments/deployment.json
 and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md.
+
+### H-HISTORY-SNAPSHOT-001
+
+Owner authorized daily synchronization at 15:00 America/Hermosillo (22:00 UTC), a permission-gated Finance Admin button, both history sheets, stable open amortization during updates, the supplied detail design, money-paid percentage, PDF statement download and the exact advisor WhatsApp route. Future quotas, including a zero amount, are pending; past/today zero means No se descontó. The final scheduled row marks Cierre de contrato with its real date; X alone determines liquidation. No Google cell/formula/writer/financial trigger or approval flow changes are authorized. This is a derived read model, not a transfer of financial authority. Candidate implementation is local; production activation and measured latency remain outstanding.

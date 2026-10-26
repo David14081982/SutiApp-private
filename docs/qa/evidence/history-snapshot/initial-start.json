@@ -1,0 +1,5 @@
+{
+  "status": "STARTED",
+  "trigger": "operator invocation of daily job",
+  "businessWrites": 0
+}

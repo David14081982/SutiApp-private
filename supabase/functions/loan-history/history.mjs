@@ -16,19 +16,29 @@ export function projectHistory(source,context,now){
  if(!instant(now)||!context?.folio||!Array.isArray(context.requests)||!Array.isArray(source?.loans)||!Array.isArray(source?.requests)||source.folio!==context.folio)fail('SOURCE_INVALID');
  const today=businessDay(now),bySr=new Map(),byLoan=new Map(),groups=new Map(),entries=[],covered=new Set();
  for(const r of context.requests){if(bySr.has(r.folio))fail('REQUEST_IDENTITY_AMBIGUOUS');bySr.set(r.folio,r);}
- const sourceRequests=new Set();
+ const sourceRequestCounts=new Map();
  for(const r of source.requests){
   if(r.owner!==context.folio)fail('SOURCE_IDENTITY_MISMATCH');
-  // An unfinished source row is not a request identity. Keep it in Google,
-  // but do not let its empty A/Y cells suppress unrelated valid history.
-  if(r.id===''&&norm(r.status)===''&&r.receipt==null)continue;
-  if(!r.id||sourceRequests.has(r.id))fail('REQUEST_IDENTITY_AMBIGUOUS');sourceRequests.add(r.id);
+  if(r.id)sourceRequestCounts.set(r.id,(sourceRequestCounts.get(r.id)||0)+1);
+ }
+ for(const r of source.requests){
+  // Only SR requests or a transfer receipt can contribute a request card or
+  // approval link. Keep all other rows in the observation without letting
+  // blank/numeric historical request IDs suppress valid PV2 loans.
+  if(r.receipt==null&&!/^SR-/.test(r.id))continue;
+  // Count every occurrence before filtering: a relevant receipt must still
+  // fail closed if an otherwise irrelevant row reuses its current loan ID.
+  if(!r.id||sourceRequestCounts.get(r.id)!==1)fail('REQUEST_IDENTITY_AMBIGUOUS');
   let original=/^SR-/.test(r.id)?r.id:null;
-  if(r.receipt){
-   if(String(r.receipt.id)!==r.id||typeof r.receipt.identity!=='string'||!/^SR-/.test(r.receipt.identity)||!/^[a-f0-9]{64}$/i.test(r.receipt.sourceHash||''))fail('TRANSFER_IDENTITY_INVALID');
-   original=r.receipt.identity;
+  if(r.receipt!=null){
+   if(String(r.receipt.id)!==r.id||typeof r.receipt.identity!=='string'||
+    !(/^SR-/.test(r.receipt.identity)||/^[0-9]+$/.test(r.receipt.identity))||!/^[a-f0-9]{64}$/i.test(r.receipt.sourceHash||''))fail('TRANSFER_IDENTITY_INVALID');
+   // The historical transfer writer also accepts numeric original request IDs.
+   // Preserve that receipt, but only an actual SR identity can link the app's
+   // approval timestamp. Never coerce a numeric identity into a Folio or SR.
+   original=/^SR-/.test(r.receipt.identity)?r.receipt.identity:null;
    if(byLoan.has(r.id))fail('TRANSFER_IDENTITY_INVALID');
-   byLoan.set(r.id,bySr.get(original)||null);
+   byLoan.set(r.id,original?bySr.get(original)||null:null);
   }
   const request=original?bySr.get(original):null;
   // Cash rentals and other nonfinancial request histories retain their native workflow.
@@ -53,7 +63,7 @@ export function projectHistory(source,context,now){
   const request=byLoan.get(id),approved=instant(request?.approved_at),bucket=category(status,approved,now);
   const schedule=rows.map(r=>({source_row:r.source_row,number:Number.isInteger(r.number)&&r.number>0?r.number:null,
    date:day(r.date),amount:money(r.amount),scheduled:money(r.scheduled),
-   state:day(r.date)?r.date<=today?'Pagada':'Pendiente':'Fecha por revisar'}))
+   state:day(r.date)?r.date>today?'Pendiente':r.amount===0?'No se descontó':money(r.amount)!==null?'Pagada':'Importe por revisar':'Fecha por revisar'}))
    .sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999')||(a.number??Infinity)-(b.number??Infinity)||a.source_row-b.source_row);
   entries.push({key:'loan:'+id,id,sourceId:request?.id||null,kind:'loan',fund:uniform('fund')||'Financiamiento',
    principal:money(uniform('principal')),total:money(uniform('total')),term:money(uniform('term')),date:day(uniform('authorized'))||schedule[0]?.date||null,

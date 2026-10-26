@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "ownLoadMs": 1159,
+  "ownJsonBytes": 406,
+  "ownEntries": 0,
+  "anonymous": 401,
+  "forgedOwner": 400,
+  "unownedDetailEntries": 0,
+  "noStore": true,
+  "assistanceWrites": 0
+}

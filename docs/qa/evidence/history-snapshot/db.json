@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "environment": "Native PostgreSQL / isolated local loopback / synthetic rows",
+  "productionWrites": 0,
+  "checks": [
+    "installation rejects non-UTC cron without changing global settings or schema",
+    "additive install disabled; original context and business rows byte-equivalent",
+    "single 22:00 UTC daily job and metadata-only realtime publication",
+    "private RLS forced; no browser or direct service access",
+    "activation requires Vault configuration; secrets never in status",
+    "backend Finance read/update permission and module boundary enforced",
+    "independent concurrent manual and daily requests coalesce to one dispatch",
+    "independent concurrent workers obtain exactly one lease",
+    "issue ownership, shape, code, duplicate and row range enforced in database",
+    "staging verifies hash, exact owner and batch atomicity",
+    "incomplete manifests, duplicates and mismatched totals cannot partially publish",
+    "complete publish atomically exposes only literal own Folio; no-Auth and malformed owners retained privately",
+    "no identity override, archived/ambiguous/no-Auth context denied, effective assistance preserved",
+    "all JavaScript-trim whitespace and overlong owners remain private",
+    "unchanged full import causes zero observation rewrites",
+    "manual retry immediately after success or failure creates a new run; active daily/manual intents coalesce",
+    "readers see prior complete snapshot while new publication is uncommitted",
+    "failed import retains last successful body/version/time and exposes sanitized failure",
+    "expired lease and old worker cannot publish/fail or corrupt next run",
+    "lease renewals remain bounded to twenty minutes",
+    "complete empty import invalidates all owners without deleting observations; reappearance requires verified staging",
+    "UTF-16 owner length matches worker counts and preserves unreachable astral group without blocking complete import",
+    "recovery cancels in-flight work, disables cron/realtime and preserves all observations/audit"
+  ],
+  "migrationSha256": "76579ce02a5864acf5b15cd6afe29a13de5c78a5ba5ceb3bb423b624ae60a6b4",
+  "recoverySha256": "0d57fe3b2adaa7fb239d73286c4fca756d4c70ead230cfc8070b61b067b6fe7f",
+  "limits": [
+    "Vault/cron/pg_net dispatch are local transport stubs, not live deployment checks.",
+    "Auth signature and existing effective-identity resolver are fixture boundaries; actual existing get_self_loan_history_context definition is unmodified.",
+    "Realtime publication membership and RLS are tested; websocket delivery is a browser/deployment check.",
+    "No billed-egress claim."
+  ]
+}

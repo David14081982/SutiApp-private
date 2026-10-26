@@ -30,7 +30,8 @@ assert(data.loans.every(r=>r.owner==='0007'));assert.equal(data.loans[0].number,
 assert.equal(data.loans[0].term,2,'payment count comes from Q, not ambiguous term I');
 assert.equal(f.send({...p,folio:'7'}).loans.length,0);
 const changed=fixture();changed.change();assert.equal(changed.send(p).ok,false);
-const inverse=source.replace(/\r/g,'').replace(/\/\/ Focal self-history read\.[\s\S]*?(?=function doPost\(event\))/,'').replace("    if(payload.action==='read_self_history')return readSelfHistory_(payload);\n",'');
+const inverse=source.replace(/\r/g,'').replace(/\/\/ Focal self-history read\.[\s\S]*?(?=function doPost\(event\))/,'').replace("    if(payload.action==='read_self_history')return readSelfHistory_(payload);\n",'')
+ .replace("    if(payload.action==='read_history_snapshot')return readHistorySnapshot_(payload);\n",'');
 assert.equal(crypto.createHash('sha256').update(inverse).digest('hex'),'1ccfa39e6c43546692528aa87c98cdb5fa93f323f26900585c1355da5cd6d0f0','all existing receiver code/writers preserved byte-for-byte');
 const out=process.env.SUTI_HISTORY_EVIDENCE_DIR||'docs/qa/evidence/history-loan-payments';fs.mkdirSync(out,{recursive:true});
 const proof={status:'PASS',checks:['secret checked before opening','fixed sources','exact leading-zero Folio','other users excluded in receiver','receipt linkage','quota serial read','source-change rejection','existing code exact inverse'],sheetWrites:0};

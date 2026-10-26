@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "task": "H-HISTORY-STATEMENT-DESIGN-001",
+  "verified_at": "2026-10-26T19:34:14.976Z",
+  "baseline_commit": "aa973ec6a9c11bb9c6d7215e93ba4b05761139c5",
+  "version": "2026102605",
+  "source_lf_sha256": "0d8c508c9e7ffd321306a1608054c5bffd7ef2b1a6e7ca59c83eb9a529866e65",
+  "bundle_sha256": "ade95d41b45540ca5ddc6b10bdd71e21df3d46f7c80bce1e790a4036b7f6fb80",
+  "html_lf_sha256": "54ce7f31f4a21118b56ffd61f50fa30783a70e566c39b95fcce42df4a6757c73",
+  "service_worker_lf_sha256": "923e8340c70d508e3bb735b1a30cffbae8725e8cf23fac586f50d2c80d8d04d7",
+  "module_count": 163,
+  "unchanged_module_count": 162,
+  "changed_modules": [
+    "history-statement.js"
+  ],
+  "checks": {
+    "module_list_and_order_identical": true,
+    "exactly_one_focal_module_changed": true,
+    "other_162_modules_byte_identical": true,
+    "final_source_generation_exact": true,
+    "bundle_syntax_valid": true,
+    "html_only_generated_version_change": true,
+    "service_worker_only_generated_version_change": true,
+    "all_version_references_match": true,
+    "no_product_writes": true,
+    "no_network": true
+  },
+  "references": {
+    "html_bundle": [
+      "2026102605"
+    ],
+    "html_service_worker": [
+      "2026102605"
+    ],
+    "sw_cache": [
+      "2026102605"
+    ],
+    "sw_bundle": [
+      "2026102605"
+    ]
+  },
+  "transpiler": {
+    "kind": "Existing Babel Standalone",
+    "version": "7.28.4"
+  },
+  "changed_module": {
+    "file": "history-statement.js",
+    "baseline_sha256": "70308fdaf7c3948105c49aac27a8bcdd35bf9e895ca7469bdd655e2a7c3abaa0",
+    "candidate_sha256": "3f0c69dcc894436f95f3a6316ad46819b9357df00509335c8b63c2ee1335c8c1"
+  },
+  "limits": [
+    "Local generated-artifact verification only; no publication or authenticated runtime is claimed.",
+    "PDF layout and actual downloads are covered by the separate synthetic PDF audit."
+  ]
+}

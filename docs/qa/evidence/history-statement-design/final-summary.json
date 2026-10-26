@@ -1,0 +1,397 @@
+{
+  "task": "H-HISTORY-STATEMENT-DESIGN-001",
+  "status": "PASS",
+  "scope": "Isolated synthetic PDF and download verification only",
+  "sourceBytesSha256": "0df5f96e9a05c2aab97b1d21b7d357cd5a134427e0cf2c0269b6459521153ffb",
+  "sourceNormalizedLFSha256": "0d8c508c9e7ffd321306a1608054c5bffd7ef2b1a6e7ca59c83eb9a529866e65",
+  "tools": {
+    "renderer": "PyMuPDF1.28.2 at144dpi",
+    "independentParser": "pypdf6.16.2 strict reader",
+    "chrome": "155.0.8059.85",
+    "webkit": "26.5",
+    "playwright": "1.62.1"
+  },
+  "cases": [
+    {
+      "case": "1",
+      "rows": 1,
+      "pages": 1,
+      "rowsPerPage": [
+        1
+      ],
+      "status": "PASS",
+      "pdf": "output/pdf/statement-1.pdf",
+      "pdfSha256": "4b52359443e52c9fc6916faa3a6f7c9c9eafbba48ea651181a5e4f4d3806afc9",
+      "bytes": 4401,
+      "allPagesVisuallyInspected": true,
+      "violations": 0,
+      "summaryExact": true,
+      "wholeOrderedRows": true,
+      "noticeCompleteExactlyOnceOnLastPage": true,
+      "ddmmyyyy": true,
+      "synchronousBlob": true,
+      "fixtureUnchanged": true,
+      "renders": [
+        {
+          "page": 1,
+          "file": "renders/1/page-1.png",
+          "sha256": "e894089f8ba80568e5d8edd73b41960857730d18d05e171eb5d40ecc888a763a"
+        }
+      ]
+    },
+    {
+      "case": "10",
+      "rows": 10,
+      "pages": 1,
+      "rowsPerPage": [
+        10
+      ],
+      "status": "PASS",
+      "pdf": "output/pdf/statement-10.pdf",
+      "pdfSha256": "a5a598418415d35b206c035c7c7f9afe18ad08fa69c598cb90b7ac2991002b06",
+      "bytes": 7326,
+      "allPagesVisuallyInspected": true,
+      "violations": 0,
+      "summaryExact": true,
+      "wholeOrderedRows": true,
+      "noticeCompleteExactlyOnceOnLastPage": true,
+      "ddmmyyyy": true,
+      "synchronousBlob": true,
+      "fixtureUnchanged": true,
+      "renders": [
+        {
+          "page": 1,
+          "file": "renders/10/page-1.png",
+          "sha256": "cc0027caf03772046880a9da605c53c3ffe329705062e76ddcd1efdf6d61d67a"
+        }
+      ]
+    },
+    {
+      "case": "25",
+      "rows": 25,
+      "pages": 2,
+      "rowsPerPage": [
+        13,
+        12
+      ],
+      "status": "PASS",
+      "pdf": "output/pdf/statement-25.pdf",
+      "pdfSha256": "4a46e2ade12cfd9857e0fdfc026b2a886725e9df2d5111ea5d675a8500efb2b1",
+      "bytes": 13212,
+      "allPagesVisuallyInspected": true,
+      "violations": 0,
+      "summaryExact": true,
+      "wholeOrderedRows": true,
+      "noticeCompleteExactlyOnceOnLastPage": true,
+      "ddmmyyyy": true,
+      "synchronousBlob": true,
+      "fixtureUnchanged": true,
+      "renders": [
+        {
+          "page": 1,
+          "file": "renders/25/page-1.png",
+          "sha256": "9e37b6703ba8169ff860afe10b1d076cb5543745b8eac10507c4422bb38a5829"
+        },
+        {
+          "page": 2,
+          "file": "renders/25/page-2.png",
+          "sha256": "e52bc401625f02b382c4890bafacdcf4114b334aa2f5692e6c285e6fc65c7962"
+        }
+      ]
+    },
+    {
+      "case": "50",
+      "rows": 50,
+      "pages": 3,
+      "rowsPerPage": [
+        14,
+        22,
+        14
+      ],
+      "status": "PASS",
+      "pdf": "output/pdf/statement-50.pdf",
+      "pdfSha256": "df9357b2d21ede5ffa2615be0ef18042ad1beed7de1762a90a4af73989ad8e3f",
+      "bytes": 22323,
+      "allPagesVisuallyInspected": true,
+      "violations": 0,
+      "summaryExact": true,
+      "wholeOrderedRows": true,
+      "noticeCompleteExactlyOnceOnLastPage": true,
+      "ddmmyyyy": true,
+      "synchronousBlob": true,
+      "fixtureUnchanged": true,
+      "renders": [
+        {
+          "page": 1,
+          "file": "renders/50/page-1.png",
+          "sha256": "f45211a8b0e071343f3bcacb5ff228ac45e999fa192a981b5486ca0bde2ee49c"
+        },
+        {
+          "page": 2,
+          "file": "renders/50/page-2.png",
+          "sha256": "0f99e71e1d86a1229930cfde2f316530eec6174b4d3bd1642faadfd8a2554c93"
+        },
+        {
+          "page": 3,
+          "file": "renders/50/page-3.png",
+          "sha256": "f18ee061bc515a5bea21c1c794c051ec0a6dd08db434b5f6b091bb23d9c976e7"
+        }
+      ]
+    },
+    {
+      "case": "overpaid-failed",
+      "rows": 10,
+      "pages": 2,
+      "rowsPerPage": [
+        4,
+        6
+      ],
+      "status": "PASS",
+      "pdf": "output/pdf/focal-overpaid-failed.pdf",
+      "pdfSha256": "04a1cfd74d1f7e28a973512082a359eae8fb3ea8c32d354a832b30a30ed534e2",
+      "bytes": 8645,
+      "allPagesVisuallyInspected": true,
+      "violations": 0,
+      "summaryExact": true,
+      "wholeOrderedRows": true,
+      "noticeCompleteExactlyOnceOnLastPage": true,
+      "ddmmyyyy": true,
+      "synchronousBlob": true,
+      "fixtureUnchanged": true,
+      "renders": [
+        {
+          "page": 1,
+          "file": "renders/overpaid-failed/page-1.png",
+          "sha256": "5d7e92f5fa70350639baf2c0d0b34bc45ee6b757d2bc0dfa5dad533d862e33a5"
+        },
+        {
+          "page": 2,
+          "file": "renders/overpaid-failed/page-2.png",
+          "sha256": "e42f32c5a088fff38bffb7121893014dddc184a4f790c62bf677312f29e79166"
+        }
+      ]
+    },
+    {
+      "case": "preparing",
+      "rows": 0,
+      "pages": 1,
+      "rowsPerPage": [
+        0
+      ],
+      "status": "PASS",
+      "pdf": "output/pdf/focal-preparing.pdf",
+      "pdfSha256": "ae5afaa13bba8cd6ab1fd8aa5516bac4e801bcbddfa80fc069fdd547ff35dcb7",
+      "bytes": 4127,
+      "allPagesVisuallyInspected": true,
+      "violations": 0,
+      "summaryExact": true,
+      "wholeOrderedRows": true,
+      "noticeCompleteExactlyOnceOnLastPage": true,
+      "ddmmyyyy": true,
+      "synchronousBlob": true,
+      "fixtureUnchanged": true,
+      "renders": [
+        {
+          "page": 1,
+          "file": "renders/preparing/page-1.png",
+          "sha256": "7cbf7b607a2bf152cf91b1bbed48c0081f032a897ea04dd281855291a12ac710"
+        }
+      ]
+    }
+  ],
+  "downloadChecks": {
+    "status": "PASS",
+    "actualLoanHistoryDetailButton": true,
+    "realCreateAndDownloadFunctions": true,
+    "exactCanonicalBytes": true,
+    "allFilenamesAndMimeCorrect": true,
+    "browsersClosed": true,
+    "profiles": [
+      {
+        "profile": "desktop-chrome",
+        "engine": "Chromium",
+        "browserVersion": "155.0.8059.85",
+        "rows": 1,
+        "status": "PASS",
+        "emulated": false,
+        "physicalDevice": false,
+        "sha256": "4b52359443e52c9fc6916faa3a6f7c9c9eafbba48ea651181a5e4f4d3806afc9",
+        "bytes": 4401,
+        "sourceSha256": "246618294d57fa044e92b734fe027d731d9b611c2ee7748bfd5f5232ead96e8e"
+      },
+      {
+        "profile": "desktop-chrome",
+        "engine": "Chromium",
+        "browserVersion": "155.0.8059.85",
+        "rows": 10,
+        "status": "PASS",
+        "emulated": false,
+        "physicalDevice": false,
+        "sha256": "a5a598418415d35b206c035c7c7f9afe18ad08fa69c598cb90b7ac2991002b06",
+        "bytes": 7326,
+        "sourceSha256": "246618294d57fa044e92b734fe027d731d9b611c2ee7748bfd5f5232ead96e8e"
+      },
+      {
+        "profile": "desktop-chrome",
+        "engine": "Chromium",
+        "browserVersion": "155.0.8059.85",
+        "rows": 25,
+        "status": "PASS",
+        "emulated": false,
+        "physicalDevice": false,
+        "sha256": "4a46e2ade12cfd9857e0fdfc026b2a886725e9df2d5111ea5d675a8500efb2b1",
+        "bytes": 13212,
+        "sourceSha256": "246618294d57fa044e92b734fe027d731d9b611c2ee7748bfd5f5232ead96e8e"
+      },
+      {
+        "profile": "desktop-chrome",
+        "engine": "Chromium",
+        "browserVersion": "155.0.8059.85",
+        "rows": 50,
+        "status": "PASS",
+        "emulated": false,
+        "physicalDevice": false,
+        "sha256": "df9357b2d21ede5ffa2615be0ef18042ad1beed7de1762a90a4af73989ad8e3f",
+        "bytes": 22323,
+        "sourceSha256": "246618294d57fa044e92b734fe027d731d9b611c2ee7748bfd5f5232ead96e8e"
+      },
+      {
+        "profile": "android-emulated-chrome",
+        "engine": "Chromium",
+        "browserVersion": "155.0.8059.85",
+        "rows": 50,
+        "status": "PASS",
+        "emulated": true,
+        "physicalDevice": false,
+        "sha256": "df9357b2d21ede5ffa2615be0ef18042ad1beed7de1762a90a4af73989ad8e3f",
+        "bytes": 22323,
+        "sourceSha256": "246618294d57fa044e92b734fe027d731d9b611c2ee7748bfd5f5232ead96e8e"
+      },
+      {
+        "profile": "iphone-emulated-webkit",
+        "engine": "WebKit",
+        "browserVersion": "26.5",
+        "rows": 50,
+        "status": "PASS",
+        "emulated": true,
+        "physicalDevice": false,
+        "sha256": "df9357b2d21ede5ffa2615be0ef18042ad1beed7de1762a90a4af73989ad8e3f",
+        "bytes": 22323,
+        "sourceSha256": "246618294d57fa044e92b734fe027d731d9b611c2ee7748bfd5f5232ead96e8e"
+      }
+    ]
+  },
+  "checks": {
+    "letter612x792": true,
+    "allPagesRendered": true,
+    "visualReviewComplete": true,
+    "pdfParsersAccept": true,
+    "textWithinPrintableBounds": true,
+    "noTextCollisions": true,
+    "whiteHeaderTextContained": true,
+    "repeatedHeaders": true,
+    "consecutiveOrdinalsIncludingZero": true,
+    "noRowSplitOrLoss": true,
+    "summaryValuesFromFixtureExact": true,
+    "monetaryTwoDecimals": true,
+    "dateFormattingIndependentIntlExpectation": true,
+    "finalNoticeWholeOnce": true,
+    "footerPageCounts": true,
+    "overpaidPercentUncappedAndExcessShown": true,
+    "failedPublicationNoticePreserved": true,
+    "preparingAndMissingValuesPreserved": true,
+    "noFinancialFixtureMutation": true
+  },
+  "businessRequests": 0,
+  "authSessions": 0,
+  "physicalDeviceVerified": false,
+  "commands": [
+    "node .tmp/history-statement-design/generate-fixtures.cjs",
+    "node .tmp/history-statement-design/generate-focal.cjs",
+    "python .tmp/history-statement-design/analyze-pdfs.py",
+    "node .tmp/history-statement-design/download-qa.cjs",
+    "node .tmp/history-statement-design/verify-equivalence.cjs"
+  ],
+  "limits": [
+    "Android/iPhone coverage is browser emulation; no physical mobile device or authenticated production workflow was tested.",
+    "Four canonical PDFs plus two focal states; long-text/210-row regression is outside this private runner and must be reported separately if run.",
+    "Initial layout and concurrently edited download attempts are preserved privately and are superseded by this final frozen-source run.",
+    "Final pagination boundary fix was checked against these six fixtures by exact in-memory PDF byte equivalence; visual and download runs used the earlier source recorded separately. Boundary-specific regression coverage is recorded by the parent reviewer."
+  ],
+  "renderedAndDownloadedSourceBytesSha256": "246618294d57fa044e92b734fe027d731d9b611c2ee7748bfd5f5232ead96e8e",
+  "renderedAndDownloadedSourceNormalizedLFSha256": "0e7320c13f09c6e090a269a8c93952e8a832462ee8f9a6a6c0b9495e4dcbf4f2",
+  "sourceEquivalence": {
+    "status": "PASS",
+    "previousRenderedSourceBytesSha256": "246618294d57fa044e92b734fe027d731d9b611c2ee7748bfd5f5232ead96e8e",
+    "currentSourceBytesSha256": "0df5f96e9a05c2aab97b1d21b7d357cd5a134427e0cf2c0269b6459521153ffb",
+    "currentSourceNormalizedLFSha256": "0d8c508c9e7ffd321306a1608054c5bffd7ef2b1a6e7ca59c83eb9a529866e65",
+    "method": "Regenerated six exact previously reviewed fixture observations entirely in memory with the real current create(), project(), metrics() and formatDate(); compared every byte and SHA256 against existing reviewed PDFs. No render or browser download repeated.",
+    "results": [
+      {
+        "case": "1",
+        "rows": 1,
+        "pdf": "statement-1.pdf",
+        "expectedSha256": "4b52359443e52c9fc6916faa3a6f7c9c9eafbba48ea651181a5e4f4d3806afc9",
+        "actualSha256": "4b52359443e52c9fc6916faa3a6f7c9c9eafbba48ea651181a5e4f4d3806afc9",
+        "exactExistingBytes": true,
+        "bytes": 4401,
+        "fixtureUnchanged": true
+      },
+      {
+        "case": "10",
+        "rows": 10,
+        "pdf": "statement-10.pdf",
+        "expectedSha256": "a5a598418415d35b206c035c7c7f9afe18ad08fa69c598cb90b7ac2991002b06",
+        "actualSha256": "a5a598418415d35b206c035c7c7f9afe18ad08fa69c598cb90b7ac2991002b06",
+        "exactExistingBytes": true,
+        "bytes": 7326,
+        "fixtureUnchanged": true
+      },
+      {
+        "case": "25",
+        "rows": 25,
+        "pdf": "statement-25.pdf",
+        "expectedSha256": "4a46e2ade12cfd9857e0fdfc026b2a886725e9df2d5111ea5d675a8500efb2b1",
+        "actualSha256": "4a46e2ade12cfd9857e0fdfc026b2a886725e9df2d5111ea5d675a8500efb2b1",
+        "exactExistingBytes": true,
+        "bytes": 13212,
+        "fixtureUnchanged": true
+      },
+      {
+        "case": "50",
+        "rows": 50,
+        "pdf": "statement-50.pdf",
+        "expectedSha256": "df9357b2d21ede5ffa2615be0ef18042ad1beed7de1762a90a4af73989ad8e3f",
+        "actualSha256": "df9357b2d21ede5ffa2615be0ef18042ad1beed7de1762a90a4af73989ad8e3f",
+        "exactExistingBytes": true,
+        "bytes": 22323,
+        "fixtureUnchanged": true
+      },
+      {
+        "case": "overpaid-failed",
+        "rows": 10,
+        "pdf": "focal-overpaid-failed.pdf",
+        "expectedSha256": "04a1cfd74d1f7e28a973512082a359eae8fb3ea8c32d354a832b30a30ed534e2",
+        "actualSha256": "04a1cfd74d1f7e28a973512082a359eae8fb3ea8c32d354a832b30a30ed534e2",
+        "exactExistingBytes": true,
+        "bytes": 8645,
+        "fixtureUnchanged": true
+      },
+      {
+        "case": "preparing",
+        "rows": 0,
+        "pdf": "focal-preparing.pdf",
+        "expectedSha256": "ae5afaa13bba8cd6ab1fd8aa5516bac4e801bcbddfa80fc069fdd547ff35dcb7",
+        "actualSha256": "ae5afaa13bba8cd6ab1fd8aa5516bac4e801bcbddfa80fc069fdd547ff35dcb7",
+        "exactExistingBytes": true,
+        "bytes": 4127,
+        "fixtureUnchanged": true
+      }
+    ],
+    "renderRepeats": 0,
+    "browserDownloadRepeats": 0,
+    "pdfFilesWritten": 0,
+    "businessRequests": 0,
+    "authSessions": 0
+  }
+}

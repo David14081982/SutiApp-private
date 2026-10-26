@@ -1,0 +1,41 @@
+{
+  "task": "H-HISTORY-STATEMENT-DESIGN-001",
+  "status": "PASS",
+  "version": "2026102605",
+  "commands": [
+    {
+      "command": "node scripts/build-bundle.js C:/tmp/sutiapp-babel-7.28.4.min.js",
+      "exit_code": 0,
+      "result": "Built app/bundle.js from 163 files."
+    },
+    {
+      "command": "node .tmp/history-statement-design/bundle-audit.cjs 2026102605",
+      "exit_code": 0,
+      "result": "Only history-statement.js changes; 162 other modules identical."
+    },
+    {
+      "command": "node scripts/test-pages-deployment.js",
+      "exit_code": 0,
+      "result": {
+        "status": "PASS",
+        "pwa": true,
+        "forbiddenFiles": 0
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "result": "No whitespace errors."
+    },
+    {
+      "command": "SUTI_HISTORY_EVIDENCE_DIR=<private>/integration-final node scripts/test-history-snapshot-browser.js",
+      "exit_code": 0,
+      "result": "PASS at390/320/1440; 210-row PDF case at390; recorded source hash equals final on-disk source.",
+      "source_bytes_sha256": "0df5f96e9a05c2aab97b1d21b7d357cd5a134427e0cf2c0269b6459521153ffb",
+      "evidence_sha256": "9967f6828a64597fb3afb1069fa069969430c1eea961f72836a1e507c148b5dc"
+    }
+  ],
+  "publication": "NOT_PERFORMED",
+  "physical_mobile_devices": "NOT_VERIFIED",
+  "scope": "Local presentation and PDF generation only; private synthetic QA. No business or production writes."
+}

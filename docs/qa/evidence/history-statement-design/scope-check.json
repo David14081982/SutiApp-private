@@ -1,0 +1,30 @@
+{
+  "task": "H-HISTORY-STATEMENT-DESIGN-001",
+  "status": "PASS",
+  "baseline": "aa973ec6a9c11bb9c6d7215e93ba4b05761139c5",
+  "source_lf_sha256": "0d8c508c9e7ffd321306a1608054c5bffd7ef2b1a6e7ca59c83eb9a529866e65",
+  "checks": {
+    "download_function_identical": true,
+    "loan_only_guard_preserved": true,
+    "money_formatter_identical": true,
+    "existing_metrics_call": true,
+    "no_remote_calls_or_storage": true,
+    "unchanged_files": [
+      {
+        "file": "app/history-loans.jsx",
+        "sha256": "92b7d164d629652911c355a999a7bfde9d44e7d39c859861bee20c104c346be7"
+      },
+      {
+        "file": "app/history-loans-repository.js",
+        "sha256": "dbee33b3b64e8812994400479b847f218a387cbd1b2b67468cd305d78f8697b0"
+      },
+      {
+        "file": "app/screens-historial.jsx",
+        "sha256": "d8436681cb74338527c1254577b6237a91fa460d2f5f02a6898fdf1cba58eba4"
+      }
+    ]
+  },
+  "limits": [
+    "Static module/source comparison. Behavioral value and download assertions are covered separately."
+  ]
+}

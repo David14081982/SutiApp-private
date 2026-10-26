@@ -81482,7 +81482,7 @@ Object.assign(window, {
       icon: 'arrowR',
       disabled: !valid || busy,
       onClick: continueFlow
-    }, busy ? 'Validando fechas…' : 'Continuar con esta simulación')), quote && h(Application, {
+    }, busy ? 'Validando fechas…' : 'Continuar con esta solicitud')), quote && h(Application, {
       item,
       quote,
       app,

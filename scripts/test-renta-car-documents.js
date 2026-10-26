@@ -27,7 +27,7 @@ await page.evaluate(()=>{
 });
 for(const f of ['app/document-workflow-repository.js','app/image-viewer.jsx','app/signature.jsx','app/screens-documentos.jsx','app/renta-car.jsx'])await page.addScriptTag({content:fs.readFileSync(path.join(root,f),'utf8')});
 await page.evaluate(()=>__reactRoot.render(React.createElement(RentaCarFlow,{item:{id:'vehicle',program_key:'renta',nombre:'Unidad de prueba'},app:{}})));
-await page.locator('[data-renta-day="2026-10-22"]').click();await page.locator('[data-renta-day="2026-10-23"]').click();await page.getByRole('button',{name:'Continuar con esta simulación'}).click();
+await page.locator('[data-renta-day="2026-10-22"]').click();await page.locator('[data-renta-day="2026-10-23"]').click();await page.getByRole('button',{name:'Continuar con esta solicitud'}).click();
 await page.locator('[data-unified-document-phase][data-document-total="4"][data-document-complete="3"]').waitFor();assert.equal(await page.locator('[data-document-type]').count(),4);assert(await page.getByRole('button',{name:'Continuar al resumen'}).isDisabled());await page.waitForFunction(()=>document.querySelectorAll('.mr-doc-thumb').length===3&&[...document.querySelectorAll('.mr-doc-thumb')].every(i=>i.complete&&i.naturalWidth>0));
 await page.locator('[data-renta-application]').screenshot({path:path.join(out,'documents-missing.png')});
 await page.locator('[data-document-type="ine_front"] .mr-doc-view').click();await page.locator('[role="dialog"]').waitFor();await page.keyboard.press('Escape');

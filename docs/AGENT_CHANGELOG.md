@@ -4309,3 +4309,10 @@ backend and other programs unchanged. Focal isolated and real 390/430 checks PAS
 
 Published 2d95e54; Pages run 40254472396 successful. Exact public bundle and
 390/430 Renta Car checks PASS; cache 2026102503. Final review APPROVED; stopped.
+
+
+## H-RENTACAR-CTA-COPY-003
+
+Rental CTA now reads "Continuar con esta solicitud". Literal-only source/bundle
+parity and existing documents test PASS. No behavior, data or other program changes.
+See audits/H-RENTACAR-CTA-COPY-003.md.

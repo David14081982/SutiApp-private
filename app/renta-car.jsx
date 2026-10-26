@@ -83,7 +83,7 @@
    h('p',{style:{fontSize:12,color:'var(--ink-3)'}},'Tachado: reservado · Los días pasados no se pueden elegir.'),
    start&&h('p',{'data-renta-range':true,style:{fontSize:13,fontWeight:750}},date(start)+' → '+date(end)),
    h('div',{'aria-live':'polite',style:{textAlign:'center',padding:'15px 0'}},h('div',{style:{fontSize:13}},count+' '+(count===1?'día':'días')+' × '+money(state.daily_rate)),h('strong',{'data-renta-total':true,style:{display:'block',fontSize:32,color:'var(--guinda)',marginTop:5}},money(count*state.daily_rate)),h('small',null,'Pago único de contado antes de la entrega')),
-   error&&h('p',{role:'alert',style:{fontSize:13,color:'#A32921'}},error),h(window.Btn,{full:true,icon:'arrowR',disabled:!valid||busy,onClick:continueFlow},busy?'Validando fechas…':'Continuar con esta simulación')),
+   error&&h('p',{role:'alert',style:{fontSize:13,color:'#A32921'}},error),h(window.Btn,{full:true,icon:'arrowR',disabled:!valid||busy,onClick:continueFlow},busy?'Validando fechas…':'Continuar con esta solicitud')),
    quote&&h(Application,{item,quote,app,onClose:()=>{setQuote(null);load();}}));
  }
  window.RentaCarRepository=repository;window.RentaCarFlow=Flow;window.RentaCarSummary=Summary;

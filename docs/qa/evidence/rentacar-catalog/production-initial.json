@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "mode": "production",
+  "bundleSha256": "71a5519d73a735cca89fa55c832290ac841b4a282ca20b424e30c22a782ef48e",
+  "viewports": [
+    {
+      "width": 390,
+      "status": "PASS",
+      "cards": 1,
+      "realImages": true,
+      "allSpecsMatchBackend": true,
+      "missingSpecsShownHonestly": true,
+      "cardFirst": true,
+      "minFontSize": 14,
+      "expandDragCloseDeviceBack": true,
+      "galleryViewerPreserved": true,
+      "rentalCalendarDocumentsSummarySignaturePreserved": true,
+      "adminFieldsAndGallery": true
+    },
+    {
+      "width": 430,
+      "status": "PASS",
+      "cards": 1,
+      "realImages": true,
+      "allSpecsMatchBackend": true,
+      "missingSpecsShownHonestly": true,
+      "cardFirst": true,
+      "minFontSize": 14,
+      "expandDragCloseDeviceBack": true,
+      "galleryViewerPreserved": true,
+      "rentalCalendarDocumentsSummarySignaturePreserved": true,
+      "adminFieldsAndGallery": true
+    }
+  ],
+  "productionWrites": 0,
+  "requestsSubmitted": 0,
+  "backendResponseOverrides": 0
+}

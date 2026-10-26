@@ -69,3 +69,10 @@ Screen: rental catalog and current product detail. Catalog redesigned as explici
 ## ARCHITECT REVIEW
 
 Verdict: APPROVED for publication after exact candidate checks. Review of actual diff, backend fingerprints, new writer validation/grants/audit, bundle parity and browser evidence supports the scoped result. No duplicated authority or other product modification. The work queue's historical financial phase restriction does not apply to the owner's explicit current rental catalog task; no financial test requests were created. WORK_QUEUE_HISTORY.md absent. No new owner decision required. Next action already authorized: publish, verify exact production bundle and the same rental-only mobile checks, record result, stop. Do not start another task.
+
+
+## Final freshness refinement
+
+Initial production commit 3a72d9c and Pages run 40247286550 passed real 390/430 checks. Final review adds rental-only catalog refresh on entry as well as window focus, so edits from another Admin session appear when returning without a whole-app reload. New isolated test verifies this without calling refresh from the test. No backend or other module changes. Final cache 2026102502 supersedes 2026102501; repeat exact-bundle focal checks before final release closure.
+
+Final refinement local verification PASS at 390/430 for bundle 8e844936d5d8aad0c0d87016d32c48d066d087a67a1e664e0aa3e3217146059a. Registry was FRESH at the structural implementation; later entry-refresh microinteraction and evidence changes introduce no new dependency/schema, so source hashes may be STALE without a structural index change. Architect review: APPROVED for final publication.

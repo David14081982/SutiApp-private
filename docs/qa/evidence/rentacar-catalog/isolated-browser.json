@@ -14,6 +14,7 @@
     "Admin availability reflected",
     "direct-contact handler retained",
     "sold unit cannot request",
+    "reentry refreshes changes from another session",
     "non-rental fixture unchanged"
   ]
 }

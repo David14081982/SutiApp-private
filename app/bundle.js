@@ -81610,6 +81610,7 @@ Object.assign(window, {
       unavailable = items.filter(x => x.sold);
     useEffect(() => {
       const refresh = () => cs && cs.retry();
+      refresh();
       window.addEventListener('focus', refresh);
       return () => window.removeEventListener('focus', refresh);
     }, [cs]);

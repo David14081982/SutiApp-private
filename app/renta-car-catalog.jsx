@@ -53,7 +53,7 @@
  }
  function Catalog({app,it,hue,cs,metadata,favorite,onFavorite}){
   const state=cs?cs.state():{phase:'loading'},items=cs?cs.live('fin','renta'):[],available=items.filter(x=>!x.sold),unavailable=items.filter(x=>x.sold);
-  useEffect(()=>{const refresh=()=>cs&&cs.retry();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[cs]);
+  useEffect(()=>{const refresh=()=>cs&&cs.retry();refresh();window.addEventListener('focus',refresh);return()=>window.removeEventListener('focus',refresh);},[cs]);
   const open=item=>app.push('catitem',{item,ctx:{id:it.id,label:it.label,icon:it.icon,hue}});
   return h('div',{'data-rental-catalog':true,className:'rc-catalog su-app-scroll'},h('style',null,css),
    h('header',null,h('button',{className:'rc-icon',onClick:app.back,'aria-label':'Atrás'},h(window.Icon,{name:'arrowL',size:23})),h('div',null,h('h1',null,it.label||'Renta Car'),h('p',null,'Elige tu vehículo y consulta las fechas'))),

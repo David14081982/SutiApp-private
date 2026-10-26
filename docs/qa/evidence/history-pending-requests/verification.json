@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "commands": [
+    {"command": "node scripts/test-history-pending-requests.js", "exitCode": 0},
+    {"command": "node scripts/test-history-snapshot-runtime.js", "result": "PASS own RPC, selector denial, ownership, receipts, states and worker checks"},
+    {"command": "node scripts/test-history-snapshot-source.mjs", "result": "PASS 20000 loan rows, 2800 request rows; zero live reads/writes"},
+    {"command": "node scripts/test-pages-deployment.js", "result": "PASS pwa=true, forbiddenFiles=0"}
+  ],
+  "preFixNegativeTest": "FAIL: SR/Pendiente with no internal financial flag must appear",
+  "frontendChanges": false,
+  "globalImageRegression": "NOT APPLICABLE: no shared frontend/auth/repository/asset/SW change",
+  "newRuntimeCalls": 0,
+  "newPolling": false,
+  "googleChanges": false,
+  "businessDataWrites": 0
+}

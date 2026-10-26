@@ -1,0 +1,566 @@
+{
+  "status": "PASS_WARM_DETAIL_ONLY",
+  "coldThreeSecondTargetMet": false,
+  "testedAt": "2026-10-26T07:51:02.722Z",
+  "caseOrder": "Owner supplied four-name order; identities retained only in private evidence.",
+  "cases": [
+    {
+      "case": 1,
+      "mode": "LOCAL_CANDIDATE_WITH_LIVE_BACKEND",
+      "bundleSha256": "4f3415d8ad13d01de5b5ce808a3b3f8a9f4440af1d101a3393956f3f90c3403b",
+      "sourceComparison": {
+        "quotaRows": 38,
+        "loanCount": 4,
+        "requestCount": 0,
+        "exactLoanCoverage": true,
+        "exactRequestCoverage": true
+      },
+      "contextStable": true,
+      "firstRenderedSampleMs": 37372,
+      "lastLoadingSampleMs": 36362,
+      "historyRequest": {
+        "action": "LOAD",
+        "http": 200,
+        "rawJsonBytes": 5304,
+        "gzipEstimateBytes": 858,
+        "contentEncoding": "gzip",
+        "contentLength": "1130",
+        "responseMs": 36287,
+        "version": 1,
+        "entries": 4,
+        "error": null,
+        "categories": {
+          "En pago": 1,
+          "Liquidadas": 3
+        }
+      },
+      "historyRequestsStarted": 1,
+      "filters": [
+        {
+          "filter": "Todas",
+          "cards": 4,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "En proceso",
+          "cards": 0,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "Aprobadas",
+          "cards": 0,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "En pago",
+          "cards": 1,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "Liquidadas",
+          "cards": 3,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "No aprobadas",
+          "cards": 0,
+          "identitiesMatch": true
+        }
+      ],
+      "details": [
+        {
+          "renderMs": 321,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 130,
+          "quotaCount": 2,
+          "renderedQuotaCount": 2,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 100,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 43,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        }
+      ],
+      "modeledEgress": {
+        "note": "JSON sizes modeled from the same live payload; excludes Auth/native calls and protocol headers. gzipEstimate is local compression, not billing.",
+        "listOnly": {
+          "previousRequests": 1,
+          "currentRequests": 1,
+          "previousRaw": 1006,
+          "currentRaw": 5304
+        },
+        "listPlusFirstLoan": {
+          "previousRequests": 2,
+          "currentRequests": 1,
+          "previousRaw": 2729,
+          "currentRaw": 5304
+        },
+        "listPlusEveryLoan": {
+          "previousRequests": 5,
+          "currentRequests": 1,
+          "previousRaw": 6769,
+          "currentRaw": 5304
+        }
+      },
+      "pageErrors": [],
+      "assistance": {
+        "started": true,
+        "stopped": true,
+        "openSessionsAfter": 0
+      },
+      "sheetWrites": 0,
+      "businessWrites": 0
+    },
+    {
+      "case": 2,
+      "mode": "LOCAL_CANDIDATE_WITH_LIVE_BACKEND",
+      "bundleSha256": "4f3415d8ad13d01de5b5ce808a3b3f8a9f4440af1d101a3393956f3f90c3403b",
+      "sourceComparison": {
+        "quotaRows": 50,
+        "loanCount": 5,
+        "requestCount": 2,
+        "exactLoanCoverage": true,
+        "exactRequestCoverage": true
+      },
+      "contextStable": true,
+      "firstRenderedSampleMs": 39261,
+      "lastLoadingSampleMs": 38246,
+      "historyRequest": {
+        "action": "LOAD",
+        "http": 200,
+        "rawJsonBytes": 7645,
+        "gzipEstimateBytes": 1200,
+        "contentEncoding": "gzip",
+        "contentLength": "1667",
+        "responseMs": 37895,
+        "version": 1,
+        "entries": 7,
+        "error": null,
+        "categories": {
+          "En pago": 1,
+          "No aprobadas": 2,
+          "Liquidadas": 4
+        }
+      },
+      "historyRequestsStarted": 1,
+      "filters": [
+        {
+          "filter": "Todas",
+          "cards": 7,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "En proceso",
+          "cards": 0,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "Aprobadas",
+          "cards": 0,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "En pago",
+          "cards": 1,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "Liquidadas",
+          "cards": 4,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "No aprobadas",
+          "cards": 2,
+          "identitiesMatch": true
+        }
+      ],
+      "details": [
+        {
+          "renderMs": 36,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 13,
+          "quotaCount": 2,
+          "renderedQuotaCount": 2,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 22,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 51,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 37,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        }
+      ],
+      "modeledEgress": {
+        "note": "JSON sizes modeled from the same live payload; excludes Auth/native calls and protocol headers. gzipEstimate is local compression, not billing.",
+        "listOnly": {
+          "previousRequests": 1,
+          "currentRequests": 1,
+          "previousRaw": 2101,
+          "currentRaw": 7645
+        },
+        "listPlusFirstLoan": {
+          "previousRequests": 2,
+          "currentRequests": 1,
+          "previousRaw": 3910,
+          "currentRaw": 7645
+        },
+        "listPlusEveryLoan": {
+          "previousRequests": 6,
+          "currentRequests": 1,
+          "previousRaw": 9591,
+          "currentRaw": 7645
+        }
+      },
+      "pageErrors": [],
+      "assistance": {
+        "started": true,
+        "stopped": true,
+        "openSessionsAfter": 0
+      },
+      "sheetWrites": 0,
+      "businessWrites": 0
+    },
+    {
+      "case": 3,
+      "mode": "LOCAL_CANDIDATE_WITH_LIVE_BACKEND",
+      "bundleSha256": "4f3415d8ad13d01de5b5ce808a3b3f8a9f4440af1d101a3393956f3f90c3403b",
+      "sourceComparison": {
+        "quotaRows": 69,
+        "loanCount": 7,
+        "requestCount": 0,
+        "exactLoanCoverage": true,
+        "exactRequestCoverage": true
+      },
+      "contextStable": true,
+      "firstRenderedSampleMs": 39765,
+      "lastLoadingSampleMs": 38746,
+      "historyRequest": {
+        "action": "LOAD",
+        "http": 200,
+        "rawJsonBytes": 9566,
+        "gzipEstimateBytes": 1300,
+        "contentEncoding": "gzip",
+        "contentLength": "1821",
+        "responseMs": 38657,
+        "version": 1,
+        "entries": 7,
+        "error": null,
+        "categories": {
+          "En pago": 2,
+          "Liquidadas": 5
+        }
+      },
+      "historyRequestsStarted": 1,
+      "filters": [
+        {
+          "filter": "Todas",
+          "cards": 7,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "En proceso",
+          "cards": 0,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "Aprobadas",
+          "cards": 0,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "En pago",
+          "cards": 2,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "Liquidadas",
+          "cards": 5,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "No aprobadas",
+          "cards": 0,
+          "identitiesMatch": true
+        }
+      ],
+      "details": [
+        {
+          "renderMs": 44,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 20,
+          "quotaCount": 9,
+          "renderedQuotaCount": 9,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 17,
+          "quotaCount": 6,
+          "renderedQuotaCount": 6,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 27,
+          "quotaCount": 6,
+          "renderedQuotaCount": 6,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 26,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 31,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 19,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        }
+      ],
+      "modeledEgress": {
+        "note": "JSON sizes modeled from the same live payload; excludes Auth/native calls and protocol headers. gzipEstimate is local compression, not billing.",
+        "listOnly": {
+          "previousRequests": 1,
+          "currentRequests": 1,
+          "previousRaw": 1804,
+          "currentRaw": 9566
+        },
+        "listPlusFirstLoan": {
+          "previousRequests": 2,
+          "currentRequests": 1,
+          "previousRaw": 3708,
+          "currentRaw": 9566
+        },
+        "listPlusEveryLoan": {
+          "previousRequests": 8,
+          "currentRequests": 1,
+          "previousRaw": 12288,
+          "currentRaw": 9566
+        }
+      },
+      "pageErrors": [],
+      "assistance": {
+        "started": true,
+        "stopped": true,
+        "openSessionsAfter": 0
+      },
+      "sheetWrites": 0,
+      "businessWrites": 0
+    },
+    {
+      "case": 4,
+      "mode": "LOCAL_CANDIDATE_WITH_LIVE_BACKEND",
+      "bundleSha256": "4f3415d8ad13d01de5b5ce808a3b3f8a9f4440af1d101a3393956f3f90c3403b",
+      "sourceComparison": {
+        "quotaRows": 51,
+        "loanCount": 3,
+        "requestCount": 0,
+        "exactLoanCoverage": true,
+        "exactRequestCoverage": true
+      },
+      "contextStable": true,
+      "firstRenderedSampleMs": 27505,
+      "lastLoadingSampleMs": 26485,
+      "historyRequest": {
+        "action": "LOAD",
+        "http": 200,
+        "rawJsonBytes": 6144,
+        "gzipEstimateBytes": 854,
+        "contentEncoding": "gzip",
+        "contentLength": "1151",
+        "responseMs": 26919,
+        "version": 1,
+        "entries": 3,
+        "error": null,
+        "categories": {
+          "En pago": 1,
+          "Liquidadas": 2
+        }
+      },
+      "historyRequestsStarted": 1,
+      "filters": [
+        {
+          "filter": "Todas",
+          "cards": 3,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "En proceso",
+          "cards": 0,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "Aprobadas",
+          "cards": 0,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "En pago",
+          "cards": 1,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "Liquidadas",
+          "cards": 2,
+          "identitiesMatch": true
+        },
+        {
+          "filter": "No aprobadas",
+          "cards": 0,
+          "identitiesMatch": true
+        }
+      ],
+      "details": [
+        {
+          "renderMs": 47,
+          "quotaCount": 27,
+          "renderedQuotaCount": 27,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 19,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        },
+        {
+          "renderMs": 18,
+          "quotaCount": 12,
+          "renderedQuotaCount": 12,
+          "ownLoan": true,
+          "exactSourceRows": true,
+          "dateStatesCorrect": true,
+          "additionalRequests": 0
+        }
+      ],
+      "modeledEgress": {
+        "note": "JSON sizes modeled from the same live payload; excludes Auth/native calls and protocol headers. gzipEstimate is local compression, not billing.",
+        "listOnly": {
+          "previousRequests": 1,
+          "currentRequests": 1,
+          "previousRaw": 789,
+          "currentRaw": 6144
+        },
+        "listPlusFirstLoan": {
+          "previousRequests": 2,
+          "currentRequests": 1,
+          "previousRaw": 3825,
+          "currentRaw": 6144
+        },
+        "listPlusEveryLoan": {
+          "previousRequests": 4,
+          "currentRequests": 1,
+          "previousRaw": 7239,
+          "currentRaw": 6144
+        }
+      },
+      "pageErrors": [],
+      "assistance": {
+        "started": true,
+        "stopped": true,
+        "openSessionsAfter": 0
+      },
+      "sheetWrites": 0,
+      "businessWrites": 0
+    }
+  ],
+  "limitations": [
+    "Live data through unchanged production backend with locally substituted candidate bundle; not publication proof.",
+    "These four-account timings precede the additional A-B-A context-revision deduplication fix; final bundle requires focal revalidation.",
+    "First load remains 27-40 seconds; direct batched Google API is not enabled for the current OAuth client.",
+    "LOAD increases first payload versus SUMMARY; shared memory removes repeated detail requests within the bounded context lifetime."
+  ]
+}

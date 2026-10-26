@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-10-26T08:00:15.524Z",
+  "temporaryPreviewAbsent": true,
+  "activeEndpointUnchanged": true,
+  "version": 2,
+  "verifyJwt": true,
+  "capability": {
+    "http": 409,
+    "error": "HISTORY_PROBE_SERVICE_DISABLED_SHARED_CLASP_PROJECT",
+    "elapsedMs": 1181,
+    "headersOnly": true,
+    "financialWrites": 0,
+    "sheetWrites": 0,
+    "permissionChanges": 0
+  },
+  "googleContentWrites": 0
+}

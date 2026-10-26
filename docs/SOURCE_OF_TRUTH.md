@@ -980,3 +980,8 @@ loan/clock/privacy cases passed isolated tests; live authorized account has no
 loans. The proposed assisted-user probe was rejected by automatic approval review
 and never executed. Evidence: docs/qa/evidence/history-loan-payments/deployment.json
 and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md.
+
+
+## H-HISTORY-FAST-READ-001 — own-context memory, 2026-10-26
+
+The authorized candidate uses one authenticated LOAD for own cards and schedules. Google remains the only loan/quota/status authority; the browser holds a disposable derived observation in memory only. This narrowly supersedes the previous SUMMARY-then-DETAIL frontend strategy; backend contracts remain unchanged. Reuse expires five minutes after the successful LOAD and is checked on new access/mount/foreground visibility, without polling or extending age on navigation. Logout, token/effective context, exact local control correction, request mutation, retry, page refresh and source failure invalidate the copy. No persistent browser/server replica or stale-on-error fallback. Approval/date projection remains anchored to the original server_now. Initial LOAD is larger than SUMMARY; repeated detail calls are eliminated. Cold latency is still above three seconds. Publication state and evidence: [audit](audits/H-HISTORY-FAST-READ-001.md).

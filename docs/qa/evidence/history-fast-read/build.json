@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "version": "2026102601",
+  "bundleSha256": "6a1080bf6656647ae6bd40d7b319d7638d5f4e5e3a69b15f6a785aef73c22189",
+  "focalChunks": [
+    "history-loans-repository.js"
+  ],
+  "unchangedChunks": 160,
+  "serviceWorkerChanges": "generated version references only",
+  "backendChanged": false
+}

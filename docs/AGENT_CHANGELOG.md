@@ -4306,3 +4306,6 @@ opens fully expanded once per visit. Vehicle information now has one daily price
 and a readable two-column specification grid. Calendar, request flow, Admin,
 backend and other programs unchanged. Focal isolated and real 390/430 checks PASS;
 156 compiled modules unchanged. See audits/H-RENTACAR-DETAIL-UI-002.md.
+
+Published 2d95e54; Pages run 40254472396 successful. Exact public bundle and
+390/430 Renta Car checks PASS; cache 2026102503. Final review APPROVED; stopped.

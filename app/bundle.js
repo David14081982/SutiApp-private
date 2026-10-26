@@ -28348,6 +28348,8 @@ Object.assign(window, {
     }));
   }
   const LISTING_CATS = ['auto', 'renta', 'casa', 'terrenos', 'solar', 'aires', 'puertas', 'computo', 'market', 'tours', 'farma', 'cirugias', 'rifas', 'donativos'];
+  // Route identity survives app.back(); it is not a catalog or availability cache.
+  const rentalVisits = new WeakSet();
   function ProductScreen({
     app,
     params
@@ -28391,15 +28393,28 @@ Object.assign(window, {
     React.useEffect(() => {
       if (quoteReady && !quote.visto) qs.markVisto(quote.id);
     }, [quoteReady, quote && quote.id]);
-    if (params.id === 'renta') return React.createElement(window.RentaCarCatalog, {
-      app,
-      it,
-      hue,
-      cs,
-      metadata,
-      favorite: fav,
-      onFavorite: () => setFav(!fav)
-    });
+    React.useEffect(() => {
+      if (params.id !== 'renta' || !cs) return;
+      const refresh = () => cs.retry();
+      refresh();
+      window.addEventListener('focus', refresh);
+      return () => window.removeEventListener('focus', refresh);
+    }, [params, cs]);
+    React.useEffect(() => {
+      if (params.id !== 'renta' || rentalVisits.has(params) || metadata.phase !== 'loaded' || cs?.state().phase !== 'loaded') return;
+      const vehicle = cs.live('fin', 'renta').find(p => !p.sold);
+      if (!vehicle) return;
+      rentalVisits.add(params);
+      app.push('catitem', {
+        item: vehicle,
+        ctx: {
+          id: it.id,
+          label: it.label,
+          icon: it.icon,
+          hue
+        }
+      });
+    }, [params, cs, catalogState.phase, metadata.phase]);
     if (managed && metadata.phase !== 'loaded') return React.createElement('div', {
       'data-program-info-state': metadata.phase,
       style: {
@@ -81500,36 +81515,31 @@ Object.assign(window, {
       useEffect
     } = React;
   const labels = [['engine', 'Motor'], ['vehicle_type', 'Tipo'], ['seats', 'Asientos'], ['tank', 'Tanque']];
-  const price = item => item.precio != null && !item.cotiza ? window.money(item.precio) + '/día' : 'Precio por confirmar';
   const css = `
  [data-rental-catalog],[data-rental-sheet],[data-rental-admin]{font-size:16px}
  [data-rental-catalog] *,[data-rental-sheet] *,[data-rental-admin] *{box-sizing:border-box}
  :is([data-rental-catalog],[data-rental-sheet],[data-rental-admin]){--text-9:14px;--text-9-5:14px;--text-10:14px;--text-10-5:14px;--text-11:14px;--text-11-5:14px;--text-12:14px;--text-12-5:14px;--text-13:14px;--text-13-5:14px}
  :is([data-rental-catalog],[data-rental-sheet],[data-rental-admin]) :is([style*="font-size: 9px"],[style*="font-size: 9.5px"],[style*="font-size: 10px"],[style*="font-size: 10.5px"],[style*="font-size: 11px"],[style*="font-size: 11.5px"],[style*="font-size: 12px"],[style*="font-size: 12.5px"],[style*="font-size: 13px"],[style*="font-size: 13.5px"]){font-size:14px!important}
  [data-rental-catalog] button,[data-rental-sheet] button{font-family:inherit}
- .rc-catalog{position:absolute;inset:0;background:var(--bg);overflow-y:auto;padding:18px 16px 40px}
- .rc-catalog header{display:flex;align-items:center;gap:12px;margin-bottom:22px}
- .rc-catalog h1{font-size:26px;line-height:1.2;margin:0;font-weight:850}
- .rc-catalog header p{font-size:14px;color:var(--ink-2);margin:5px 0 0}
  .rc-icon{width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:14px;background:var(--surface);color:var(--ink);flex-shrink:0;cursor:pointer}
- .rc-card{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--hairline);border-radius:24px;overflow:hidden;padding:0;margin:0 0 20px;color:var(--ink);box-shadow:var(--neo-sm);cursor:pointer}
- .rc-card:focus-visible,.rc-icon:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}
- .rc-card-head{display:flex;justify-content:space-between;gap:12px;padding:20px 18px 14px;align-items:flex-start}
- .rc-card-name{font-size:21px;font-weight:850;line-height:1.25;overflow-wrap:anywhere}
- .rc-year{display:block;font-size:16px;color:var(--ink-2);margin-top:5px}
- .rc-price{font-size:18px;font-weight:850;color:var(--guinda);white-space:nowrap}
- .rc-photo{position:relative;width:100%;aspect-ratio:16/10;background:var(--surface-2)}
- .rc-photo img{display:block;width:100%;height:100%;object-fit:contain}
- .rc-photo-empty{height:100%;display:grid;place-items:center;color:var(--ink-2);padding:24px}
- .rc-specs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 12px;margin:0;padding:20px 18px}
- .rc-specs div{min-width:0}.rc-specs dt{font-size:14px;line-height:1.4;color:var(--ink-2);margin-bottom:5px}
- .rc-specs dd{font-size:16px;font-weight:750;line-height:1.4;margin:0;overflow-wrap:anywhere}
- .rc-specs .rc-spec-price{grid-column:span 2}.rc-spec-price dd{color:var(--guinda)}
- .rc-card-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid var(--hairline);padding:14px 18px;color:var(--guinda);font-size:14px;font-weight:800}
- .rc-info{margin-top:24px;padding-top:38px}.rc-info [data-category-header-icon]{margin-top:0!important}
+ .rc-vehicle-info{padding:2px 0 4px;color:var(--ink)}
+ .rc-vehicle-kicker{display:flex;align-items:center;gap:7px;color:var(--guinda);font-size:14px;font-weight:750;margin-bottom:10px}
+ .rc-vehicle-info h1{font-size:26px;line-height:1.2;letter-spacing:-.025em;font-weight:850;margin:0;overflow-wrap:anywhere;text-wrap:pretty}
+ .rc-vehicle-year{display:inline-block;font-size:14px;color:var(--ink-2);margin-top:8px}
+ .rc-vehicle-rate{display:flex;align-items:baseline;gap:7px;margin:16px 0 20px;color:var(--guinda)}
+ .rc-vehicle-rate strong{font-size:28px;line-height:1.2;font-weight:850;letter-spacing:-.025em}
+ .rc-vehicle-rate span{font-size:16px;font-weight:600;color:var(--ink-2)}
+ .rc-specs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));margin:0;background:var(--surface);border:1px solid var(--hairline);border-radius:18px;overflow:hidden}
+ .rc-specs>div{min-width:0;padding:15px 16px}
+ .rc-specs>div:nth-child(odd){border-right:1px solid var(--hairline)}
+ .rc-specs>div:nth-child(n+3){border-top:1px solid var(--hairline)}
+ .rc-specs dt{font-size:14px;line-height:1.4;color:var(--ink-2);margin-bottom:5px}
+ .rc-specs dd{font-size:16px;line-height:1.4;font-weight:750;margin:0;overflow-wrap:anywhere}
+ .rc-specs dd[data-missing=true]{font-weight:500;color:var(--ink-2)}
+ .rc-icon:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}
  .rc-overlay{position:absolute;inset:0;display:flex;align-items:flex-end;background:rgba(20,16,25,.4);z-index:1}
  .rc-sheet{position:relative;display:flex;flex-direction:column;background:var(--bg);width:100%;height:76%;border-radius:26px 26px 0 0;overflow:hidden;box-shadow:0 -10px 35px rgba(20,16,25,.18);animation:rc-rise .28s ease-out;transition:height .25s ease,transform .2s ease}
- .rc-sheet[data-expanded=true]{height:98%}.rc-sheet-head{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--hairline);flex-shrink:0;touch-action:none;user-select:none}
+ .rc-sheet[data-expanded=true]{height:100%}.rc-sheet-head{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border-bottom:1px solid var(--hairline);flex-shrink:0;touch-action:none;user-select:none}
  .rc-grip{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;gap:10px;border:0;background:transparent;color:var(--ink-2);font-size:14px;font-weight:700;cursor:ns-resize}
  .rc-grip:before{content:'';width:38px;height:5px;background:var(--ink-3);opacity:.5;border-radius:9px}
  .rc-sheet-body{position:relative;flex:1;min-height:0}.rc-sheet-body>div{height:100%}
@@ -81542,137 +81552,44 @@ Object.assign(window, {
  @keyframes rc-rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
  @media(prefers-reduced-motion:reduce){.rc-sheet{animation:none;transition:none}}
  `;
-  function Specs({
+  function VehicleInfo({
     item,
-    includePrice = true
+    label,
+    icon
   }) {
-    const specs = item.rental_specs || {};
-    return h('dl', {
+    const specs = item.rental_specs || {},
+      year = specs.year,
+      yearInName = year && new RegExp('\\b' + year + '\\b').test(item.nombre || '');
+    return h('section', {
+      className: 'rc-vehicle-info',
+      'data-rental-vehicle-info': item.id,
+      'aria-label': 'Información del vehículo'
+    }, h('div', {
+      className: 'rc-vehicle-kicker'
+    }, h(window.Icon, {
+      name: icon || 'key',
+      size: 16
+    }), label || 'Renta Car'), h('h1', null, item.nombre), !yearInName && h('span', {
+      className: 'rc-vehicle-year',
+      'data-rental-year': true
+    }, year ? 'Modelo ' + year : 'Año no registrado'), h('div', {
+      className: 'rc-vehicle-rate',
+      'data-rental-rate': true
+    }, item.precio != null && !item.cotiza ? h(React.Fragment, null, h('strong', null, window.money(item.precio)), h('span', null, '/ día')) : h('span', null, 'Precio por confirmar')), h('dl', {
       className: 'rc-specs',
       'data-rental-specs': true
-    }, labels.map(([key, label]) => h('div', {
+    }, labels.map(([key, title]) => h('div', {
       key
-    }, h('dt', null, label), h('dd', {
-      'data-rental-spec': key
-    }, specs[key] || 'No registrado'))), includePrice && h('div', {
-      className: 'rc-spec-price'
-    }, h('dt', null, 'Precio por día'), h('dd', null, price(item))));
-  }
-  function VehicleCard({
-    item,
-    onOpen
-  }) {
-    const asset = window.ProgramCatalogRepository.imageAssets(item)[0];
-    return h('button', {
-      type: 'button',
-      className: 'rc-card',
-      'data-rental-card': item.id,
-      onClick: () => onOpen(item),
-      'aria-label': 'Ver ' + item.nombre
-    }, h('div', {
-      className: 'rc-card-head'
-    }, h('div', null, h('div', {
-      className: 'rc-card-name'
-    }, item.nombre), h('span', {
-      className: 'rc-year'
-    }, item.rental_specs?.year ? 'Año ' + item.rental_specs.year : 'Año no registrado')), h('div', {
-      className: 'rc-price'
-    }, price(item))), h('div', {
-      className: 'rc-photo'
-    }, asset ? h(window.ProgramCatalogImage, {
-      asset,
-      alt: item.nombre
-    }) : h('div', {
-      className: 'rc-photo-empty'
-    }, 'Imagen no registrada')), h(Specs, {
-      item
-    }), h('div', {
-      className: 'rc-card-foot'
-    }, h('span', null, item.sold ? 'No disponible' : 'Ver vehículo y disponibilidad'), h(window.Icon, {
-      name: 'arrowR',
-      size: 20
-    })));
-  }
-  function Catalog({
-    app,
-    it,
-    hue,
-    cs,
-    metadata,
-    favorite,
-    onFavorite
-  }) {
-    const state = cs ? cs.state() : {
-        phase: 'loading'
-      },
-      items = cs ? cs.live('fin', 'renta') : [],
-      available = items.filter(x => !x.sold),
-      unavailable = items.filter(x => x.sold);
-    useEffect(() => {
-      const refresh = () => cs && cs.retry();
-      refresh();
-      window.addEventListener('focus', refresh);
-      return () => window.removeEventListener('focus', refresh);
-    }, [cs]);
-    const open = item => app.push('catitem', {
-      item,
-      ctx: {
-        id: it.id,
-        label: it.label,
-        icon: it.icon,
-        hue
-      }
-    });
-    return h('div', {
-      'data-rental-catalog': true,
-      className: 'rc-catalog su-app-scroll'
-    }, h('style', null, css), h('header', null, h('button', {
-      className: 'rc-icon',
-      onClick: app.back,
-      'aria-label': 'Atrás'
-    }, h(window.Icon, {
-      name: 'arrowL',
-      size: 23
-    })), h('div', null, h('h1', null, it.label || 'Renta Car'), h('p', null, 'Elige tu vehículo y consulta las fechas'))), state.phase === 'loading' || state.phase === 'idle' ? h('p', {
-      role: 'status'
-    }, 'Cargando vehículos…') : state.phase === 'error' ? h('div', {
-      role: 'alert'
-    }, h('p', null, 'No pudimos consultar los vehículos.'), h(window.Btn, {
-      onClick: () => cs.retry()
-    }, 'Reintentar')) : h(React.Fragment, null, h('h2', {
-      style: {
-        fontSize: 18,
-        margin: '0 0 14px'
-      }
-    }, 'Vehículos disponibles'), available.length ? available.map(item => h(VehicleCard, {
-      key: item.id,
-      item,
-      onOpen: open
-    })) : h('p', null, 'No hay vehículos disponibles por el momento.'), unavailable.length > 0 && h('section', null, h('h2', {
-      style: {
-        fontSize: 18
-      }
-    }, 'No disponibles'), unavailable.map(item => h(VehicleCard, {
-      key: item.id,
-      item,
-      onOpen: open
-    })))), h('section', {
-      className: 'rc-info',
-      'aria-label': 'Información y contacto de Renta Car'
-    }, metadata.row ? h(window.ProgramGeneralInfo.PublicHeader, {
-      row: metadata.row,
-      favorite,
-      onFavorite,
-      notify: app.toast
-    }) : h(window.ProgramGeneralInfo.InfoState, {
-      state: metadata
-    })));
+    }, h('dt', null, title), h('dd', {
+      'data-rental-spec': key,
+      'data-missing': !specs[key]
+    }, specs[key] || 'No registrado')))));
   }
   function DetailSheet({
     app,
     children
   }) {
-    const [expanded, setExpanded] = useState(false),
+    const [expanded, setExpanded] = useState(true),
       [drag, setDrag] = useState(0),
       gesture = useRef(null),
       grip = useRef(null),
@@ -81812,9 +81729,8 @@ Object.assign(window, {
     }))))));
   }
   Object.assign(window, {
-    RentaCarCatalog: Catalog,
+    RentaCarVehicleInfo: VehicleInfo,
     RentaCarDetailSheet: DetailSheet,
-    RentaCarSpecs: Specs,
     RentaCarFields: Fields
   });
 })();
@@ -82403,7 +82319,11 @@ Object.assign(window, {
       style: {
         padding: programItem && item.requestMode === 'supabase' ? '20px 20px 30px' : '20px 20px 130px'
       }
-    }, React.createElement('div', {
+    }, rental ? React.createElement(window.RentaCarVehicleInfo, {
+      item,
+      label: ctx.label,
+      icon: it.icon
+    }) : React.createElement(React.Fragment, null, React.createElement('div', {
       style: {
         display: 'flex',
         alignItems: 'center',
@@ -82469,15 +82389,7 @@ Object.assign(window, {
         color: 'var(--ink-3)',
         marginTop: 12
       }
-    }, 'Consulta disponibilidad'), rental && React.createElement('div', {
-      'data-rental-year': true,
-      style: {
-        fontSize: 16,
-        marginTop: 8
-      }
-    }, item.rental_specs?.year ? 'Año ' + item.rental_specs.year : 'Año no registrado'), rental && React.createElement(window.RentaCarSpecs, {
-      item
-    }), sold && React.createElement('div', {
+    }, 'Consulta disponibilidad')), sold && React.createElement('div', {
       'data-program-product-sold-badge': 'detail',
       style: {
         display: 'inline-flex',

@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "mode": "local",
+  "bundleSha256": "0df22e0e6cc94c6ce75de0e9d7f1aa2bbda3478d7585591243426c523c6c8987",
+  "viewports": [
+    {
+      "width": 390,
+      "status": "PASS",
+      "cards": 1,
+      "realImages": true,
+      "allSpecsMatchBackend": true,
+      "missingSpecsShownHonestly": true,
+      "originalLandingRestored": true,
+      "autoOpenOncePerVisit": true,
+      "singlePrice": true,
+      "minFontSize": 14,
+      "expandDragCloseDeviceBack": true,
+      "galleryViewerPreserved": true,
+      "rentalCalendarDocumentsSummarySignaturePreserved": true,
+      "adminFieldsAndGallery": true
+    },
+    {
+      "width": 430,
+      "status": "PASS",
+      "cards": 1,
+      "realImages": true,
+      "allSpecsMatchBackend": true,
+      "missingSpecsShownHonestly": true,
+      "originalLandingRestored": true,
+      "autoOpenOncePerVisit": true,
+      "singlePrice": true,
+      "minFontSize": 14,
+      "expandDragCloseDeviceBack": true,
+      "galleryViewerPreserved": true,
+      "rentalCalendarDocumentsSummarySignaturePreserved": true,
+      "adminFieldsAndGallery": true
+    }
+  ],
+  "productionWrites": 0,
+  "requestsSubmitted": 0,
+  "backendResponseOverrides": 0
+}

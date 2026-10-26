@@ -37,6 +37,8 @@
   }
 
   const LISTING_CATS = ['auto', 'renta', 'casa', 'terrenos', 'solar', 'aires', 'puertas', 'computo', 'market', 'tours', 'farma', 'cirugias', 'rifas', 'donativos'];
+  // Route identity survives app.back(); it is not a catalog or availability cache.
+  const rentalVisits = new WeakSet();
 
   function ProductScreen({ app, params }) {
     const metadata = window.ProgramGeneralInfo.usePublicInfo(params.id);
@@ -60,7 +62,20 @@
     const quoteReady = quote && quote.estado === 'cotizada';
     React.useEffect(() => { if (quoteReady && !quote.visto) qs.markVisto(quote.id); }, [quoteReady, quote && quote.id]);
 
-    if(params.id==='renta')return React.createElement(window.RentaCarCatalog,{app,it,hue,cs,metadata,favorite:fav,onFavorite:()=>setFav(!fav)});
+    React.useEffect(() => {
+      if (params.id !== 'renta' || !cs) return;
+      const refresh = () => cs.retry();
+      refresh();
+      window.addEventListener('focus', refresh);
+      return () => window.removeEventListener('focus', refresh);
+    }, [params, cs]);
+    React.useEffect(() => {
+      if (params.id !== 'renta' || rentalVisits.has(params) || metadata.phase !== 'loaded' || cs?.state().phase !== 'loaded') return;
+      const vehicle = cs.live('fin', 'renta').find(p => !p.sold);
+      if (!vehicle) return;
+      rentalVisits.add(params);
+      app.push('catitem', { item: vehicle, ctx: { id: it.id, label: it.label, icon: it.icon, hue } });
+    }, [params, cs, catalogState.phase, metadata.phase]);
     if(managed && metadata.phase!=='loaded') return React.createElement('div',{'data-program-info-state':metadata.phase,style:{position:'absolute',inset:0,background:'var(--bg)',overflowY:'auto'}},React.createElement(window.Btn,{onClick:app.back,variant:'outline'},'Volver'),React.createElement(window.ProgramGeneralInfo.InfoState,{state:metadata}));
     if(!found && !metadata.row) return null;
     return React.createElement(React.Fragment, null,

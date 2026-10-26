@@ -138,6 +138,7 @@
             React.createElement('button', { onClick: app.back, 'aria-label': 'Atrás', style: { position: 'absolute', top: 12, left: 10, width: 40, height: 40, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.32)', backdropFilter: 'blur(6px)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: '#fff' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
             React.createElement(window.FavHeart,{on:catalog&&catalog.isFavorite(item.id),onClick:()=>catalog.toggleFavorite(item.id).catch(()=>app.toast&&app.toast('No se pudo actualizar el favorito')),style:{top:58,right:10}})),
           React.createElement('div', { style: { padding: programItem && item.requestMode === 'supabase' ? '20px 20px 30px' : '20px 20px 130px' } },
+            rental ? React.createElement(window.RentaCarVehicleInfo, { item, label: ctx.label, icon: it.icon }) : React.createElement(React.Fragment, null,
             React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 7, fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } },
               React.createElement(I, { name: it.icon, size: 15, stroke: 2.2, style: { color: 'var(--guinda)' } }), ctx.label || ''),
             React.createElement('h1', { style: { fontSize: 'var(--text-25, 25px)', fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.15, margin: '8px 0 0', textWrap: 'pretty' } }, item.nombre),
@@ -147,9 +148,7 @@
                 React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink-2)' } }, 'Precio a cotizar'))
               : item.precio != null
                 ? React.createElement('div', { style: { fontSize: 'var(--text-30, 30px)', fontWeight: 900, color: 'var(--guinda)', letterSpacing: '-.03em', marginTop: 10 } }, window.money(item.precio)+(rental?'/día':''))
-                : React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink-3)', marginTop: 12 } }, 'Consulta disponibilidad'),
-            rental&&React.createElement('div',{'data-rental-year':true,style:{fontSize:16,marginTop:8}},item.rental_specs?.year?'Año '+item.rental_specs.year:'Año no registrado'),
-            rental&&React.createElement(window.RentaCarSpecs,{item}),
+                : React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink-3)', marginTop: 12 } }, 'Consulta disponibilidad')),
             sold&&React.createElement('div',{'data-program-product-sold-badge':'detail',style:{display:'inline-flex',alignItems:'center',gap:6,marginTop:12,background:'#FCE8E6',color:'#B3261E',fontSize: 'var(--text-12, 12px)',fontWeight:950,letterSpacing:'.08em',padding:'7px 11px',borderRadius:999}},React.createElement(I,{name:'close',size:14,stroke:2.4}),'VENDIDO'),
             quote && React.createElement(QuoteBanner, { quote }),
             !farma&&programItem&&!sold&&commercialMode==='DIRECT_CONTACT'&&React.createElement(DirectContactPanel,{item,app}),

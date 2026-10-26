@@ -4297,3 +4297,12 @@ H-RENTA-CAR-CONTRACT-COPY-003 final: PASS. Pages run 39821920665 success; exact 
 H-RENTACAR-CATALOG-UI-ADMIN-001: rental-only large cards and expandable existing-detail wrapper; canonical Admin metadata extension. Backend preflight/apply and focal 390/430 browser checks PASS; isolated Admin edits update user cards/cover/availability. Existing rental documents/signature regression PASS. Publication verification pending. Evidence: docs/qa/evidence/rentacar-catalog/. No global suites by explicit owner instruction.
 
 H-RENTACAR-CATALOG-UI-ADMIN-001 final PASS: commit 81088ad, Pages run 40247523619 success, cache 2026102502. Exact public bundle and both mobile widths verified. 17 focal checks PASS; no global suites, requests or invented persistent vehicle values. See task audit and production-live.json. STOP.
+
+
+## H-RENTACAR-DETAIL-UI-002 - 2026-10-25
+
+Restored the original Renta Car landing and compact cards; first available vehicle
+opens fully expanded once per visit. Vehicle information now has one daily price
+and a readable two-column specification grid. Calendar, request flow, Admin,
+backend and other programs unchanged. Focal isolated and real 390/430 checks PASS;
+156 compiled modules unchanged. See audits/H-RENTACAR-DETAIL-UI-002.md.

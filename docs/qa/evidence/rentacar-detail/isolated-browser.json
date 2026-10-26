@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "syntheticTransportOnly": true,
+  "productionWrites": 0,
+  "checks": [
+    "fully expanded automatic first available vehicle",
+    "same catitem handler and IDs",
+    "X returns to original landing without reopening",
+    "small card opens selected unit",
+    "Escape closes sheet",
+    "new visit refreshes availability and price",
+    "direct contact retained",
+    "sold/inactive never auto-open",
+    "empty catalog preserved",
+    "error never opens stale vehicle",
+    "other program landing/detail unchanged"
+  ]
+}

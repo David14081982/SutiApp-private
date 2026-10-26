@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "baseline": "481a4bf",
+  "bundleSha256": "0df22e0e6cc94c6ce75de0e9d7f1aa2bbda3478d7585591243426c523c6c8987",
+  "modules": 159,
+  "changedModules": [
+    "renta-car-catalog.jsx",
+    "screens-catalogo.jsx",
+    "screens-marketplace.jsx"
+  ],
+  "unchangedModules": 156,
+  "calendarSourceAndStylesUnchanged": true,
+  "backendAdminSharedViewerAuthStorageRoutingUnchanged": true,
+  "pages": {
+    "status": "PASS",
+    "output": "C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\renta-car\\release\\.tmp\\rental-detail-pages-0df22e0e6c",
+    "files": 31
+  },
+  "cache": "2026102503"
+}

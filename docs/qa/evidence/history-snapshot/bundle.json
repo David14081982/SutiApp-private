@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "base": "85c78e138515851823843994c781e83b56071c7e",
+  "existingChunks": [
+    "history-loans-repository.js",
+    "history-loans.jsx",
+    "screens-admin-finanzas.jsx"
+  ],
+  "addedChunks": [
+    "history-statement.js",
+    "history-sync-admin.js"
+  ],
+  "unchangedChunks": 158,
+  "bundleSha256": "a4413496893f2de5e46e88aa47d7d6dec43d9746b8816fb01a377bced5a9d8f4"
+}

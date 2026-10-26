@@ -1,0 +1,19 @@
+# H-HISTORY-SNAPSHOT-001 production activation plan
+
+Current state: activation explicitly approved by the owner and in progress. Google v21 and loan-history Edge v2 are backed up. The read-only Google action, additive private schema, worker and 15:00 America/Hermosillo schedule are installed; the complete corrected copy has passed structural coverage and security checks. No source cells or business records have changed. User-reader/frontend cutover and actual UI/timing acceptance follow the sequence below. The earlier deployment approval requirement is resolved by the owner's explicit instruction to proceed.
+
+Reviewed package: private derived observations and own-context read RPC; service-only synchronization worker; new read-only Apps Script action; Finance Admin refresh/status; stable amortization detail; local PDF; focal generated bundle/version references. Google remains the financial authority, and no cell, formula, financial writer, approval flow or trigger is changed.
+
+Activation sequence:
+
+1. Recheck backups against current Google/Edge definitions, migration version and repository head. Stop on unrelated drift; never overwrite it.
+2. Confirm the local syntax/import checks and prepare the prior reader and frontend for rollback. Do not call the deployment endpoint for an assumed harmless compilation; no production reader replacement is permitted before a validated complete observation exists.
+3. Publish only the additional fixed read-only Apps Script action. Verify removing the new action/dispatch reproduces every previous reader/writer and preserves manifest and deployment access.
+4. Apply the additive migration disabled. Check ACL/RLS, cron GMT/UTC and exact own-context function preservation. Configure the new Vault URL/gateway key/independent worker secret and matching Edge secret without logging credentials.
+5. Deploy the worker through the explicitly authorized production deployment API, confirm `verify_jwt=true`, enable synchronization and trigger one complete import. Keep the current user reader until the initial observation is complete. Verify counts, coverage, typed values, rejected receipt groups, deleted/absent groups, and source time; do not repair source data. If import/runtime limits fail, retain the existing reader and diagnose before cutover.
+6. After that validation, deploy the own-copy reader through the explicitly authorized production deployment API and confirm `verify_jwt=true`. This is an intentional replacement, not a compile-only probe. Under the previously authorized assistance procedure, compare the four requested affiliates and 11143 with the complete source observation, validate own-only access, and measure first-list/detail times and response bytes. End assistance when each check completes; never interrupt another administrative session.
+7. Publish the tested frontend through the repository's normal release flow. Verify mobile/desktop, all filters, token/refresh stability, last-update display, PDF download, exact WhatsApp path, Finance manual button and daily schedule. Set final acceptance only after real timing and coverage pass.
+
+Rollback: restore prior own reader/frontend first, disable the new worker/configuration and apply its recovery to stop cron/entry points while preserving private observations and audit. Restore the prior Apps Script deployment if necessary. No Sheet or business record deletion is part of recovery.
+
+Limitations to verify in production: first import duration and Edge resource budget; actual metadata Realtime delivery; private-user first-load latency and bytes. The 1–2 s list / <1 s amortization values are targets, not measured results. Source changes become visible after successful daily/manual synchronization. An already-open view retains the last timestamp; a failed global job is displayed when the next own read obtains its state, without periodic user polling.

@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "syncVersion": "f5f99d4d-dc8b-4824-9e63-b2dd13aeb4f9",
+  "groups": 813,
+  "loans": 2519,
+  "quotas": 19778,
+  "requestCards": 158,
+  "issues": 0,
+  "structuralCoverage": true,
+  "independentGoogleCoverage": true,
+  "independentCoverageScope": "Exact displayed owner+ID multiplicity for both sheets; exact source_row for all quotas; all ten omitted request rows verified blank in A:Y with no A note.",
+  "financialCellDigestIndependentlyVerified": false,
+  "ownReaderCutoverReady": true
+}

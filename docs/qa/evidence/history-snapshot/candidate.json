@@ -1,0 +1,72 @@
+{
+  "status": "PASS",
+  "phase": "LOCAL_CANDIDATE",
+  "edgeSyntax": "Babel TypeScript syntax + local imports; remote compilation not executed",
+  "runtime": [
+    "PASS irrelevant blank/numeric request rows retain PV2 loans; foreign owners and all relevant ID collisions still rejected",
+    "PASS historical numeric transfer IDs preserved without SR/approval inference; invalid receipts rejected; actual SR clock preserved",
+    "PASS one own RPC, strict selector denial, empty/failed snapshot, source ownership, malformed transfer, quota states",
+    "PASS worker secret/shape, coalescing, unchanged bodies skipped, complete manifest, failure before publish, bounded batches"
+  ],
+  "pages": {
+    "status": "PASS",
+    "pwa": true,
+    "forbiddenFiles": 0
+  },
+  "sourceFixtureRows": {
+    "loans": 20000,
+    "requests": 2800
+  },
+  "sharedInfrastructureUnchanged": true,
+  "workerLogicUnchanged": true,
+  "globalImageRegression": "NOT APPLICABLE: focal modules + generated artifacts only",
+  "productionDeployments": 0,
+  "googleSheetWrites": 0,
+  "productionLatency": "NOT MEASURED",
+  "files": [
+    {
+      "file": "app/history-loans-repository.js",
+      "sha256": "9b634e4532327b881e8b85717e1d0a20af2025cb7bf572cd8fcd7607d1d7fcb4"
+    },
+    {
+      "file": "app/history-loans.jsx",
+      "sha256": "35fc8b15954c9d50dc59bfc57bdc056ba4bfe66672c4512683ef70619dd1676e"
+    },
+    {
+      "file": "app/history-statement.js",
+      "sha256": "58302578ba62c1e41ae4f90a77ddd3fc9f9d02fecf31572af7409f6469a77c7c"
+    },
+    {
+      "file": "app/history-sync-admin.js",
+      "sha256": "0342c94cce99ed5ff5393b03834248812678788dc49c5637ec674c362f08f0eb"
+    },
+    {
+      "file": "supabase/functions/loan-history/index.ts",
+      "sha256": "797f785228211abac86bb4ac84ae36174422db8d482afcadc26a0030771ee17f"
+    },
+    {
+      "file": "supabase/functions/loan-history/history.mjs",
+      "sha256": "bd55d38611fed6a0b21d88c731c3cf091029dbe14c4e012ae0a4bff04435f970"
+    },
+    {
+      "file": "supabase/functions/loan-history/snapshot.mjs",
+      "sha256": "49e9152015df7e4f0212b878bea4da533ccd9e96df9459e332629463f9887153"
+    },
+    {
+      "file": "supabase/functions/loan-history/snapshot-source.mjs",
+      "sha256": "d2787d88b737930826e9464c75a1f56d06d49ba7a41b5c7921651c7f60fbd292"
+    },
+    {
+      "file": "supabase/functions/loan-history-sync/index.ts",
+      "sha256": "a122e66aa52ccc7eba47f06c58418bdeb966ac3cbfe1a3c9339e87720ccd60fe"
+    },
+    {
+      "file": "supabase/functions/loan-history-sync/worker.mjs",
+      "sha256": "3f56bc01704a92b0113144c8dcf81c4a2540dfcd8dc868040f5b14160880ffad"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "sha256": "b021ac4d822dc2f9568cf76cd7404ad6bdb1e114abbbb10ac5b7bcd7887386f2"
+    }
+  ]
+}

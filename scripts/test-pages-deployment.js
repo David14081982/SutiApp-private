@@ -57,5 +57,7 @@ assert(html.includes('Cargando SutiApp…'));
 assert(html.includes('No fue posible iniciar SutiApp'));
 assert(html.includes('id="suti-startup-retry"'));
 
+assert.equal(path.dirname(path.resolve(output)), path.resolve(os.tmpdir()), 'Cleanup must stay in the temporary directory');
+assert(path.basename(output).startsWith('sutiapp-pages-'), 'Cleanup must target this test output');
 fs.rmSync(output, { recursive: true, force: true });
 console.log(JSON.stringify({ status: 'PASS', pwa: true, forbiddenFiles: 0 }));

@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "mode": "INDEPENDENT_GOOGLE_PLUGIN_TO_SQL_READ_ONLY",
+  "loanRows": 19778,
+  "requestRows": 2793,
+  "groups": 813,
+  "blankRequestRowsVerified": 10,
+  "loanCoverageDigest": "0bd9f6f644ecc750cc54748e057a89cc7c194fbcbb40dfb6294545d89ad37602",
+  "requestCoverageDigest": "65c9ba2e9fb8b268498b6e47faf9d6e3cdacfaae5adbf6ed25b342bf8910ccc0",
+  "sync_version": "f5f99d4d-dc8b-4824-9e63-b2dd13aeb4f9",
+  "source_updated_at": "2026-10-26 16:34:12.174+00",
+  "independent_observed_at": "2026-10-26T16:30:28.914Z",
+  "scope": "Exact displayed owner+ID multiplicity for both sheets; exact source_row for all quotas; all ten omitted request rows verified blank in A:Y with no A note.",
+  "limitations": [
+    "Coverage digest does not prove every financial amount/date/status/receipt field.",
+    "Separate Google reads are observations, not a cross-sheet transaction."
+  ],
+  "sourceWrites": 0,
+  "databaseWrites": 0,
+  "credentialsLogged": false
+}

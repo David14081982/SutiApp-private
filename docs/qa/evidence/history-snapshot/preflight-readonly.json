@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "googleVersion": 21,
+  "googleBackup": true,
+  "edgeVersion": 2,
+  "edgeBackup": true,
+  "remoteCompilation": "NOT EXECUTED",
+  "noDeploymentChanges": true,
+  "lastMigration": "20261025000100"
+}

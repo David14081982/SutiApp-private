@@ -526,9 +526,94 @@ function readSelfHistory_(payload) {
     loan_sheet_id:1245291756,request_sheet_id:10616270,folio:payload.folio,loans:loanRows,requests:requestRows});
 }
 
+// Fixed whole-history snapshot read. Only the private synchronization worker
+// uses this action; it never accepts a Folio, sheet, range or target selector.
+function readHistorySnapshot_(payload) {
+  const secret=PropertiesService.getScriptProperties().getProperty(HANDOFF_SECRET_PROPERTY);
+  if(!secret||!constantTimeEqual_(payload.secret,secret))return failure_('UNAUTHORIZED');
+  if(Object.keys(payload).some(function(k){return !['action','secret','contract_version'].includes(k);})||
+    payload.action!=='read_history_snapshot'||payload.contract_version!=='HISTORY_SNAPSHOT_READ_V1')return failure_('INVALID_REQUEST');
+  try {
+    const book=SpreadsheetApp.openById(HANDOFF_SPREADSHEET_ID),zone=book.getSpreadsheetTimeZone(),dates=new Map();
+    const definitions=[{name:'HISTORIAL P V2',id:1245291756,width:35,headers:{0:'Fecha',1:'Cuotas',2:'ID',3:'Folio',23:'Estatus del prestamo'}},
+      {name:'Historial de solicitudes',id:10616270,width:25,headers:{0:'ID',1:'Número de control',24:'Estado'}}];
+    const sheets=definitions.map(function(definition){const sheet=book.getSheetByName(definition.name);
+      if(!sheet||sheet.getSheetId()!==definition.id)throw new Error('HISTORY_SNAPSHOT_SOURCE_INVALID');return sheet;});
+    function date(v){
+      if(Object.prototype.toString.call(v)==='[object Date]'&&!isNaN(v.getTime())){
+        const key=v.getTime();if(!dates.has(key))dates.set(key,Utilities.formatDate(v,zone,'yyyy-MM-dd'));return dates.get(key);
+      }
+      if(typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v))return v;
+      if(typeof v==='string'&&/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(v)){const p=v.split('/');return p[2]+'-'+('0'+p[1]).slice(-2)+'-'+('0'+p[0]).slice(-2);}
+      return null;
+    }
+    function capture(index,project){
+      const sheet=sheets[index],definition=definitions[index],count=sheet.getLastRow();
+      if(count<1)throw new Error('HISTORY_SNAPSHOT_SOURCE_INVALID');
+      const range=sheet.getRange(1,1,count,definition.width),values=range.getValues(),display=range.getDisplayValues();
+      const notes=index===1?sheet.getRange(1,1,count,1).getNotes():null;
+      if(count!==sheet.getLastRow())throw new Error('HISTORY_SNAPSHOT_SOURCE_CHANGED');
+      if(values.length!==count||display.length!==count||notes&&notes.length!==count||
+        values.some(function(row){return row.length!==definition.width;})||display.some(function(row){return row.length!==definition.width;})||
+        Object.keys(definition.headers).some(function(c){return display[0][c]!==definition.headers[c];}))throw new Error('HISTORY_SNAPSHOT_SOURCE_INVALID');
+      // Internal fingerprints cover the complete observations, including
+      // headers/display/notes. Raw foreign names/documents are never emitted.
+      const result={count:count,fingerprint:hexDigest_(JSON.stringify({count:count,values:values,display:display,notes:notes})),rows:[],issues:[],blank:0};
+      if(!project)return result;
+      for(let i=1;i<count;i++){
+        const v=values[i],d=display[i],note=notes?notes[i][0]:'';
+        if(v.every(function(x){return x===''||x===null;})&&d.every(function(x){return x==='';})&&note===''){result.blank++;continue;}
+        if(index===0){
+          let number=v[18];if(Object.prototype.toString.call(number)==='[object Date]'){
+            const iso=date(number);number=iso?Math.round((Date.parse(iso+'T00:00:00Z')-Date.UTC(1899,11,30))/86400000):null;
+          }
+          result.rows.push({source_row:i+1,id:d[2],owner:d[3],date:date(v[0]),amount:v[1]===''?null:v[1],fund:d[6],
+            term:v[16]===''?null:v[16],principal:v[9]===''?null:v[9],total:v[10]===''?null:v[10],scheduled:v[14]===''?null:v[14],
+            number:number===''?null:number,paid_to_date:v[21]===''?null:v[21],expected_to_date:v[22]===''?null:v[22],status:d[23],authorized:date(v[34])});
+        }else{
+          let receipt=null;const markers=String(note||'').split('\n').filter(function(line){return line.indexOf('SUTI_LOAN_TRANSFER_V1:')===0;});
+          let invalid=markers.length>1;
+          if(markers.length===1){try{receipt=JSON.parse(markers[0].slice('SUTI_LOAN_TRANSFER_V1:'.length));}catch(_){invalid=true;}
+            if(!invalid){
+              invalid=!receipt||typeof receipt!=='object'||Array.isArray(receipt)||
+                !['string','number'].includes(typeof receipt.id)||typeof receipt.id==='number'&&!isFinite(receipt.id)||
+                String(receipt.id)!==d[0]||typeof receipt.identity!=='string'||!(/^SR-/.test(receipt.identity)||/^[0-9]+$/.test(receipt.identity))||
+                typeof receipt.sourceHash!=='string'||!/^[a-f0-9]{64}$/i.test(receipt.sourceHash);
+              // Only fields consumed by the existing ownership/approval link
+              // cross the boundary; unrelated JSON note properties stay in Google.
+              if(!invalid)receipt={id:receipt.id,identity:receipt.identity,sourceHash:receipt.sourceHash};
+            }
+          }
+          if(invalid){receipt=null;result.issues.push({owner:d[1],source_row:i+1,code:'HISTORY_TRANSFER_IDENTITY_INVALID'});}
+          result.rows.push({id:d[0],owner:d[1],fund:d[4],term:v[6]===''?null:v[6],principal:v[7]===''?null:v[7],total:v[8]===''?null:v[8],date:date(v[9]),status:d[24],receipt:receipt});
+        }
+      }
+      return result;
+    }
+    const initial=[capture(0,true),capture(1,true)];
+    // Both sheets are observed again after both initial reads. This detects
+    // source changes; SpreadsheetApp does not provide a cross-sheet transaction.
+    for(let i=0;i<2;i++){const final=capture(i,false);if(initial[i].fingerprint!==final.fingerprint)throw new Error('HISTORY_SNAPSHOT_SOURCE_CHANGED');}
+    if(book.getSpreadsheetTimeZone()!==zone||definitions.some(function(definition,i){const sheet=book.getSheetByName(definition.name);
+      return !sheet||sheet.getSheetId()!==definition.id||sheet.getLastRow()!==initial[i].count;}))throw new Error('HISTORY_SNAPSHOT_SOURCE_CHANGED');
+    const loans=initial[0].rows,requests=initial[1].rows,issues=initial[1].issues,owners=new Set(),unaddressable=new Set();let unaddressableRows=0;
+    loans.concat(requests).forEach(function(row){owners.add(row.owner);if(!row.owner||row.owner==='0'||row.owner!==row.owner.trim()||row.owner.length>100){unaddressableRows++;unaddressable.add(row.owner);}});
+    return jsonResponse_({ok:true,action:'read_history_snapshot',contract_version:'HISTORY_SNAPSHOT_READ_V1',workbook_id:HANDOFF_SPREADSHEET_ID,
+      loan_sheet_id:1245291756,request_sheet_id:10616270,observed_at:new Date().toISOString(),loans:loans,requests:requests,issues:issues,
+      counts:{loan_rows:loans.length,request_rows:requests.length,folios:owners.size,issues:issues.length,
+        loan_source_rows:initial[0].count-1,request_source_rows:initial[1].count-1,ignored_blank_loan_rows:initial[0].blank,ignored_blank_request_rows:initial[1].blank,
+        unaddressable_owner_rows:unaddressableRows,unaddressable_owner_groups:unaddressable.size},
+      fingerprints:{loans:hexDigest_(JSON.stringify(loans)),requests:hexDigest_(JSON.stringify(requests)),issues:hexDigest_(JSON.stringify(issues)),content:hexDigest_(JSON.stringify({loans:loans,requests:requests,issues:issues}))}});
+  }catch(error){
+    const allowed=['HISTORY_SNAPSHOT_SOURCE_CHANGED','HISTORY_SNAPSHOT_SOURCE_INVALID'];
+    return failure_(error&&allowed.includes(error.message)?error.message:'HISTORY_SNAPSHOT_SOURCE_UNAVAILABLE');
+  }
+}
+
 function doPost(event) {
   try {
     const payload=JSON.parse(event&&event.postData&&event.postData.contents||'{}');
+    if(payload.action==='read_history_snapshot')return readHistorySnapshot_(payload);
     if(payload.action==='read_self_history')return readSelfHistory_(payload);
     if(payload.action==='read_sicof_financial')return readSicofFinancial_(payload);
     if(payload.action==='read_loan_status')return readLoanStatus_(payload);

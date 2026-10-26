@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "width": 390,
+      "status": "PASS",
+      "filters": true,
+      "monetaryProgress": true,
+      "zeroRules": true,
+      "pdfDownload": true,
+      "tokenScroll": true,
+      "signalRefresh": true,
+      "noPolling": true,
+      "metadataResume": true,
+      "explicitErrors": true,
+      "authDenial": true,
+      "controlCycleABA": true,
+      "impersonation": true,
+      "sourceDeletion": true
+    },
+    {
+      "width": 320,
+      "status": "PASS",
+      "filters": true,
+      "monetaryProgress": true,
+      "zeroRules": true,
+      "pdfDownload": true,
+      "tokenScroll": true,
+      "signalRefresh": true,
+      "noPolling": true,
+      "metadataResume": true,
+      "explicitErrors": true,
+      "authDenial": true,
+      "controlCycleABA": true,
+      "impersonation": true,
+      "sourceDeletion": true
+    },
+    {
+      "width": 1440,
+      "status": "PASS",
+      "filters": true,
+      "monetaryProgress": true,
+      "zeroRules": true,
+      "pdfDownload": true,
+      "tokenScroll": true,
+      "signalRefresh": true,
+      "noPolling": true,
+      "metadataResume": true,
+      "explicitErrors": true,
+      "authDenial": true,
+      "controlCycleABA": true,
+      "impersonation": true,
+      "sourceDeletion": true
+    }
+  ],
+  "sourceHashes": {
+    "app/history-loans-repository.js": "9b634e4532327b881e8b85717e1d0a20af2025cb7bf572cd8fcd7607d1d7fcb4",
+    "app/history-loans.jsx": "35fc8b15954c9d50dc59bfc57bdc056ba4bfe66672c4512683ef70619dd1676e",
+    "app/history-statement.js": "58302578ba62c1e41ae4f90a77ddd3fc9f9d02fecf31572af7409f6469a77c7c",
+    "scripts/test-history-snapshot-browser.js": "dab16567a03fdffac93c19f10598601445e0e16bebab0fbda636c257ec3dda9f"
+  }
+}

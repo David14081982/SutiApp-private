@@ -152,7 +152,8 @@ const header=fixture();header.sheets.loans[0].display[0]='Wrong';
 assert.equal(header.send().error,'LOAN_SOURCE_UNAVAILABLE');
 
 const inverse=source.replace(/\r/g,'').replace(/\/\/ Focal self-history read\.[\s\S]*?(?=function doPost\(event\))/,'')
-  .replace("    if(payload.action==='read_self_history')return readSelfHistory_(payload);\n",'');
+  .replace("    if(payload.action==='read_self_history')return readSelfHistory_(payload);\n",'')
+  .replace("    if(payload.action==='read_history_snapshot')return readHistorySnapshot_(payload);\n",'');
 assert.equal(crypto.createHash('sha256').update(inverse).digest('hex'),'1ccfa39e6c43546692528aa87c98cdb5fa93f323f26900585c1355da5cd6d0f0',
   'all preexisting receiver writers and other read contracts stay byte-identical');
 console.log(JSON.stringify({status:'PASS',fixtureRows:{loans:20001,requests:2801},original:originalMetrics,optimized:optimizedMetrics,

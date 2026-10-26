@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "width": 320,
+      "status": "PASS",
+      "dailyClock": true,
+      "manualSingleFlight": true,
+      "boundedActiveChecks": true,
+      "noIdlePolling": true,
+      "readonly": true,
+      "disabled": true,
+      "failureVisible": true,
+      "staleContextRejected": true
+    },
+    {
+      "width": 1280,
+      "status": "PASS",
+      "dailyClock": true,
+      "manualSingleFlight": true,
+      "boundedActiveChecks": true,
+      "noIdlePolling": true,
+      "readonly": true,
+      "disabled": true,
+      "failureVisible": true,
+      "staleContextRejected": true
+    }
+  ]
+}

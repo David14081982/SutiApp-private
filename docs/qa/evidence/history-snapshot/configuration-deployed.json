@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "newVaultNames": 3,
+  "newRuntimeSecret": true,
+  "vaultAndRuntimeSecretMatch": true,
+  "plaintextLogged": false,
+  "enabled": false
+}

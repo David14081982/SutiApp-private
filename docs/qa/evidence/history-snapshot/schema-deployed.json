@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "migration": "20261026000100",
+  "sha256": "76579ce02a5864acf5b15cd6afe29a13de5c78a5ba5ceb3bb423b624ae60a6b4",
+  "installedDisabled": true,
+  "existingOwnContextPreserved": true,
+  "schedule": "0 22 * * *",
+  "businessWrites": 0
+}

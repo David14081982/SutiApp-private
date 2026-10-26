@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "anonymous": 401,
+  "missingIndependentSecret": 403,
+  "browserOrigin": 403,
+  "noJobsDispatched": true
+}

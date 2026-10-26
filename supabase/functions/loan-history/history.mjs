@@ -19,6 +19,9 @@ export function projectHistory(source,context,now){
  const sourceRequests=new Set();
  for(const r of source.requests){
   if(r.owner!==context.folio)fail('SOURCE_IDENTITY_MISMATCH');
+  // An unfinished source row is not a request identity. Keep it in Google,
+  // but do not let its empty A/Y cells suppress unrelated valid history.
+  if(r.id===''&&norm(r.status)===''&&r.receipt==null)continue;
   if(!r.id||sourceRequests.has(r.id))fail('REQUEST_IDENTITY_AMBIGUOUS');sourceRequests.add(r.id);
   let original=/^SR-/.test(r.id)?r.id:null;
   if(r.receipt){
@@ -69,12 +72,28 @@ export function projectHistory(source,context,now){
   covered_request_ids:[...covered],financial_request_ids:context.requests.filter(r=>r.financial).map(r=>r.id)};
 }
 export async function loadHistory(body,client,readSource){
- if(!body||body.action!=='LOAD'||Object.keys(body).some(k=>k!=='action'))fail('REQUEST_INVALID');
+ if(!body||typeof body!=='object'||Array.isArray(body)||!['LOAD','SUMMARY','DETAIL'].includes(body.action))fail('REQUEST_INVALID');
+ const detail=body.action==='DETAIL';
+ if(Object.keys(body).some(k=>k!=='action'&&!(detail&&k==='key'))||
+   detail&&(typeof body.key!=='string'||!/^(?:loan|request):[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(body.key)))fail('REQUEST_INVALID');
  const auth=await client.auth.getUser();if(auth.error||!auth.data?.user)fail('AUTH_REQUIRED');
  async function context(){const result=await client.rpc('get_self_loan_history_context');if(result.error||!result.data||result.data.actor!==auth.data.user.id)fail('IDENTITY_DENIED');return result.data;}
  const before=await context();
  const source=await readSource(before.folio);
  const after=await context();
  if(before.actor!==after.actor||before.affiliate_id!==after.affiliate_id||before.folio!==after.folio)fail('CONTEXT_CHANGED');
- return projectHistory(source,after,after.server_now);
+ const history=projectHistory(source,after,after.server_now);
+ // LOAD remains compatible with already-open clients. New lists transfer only
+ // card data; the existing owned source is revalidated when detail is opened.
+ if(body.action==='SUMMARY')return {...history,entries:history.entries.map(entry=>{
+  const {key,id,sourceId,kind,category,fund,principal,term,date,status,approved_at,expires_at}=entry;
+  return {key,id,sourceId,kind,category,fund,principal,term,date,status,approved_at,expires_at,
+   ...(entry.preparing?{preparing:true}:{})};
+ })};
+ if(detail){
+  const entries=history.entries.filter(entry=>entry.key===body.key),ids=new Set(entries.map(entry=>entry.sourceId).filter(Boolean));
+  return {...history,entries,covered_request_ids:history.covered_request_ids.filter(id=>ids.has(id)),
+   financial_request_ids:history.financial_request_ids.filter(id=>ids.has(id))};
+ }
+ return history;
 }

@@ -20,7 +20,7 @@
    history.phase==='error'&&h('button',{onClick:history.retry,style:{color:'inherit',fontWeight:700}},'Reintentar'));
  }
  function LoanHistoryDetail({app,loanKey}){
-  const history=window.LoanHistory.useHistory(),entry=history.data?window.LoanHistory.project(history.data,history.elapsed).find(row=>row.key===loanKey):null;
+  const history=window.LoanHistory.useHistory(loanKey),entry=history.data?window.LoanHistory.project(history.data,history.elapsed).find(row=>row.key===loanKey):null;
   const money=v=>v==null?'No registrado':window.money(v),cell=(label,value)=>h('div',null,h('div',{style:{fontSize:12,color:'var(--ink-3)',fontWeight:600}},label),h('div',{style:{fontSize:17,fontWeight:800,marginTop:4}},value));
   return h('div',{className:'su-route','data-loan-history-detail':'',style:{position:'absolute',inset:0,background:'var(--bg)',display:'flex',flexDirection:'column'}},
    h('div',{style:{display:'flex',alignItems:'center',padding:'8px 12px',background:'var(--surface)',borderBottom:'1px solid var(--hairline)'}},

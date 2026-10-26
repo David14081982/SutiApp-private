@@ -10,9 +10,9 @@ function fixture(){
  const receipt='SUTI_LOAN_TRANSFER_V1:'+JSON.stringify({id:1,identity:'SR-2026-000001',sourceHash:'a'.repeat(64)});
  let opens=0,writes=0,changed=false,reads=0;
  function sheet(values,id){return{getSheetId:()=>id,getLastRow:()=>values.length,getRange:(row,col,n,w)=>({
-  getValues:()=>{reads++;const copy=values.slice(row-1,row-1+n).map(r=>r.slice(col-1,col-1+w));if(changed&&reads===2)copy[1][1]=999;return copy;},
+  getValues:()=>{const copy=values.slice(row-1,row-1+n).map(r=>r.slice(col-1,col-1+w));if(row>1&&w>1){reads++;if(changed&&reads===2)copy[0][1]=999;}return copy;},
   getDisplayValues:()=>values.slice(row-1,row-1+n).map(r=>r.slice(col-1,col-1+w).map(v=>String(v))),
-  getNotes:()=>values.slice(row-1,row-1+n).map((_,i)=>[i===1?receipt:'']),
+  getNotes:()=>values.slice(row-1,row-1+n).map((_,i)=>[row-1+i===1?receipt:'']),
   setValues:()=>{writes++;throw Error('WRITE_FORBIDDEN');}
  })};}
  const book={getSpreadsheetTimeZone:()=> 'America/Hermosillo',getSheetByName:n=>n==='HISTORIAL P V2'?sheet(l,1245291756):sheet(r,10616270)};
@@ -32,6 +32,6 @@ assert.equal(f.send({...p,folio:'7'}).loans.length,0);
 const changed=fixture();changed.change();assert.equal(changed.send(p).ok,false);
 const inverse=source.replace(/\r/g,'').replace(/\/\/ Focal self-history read\.[\s\S]*?(?=function doPost\(event\))/,'').replace("    if(payload.action==='read_self_history')return readSelfHistory_(payload);\n",'');
 assert.equal(crypto.createHash('sha256').update(inverse).digest('hex'),'1ccfa39e6c43546692528aa87c98cdb5fa93f323f26900585c1355da5cd6d0f0','all existing receiver code/writers preserved byte-for-byte');
-fs.mkdirSync('docs/qa/evidence/history-loan-payments',{recursive:true});
+const out=process.env.SUTI_HISTORY_EVIDENCE_DIR||'docs/qa/evidence/history-loan-payments';fs.mkdirSync(out,{recursive:true});
 const proof={status:'PASS',checks:['secret checked before opening','fixed sources','exact leading-zero Folio','other users excluded in receiver','receipt linkage','quota serial read','source-change rejection','existing code exact inverse'],sheetWrites:0};
-fs.writeFileSync('docs/qa/evidence/history-loan-payments/receiver.json',JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));
+fs.writeFileSync(out+'/receiver.json',JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));

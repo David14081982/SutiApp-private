@@ -33198,14 +33198,15 @@ Object.assign(window, {
    let category=entry.category;
    if(category==='Aprobadas'&&entry.expires_at&&now>=Date.parse(entry.expires_at))category=entry.preparing?'Estado por revisar':'En pago';
    return {...entry,category,remaining:category==='Aprobadas'?Math.max(0,Date.parse(entry.expires_at)-now):null,
-    schedule:entry.schedule.map(row=>({...row,state:row.date?row.date<=today?'Pagada':'Pendiente':'Fecha por revisar'}))};
+    schedule:(entry.schedule||[]).map(row=>({...row,state:row.date?row.date<=today?'Pagada':'Pendiente':'Fecha por revisar'}))};
   });
  }
  function merge(existing,data,elapsed){
-  if(!data)return [];
+  // Native workflows are independent of Google. Financial statuses still require their source.
+  if(!data)return existing.filter(row=>row.kind!=='loan'&&!row.financial);
   const financial=new Set(data?data.financial_request_ids:[]),covered=new Set(data?data.covered_request_ids:[]);
   const originals=new Map(existing.map(row=>[row.sourceId,row]));
-  const rows=existing.filter(row=>row.kind!=='loan'&&!financial.has(row.sourceId)&&!covered.has(row.sourceId));
+  const rows=existing.filter(row=>row.kind!=='loan'&&!row.financial&&!financial.has(row.sourceId)&&!covered.has(row.sourceId));
   for(const entry of data?project(data,elapsed):[]){
    const original=originals.get(entry.sourceId),state={'En proceso':'revision','Aprobadas':'aprobado','En pago':'en_pago','Liquidadas':'liquidada','No aprobadas':'rechazado'}[entry.category]||'por_revisar';
    rows.push({...original,id:entry.id,sourceId:entry.sourceId,historyKey:entry.key,history:entry,kind:'history',
@@ -33215,28 +33216,30 @@ Object.assign(window, {
   }
   return rows.sort((a,b)=>b.ts-a.ts);
  }
- async function load(){return window.PrivateResourceDemand.run('self-loan-history',async()=>{
-  const {data,error}=await window.SutiSupabase.getClient().functions.invoke('loan-history',{body:{action:'LOAD'}});
+ async function load(key){return window.PrivateResourceDemand.run('self-loan-history:'+JSON.stringify(key||null),async()=>{
+  const {data,error}=await window.SutiSupabase.getClient().functions.invoke('loan-history',{body:key?{action:'DETAIL',key}:{action:'SUMMARY'}});
   if(error||!data||data.error||data.version!==1||!Array.isArray(data.entries)||!Array.isArray(data.covered_request_ids)||!Array.isArray(data.financial_request_ids)||!Number.isFinite(Date.parse(data.server_now)))throw Error('HISTORY_UNAVAILABLE');
   return data;
  });}
- function useHistory(){
+ function useHistory(key=null){
   const epoch=window.PrivateResourceDemand.useContext(),[result,setResult]=React.useState(null),[retry,setRetry]=React.useState(0),[,tick]=React.useState(0);
   React.useEffect(()=>{
    if(epoch===null){setResult(null);return;}
-   let active=true,busy=false;
+   let active=true,busy=false,needed=true,revision=0;
    async function refresh(){
-    if(busy||document.hidden)return;busy=true;
-    try{const data=await load();if(active&&window.PrivateResourceDemand.context()===epoch)setResult({epoch,data,anchor:performance.now(),phase:'loaded'});}
-    catch(_){if(active&&window.PrivateResourceDemand.context()===epoch)setResult({epoch,data:null,phase:'error'});}
-    finally{busy=false;}
+    if(!active||busy||document.hidden||!needed)return;busy=true;needed=false;
+    const started=revision;
+    try{const data=await load(key);if(active&&started===revision&&window.PrivateResourceDemand.context()===epoch)setResult({epoch,key,data,anchor:performance.now(),phase:'loaded'});}
+    catch(_){if(active&&started===revision&&window.PrivateResourceDemand.context()===epoch)setResult({epoch,key,data:null,phase:'error'});}
+    finally{busy=false;if(active&&needed)refresh();}
    }
-   refresh();const timer=setInterval(refresh,60000),clock=setInterval(()=>tick(n=>n+1),1000);
-   const foreground=()=>{if(!document.hidden)refresh();};
-   window.addEventListener('focus',foreground);document.addEventListener('visibilitychange',foreground);window.addEventListener('suti:request-changed',foreground);
-   return()=>{active=false;clearInterval(timer);clearInterval(clock);window.removeEventListener('focus',foreground);document.removeEventListener('visibilitychange',foreground);window.removeEventListener('suti:request-changed',foreground);};
-  },[epoch,retry]);
-  const current=result&&result.epoch===epoch?result:null;
+   refresh();const clock=setInterval(()=>tick(n=>n+1),1000);
+   const changed=()=>{revision++;needed=true;setResult(null);refresh();};
+   // Visibility only completes an already pending intention; it does not poll the source.
+   document.addEventListener('visibilitychange',refresh);window.addEventListener('suti:request-changed',changed);
+   return()=>{active=false;clearInterval(clock);document.removeEventListener('visibilitychange',refresh);window.removeEventListener('suti:request-changed',changed);};
+  },[epoch,key,retry]);
+  const current=result&&result.epoch===epoch&&result.key===key?result:null;
   return {data:current?.data||null,elapsed:current?.anchor==null?0:Math.max(0,performance.now()-current.anchor),phase:current?.phase||'loading',retry:()=>{setResult(null);setRetry(n=>n+1);}};
  }
  window.LoanHistory=Object.freeze({load,project,merge,formatDate,normalize,useHistory});
@@ -33304,7 +33307,7 @@ Object.assign(window, {
     app,
     loanKey
   }) {
-    const history = window.LoanHistory.useHistory(),
+    const history = window.LoanHistory.useHistory(loanKey),
       entry = history.data ? window.LoanHistory.project(history.data, history.elapsed).find(row => row.key === loanKey) : null;
     const money = v => v == null ? 'No registrado' : window.money(v),
       cell = (label, value) => h('div', null, h('div', {
@@ -40360,6 +40363,7 @@ Object.assign(window, {
       sourceId: r.id,
       ts: new Date(r.created_at).getTime(),
       kind,
+      financial: r.financial_processing_status != null && !r.rental && !r.rental_start,
       icon: isLoan ? 'receipt' : isQuote ? 'doc' : isProductPayment ? 'cash' : 'cart',
       tipo: r.productoNombre || (isLoan ? 'Suti Préstamo' : isQuote ? 'Cotización comercial' : 'Solicitud de beneficio'),
       monto: isLoan || isProductPayment ? r.requested_amount == null ? r.importe : Number(r.requested_amount) : isQuote ? approved && r.quoted_amount != null ? Number(r.quoted_amount) : null : r.importe == null ? null : Number(r.importe) * Number(r.quantity || 1),
@@ -40382,6 +40386,7 @@ Object.assign(window, {
     loanRow = r => common(r, 'loan');
   let epoch = null,
     generation = 0,
+    revision = 0,
     refreshAgain = false,
     stopWatching = null;
   function invalidate() {
@@ -40403,25 +40408,33 @@ Object.assign(window, {
   }
   async function load(force) {
     if (syncContext() === null) return store;
+    if (force) {
+      revision++;
+      rows = [];
+      phase = 'loading';
+      error = null;
+      emit();
+    }
     if (promise) {
       if (force) refreshAgain = true;
       return promise;
     }
     const version = generation,
-      requestEpoch = epoch;
+      requestEpoch = epoch,
+      requestRevision = revision;
     phase = rows.length ? 'loaded' : 'loading';
     emit();
     const pending = (async () => {
       try {
-        const requests = await window.ProgramRequestRepository.listHistory();
-        if (syncContext() !== requestEpoch || version !== generation) return store;
+        const requests = await window.PrivateResourceDemand.run('self-native-history', () => window.ProgramRequestRepository.listHistory());
+        if (syncContext() !== requestEpoch || version !== generation || requestRevision !== revision) return store;
         rows = requests.map(r => Object.freeze(Object.assign({}, r.program_id === 'prestamo' ? loanRow(r) : r.request_type === 'quote' ? quoteRow(r) : requestRow(r), {
           requestStatus: r.status
         }))).sort((a, b) => b.ts - a.ts);
         phase = 'loaded';
         error = null;
       } catch (e) {
-        if (version !== generation) return store;
+        if (version !== generation || requestRevision !== revision) return store;
         rows = [];
         phase = 'error';
         error = e;
@@ -40441,40 +40454,31 @@ Object.assign(window, {
     return pending;
   }
   function watch() {
-    let channel = null;
-    const refresh = () => {
-      if (!document.hidden && listeners.size) load(true);
+    let needed = false;
+    const refresh = (force = true) => {
+      needed = true;
+      if (!document.hidden && listeners.size) {
+        needed = false;
+        load(force);
+      }
     };
     const connect = () => {
-      if (channel) {
-        window.SutiSupabase.getClient().removeChannel(channel);
-        channel = null;
-      }
       syncContext();
-      if (epoch === null) return;
-      channel = window.SutiSupabase.getClient().channel('self-request-history-' + epoch).on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'program_requests'
-      }, refresh).subscribe(status => {
-        if (status === 'SUBSCRIBED') refresh();
-      });
-      refresh();
+      if (epoch !== null) refresh(false);
     };
     const unbind = window.PrivateResourceDemand.subscribe(connect);
-    window.addEventListener('focus', refresh);
-    document.addEventListener('visibilitychange', refresh);
+    const visible = () => {
+      if (needed && !document.hidden) refresh();
+    };
+    document.addEventListener('visibilitychange', visible);
     window.addEventListener('suti:request-changed', refresh);
-    // A bounded foreground refresh also recovers a temporarily disconnected realtime channel.
-    const timer = setInterval(refresh, 15000);
+    // Historial and Tracking read on entry, identity change, mutation or explicit retry.
+    // They do not maintain an idle timer or a second Realtime connection.
     connect();
     return () => {
       unbind();
-      clearInterval(timer);
-      window.removeEventListener('focus', refresh);
-      document.removeEventListener('visibilitychange', refresh);
+      document.removeEventListener('visibilitychange', visible);
       window.removeEventListener('suti:request-changed', refresh);
-      if (channel) window.SutiSupabase.getClient().removeChannel(channel);
     };
   }
   const store = {
@@ -40497,6 +40501,7 @@ Object.assign(window, {
         if (!listeners.size && stopWatching) {
           stopWatching();
           stopWatching = null;
+          invalidate();
         }
       };
     }

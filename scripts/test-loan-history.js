@@ -44,7 +44,7 @@ async function main(){
   const window={};vm.runInNewContext(fs.readFileSync('app/history-loans-repository.js','utf8'),{window,Intl});
   const p=projectHistory(source,ctx,now),original=[{sourceId:'request-a',id:'SR-2026-000001',kind:'loan',ts:1},{sourceId:'other-benefit',id:'other',kind:'benefit',ts:2}];
   assert.equal(window.LoanHistory.project(p,999)[0].category,'Aprobadas');assert.equal(window.LoanHistory.project(p,1000)[0].category,'En pago');
-  assert.equal(window.LoanHistory.merge(original,p,0).length,2);assert.equal(window.LoanHistory.merge(original,null,0).length,0);
+  assert.equal(window.LoanHistory.merge(original,p,0).length,2);assert.equal(window.LoanHistory.merge(original,null,0).length,1,'native nonfinancial requests do not wait for Google');
  });
  await test('PostgreSQL own context, exact controls, grants, archival and recovery',async()=>{
   const {PGlite}=require(path.resolve('.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite'));
@@ -70,6 +70,6 @@ async function main(){
    await db.exec(fs.readFileSync('supabase/recovery/20261025000100_self_loan_history.sql','utf8'));assert.deepEqual((await db.query('select * from program_requests order by id')).rows,before);
   }finally{await db.close();}
  });
- const out='docs/qa/evidence/history-loan-payments';fs.mkdirSync(out,{recursive:true});fs.writeFileSync(out+'/core.json',JSON.stringify({status:'PASS',checks,productionWrites:0},null,2)+'\n');
+ const out=process.env.SUTI_HISTORY_EVIDENCE_DIR||'docs/qa/evidence/history-loan-payments';fs.mkdirSync(out,{recursive:true});fs.writeFileSync(out+'/core.json',JSON.stringify({status:'PASS',checks,productionWrites:0},null,2)+'\n');
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "version": 21,
+  "previous": 20,
+  "exactReadback": true,
+  "allOtherFunctionsPreserved": true,
+  "manifestAndEntrypointsPreserved": true,
+  "sheetWrites": 0
+}

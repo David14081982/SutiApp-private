@@ -1,0 +1,87 @@
+{
+  "status": "PASS",
+  "phase": "CANDIDATE",
+  "focalChunks": [
+    "history-loans-repository.js",
+    "history-loans.jsx",
+    "operations-store.jsx"
+  ],
+  "files": [
+    {
+      "file": "app/history-loans-repository.js",
+      "sha256": "9bab6474595fac95da7d6f2c380c91ac1544b640e3fb2350a814d44a8e8b1e73"
+    },
+    {
+      "file": "app/history-loans.jsx",
+      "sha256": "97e895b000761c6a01cf4fe2f94d6dc09beb38b3f5134363bd980bcbd48b2473"
+    },
+    {
+      "file": "app/operations-store.jsx",
+      "sha256": "f09f8dcd3ff6ab0bdf525e024a9e0437628af3a5147ea8db436d9f82c881b1f9"
+    },
+    {
+      "file": "supabase/functions/loan-history/history.mjs",
+      "sha256": "df3c77b04717aaba90a024e7e705b6c3bdf6185dd0f718d1e1550d976270c885"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "sha256": "79866d60dc40fed9f5109ed30485fc4a794cbf97c860f32d6cea9937529d1894"
+    },
+    {
+      "file": "scripts/test-history-efficiency-backend.js",
+      "sha256": "75c10509b520d513398dfd661fee88f4fc4772ec31f111bf57f235f80e370efc"
+    },
+    {
+      "file": "scripts/test-history-efficiency-receiver.js",
+      "sha256": "6c435d4a302ea989f7bd8e2cff0d3cca75d5f957f8b0fda1e354646f70129a09"
+    },
+    {
+      "file": "scripts/test-history-efficiency-browser.js",
+      "sha256": "2ad0fc12eb2e8cdcb7c71580d15f7b7f975c58001b6abc34c45f35564ac08bb8"
+    },
+    {
+      "file": "scripts/test-loan-history.js",
+      "sha256": "9be20804cdcfc7b2a9062bd67326eea8e82ad19270c86c9eaa0c26f53f438090"
+    },
+    {
+      "file": "scripts/test-loan-history-receiver.js",
+      "sha256": "b9f6ba0f7798e8ae8dc5893a990a98c7a7b0cb3b33a70e46594be4ce662f8ba7"
+    },
+    {
+      "file": "scripts/test-loan-history-browser.js",
+      "sha256": "c04376c9a8904fa5a2de281bc08f0fdc11ae9b6439f1baf3bd22bffb7d4892d4"
+    },
+    {
+      "file": "scripts/package-history-efficiency.js",
+      "sha256": "c2b6dabdece2950dabef973d8aa911e77e93b9b630a2bc96c3a9bbd642bfdaf7"
+    },
+    {
+      "file": "scripts/release-history-efficiency.js",
+      "sha256": "f3b1280fffc8d21376de37a92da73820d65c95acec99397598cfe3466c25e39b"
+    },
+    {
+      "file": "scripts/verify-history-efficiency-live.js",
+      "sha256": "6c9c5d5172fc68fc61b7edf2f302ceaa240a7f87abdfa535ccebdd5e40b4dbb3"
+    },
+    {
+      "file": "docs/audits/H-HISTORY-READ-EFFICIENCY-001.md",
+      "sha256": "2918c059ed208e37c4055f0536c1267b12b174285b5f61875d049d69f5824f5f"
+    },
+    {
+      "file": "docs/SECURITY_RULES.md",
+      "sha256": "f1cc1f7c6082e38567cc45375b1d495830c0aec8bd4f3edcbebd626258d37258"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "b96656248e0130d77f365c9f628bbf5a9d94d6884ae753fefb902a66ea9bde9b"
+    },
+    {
+      "file": "SutiApp.html",
+      "sha256": "cf189ced1e63fd9be45b6893b76fde7fa458c0f5bef988efe47bf63dfb38c93e"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "97b62b037b0a49f59bc1fe1623cabdea8a6646c3ccb06307373c32b9d859290a"
+    }
+  ]
+}

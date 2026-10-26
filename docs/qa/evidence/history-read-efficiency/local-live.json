@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "target": "http://localhost:8080/",
+  "bundleSha256": "b96656248e0130d77f365c9f628bbf5a9d94d6884ae753fefb902a66ea9bde9b",
+  "checks": [
+    {
+      "serviceWorkers": "block",
+      "summaryOnly": true,
+      "sixFilters": true,
+      "filterNetworkCalls": 0,
+      "pageErrors": 0,
+      "liveEntries": 0,
+      "populatedLiveDetail": false
+    },
+    {
+      "serviceWorkers": "allow",
+      "summaryOnly": true,
+      "sixFilters": true,
+      "filterNetworkCalls": 0,
+      "pageErrors": 0,
+      "liveEntries": 0,
+      "populatedLiveDetail": false
+    }
+  ],
+  "businessWrites": 0,
+  "identityAssistanceWrites": 0,
+  "limitation": "Controlled account may have no loans; populated quotas and overlapping route behavior are separately covered with isolated fixtures."
+}

@@ -467,11 +467,44 @@ function readSelfHistory_(payload) {
   }
   function scan(sheet,width,ownerColumn){
     const count=sheet.getLastRow();if(count<1)throw new Error('LOAN_SOURCE_UNAVAILABLE');
-    const range=sheet.getRange(1,1,count,width),values=range.getValues(),display=range.getDisplayValues();
-    const notes=sheet===requests?sheet.getRange(1,1,count,1).getNotes():null;
-    if(count!==sheet.getLastRow()||JSON.stringify(values)!==JSON.stringify(range.getValues()))throw new Error('HISTORY_SOURCE_CHANGED');
-    return {header:display[0],rows:values.map(function(row,i){return {row:row,display:display[i],note:notes?notes[i][0]:'',source_row:i+1};})
-      .filter(function(r){return r.source_row>1&&r.display[ownerColumn]===payload.folio;})};
+    const headerRange=sheet.getRange(1,1,1,width),header=headerRange.getDisplayValues()[0];
+    // Find the exact formatted Folio before reading financial columns. The owner
+    // column is the only complete data column read; no foreign financial rows
+    // or transfer notes are loaded into this request.
+    function ownedRows(){
+      if(count<2)return [];
+      const owners=sheet.getRange(2,ownerColumn+1,count-1,1).getDisplayValues(),found=[];
+      owners.forEach(function(row,i){if(row[0]===payload.folio)found.push(i+2);});
+      return found;
+    }
+    const positions=ownedRows(),groups=[];
+    positions.forEach(function(row){
+      const last=groups[groups.length-1];
+      if(last&&last.start+last.count===row)last.count++;
+      else groups.push({start:row,count:1});
+    });
+    function read(group){
+      const range=sheet.getRange(group.start,1,group.count,width);
+      return {values:range.getValues(),display:range.getDisplayValues(),
+        notes:sheet===requests?sheet.getRange(group.start,1,group.count,1).getNotes():null};
+    }
+    const observations=groups.map(read),rows=[];
+    observations.forEach(function(observation,index){
+      observation.values.forEach(function(row,i){
+        const display=observation.display[i];
+        if(display[ownerColumn]!==payload.folio)throw new Error('HISTORY_SOURCE_CHANGED');
+        rows.push({row:row,display:display,note:observation.notes?observation.notes[i][0]:'',source_row:groups[index].start+i});
+      });
+    });
+    // Recheck selected rows, display identities and notes, then the complete
+    // owner selection. Insertion, movement or a new own row invalidates the
+    // observation; unrelated users' financial changes need no extra read.
+    groups.forEach(function(group,index){
+      if(JSON.stringify(observations[index])!==JSON.stringify(read(group)))throw new Error('HISTORY_SOURCE_CHANGED');
+    });
+    if(count!==sheet.getLastRow()||JSON.stringify(positions)!==JSON.stringify(ownedRows())||
+      JSON.stringify(header)!==JSON.stringify(headerRange.getDisplayValues()[0])||count!==sheet.getLastRow())throw new Error('HISTORY_SOURCE_CHANGED');
+    return {header:header,rows:rows};
   }
   const l=scan(loans,35,3),r=scan(requests,25,1);
   if(l.header[0]!=='Fecha'||l.header[1]!=='Cuotas'||l.header[2]!=='ID'||l.header[3]!=='Folio'||l.header[23]!=='Estatus del prestamo'||

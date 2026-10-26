@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "googleVersion": 20,
+  "googleBackup": true,
+  "edgeVersion": 1,
+  "edgeBackup": true,
+  "edgeBundleValid": true,
+  "businessWrites": 0
+}

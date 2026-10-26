@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "bundleSha256": "b96656248e0130d77f365c9f628bbf5a9d94d6884ae753fefb902a66ea9bde9b",
+  "focalChunks": [
+    "history-loans-repository.js",
+    "history-loans.jsx",
+    "operations-store.jsx"
+  ],
+  "otherChunksUnchanged": true
+}

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "action": "LOAD",
+  "elapsedMs": 34567,
+  "jsonBytes": 192,
+  "entries": 0,
+  "noStore": true,
+  "businessWrites": 0,
+  "identityAssistanceWrites": 0
+}

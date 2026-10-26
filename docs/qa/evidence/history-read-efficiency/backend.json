@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "checks": [
+    "legacy LOAD stays byte-equivalent to the full own projection",
+    "SUMMARY contains only card fields, with unchanged filters and approval clock",
+    "SUMMARY preserves preparing approved entries without copying schedule or totals",
+    "DETAIL returns exactly one owned entry; missing or foreign key returns no entries or IDs",
+    "incomplete blank A/Y rows do not hide valid entries or mutate the source",
+    "blank IDs with status/receipt, duplicate IDs and forged ownership still fail closed",
+    "malformed keys and client identity selectors are rejected before any source/context read",
+    "anonymous, wrong actor and context changes cannot read or expose source records",
+    "source failures have no fallback and own source identity is checked",
+    "summary fixture transfers less than 15 percent of full JSON with 120 installments"
+  ],
+  "fixtureJsonBytes": {
+    "full": 12685,
+    "summary": 958
+  },
+  "productionReads": 0,
+  "productionWrites": 0
+}

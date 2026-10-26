@@ -1,7 +1,7 @@
 'use strict';
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const {chromium}=require(process.env.SUTIAPP_PLAYWRIGHT_PATH||'C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/history-loan-payments'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const root=path.resolve(__dirname,'..'),out=path.join(root,process.env.SUTI_HISTORY_EVIDENCE_DIR||'docs/qa/evidence/history-loan-payments'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const html=read('SutiApp.html'),css=[...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m=>m[1]).join('\n');
 async function main(){const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),checks=[];
  try{for(const width of [390,320,1440]){
@@ -23,7 +23,7 @@ async function main(){const browser=await chromium.launch({executablePath:'C:/Pr
    window.payload={version:1,server_now:now,covered_request_ids:['request-1'],financial_request_ids:['request-1'],entries:[loan('1','Aprobadas','AL CORRIENTE'),loan('2','En pago','SALDO ATRASADO'),loan('3','Liquidadas','PAGÓ DE MÁS'),
     {key:'request:SR-2026-000004',id:'SR-2026-000004',sourceId:'pending',kind:'request',fund:'Caja Chica',principal:3000,total:3600,term:6,date,category:'En proceso',status:'Pendiente',schedule:[]},
     {key:'request:SR-2026-000005',id:'SR-2026-000005',sourceId:null,kind:'request',fund:'Vales',principal:500,total:500,term:2,date,category:'No aprobadas',status:'Rechazado',schedule:[]}]};
-   window.SutiSupabase={getClient:()=>({functions:{invoke:async(name,args)=>{calls++;if(name!=='loan-history'||JSON.stringify(args.body)!=='{"action":"LOAD"}')throw Error('FORGED_TARGET');
+   window.SutiSupabase={getClient:()=>({functions:{invoke:async(name,args)=>{calls++;if(name!=='loan-history'||!['SUMMARY','DETAIL'].includes(args.body.action))throw Error('FORGED_TARGET');
     if(delaySource)return new Promise(resolve=>deferred.push(resolve));return failSource?{error:true}:{data:identity==='user-a'?JSON.parse(JSON.stringify(payload)):{...payload,entries:[],financial_request_ids:[],covered_request_ids:[]}};}}})};
    window.native={sourceId:'pending',id:'SR-2026-000004',kind:'loan',tipo:'Caja Chica',estado:'revision',monto:3000,fecha:date,plazo:'6 pagos',steps:[{label:'Solicitud enviada',done:true},{label:'Revisión',active:true}],workflowAvailable:true,ts:1};
    window.useOperationsStore=()=>({all:()=>[native],state:()=>({phase:'loaded'}),retry:()=>{}});

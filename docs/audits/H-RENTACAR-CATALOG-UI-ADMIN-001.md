@@ -76,3 +76,13 @@ Verdict: APPROVED for publication after exact candidate checks. Review of actual
 Initial production commit 3a72d9c and Pages run 40247286550 passed real 390/430 checks. Final review adds rental-only catalog refresh on entry as well as window focus, so edits from another Admin session appear when returning without a whole-app reload. New isolated test verifies this without calling refresh from the test. No backend or other module changes. Final cache 2026102502 supersedes 2026102501; repeat exact-bundle focal checks before final release closure.
 
 Final refinement local verification PASS at 390/430 for bundle 8e844936d5d8aad0c0d87016d32c48d066d087a67a1e664e0aa3e3217146059a. Registry was FRESH at the structural implementation; later entry-refresh microinteraction and evidence changes introduce no new dependency/schema, so source hashes may be STALE without a structural index change. Architect review: APPROVED for final publication.
+
+
+## FINAL PUBLICATION / EVIDENCE
+
+H-RENTACAR-CATALOG-UI-ADMIN-001 RESULT
+Status: PASS. Final code commit 81088ad0a4672130712791967e90507d276a2900; GitHub Pages run 40247523619 success. Cache 2026102502; public bundle 8e844936d5d8aad0c0d87016d32c48d066d087a67a1e664e0aa3e3217146059a matches candidate exactly.
+Build: PASS (159 modules, 31 public files). Tests: all 17 focal acceptance items PASS, including actual public gallery images, partial/expanded sheet, drag, X, device Back, unchanged calendar/Documents/summary/signature and real Admin field values at 390/430. Admin mutation propagation verified with isolated real-component transport and real rollback SQL, never with persistent invented values.
+Source of truth / invariants / security: PASS as established above. Legacy impact: NOT APPLICABLE. No global suite executed. Unexpected files changed: none; original unrelated workspace work retained. Known limitation: engine/type/tank await real owner/Admin values and display explicit absence; all controls are connected and functional.
+Evidence: production-live.json, local-live.json, isolated-browser.json, backend-applied.json and bundle-parity.json in docs/qa/evidence/rentacar-catalog/. https://github.com/David14081982/SutiApp-private/actions/runs/40247523619
+Final independent evidence review: APPROVED. Requested scope complete; no further work authorized by this task. STOP.

@@ -4295,3 +4295,5 @@ H-RENTA-CAR-CONTRACT-COPY-003 final: PASS. Pages run 39821920665 success; exact 
 
 
 H-RENTACAR-CATALOG-UI-ADMIN-001: rental-only large cards and expandable existing-detail wrapper; canonical Admin metadata extension. Backend preflight/apply and focal 390/430 browser checks PASS; isolated Admin edits update user cards/cover/availability. Existing rental documents/signature regression PASS. Publication verification pending. Evidence: docs/qa/evidence/rentacar-catalog/. No global suites by explicit owner instruction.
+
+H-RENTACAR-CATALOG-UI-ADMIN-001 final PASS: commit 81088ad, Pages run 40247523619 success, cache 2026102502. Exact public bundle and both mobile widths verified. 17 focal checks PASS; no global suites, requests or invented persistent vehicle values. See task audit and production-live.json. STOP.

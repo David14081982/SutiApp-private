@@ -18,8 +18,8 @@
   if(m.overpaid>0)lines.push('Pago excedente registrado: '+money(m.overpaid));
   if(observation.sync_state?.status==='FAILED')lines.push('La última actualización falló. Se muestra la última publicación completa.');
   lines.push('','Cuotas registradas');
-  for(const row of entry.schedule||[]){
-   lines.push('Cuota '+(row.number??'sin número')+' | '+date(row.date)+' | '+money(row.amount)+' | '+row.state);
+  for(const [index,row] of (entry.schedule||[]).entries()){
+   lines.push('Cuota '+(index+1)+' | '+date(row.date)+' | '+money(row.amount)+' | '+row.state);
    if(row.upcoming)lines.push('Próxima a vencer');
    if(row.closure)lines.push('Cierre de contrato: '+date(row.date));
   }

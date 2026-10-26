@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "width": 320,
+      "status": "PASS",
+      "pendingVisible": true,
+      "nativeTrackingPreserved": true,
+      "otherFilterUnchanged": true,
+      "noExternalReads": true
+    },
+    {
+      "width": 390,
+      "status": "PASS",
+      "pendingVisible": true,
+      "nativeTrackingPreserved": true,
+      "otherFilterUnchanged": true,
+      "noExternalReads": true
+    },
+    {
+      "width": 1440,
+      "status": "PASS",
+      "pendingVisible": true,
+      "nativeTrackingPreserved": true,
+      "otherFilterUnchanged": true,
+      "noExternalReads": true
+    }
+  ],
+  "sourceSha256": "c9dabe06554c95972a479a48fc389574d7d09c177f1f04889b4019e506bc78e2",
+  "pendingWithMissingFlag": true,
+  "sheetOnlyAndFinancialPending": true,
+  "exactOwnIdentity": true,
+  "duplicateDenial": true,
+  "sourceImmutable": true,
+  "oneSnapshotRead": true,
+  "zeroProductionWrites": true
+}

@@ -41,10 +41,11 @@ export function projectHistory(source,context,now){
    byLoan.set(r.id,original?bySr.get(original)||null:null);
   }
   const request=original?bySr.get(original):null;
-  // Cash rentals and other nonfinancial request histories retain their native workflow.
-  if(request&&request.financial===false){byLoan.delete(r.id);continue;}
-  if(request)covered.add(request.id);
   const s=norm(r.status);
+  // A pending SR row is visible before Finance marks the native request.
+  // Keep nonfinancial approval links disabled and native tracking via sourceId.
+  if(request&&request.financial===false){byLoan.delete(r.id);if(!(/^SR-/.test(r.id)&&s==='PENDIENTE'))continue;}
+  if(request)covered.add(request.id);
   if(/^SR-/.test(r.id)&&['PENDIENTE','RECHAZADO'].includes(s))entries.push({
    key:'request:'+r.id,id:r.id,sourceId:request?.id||null,kind:'request',category:s==='PENDIENTE'?'En proceso':'No aprobadas',
    fund:r.fund||'Solicitud de financiamiento',principal:money(r.principal),total:money(r.total),term:money(r.term),

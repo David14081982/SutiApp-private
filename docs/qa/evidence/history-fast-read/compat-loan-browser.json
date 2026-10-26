@@ -1,0 +1,47 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "width": 390,
+      "filters": true,
+      "approvedAmortization": true,
+      "detailAdditionalCalls": 0,
+      "returnMemoryReuse": true,
+      "liquidatedLabel": true,
+      "timelinePreserved": true,
+      "expiry": true,
+      "sourceFailure": true,
+      "identityRace": true,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 320,
+      "filters": true,
+      "approvedAmortization": true,
+      "detailAdditionalCalls": 0,
+      "returnMemoryReuse": true,
+      "liquidatedLabel": true,
+      "timelinePreserved": true,
+      "expiry": true,
+      "sourceFailure": true,
+      "identityRace": true,
+      "noHorizontalOverflow": true
+    },
+    {
+      "width": 1440,
+      "filters": true,
+      "approvedAmortization": true,
+      "detailAdditionalCalls": 0,
+      "returnMemoryReuse": true,
+      "liquidatedLabel": true,
+      "timelinePreserved": true,
+      "expiry": true,
+      "sourceFailure": true,
+      "identityRace": true,
+      "noHorizontalOverflow": true
+    }
+  ],
+  "productionWrites": 0,
+  "network": "BLOCKED",
+  "header": "isolated harness; focal cards, filters, detail and real UI primitives"
+}

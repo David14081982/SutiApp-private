@@ -4345,3 +4345,8 @@ loan/clock/privacy cases passed isolated tests; live authorized account has no
 loans. The proposed assisted-user probe was rejected by automatic approval review
 and never executed. Evidence: docs/qa/evidence/history-loan-payments/deployment.json
 and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-001.md.
+
+
+## H-HISTORY-FAST-READ-001 — frontend candidate, 2026-10-26
+
+One own authenticated LOAD serves cards and immediate amortizations with bounded context memory and strict invalidation. Local focused browser tests at 320/390/1440 and populated live-backend checks passed: four accounts, 19 loans, 208 quota rows, one LOAD each, details 13–321 ms. After the A→B→A race fix, the exact final bundle was checked again: four loans/38 rows, details 17–48 ms, one LOAD, normal assistance closed. Initial load remains 27–40 s; the three-second objective is not met. LOAD increases initial bytes; no universal egress saving is claimed. Only the history repository bundle chunk changes (160 others identical); HTML/SW changes are generated version references. No Sheets/business writes. Dedicated direct API batching remains disconnected because the existing clasp OAuth project returns SERVICE_DISABLED. See [audit](audits/H-HISTORY-FAST-READ-001.md) and history-fast-read evidence for publication status.

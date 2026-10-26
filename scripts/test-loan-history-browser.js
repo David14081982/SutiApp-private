@@ -1,9 +1,11 @@
 'use strict';
+// Original UI/privacy regression; H-HISTORY-FAST-READ-001 supersedes its old
+// SUMMARY/DETAIL transport with one context-scoped LOAD and bounded memory reuse.
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const {chromium}=require(process.env.SUTIAPP_PLAYWRIGHT_PATH||'C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
-const root=path.resolve(__dirname,'..'),out=path.join(root,process.env.SUTI_HISTORY_EVIDENCE_DIR||'docs/qa/evidence/history-loan-payments'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const root=path.resolve(__dirname,'..'),out=path.resolve(root,process.env.SUTI_HISTORY_EVIDENCE_DIR||'docs/qa/evidence/history-loan-payments'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const html=read('SutiApp.html'),css=[...html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m=>m[1]).join('\n');
-async function main(){const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),checks=[];
+async function main(){fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),checks=[];
  try{for(const width of [390,320,1440]){
   const page=await browser.newPage({viewport:{width,height:900}}),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.route('**/*',r=>r.abort());
   await page.setContent('<style>'+css+' body{margin:0;display:block} #root{position:relative;height:900px;max-width:480px;margin:auto;overflow:auto;background:var(--bg)}</style><div id="root"></div>');
@@ -23,7 +25,7 @@ async function main(){const browser=await chromium.launch({executablePath:'C:/Pr
    window.payload={version:1,server_now:now,covered_request_ids:['request-1'],financial_request_ids:['request-1'],entries:[loan('1','Aprobadas','AL CORRIENTE'),loan('2','En pago','SALDO ATRASADO'),loan('3','Liquidadas','PAGÓ DE MÁS'),
     {key:'request:SR-2026-000004',id:'SR-2026-000004',sourceId:'pending',kind:'request',fund:'Caja Chica',principal:3000,total:3600,term:6,date,category:'En proceso',status:'Pendiente',schedule:[]},
     {key:'request:SR-2026-000005',id:'SR-2026-000005',sourceId:null,kind:'request',fund:'Vales',principal:500,total:500,term:2,date,category:'No aprobadas',status:'Rechazado',schedule:[]}]};
-   window.SutiSupabase={getClient:()=>({functions:{invoke:async(name,args)=>{calls++;if(name!=='loan-history'||!['SUMMARY','DETAIL'].includes(args.body.action))throw Error('FORGED_TARGET');
+   window.SutiSupabase={getClient:()=>({functions:{invoke:async(name,args)=>{calls++;if(name!=='loan-history'||JSON.stringify(args.body)!==JSON.stringify({action:'LOAD'}))throw Error('FORGED_TARGET');
     if(delaySource)return new Promise(resolve=>deferred.push(resolve));return failSource?{error:true}:{data:identity==='user-a'?JSON.parse(JSON.stringify(payload)):{...payload,entries:[],financial_request_ids:[],covered_request_ids:[]}};}}})};
    window.native={sourceId:'pending',id:'SR-2026-000004',kind:'loan',tipo:'Caja Chica',estado:'revision',monto:3000,fecha:date,plazo:'6 pagos',steps:[{label:'Solicitud enviada',done:true},{label:'Revisión',active:true}],workflowAvailable:true,ts:1};
    window.useOperationsStore=()=>({all:()=>[native],state:()=>({phase:'loaded'}),retry:()=>{}});
@@ -31,13 +33,16 @@ async function main(){const browser=await chromium.launch({executablePath:'C:/Pr
   });
   for(const name of ['private-resource-demand.js','history-loans-repository.js','history-loans.jsx','screens-historial.jsx'])await page.addScriptTag({content:read('app/'+name)});
   await page.evaluate(()=>draw());await page.locator('.su-history-entry').nth(4).waitFor();assert.equal(await page.locator('.su-history-entry').count(),5);
+  assert.equal(await page.evaluate(()=>calls),1,'initial owned LOAD');
   assert.deepEqual(await page.evaluate(()=>noticeRequests.map(r=>r.sourceId)),['pending'],'existing approval notification receives original native request projection');
   for(const label of ['Todas','En proceso','Aprobadas','En pago','Liquidadas','No aprobadas'])assert.equal(await page.getByRole('button',{name:label,exact:true}).count(),1);
   await page.getByRole('button',{name:'Aprobadas',exact:true}).click();assert.equal(await page.locator('.su-history-entry').count(),1);await page.locator('[data-approval-countdown]').waitFor();
   await page.locator('.su-history-entry').click();await page.locator('[data-loan-history-detail]').waitFor();await page.locator('[data-installment="Pagada"]').waitFor();assert.equal(await page.locator('[data-installment="Pendiente"]').count(),1);
+  assert.equal(await page.evaluate(()=>calls),1,'approved amortization uses the same authorized dataset');
   await page.screenshot({path:path.join(out,'amortization-'+width+'.png')});
   assert(await page.evaluate(()=>document.querySelector('#root').scrollWidth<=document.querySelector('#root').clientWidth+1),'horizontal overflow');
   await page.getByRole('button',{name:'Volver al historial'}).click();await page.locator('.su-history-entry').nth(4).waitFor();
+  assert.equal(await page.evaluate(()=>calls),1,'return reuses the dataset within its freshness bound');
   await page.getByRole('button',{name:'Liquidadas',exact:true}).click();assert.equal(await page.locator('.su-history-entry').count(),1);assert.equal(await page.locator('.su-history-entry').getByText('Liquidada',{exact:true}).count(),1);assert.equal(await page.getByText('Pago de más',{exact:false}).count(),0);
   await page.getByRole('button',{name:'En pago',exact:true}).click();assert.equal(await page.locator('.su-history-entry').count(),1);
   await page.getByRole('button',{name:'Todas',exact:true}).click();await page.screenshot({path:path.join(out,'history-'+width+'.png')});
@@ -53,7 +58,7 @@ async function main(){const browser=await chromium.launch({executablePath:'C:/Pr
   await page.evaluate(()=>{identity='user-b';delaySource=false;authListeners.forEach(fn=>fn());});await page.waitForTimeout(80);
   await page.evaluate(()=>{deferred.splice(0).forEach(resolve=>resolve({data:payload}));});await page.waitForTimeout(80);assert.equal(await page.locator('.su-history-entry').count(),0);
   await page.evaluate(()=>{identity='';authListeners.forEach(fn=>fn());});assert.equal(await page.locator('.su-history-entry').count(),0);
-  assert.deepEqual(errors,[]);checks.push({width,filters:true,approvedAmortization:true,liquidatedLabel:true,timelinePreserved:true,expiry:true,sourceFailure:true,identityRace:true,noHorizontalOverflow:true});await page.close();
+  assert.deepEqual(errors,[]);checks.push({width,filters:true,approvedAmortization:true,detailAdditionalCalls:0,returnMemoryReuse:true,liquidatedLabel:true,timelinePreserved:true,expiry:true,sourceFailure:true,identityRace:true,noHorizontalOverflow:true});await page.close();
  }
  const proof={status:'PASS',checks,productionWrites:0,network:'BLOCKED',header:'isolated harness; focal cards, filters, detail and real UI primitives'};fs.writeFileSync(path.join(out,'browser.json'),JSON.stringify(proof,null,2)+'\n');console.log(JSON.stringify(proof));
  }finally{await browser.close();}

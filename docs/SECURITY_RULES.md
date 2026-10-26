@@ -425,3 +425,8 @@ Ninguna acción acepta Folio, afiliado, actor, rangos u otra identidad elegida p
 Historial consulta al entrar, cambiar contexto, confirmar una operación relevante o reintentar. Los filtros y el contador no consultan la red; no se agrega réplica, sincronización periódica ni caché financiero persistente. Las respuestas pendientes obsoletas se descartan; un error de fuente sigue visible sin fallback.
 
 Google Sheets conserva su autoridad y contenido. Solo se optimiza el código lector de filas propias; los writers, fórmulas, cuotas, estados y triggers no cambian. Backend instalado y verificado: Apps Script 21 y loan-history 2. Build y pruebas locales PASS; el estado de publicación y la evidencia posterior se registran en [H-HISTORY-READ-EFFICIENCY-001](audits/H-HISTORY-READ-EFFICIENCY-001.md).
+
+
+## H-HISTORY-FAST-READ-001 — own-context memory, 2026-10-26
+
+The frontend invokes the existing loan-history LOAD without an affiliate/Folio selector. Existing JWT and effective identity checks before and after the source read are unchanged. The bounded memory observation is keyed by PrivateResourceDemand context plus exact local numero_control; a revision is also part of the in-flight request key so A→B→A cannot reuse an invalidated response. Key selection only narrows entries already authorized by the server. Context, logout, mutations, retry, expiry and source failure discard data; no persistence, background polling, mock or stale fallback. Shared Auth/helpers, RLS and grants remain unchanged. The explicitly authorized temporary JWT header probe was removed; the active loan-history function remains version 2. The disconnected Sheets REST prototype is excluded from this frontend release. See [audit](audits/H-HISTORY-FAST-READ-001.md).

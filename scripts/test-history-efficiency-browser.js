@@ -1,15 +1,17 @@
 'use strict';
 // Isolated synthetic fixtures. Production sources execute with all network blocked.
+// H-HISTORY-FAST-READ-001 supersedes the historical SUMMARY/DETAIL transport;
+// preserve the original UI, native-store and privacy regressions under LOAD reuse.
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const {chromium}=require(process.env.SUTIAPP_PLAYWRIGHT_PATH||'C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'docs/qa/evidence/history-read-efficiency'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
+const root=path.resolve(__dirname,'..'),out=path.resolve(root,process.env.SUTI_HISTORY_EVIDENCE_DIR||'docs/qa/evidence/history-read-efficiency'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
 const css=[...read('SutiApp.html').matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m=>m[1]).join('\n');
 async function flush(page,ms=30){await page.clock.runFor(ms);await page.evaluate(()=>Promise.resolve());}
-async function counts(page){return page.evaluate(()=>({summary:edgeCalls.filter(c=>c.body.action==='SUMMARY').length,detail:edgeCalls.filter(c=>c.body.action==='DETAIL').length,native:nativeCalls.length,realtime:realtimeCalls}));}
+async function counts(page){return page.evaluate(()=>({load:edgeCalls.filter(c=>c.body.action==='LOAD').length,detail:edgeCalls.filter(c=>c.body.action==='DETAIL').length,native:nativeCalls.length,realtime:realtimeCalls}));}
 async function overlayRegression(page){
  // Match app.jsx: the tab remains mounted underneath pushed route layers.
  await page.evaluate(()=>{
-  ui.unmount();identity='user-a';delaySummary=false;delayNative=false;delayDetail=false;failSource=false;failNative=false;resolvePending();authListeners.forEach(fn=>fn());
+  ui.unmount();identity='user-a';delayHistory=false;delayNative=false;failSource=false;failNative=false;resolvePending();authListeners.forEach(fn=>fn());
   const h=React.createElement;window.ui=ReactDOM.createRoot(document.getElementById('root'));
   window.app={back:()=>overlaySet(null),push:(route,params)=>overlaySet(params),setTab:()=>{}};
   function OverlayHarness(){const[params,setParams]=React.useState(null);window.overlaySet=setParams;return h(React.Fragment,null,
@@ -19,30 +21,30 @@ async function overlayRegression(page){
  await flush(page);const base=page.locator('[data-overlay-history]');await base.locator('.su-history-entry').nth(5).waitFor();
  const entered=await counts(page);
  await base.locator('.su-history-entry').filter({hasText:'Actualizado tras operación'}).click();await flush(page);await page.locator('[data-overlay-route] [data-installment]').first().waitFor();
- assert.deepEqual(await counts(page),{...entered,detail:entered.detail+1},'pushed loan detail only requests DETAIL; base stays mounted');
+ assert.deepEqual(await counts(page),entered,'pushed loan detail reuses the owned LOAD; base stays mounted');
  assert.equal(await base.locator('.su-history-entry').count(),6,'history remains mounted behind detail');
  await page.getByRole('button',{name:'Volver al historial',exact:true}).click();await flush(page);
- const afterDetail=await counts(page);assert.deepEqual(afterDetail,{...entered,detail:entered.detail+1},'return from detail makes no source calls');
+ const afterDetail=await counts(page);assert.deepEqual(afterDetail,entered,'return from detail makes no source calls');
  await base.locator('.su-history-entry').filter({hasText:'Caja Chica'}).click();await flush(page);await page.locator('[data-overlay-route]').getByText('Línea de tiempo',{exact:true}).waitFor();
  assert.deepEqual(await counts(page),afterDetail,'tracking shares already mounted native subscription');
  // Two native consumers still share one request and one queued follow-up per mutation burst.
- await page.evaluate(()=>{delaySummary=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+ await page.evaluate(()=>{delayHistory=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
  await page.evaluate(()=>{nativeRows[0].workflow_state.stages[1].label='Revisión actualizada';for(let i=0;i<3;i++)window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
- assert.deepEqual(await counts(page),{...afterDetail,summary:afterDetail.summary+1,native:afterDetail.native+1},'two subscribers do not double pending requests');
- await page.evaluate(()=>{delaySummary=false;delayNative=false;resolvePending();});await flush(page);
+ assert.deepEqual(await counts(page),{...afterDetail,load:afterDetail.load+1,native:afterDetail.native+1},'two subscribers do not double pending requests');
+ await page.evaluate(()=>{delayHistory=false;delayNative=false;resolvePending();});await flush(page);
  await page.locator('[data-overlay-route]').getByText('Revisión actualizada',{exact:true}).waitFor();
- const afterMutation=await counts(page);assert.deepEqual(afterMutation,{...afterDetail,summary:afterDetail.summary+2,native:afterDetail.native+2},'mutations coalesce across base and pushed request tracking');
+ const afterMutation=await counts(page);assert.deepEqual(afterMutation,{...afterDetail,load:afterDetail.load+2,native:afterDetail.native+2},'mutations coalesce across base and pushed request tracking');
  await page.evaluate(()=>app.back());await flush(page);assert.deepEqual(await counts(page),afterMutation,'return from tracking makes no source calls');
  await base.locator('.su-history-entry').filter({hasText:'Actualizado tras operación'}).click();await flush(page);await page.locator('[data-overlay-route] [data-installment]').first().waitFor();
- // Concurrent base + detail responses from A cannot populate either layer after switching to B.
- await page.evaluate(()=>{delaySummary=true;delayNative=true;delayDetail=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
- assert.equal(await page.evaluate(()=>deferred.filter(row=>row.kind==='detail').length),1);
- await page.evaluate(()=>{identity='user-b';delaySummary=false;delayNative=false;delayDetail=false;authListeners.forEach(fn=>fn());});await flush(page);
+ // One shared pending LOAD for base + detail cannot populate either layer after switching to B.
+ await page.evaluate(()=>{delayHistory=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+ assert.equal(await page.evaluate(()=>deferred.filter(row=>row.kind==='load').length),1);assert.equal((await counts(page)).detail,0);
+ await page.evaluate(()=>{identity='user-b';delayHistory=false;delayNative=false;authListeners.forEach(fn=>fn());});await flush(page);
  await page.evaluate(()=>resolvePending());await flush(page);
  assert.equal(await base.locator('.su-history-entry').count(),0);assert.equal(await page.locator('[data-overlay-route] [data-installment]').count(),0);
  assert.equal(await page.locator('[data-overlay-route]').getByText('El registro no está disponible en tu historial.',{exact:true}).count(),1);
  const switched=await counts(page);await page.evaluate(()=>app.back());await flush(page);assert.deepEqual(await counts(page),switched,'context-safe return makes no source calls');
- return {width:390,historyRetainedUnderRoute:true,detailAddsOnlyOneDetailCall:true,backAddsNoCalls:true,trackingSharesNativeSubscription:true,mutationBurstCoalescedAcrossLayers:true,pendingBaseAndDetailDiscardedOnContextChange:true};
+ return {width:390,historyRetainedUnderRoute:true,detailAdditionalCalls:0,backAddsNoCalls:true,trackingSharesNativeSubscription:true,mutationBurstCoalescedAcrossLayers:true,pendingBaseAndDetailDiscardedOnContextChange:true};
 }
 async function main(){
  fs.mkdirSync(out,{recursive:true});
@@ -60,7 +62,7 @@ async function main(){
    window.TopBar=()=>h('header',{'data-harness-header':'',style:{background:'#A50032',color:'#fff',padding:20,borderRadius:'0 0 22px 22px'}},h('h1',null,'Mi Historial'),h('p',null,'Seguimiento de solicitudes'));
    window.RequestAuthorizationNotice=({requests})=>{window.noticeRequests=requests;return null;};window.FarmaHistory=()=>h('div',{'data-harness-farma':''});
    window.identity='user-a';window.authListeners=[];window.edgeCalls=[];window.nativeCalls=[];window.realtimeCalls=0;
-   window.delaySummary=true;window.delayNative=false;window.delayDetail=false;window.failSource=false;window.failNative=false;window.deferred=[];
+   window.delayHistory=true;window.delayNative=false;window.failSource=false;window.failNative=false;window.deferred=[];
    window.AffiliateAuth={getState:()=>identity?{phase:'authenticated',session:{user:{id:identity},access_token:'synthetic-'+identity},affiliate:{id:identity}}:{phase:'anonymous'},subscribe:fn=>{authListeners.push(fn);return()=>{};}};
    window.AdminRepository={getState:()=>({phase:'ready'}),subscribe:()=>()=>{}};
    const now=new Date().toISOString(),date='2026-10-25';
@@ -75,18 +77,16 @@ async function main(){
     {id:'pending',folio:'SR-2026-000004',program_id:'prestamo',created_at:now,status:'submitted',requested_amount:3000,requested_term:6,requested_term_semantics:'pagos',financial_processing_status:'pending',workflow_state:{available:true,stages:[{id:'one',label:'Solicitud enviada',state:'done'},{id:'two',label:'Revisión',state:'current'}]}},
     {id:'native-quote',folio:'COT-001',program_id:'convenio',request_type:'quote',productoNombre:'Cotización nativa',created_at:now,status:'submitted',workflow_state:{available:true,stages:[{id:'one',label:'Cotización recibida',state:'current'}]}},
     {id:'finance-product',folio:'PRODUCT-001',program_id:'beneficio',productoNombre:'Producto financiero',created_at:now,status:'approved',financial_processing_status:'approved',requested_amount:1200}];
-   const summary=full=>({...full,entries:full.entries.map(({schedule,total,paid_to_date,...entry})=>entry)});
    window.makeResponse=(body,subject=identity)=>{
     const full=subject==='user-a'?clone(payload):{...clone(payload),entries:[],financial_request_ids:[],covered_request_ids:[]};
-    if(body.action==='SUMMARY')return summary(full);
-    if(body.action==='DETAIL')return {...full,entries:full.entries.filter(row=>row.key===body.key)};
+    if(body.action==='LOAD')return full;
     throw Error('UNEXPECTED_HISTORY_ACTION');
    };
    window.SutiSupabase={getClient:()=>({channel:()=>{realtimeCalls++;throw Error('UNEXPECTED_REALTIME');},functions:{invoke:async(name,args)=>{
     if(name!=='loan-history')throw Error('FORGED_TARGET');
-    const body=clone(args.body);if(JSON.stringify(Object.keys(body).sort())!==JSON.stringify((body.action==='DETAIL'?['action','key']:['action']).sort()))throw Error('UNEXPECTED_TARGET_FIELD');
+    const body=clone(args.body);if(JSON.stringify(body)!==JSON.stringify({action:'LOAD'}))throw Error('UNEXPECTED_TARGET_FIELD');
     const response=failSource?{error:true}:{data:makeResponse(body)};edgeCalls.push({body,subject:identity,response:clone(response)});
-    if((delaySummary&&body.action==='SUMMARY')||(delayDetail&&body.action==='DETAIL'))return new Promise(resolve=>deferred.push({kind:body.action.toLowerCase(),resolve,response}));return response;
+    if(delayHistory)return new Promise(resolve=>deferred.push({kind:'load',resolve,response}));return response;
    }}})};
    window.ProgramRequestRepository={listHistory:async()=>{
     const response=clone(identity==='user-a'?nativeRows:[]);nativeCalls.push({subject:identity});
@@ -101,8 +101,8 @@ async function main(){
   assert.equal(await page.locator('.su-history-entry').count(),1,'native quote remains visible while Google is pending');
   assert.match(await page.locator('.su-history-entry').innerText(),/Cotización nativa/);
   assert.equal(await page.locator('[data-history-source="loading"]').count(),1);
-  assert.deepEqual(await counts(page),{summary:1,detail:0,native:1,realtime:0},'one request per source on initial entry');
-  await page.evaluate(()=>{delaySummary=false;resolvePending();});await flush(page);await page.locator('.su-history-entry').nth(5).waitFor();
+  assert.deepEqual(await counts(page),{load:1,detail:0,native:1,realtime:0},'one request per source on initial entry');
+  await page.evaluate(()=>{delayHistory=false;resolvePending();});await flush(page);await page.locator('.su-history-entry').nth(5).waitFor();
   assert.equal(await page.locator('.su-history-entry').count(),6);
   assert.deepEqual(await page.evaluate(()=>noticeRequests.map(r=>r.sourceId).sort()),['finance-product','native-quote','pending'],'original native requests still feed authorization notices');
   assert.equal(await page.locator('[data-harness-farma]').count(),1);assert.equal(await page.locator('.su-history-hero').count(),1);
@@ -116,13 +116,13 @@ async function main(){
   await page.clock.runFor(60000);await page.evaluate(()=>{window.dispatchEvent(new Event('focus'));document.dispatchEvent(new Event('visibilitychange'));});await flush(page);
   assert.notEqual(await page.locator('[data-approval-countdown]').innerText(),beforeCountdown,'clock continues locally');
   assert.deepEqual(await counts(page),initial,'60 seconds idle, clock, focus and visibility make zero calls');
-  const sizes=await page.evaluate(()=>({full:new TextEncoder().encode(JSON.stringify(payload)).length,summary:new TextEncoder().encode(JSON.stringify(makeResponse({action:'SUMMARY'}))).length,
-   noAmortization:edgeCalls.filter(c=>c.body.action==='SUMMARY').every(c=>c.response.data.entries.every(row=>!('schedule'in row)&&!('total'in row)&&!('paid_to_date'in row)))}));
-  assert(sizes.noAmortization);assert(sizes.summary<sizes.full,'summary excludes installment transfer');
+  const sizes=await page.evaluate(async()=>{const summary=await LoanHistory.load();return {full:new TextEncoder().encode(JSON.stringify(payload)).length,summary:new TextEncoder().encode(JSON.stringify(summary)).length,
+   cardsOmitAmortization:summary.entries.every(row=>!('schedule'in row)&&!('total'in row)&&!('paid_to_date'in row)),loadContainsAmortization:edgeCalls.every(c=>c.response.data.entries.every(row=>Array.isArray(row.schedule)))};});
+  assert(sizes.cardsOmitAmortization);assert(sizes.loadContainsAmortization);assert(sizes.summary<sizes.full,'lightweight card projection stays in memory; initial LOAD includes installments');
   await page.locator('.su-history-entry').click();await flush(page);await page.locator('[data-installment="Pagada"]').first().waitFor();
   assert.equal(await page.locator('[data-installment="Pagada"]').count(),12);assert.equal(await page.locator('[data-installment="Pendiente"]').count(),12);
   const detail=await page.evaluate(()=>edgeCalls.filter(c=>c.body.action==='DETAIL'));
-  assert.equal(detail.length,1);assert.deepEqual(detail[0].body,{action:'DETAIL',key:'loan:1'});assert.deepEqual(detail[0].response.data.entries.map(r=>r.key),['loan:1']);
+  assert.equal(detail.length,0);assert.equal((await counts(page)).load,initial.load,'detail does not repeat source read');assert.deepEqual(await page.evaluate(async()=>(await LoanHistory.load('loan:1')).entries.map(r=>r.key)),['loan:1']);
   assert.equal(await page.getByRole('button',{name:'Contactar a un asesor',exact:true}).count(),1);
   assert(await page.evaluate(()=>document.querySelector('#root').scrollWidth<=document.querySelector('#root').clientWidth+1),'detail horizontal overflow');
   await page.screenshot({path:path.join(out,'amortization-'+width+'.png')});
@@ -142,30 +142,30 @@ async function main(){
   await page.getByRole('button',{name:'Todas',exact:true}).click();await page.evaluate(()=>{failSource=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);await page.locator('[data-history-source="error"]').waitFor();
   assert.equal(await page.locator('.su-history-entry').count(),1);assert.match(await page.locator('.su-history-entry').innerText(),/Cotización nativa/,'failure preserves only native nonfinancial rows');
   const failed=await counts(page);await page.evaluate(()=>{failSource=false;});await page.getByRole('button',{name:'Reintentar',exact:true}).click();await flush(page);await page.locator('.su-history-entry').nth(5).waitFor();
-  const retried=await counts(page);assert.equal(retried.summary,failed.summary+1);assert.equal(retried.native,failed.native,'financial retry does not reload native source');
+  const retried=await counts(page);assert.equal(retried.load,failed.load+1);assert.equal(retried.native,failed.native,'financial retry does not reload native source');
   // Three mutations during a pending read yield one final refresh, never three concurrent reads.
-  const beforeBurst=await counts(page);await page.evaluate(()=>{delaySummary=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+  const beforeBurst=await counts(page);await page.evaluate(()=>{delayHistory=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
   await page.evaluate(()=>{payload.entries[1].fund='Actualizado tras operación';nativeRows[1]={...nativeRows[1],id:'native-quote-after',folio:'COT-002',productoNombre:'Cotización actualizada'};for(let i=0;i<3;i++)window.dispatchEvent(new Event('suti:request-changed'));window.mutationSnapshots=[];window.stopMutationWatch=operationsStore.subscribe(()=>mutationSnapshots.push(operationsStore.all().map(row=>row.sourceId)));});await flush(page);
-  assert.equal((await counts(page)).summary,beforeBurst.summary+1);assert.equal((await counts(page)).native,beforeBurst.native+1);
+  assert.equal((await counts(page)).load,beforeBurst.load+1);assert.equal((await counts(page)).native,beforeBurst.native+1);
   // Return the obsolete snapshot while the follow-up native response stays unresolved.
-  await page.evaluate(()=>{delaySummary=false;resolvePending();});await flush(page);await page.locator('.su-history-entry').filter({hasText:'Actualizado tras operación'}).waitFor();
+  await page.evaluate(()=>{delayHistory=false;resolvePending();});await flush(page);await page.locator('.su-history-entry').filter({hasText:'Actualizado tras operación'}).waitFor();
   assert.equal((await counts(page)).native,beforeBurst.native+2,'one follow-up native read begins');
   assert.deepEqual(await page.evaluate(()=>({phase:operationsStore.state().phase,rows:operationsStore.all().map(row=>row.sourceId),pending:deferred.filter(row=>row.kind==='native').length,obsoleteEmitted:mutationSnapshots.some(ids=>ids.includes('native-quote'))})),{phase:'loading',rows:[],pending:1,obsoleteEmitted:false},'obsolete native response is never emitted while replacement remains pending');
   assert.equal(await page.locator('.su-history-entry').filter({hasText:'Cotización nativa'}).count(),0,'deleted native card does not reappear');
   await page.evaluate(()=>{delayNative=false;resolvePending();});await flush(page);await page.locator('.su-history-entry').filter({hasText:'Cotización actualizada'}).waitFor();
   assert.equal(await page.evaluate(()=>mutationSnapshots.some(ids=>ids.includes('native-quote'))),false,'no transient obsolete store emissions');
   await page.evaluate(()=>stopMutationWatch());
-  const afterBurst=await counts(page);assert.equal(afterBurst.summary,beforeBurst.summary+2);assert.equal(afterBurst.native,beforeBurst.native+2);assert.equal(await page.locator('.su-history-entry').filter({hasText:'Cotización actualizada'}).count(),1);
+  const afterBurst=await counts(page);assert.equal(afterBurst.load,beforeBurst.load+2);assert.equal(afterBurst.native,beforeBurst.native+2);assert.equal(await page.locator('.su-history-entry').filter({hasText:'Cotización actualizada'}).count(),1);
   // In-flight responses for A are discarded after changing context to B and after logout.
-  await page.evaluate(()=>{delaySummary=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
-  await page.evaluate(()=>{identity='user-b';delaySummary=false;delayNative=false;authListeners.forEach(fn=>fn());});await flush(page);
+  await page.evaluate(()=>{delayHistory=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+  await page.evaluate(()=>{identity='user-b';delayHistory=false;delayNative=false;authListeners.forEach(fn=>fn());});await flush(page);
   await page.evaluate(()=>resolvePending());await flush(page);assert.equal(await page.locator('.su-history-entry').count(),0);
   await page.evaluate(()=>{identity='user-a';authListeners.forEach(fn=>fn());});await flush(page);await page.locator('.su-history-entry').nth(5).waitFor();
-  await page.evaluate(()=>{delaySummary=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
+  await page.evaluate(()=>{delayHistory=true;delayNative=true;window.dispatchEvent(new Event('suti:request-changed'));});await flush(page);
   await page.evaluate(()=>{identity='';authListeners.forEach(fn=>fn());resolvePending();});await flush(page);assert.equal(await page.locator('.su-history-entry').count(),0);
   if(width===390)overlayChecks.push(await overlayRegression(page));
   assert.deepEqual(errors,[]);assert.equal(external.length,0,'no external requests attempted');
-  checks.push({width,actualOperationsStore:true,initialCalls:initial,filterCalls:0,idle60SecondsCalls:0,realtimeCalls:0,localApprovalExpiry:true,summaryBytes:sizes.summary,fullFixtureBytes:sizes.full,bytesAre:'uncompressed synthetic JSON, not billed egress',detailOwnKeyOnly:true,nativeVisibleWhilePending:true,nativeVisibleOnSourceError:true,retryScoped:true,mutationBurstCoalesced:true,obsoleteNativeResponseDiscardedWhileFollowupPending:true,contextRace:true,logoutRace:true,timelinePreserved:true,liquidatedGreen:true,noHorizontalOverflow:true});
+  checks.push({width,actualOperationsStore:true,initialCalls:initial,filterCalls:0,idle60SecondsCalls:0,realtimeCalls:0,localApprovalExpiry:true,cardProjectionBytes:sizes.summary,initialLoadBytes:sizes.full,bytesAre:'uncompressed synthetic JSON, not billed egress; LOAD is larger than the old summary',detailAdditionalCalls:0,detailOwnKeyOnly:true,nativeVisibleWhilePending:true,nativeVisibleOnSourceError:true,retryScoped:true,mutationBurstCoalesced:true,obsoleteNativeResponseDiscardedWhileFollowupPending:true,contextRace:true,logoutRace:true,timelinePreserved:true,liquidatedGreen:true,noHorizontalOverflow:true});
   await page.close();
  }
  const proof={status:'PASS',scope:'synthetic isolated browser; real history, UI and operations source modules; header/notice/Farma harness stand-ins',checks,overlayChecks,productionWrites:0,network:'BLOCKED',timing:'Playwright clock advanced 60 seconds without a wall-clock sleep'};

@@ -1,0 +1,117 @@
+{
+  "status": "PASS_WARM_DETAIL_ONLY",
+  "coldThreeSecondTargetMet": false,
+  "testedAt": "2026-10-26T07:54:30.889Z",
+  "mode": "LOCAL_CANDIDATE_WITH_LIVE_BACKEND",
+  "bundleSha256": "6a1080bf6656647ae6bd40d7b319d7638d5f4e5e3a69b15f6a785aef73c22189",
+  "sourceComparison": {
+    "quotaRows": 38,
+    "loanCount": 4,
+    "requestCount": 0,
+    "exactLoanCoverage": true,
+    "exactRequestCoverage": true
+  },
+  "historyRequest": {
+    "action": "LOAD",
+    "http": 200,
+    "rawJsonBytes": 5304,
+    "gzipEstimateBytes": 858,
+    "contentEncoding": "gzip",
+    "contentLength": "1130",
+    "responseMs": 30526,
+    "version": 1,
+    "entries": 4,
+    "error": null,
+    "categories": {
+      "En pago": 1,
+      "Liquidadas": 3
+    }
+  },
+  "firstRenderedSampleMs": 30685,
+  "historyRequestsStarted": 1,
+  "details": [
+    {
+      "renderMs": 36,
+      "quotaCount": 12,
+      "renderedQuotaCount": 12,
+      "ownLoan": true,
+      "exactSourceRows": true,
+      "dateStatesCorrect": true,
+      "additionalRequests": 0
+    },
+    {
+      "renderMs": 17,
+      "quotaCount": 2,
+      "renderedQuotaCount": 2,
+      "ownLoan": true,
+      "exactSourceRows": true,
+      "dateStatesCorrect": true,
+      "additionalRequests": 0
+    },
+    {
+      "renderMs": 20,
+      "quotaCount": 12,
+      "renderedQuotaCount": 12,
+      "ownLoan": true,
+      "exactSourceRows": true,
+      "dateStatesCorrect": true,
+      "additionalRequests": 0
+    },
+    {
+      "renderMs": 48,
+      "quotaCount": 12,
+      "renderedQuotaCount": 12,
+      "ownLoan": true,
+      "exactSourceRows": true,
+      "dateStatesCorrect": true,
+      "additionalRequests": 0
+    }
+  ],
+  "filters": [
+    {
+      "filter": "Todas",
+      "cards": 4,
+      "identitiesMatch": true
+    },
+    {
+      "filter": "En proceso",
+      "cards": 0,
+      "identitiesMatch": true
+    },
+    {
+      "filter": "Aprobadas",
+      "cards": 0,
+      "identitiesMatch": true
+    },
+    {
+      "filter": "En pago",
+      "cards": 1,
+      "identitiesMatch": true
+    },
+    {
+      "filter": "Liquidadas",
+      "cards": 3,
+      "identitiesMatch": true
+    },
+    {
+      "filter": "No aprobadas",
+      "cards": 0,
+      "identitiesMatch": true
+    }
+  ],
+  "contextStable": true,
+  "effectiveControlCorrect": true,
+  "pageErrors": [],
+  "assistance": {
+    "started": true,
+    "stopped": true,
+    "openSessionsAfter": 0
+  },
+  "businessWrites": 0,
+  "sheetWrites": 0,
+  "limitations": [
+    "Final candidate bundle substituted in a browser using the unchanged live backend; not publication proof.",
+    "Initial load still exceeds the three-second requirement.",
+    "Prior four-account timing evidence uses the preceding candidate; this final smoke revalidates one populated account after the A-B-A invalidation fix."
+  ]
+}

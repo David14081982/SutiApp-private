@@ -1,0 +1,448 @@
+{
+  "status": "PASS",
+  "task": "H-HISTORY-TYPOGRAPHY-001",
+  "verified_at": "2026-10-26T18:36:48.253Z",
+  "baseline_commit": "abc07239910eb47f669a5f2ccf77ecf3f80236c2",
+  "source_file": "app/history-loans.jsx",
+  "baseline_lf_sha256": "f4fba64bc997980a3ca46ae40d43b60fb051a44188391a7e9c5aa1859c083633",
+  "candidate_lf_sha256": "92b7d164d629652911c355a999a7bfde9d44e7d39c859861bee20c104c346be7",
+  "parser": {
+    "source": "Existing Node bundled Acorn; no install or network",
+    "version": "8.15.0"
+  },
+  "checks": {
+    "non_style_ast_identical": true,
+    "logic_data_text_handlers_conditionals_structure_identical": true,
+    "changed_style_values_static": true,
+    "unchanged_font_weights_colors_borders_radii_margins_paddings_gaps_alignment": true,
+    "equal_grid_columns_retained": true,
+    "source_state_outside_detail_fallback_11px": true,
+    "approval_clock_component_identical": true,
+    "custom_variables_only_detail_root": true,
+    "no_product_or_document_writes": true,
+    "no_network": true
+  },
+  "compared_style_elements": 56,
+  "changed_property_count": 41,
+  "property_counts": {
+    "--history-detail-secondary": 1,
+    "--text-11-5": 1,
+    "fontSize": 29,
+    "gridTemplateColumns": 1,
+    "lineHeight": 1,
+    "maxWidth": 2,
+    "minWidth": 1,
+    "overflowWrap": 4,
+    "whiteSpace": 1
+  },
+  "changes": [
+    {
+      "component": "HistorySourceState",
+      "element": "div",
+      "attributes": [
+        "data-history-source"
+      ],
+      "line": 21,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--history-detail-secondary, 11px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "span",
+      "attributes": [],
+      "line": 29,
+      "property": "fontSize",
+      "before": "10",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "span",
+      "attributes": [],
+      "line": 29,
+      "property": "maxWidth",
+      "before": null,
+      "after": "'100%'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "span",
+      "attributes": [],
+      "line": 29,
+      "property": "whiteSpace",
+      "before": null,
+      "after": "'normal'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "span",
+      "attributes": [],
+      "line": 29,
+      "property": "overflowWrap",
+      "before": null,
+      "after": "'anywhere'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [
+        "data-loan-history-detail"
+      ],
+      "line": 33,
+      "property": "--history-detail-secondary",
+      "before": null,
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [
+        "data-loan-history-detail"
+      ],
+      "line": 33,
+      "property": "--text-11-5",
+      "before": null,
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [
+        "data-loan-history-detail"
+      ],
+      "line": 33,
+      "property": "fontSize",
+      "before": null,
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [
+        "data-loan-history-detail"
+      ],
+      "line": 33,
+      "property": "lineHeight",
+      "before": null,
+      "after": "1.45"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 37,
+      "property": "fontSize",
+      "before": "10",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "h1",
+      "attributes": [],
+      "line": 38,
+      "property": "fontSize",
+      "before": "17",
+      "after": "'var(--text-20, 20px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "span",
+      "attributes": [],
+      "line": 44,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 46,
+      "property": "fontSize",
+      "before": "13",
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 47,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-principal"
+      ],
+      "line": 49,
+      "property": "fontSize",
+      "before": "30",
+      "after": "'var(--text-34, 34px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-principal"
+      ],
+      "line": 49,
+      "property": "minWidth",
+      "before": null,
+      "after": "0"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-principal"
+      ],
+      "line": 49,
+      "property": "maxWidth",
+      "before": null,
+      "after": "'100%'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-principal"
+      ],
+      "line": 49,
+      "property": "overflowWrap",
+      "before": null,
+      "after": "'anywhere'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 51,
+      "property": "fontSize",
+      "before": "12",
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-total"
+      ],
+      "line": 51,
+      "property": "fontSize",
+      "before": null,
+      "after": "'var(--text-18, 18px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 53,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-monetary-progress"
+      ],
+      "line": 54,
+      "property": "fontSize",
+      "before": null,
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 57,
+      "property": "gridTemplateColumns",
+      "before": "'1fr 1fr'",
+      "after": "'minmax(0, 1fr) minmax(0, 1fr)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 57,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-paid"
+      ],
+      "line": 58,
+      "property": "fontSize",
+      "before": "14",
+      "after": "'calc(clamp(16px, 5vw, 18px) * var(--text-scale, 1))'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-paid"
+      ],
+      "line": 58,
+      "property": "overflowWrap",
+      "before": null,
+      "after": "'anywhere'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-balance"
+      ],
+      "line": 59,
+      "property": "fontSize",
+      "before": "14",
+      "after": "'calc(clamp(16px, 5vw, 18px) * var(--text-scale, 1))'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "strong",
+      "attributes": [
+        "data-loan-balance"
+      ],
+      "line": 59,
+      "property": "overflowWrap",
+      "before": null,
+      "after": "'anywhere'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "p",
+      "attributes": [],
+      "line": 60,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "p",
+      "attributes": [],
+      "line": 61,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 62,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "p",
+      "attributes": [],
+      "line": 63,
+      "property": "fontSize",
+      "before": "12",
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "section",
+      "attributes": [
+        "data-purpose"
+      ],
+      "line": 66,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 68,
+      "property": "fontSize",
+      "before": "13",
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 71,
+      "property": "fontSize",
+      "before": "12",
+      "after": "'min(var(--text-12, 14px), 18px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 72,
+      "property": "fontSize",
+      "before": "13",
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 74,
+      "property": "fontSize",
+      "before": "10",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 75,
+      "property": "fontSize",
+      "before": "14",
+      "after": "'var(--text-18, 18px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 79,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-16, 16px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "div",
+      "attributes": [],
+      "line": 79,
+      "property": "fontSize",
+      "before": "10",
+      "after": "'var(--text-12, 14px)'"
+    },
+    {
+      "component": "LoanHistoryDetail",
+      "element": "button",
+      "attributes": [],
+      "line": 80,
+      "property": "fontSize",
+      "before": "11",
+      "after": "'var(--text-16, 16px)'"
+    }
+  ],
+  "limits": [
+    "AST comparison proves source/style scope, not rendered visual fit.",
+    "Larger inherited text may alter wrapping and intrinsic element height; the independent browser audit must verify narrow widths, long amounts and small/largest preferences.",
+    "Fixed existing row-number and header icon containers are preserved; their text fit is a visual acceptance check.",
+    "Global app/text-size.css applies line-height and button font rules with !important; computed typography must be assessed with the real CSS.",
+    "Architecture Registry is historically stale; this review uses the pinned published source and current focal file directly."
+  ]
+}

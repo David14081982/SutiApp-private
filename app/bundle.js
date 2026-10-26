@@ -33470,7 +33470,7 @@ Object.assign(window, {
       role: 'status',
       style: {
         padding: '10px 4px',
-        fontSize: 11,
+        fontSize: 'var(--history-detail-secondary, 11px)',
         lineHeight: 1.5,
         color: failed ? '#A32921' : muted,
         textAlign: 'center'
@@ -33502,13 +33502,16 @@ Object.assign(window, {
       style: {
         display: 'inline-flex',
         alignItems: 'center',
-        fontSize: 10,
+        fontSize: 'var(--text-12, 14px)',
         fontWeight: 800,
         padding: '4px 7px',
         borderRadius: 8,
         color,
         background: bg,
-        lineHeight: 1.3
+        lineHeight: 1.3,
+        maxWidth: '100%',
+        whiteSpace: 'normal',
+        overflowWrap: 'anywhere'
       }
     }, label);
     const headerButton = {
@@ -33546,7 +33549,11 @@ Object.assign(window, {
         background: '#F4F6F9',
         display: 'flex',
         flexDirection: 'column',
-        color: '#0F172A'
+        color: '#0F172A',
+        '--history-detail-secondary': 'var(--text-12, 14px)',
+        '--text-11-5': 'var(--text-12, 14px)',
+        fontSize: 'var(--text-16, 16px)',
+        lineHeight: 1.45
       }
     }, h('header', {
       style: {
@@ -33577,14 +33584,14 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 10,
+        fontSize: 'var(--text-12, 14px)',
         fontWeight: 700,
         letterSpacing: 1.2,
         color: '#FECDD3'
       }
     }, 'SUTIFINANZAS'), h('h1', {
       style: {
-        fontSize: 17,
+        fontSize: 'var(--text-20, 20px)',
         fontWeight: 800,
         margin: '3px 0 0',
         lineHeight: 1.3
@@ -33642,21 +33649,21 @@ Object.assign(window, {
       }
     }, chip(entry.kind === 'loan' ? 'Descuento Vía Nómina' : 'Solicitud', brand, '#FFF1F3'), h('span', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-12, 14px)',
         color: '#94A3B8',
         overflowWrap: 'anywhere'
       }
     }, 'Ref: #' + entry.id)), chip(entry.term == null ? 'Plazo no registrado' : entry.term + ' pagos', '#334155', '#F1F5F9')), h('div', {
       style: {
         fontWeight: 700,
-        fontSize: 13,
+        fontSize: 'var(--text-16, 16px)',
         color: muted,
         marginBottom: 12,
         overflowWrap: 'anywhere'
       }
     }, entry.fund), h('div', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-12, 14px)',
         color: muted,
         textTransform: 'uppercase',
         letterSpacing: .8
@@ -33672,21 +33679,25 @@ Object.assign(window, {
     }, h('strong', {
       'data-loan-principal': '',
       style: {
-        fontSize: 30,
+        fontSize: 'var(--text-34, 34px)',
         fontWeight: 800,
-        letterSpacing: -.6
+        letterSpacing: -.6,
+        minWidth: 0,
+        maxWidth: '100%',
+        overflowWrap: 'anywhere'
       }
     }, money(entry.principal)), liquidated ? chip('Liquidada', '#047857', '#ECFDF5') : status === 'AL CORRIENTE' ? chip('Al corriente', '#047857', '#ECFDF5') : overdue ? chip('Saldo atrasado', '#92400E', '#FEF3C7') : h(HistoryPill, {
       entry
     })), h('div', {
       style: {
-        fontSize: 12,
+        fontSize: 'var(--text-16, 16px)',
         color: muted,
         marginBottom: 16
       }
     }, 'Total a pagar: ', h('strong', {
       'data-loan-total': '',
       style: {
+        fontSize: 'var(--text-18, 18px)',
         color: '#334155'
       }
     }, money(entry.total))), entry.kind === 'loan' && h('div', {
@@ -33702,7 +33713,7 @@ Object.assign(window, {
         justifyContent: 'space-between',
         gap: 8,
         alignItems: 'center',
-        fontSize: 11,
+        fontSize: 'var(--text-12, 14px)',
         marginBottom: 9
       }
     }, h('strong', {
@@ -33712,6 +33723,7 @@ Object.assign(window, {
     }, 'Progreso de liquidación'), h('strong', {
       'data-monetary-progress': '',
       style: {
+        fontSize: 'var(--text-16, 16px)',
         color: brand
       }
     }, metrics.progress == null ? 'Por revisar' : metrics.progress.toLocaleString('es-MX', {
@@ -33740,12 +33752,12 @@ Object.assign(window, {
     })), h('div', {
       style: {
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
+        gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
         gap: 10,
         marginTop: 12,
         paddingTop: 12,
         borderTop: '1px solid #E2E8F0',
-        fontSize: 11
+        fontSize: 'var(--text-12, 14px)'
       }
     }, h('div', null, h('div', {
       style: {
@@ -33754,10 +33766,11 @@ Object.assign(window, {
     }, 'Monto amortizado'), h('strong', {
       'data-loan-paid': '',
       style: {
-        fontSize: 14,
+        fontSize: 'calc(clamp(16px, 5vw, 18px) * var(--text-scale, 1))',
         color: '#047857',
         display: 'block',
-        marginTop: 3
+        marginTop: 3,
+        overflowWrap: 'anywhere'
       }
     }, money(entry.paid_to_date))), h('div', {
       style: {
@@ -33771,27 +33784,28 @@ Object.assign(window, {
     }, 'Saldo pendiente'), h('strong', {
       'data-loan-balance': '',
       style: {
-        fontSize: 14,
+        fontSize: 'calc(clamp(16px, 5vw, 18px) * var(--text-scale, 1))',
         color: brand,
         display: 'block',
-        marginTop: 3
+        marginTop: 3,
+        overflowWrap: 'anywhere'
       }
     }, money(metrics.balance)))), metrics.overpaid > 0 && h('p', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-12, 14px)',
         color: muted,
         marginBottom: 0
       }
     }, 'Pago excedente registrado: ' + money(metrics.overpaid)), metrics.progress == null && h('p', {
       role: 'status',
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-12, 14px)',
         color: '#92400E',
         marginBottom: 0
       }
     }, 'Faltan importes válidos para mostrar el progreso.')), entry.approved_at && h('div', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-12, 14px)',
         color: muted,
         marginTop: 12
       }
@@ -33805,7 +33819,7 @@ Object.assign(window, {
       role: 'alert',
       style: {
         color: '#A32921',
-        fontSize: 12
+        fontSize: 'var(--text-16, 16px)'
       }
     }, 'No se pudo descargar el estado de cuenta. Inténtalo de nuevo.'), !entry && history.phase === 'loaded' && h('p', {
       role: 'status'
@@ -33816,7 +33830,7 @@ Object.assign(window, {
         gap: 8,
         padding: '4px 3px 14px',
         color: muted,
-        fontSize: 11,
+        fontSize: 'var(--text-16, 16px)',
         lineHeight: 1.6
       }
     }, h(window.Icon, {
@@ -33833,7 +33847,7 @@ Object.assign(window, {
         padding: 18,
         background: 'white',
         borderRadius: 18,
-        fontSize: 13
+        fontSize: 'var(--text-16, 16px)'
       }
     }, 'Finanzas aprobó tu solicitud. La amortización aún está en preparación. ', h('button', {
       onClick: history.retry
@@ -33867,7 +33881,7 @@ Object.assign(window, {
         placeItems: 'center',
         flexShrink: 0,
         fontWeight: 800,
-        fontSize: 12,
+        fontSize: 'min(var(--text-12, 14px), 18px)',
         background: row.upcoming ? '#FEF3C7' : row.state === 'Pagada' ? '#ECFDF5' : '#F1F5F9',
         color: row.upcoming ? '#92400E' : row.state === 'Pagada' ? '#059669' : muted
       }
@@ -33878,13 +33892,13 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 13,
+        fontSize: 'var(--text-16, 16px)',
         fontWeight: 800,
         marginBottom: 4
       }
     }, 'Cuota ' + (i + 1)), row.upcoming && chip('Próxima a vencer', '#92400E', '#FEF3C7'), row.closure && chip('Cierre de contrato', muted, '#F1F5F9'), h('div', {
       style: {
-        fontSize: 10,
+        fontSize: 'var(--text-12, 14px)',
         color: row.upcoming ? '#B45309' : '#94A3B8',
         marginTop: 5,
         display: 'flex',
@@ -33902,7 +33916,7 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 14,
+        fontSize: 'var(--text-18, 18px)',
         fontWeight: 800,
         color: row.amount === 0 ? '#94A3B8' : row.upcoming ? '#78350F' : brand,
         marginBottom: 5,
@@ -33941,12 +33955,12 @@ Object.assign(window, {
       }
     }, h('div', {
       style: {
-        fontSize: 11,
+        fontSize: 'var(--text-16, 16px)',
         fontWeight: 800
       }
     }, entry.kind === 'loan' ? 'Pagos asegurados por nómina' : 'Soporte de solicitudes'), h('div', {
       style: {
-        fontSize: 10,
+        fontSize: 'var(--text-12, 14px)',
         color: muted,
         marginTop: 3
       }
@@ -33954,7 +33968,7 @@ Object.assign(window, {
       type: 'button',
       style: {
         fontWeight: 800,
-        fontSize: 11,
+        fontSize: 'var(--text-16, 16px)',
         color: brand,
         flexShrink: 0
       },

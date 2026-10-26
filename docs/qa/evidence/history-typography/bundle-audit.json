@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "task": "H-HISTORY-TYPOGRAPHY-001",
+  "verified_at": "2026-10-26T18:38:27.346Z",
+  "baseline_commit": "abc07239910eb47f669a5f2ccf77ecf3f80236c2",
+  "version": "2026102604",
+  "source_lf_sha256": "92b7d164d629652911c355a999a7bfde9d44e7d39c859861bee20c104c346be7",
+  "bundle_sha256": "31dfb36744976cfeb3f5755413b2b3e20507af98c8f48eeace4b0152810c45bf",
+  "html_lf_sha256": "1331587c37effa06a104b790bb69fa2f2fe534aefa9cada6b02ffb1a9c5306c5",
+  "service_worker_lf_sha256": "ba6ec4c8805426ec95c2a23b2aa693e98bea845a0d42da9f8d6b14f039fd64ef",
+  "module_count": 163,
+  "unchanged_module_count": 162,
+  "changed_modules": [
+    "history-loans.jsx"
+  ],
+  "checks": {
+    "module_list_and_order_identical": true,
+    "exactly_one_focal_module_changed": true,
+    "other_162_modules_byte_identical": true,
+    "final_source_transpilation_exact": true,
+    "bundle_syntax_valid": true,
+    "html_only_generated_version_change": true,
+    "service_worker_only_generated_version_change": true,
+    "all_version_references_match": true,
+    "no_product_writes": true,
+    "no_network": true
+  },
+  "references": {
+    "html_bundle": [
+      "2026102604"
+    ],
+    "html_service_worker": [
+      "2026102604"
+    ],
+    "sw_cache": [
+      "2026102604"
+    ],
+    "sw_bundle": [
+      "2026102604"
+    ]
+  },
+  "transpiler": {
+    "kind": "Existing Babel Standalone",
+    "version": "7.28.4"
+  },
+  "changed_module": {
+    "file": "history-loans.jsx",
+    "baseline_sha256": "7cec67e3b834c0bff2e9633b0d86eac0ed5fafcc8dd648f98c173d0afb96e090",
+    "candidate_sha256": "7d4e35fb93d443d4a7707e2af2b53470d2fe152286c3f5787b5cad62fe1e9642"
+  },
+  "limits": [
+    "Local generated-artifact verification only; no publication or authenticated runtime is claimed.",
+    "Rendered readability and component fit are covered by the separate browser audit."
+  ]
+}

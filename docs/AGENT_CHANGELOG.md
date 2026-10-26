@@ -4359,3 +4359,7 @@ Candidate prepared in an isolated checkout based on 85c78e138515851823843994c781
 ## H-HISTORY-QUOTA-NUMBERING-001 - 2026-10-26
 
 Correct installment display/PDF ordinals independently per loan using the existing ordered schedule, including zero/future rows; replace the requested explanatory paragraph with Historial. No source numbers, amounts, dates, statuses, requests, backend or Google data change. Focal browser/PDF regression, old-source negative reproduction, build/Pages/PWA and generated-chunk parity PASS. See audits/H-HISTORY-QUOTA-NUMBERING-001.md and qa/evidence/history-quota-numbering.
+
+## H-HISTORY-TYPOGRAPHY-001 - 2026-10-26
+
+Improve LoanHistoryDetail readability with proportional typography and scoped text-fit styles. Preserve structure, card geometry, colors and all non-style AST, including calculations/data/actions. The existing Solicitud variant shares the detail styles; Historial list helpers remain visually unchanged. Real Nunito/CSS isolated mobile checks320-430, preference extremes and final210-ordinal fit checks PASS; build/Pages/PWA and focal-only bundle parity PASS (162 other modules identical). No Google/backend/security/data changes. Local verified candidate2026102604; publication tracked separately. See audits/H-HISTORY-TYPOGRAPHY-001.md and qa/evidence/history-typography.

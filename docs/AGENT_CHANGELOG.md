@@ -4371,3 +4371,8 @@ Redesign only the local amortization PDF as a Letter-size financial statement wi
 ## H-HISTORY-PENDING-REQUESTS-001 - 2026-10-26
 
 Include an own SR/Pendiente source request in En proceso before its native financial-processing flag is set. Preserve sourceId/native tracking, deduplication, nonpending categories, ownership and all loan data. Focused functional browser checks at 320/390/1440, snapshot runtime/source and Pages/PWA tests pass. Read-only production comparison adds one pending card while three existing entries remain exactly equal. Only loan-history Edge v5 deployed, with baseline backup, three-module AST parity and JWT/anonymous denial verified. No frontend, PDF, Google, SQL, synchronization or business-data changes. See audits/H-HISTORY-PENDING-REQUESTS-001.md and qa/evidence/history-pending-requests.
+
+
+## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
+
+Prepared two independently updated history channels: the existing Google-derived amortization observation and confirmed native approval presentation. Immediate approval events transfer only own metadata; the 24-hour window respects blank X and expiry follows real source state. Daily/manual worker, Google, financial values and UI structure remain unchanged. Validation/publication state and sanitized evidence: audits/H-HISTORY-IMMEDIATE-APPROVAL-001.md and qa/evidence/history-immediate-approval.

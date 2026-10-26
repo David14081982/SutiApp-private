@@ -1479,3 +1479,8 @@ and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-
 ### H-HISTORY-SNAPSHOT-001
 
 Owner authorized daily synchronization at 15:00 America/Hermosillo (22:00 UTC), a permission-gated Finance Admin button, both history sheets, stable open amortization during updates, the supplied detail design, money-paid percentage, PDF statement download and the exact advisor WhatsApp route. Future quotas, including a zero amount, are pending; past/today zero means No se descontó. The final scheduled row marks Cierre de contrato with its real date; X alone determines liquidation. No Google cell/formula/writer/financial trigger or approval flow changes are authorized. This is a derived read model, not a transfer of financial authority. Candidate implementation is local; production activation and measured latency remain outstanding.
+
+
+## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
+
+The owner explicitly authorized two corrections: immediate affected-user approval visibility without waiting for 15:00, and the 24-hour Aprobadas window even when X is blank. Daily/manual full synchronization and independent amortization updates must remain unchanged. The implementation reads confirmed native approvals separately and emits a metadata-only own signal; it never triggers a global or per-user Google synchronization. Existing loan amounts, source quotas, financial writers, historical records and Google content are outside the write scope. See the focused audit and release evidence for installation status.

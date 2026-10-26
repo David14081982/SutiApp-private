@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "at": "2026-10-26T22:11:26.211Z",
+  "rlsForced": true,
+  "ownRpcAuthenticatedOnly": true,
+  "noBrowserSignalWrites": true,
+  "exactPriorDefinitionBackedUp": true,
+  "originalFunctionOidsOwnersGrantsPreserved": true,
+  "originalSnapshotIdentityFunctionsUnchanged": true,
+  "dailyCronUnchanged": true,
+  "anonymousApprovalStatus": 401,
+  "actualAffectedCase": {
+    "method": "read-only exact-control source inspection and actual shipped projectors; no impersonation or production approval",
+    "uniqueActiveIdentity": true,
+    "sourcePublished": true,
+    "sourceUpdatedAt": "2026-10-26T22:00:37.595+00:00",
+    "categories": {
+      "Aprobadas": 1,
+      "No aprobadas": 2
+    },
+    "quotaRows": 12,
+    "approvalPayloadBytes": 347,
+    "fullHistoryBytes": 2882
+  },
+  "limitations": [
+    "Realtime websocket delivery was tested with isolated browser transport; no real financial approval was created for testing."
+  ]
+}

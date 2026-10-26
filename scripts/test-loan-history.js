@@ -12,7 +12,8 @@ async function main(){
   assert.equal(category('AL CORRIENTE',approved,now),'Aprobadas');assert.equal(category('SALDO ATRASADO','2026-10-24T19:00:00Z',now),'En pago');
   assert.equal(category('AL CORRIENTE',null,now),'En pago');assert.equal(category('AL CORRIENTE','2026-10-26T19:00:00Z',now),'En pago');
   for(const s of ['LIQUIDADO','PAGÓ DE MÁS'])assert.equal(category(s,approved,now),'Liquidadas');
-  assert.equal(category('UNKNOWN',approved,now),'Estado por revisar');
+  assert.equal(category('UNKNOWN',approved,now),'Aprobadas');
+  assert.equal(category('UNKNOWN','2026-10-24T19:00:00Z',now),'Estado por revisar');
  });
  await test('one card per own loan, actual receipt clock, no multiplied principal/totals',()=>{
   const p=projectHistory(source,ctx,now);assert.equal(p.entries.length,1);assert.equal(p.entries[0].principal,80);assert.equal(p.entries[0].total,100);
@@ -47,7 +48,7 @@ async function main(){
   assert.equal(window.LoanHistory.merge(original,p,0).length,2);assert.equal(window.LoanHistory.merge(original,null,0).length,1,'native nonfinancial requests do not wait for Google');
  });
  await test('PostgreSQL own context, exact controls, grants, archival and recovery',async()=>{
-  const {PGlite}=require(path.resolve('.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite'));
+  const {PGlite}=require(process.env.SUTIAPP_PGLITE_PATH||path.resolve('.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite'));
   const db=new PGlite();try{
    const a='10000000-0000-4000-8000-000000000001',b='10000000-0000-4000-8000-000000000002';
    await db.exec(`create role anon;create role authenticated;create role service_role;create schema auth;

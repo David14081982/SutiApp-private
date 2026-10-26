@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "at": "2026-10-26T22:10:25.072Z",
+  "version": 6,
+  "verify_jwt": true,
+  "modules": [
+    {
+      "file": "index.ts",
+      "astEquivalent": true,
+      "sourceSha256": "38b241d1f4f18a60705c60b360c98cabe9916e053bc68932cced00e4810ad88e"
+    },
+    {
+      "file": "history.mjs",
+      "astEquivalent": true,
+      "sourceSha256": "23cff1a868dc2915a28d54157f7187079e94e4098e4c00b4c75b98973103d94a"
+    },
+    {
+      "file": "snapshot.mjs",
+      "astEquivalent": true,
+      "sourceSha256": "e74305afd9d2853a27fe2f075cf93b11f6d3230dcd9ff7db61beef08cdc19d30"
+    }
+  ],
+  "anonymousStatus": 401,
+  "sourceBundleSha256": "5d64cd37f6303787cc780755e039051c6affc9832b90fc43f1ea0dde1d19056a"
+}

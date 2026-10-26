@@ -434,3 +434,8 @@ The frontend invokes the existing loan-history LOAD without an affiliate/Folio s
 ### H-HISTORY-SNAPSHOT-001
 
 loan_history_private has no anon/authenticated/service_role table access; service operations are restricted SECURITY DEFINER RPCs with empty search_path. The own read resolves existing get_self_loan_history_context within the same SQL statement and returns only that exact Folio. Manual/status RPCs enforce program_requests permissions plus admin_module_boundary(finanzas), independently of UI. The worker requires the gateway JWT and an independent Vault/runtime secret; callers cannot select a range/Folio. loan_history_publication exposes only version/time with active own-context RLS and signals mounted history views. PDF generation uses only already-authorized memory and performs no network/Storage upload.
+
+
+## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
+
+loan_history_approval_publication exposes only affiliate_id and an opaque version through authenticated own-effective-identity RLS, with the existing exact unique active control check. Its only writer is an internal trigger for changed confirmed approvals; callers cannot write it. get_self_loan_history_approvals has no parameters and reuses the existing secure identity context; Edge APPROVALS emits an allowlist of own approval-card fields, no owner/actor identity or installments. No new service-role/browser credential, impersonation mechanism or shared Auth change. Approval and snapshot response races are guarded independently and permission denial purges private memory.

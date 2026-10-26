@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "environment": "Native local PostgreSQL / isolated loopback / synthetic rows",
+  "productionWrites": 0,
+  "checks": [
+    "additive install preserves all business rows, global state, cron and previous function OIDs/grants",
+    "prior confirmed approvals readable immediately without quota snapshot or metadata seeding",
+    "only authenticated own RPC/select grants; no browser/service writes or trigger invocation",
+    "approval creates one own opaque revision and leaves exact financial contract untouched",
+    "no-op, unrelated edits and handoff transitions do not publish approval changes",
+    "other affiliate approval invalidates only its own metadata row, with exact Folio separation",
+    "approval transaction publishes only after commit and never partially changes another reader",
+    "pending/rejected/nonfinancial/rental and incomplete approvals do not create signals",
+    "approval removal publishes once and clears the own display without fallback",
+    "INSERT/DELETE approvals signal; owner movement invalidates both exact affiliates",
+    "missing, archived, ambiguous and malformed effective identities fail closed",
+    "single metadata publication only; independent daily/manual source and writers remain byte-equivalent",
+    "legitimate synthetic affiliate cascade is preserved without recreating metadata for a missing owner",
+    "recovery detects changed context and leaves installed infrastructure intact",
+    "recovery restores exact baseline definition/OID/grants and preserves all business/global records"
+  ],
+  "migrationSha256": "ee422be13eb497c4eae27a7e68a06f6637abfea1f5500ad7fee344055aec26d1",
+  "recoverySha256": "6f6092d5ec8c50515fe622b6399a50f4e2fee62832ae2094b92ae48c2036d1b1",
+  "limitations": [
+    "Auth signature and existing effective-identity resolver are fixture boundaries; the original resolver is never changed.",
+    "Realtime publication/RLS/atomic commit are verified; websocket transport requires browser/live verification.",
+    "Cron, Vault and pg_net are local transport stubs; no Google calls or production business mutations occur."
+  ]
+}

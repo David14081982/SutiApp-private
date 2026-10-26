@@ -11,7 +11,7 @@
   if(entry.category!=='Aprobadas'||entry.remaining==null)return null;
   const seconds=Math.ceil(entry.remaining/1000),hours=Math.floor(seconds/3600),minutes=Math.floor(seconds%3600/60);
   return h('div',{'data-approval-countdown':'',style:{fontSize:'var(--text-11-5, 11.5px)',color:'var(--ink-3)',marginTop:5,fontWeight:600}},
-   'En pago en '+String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0'));
+   'En Aprobadas por '+String(hours).padStart(2,'0')+':'+String(minutes).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0'));
  }
  function HistorySourceState({history}){
   const observation=history.data,state=observation?.sync_state?.status,failed=history.phase==='error'||state==='FAILED'||state==='DISABLED';

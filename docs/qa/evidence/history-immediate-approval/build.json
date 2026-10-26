@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "at": "2026-10-26T22:14:39.530Z",
+  "build": "node scripts/build-bundle.js (Babel 7.28.4)",
+  "modules": 163,
+  "changedModules": [
+    "history-loans-repository.js",
+    "history-loans.jsx"
+  ],
+  "unchangedModules": 161,
+  "htmlAndServiceWorkerVersionOnly": true,
+  "unchangedProtectedPaths": [
+    "app/history-statement.js",
+    "app/history-sync-admin.js",
+    "app/screens-admin-finanzas.jsx",
+    "app/admin-finance-queue-repository.js",
+    "app/program-request-repository.js",
+    "supabase/functions/loan-history-sync",
+    "supabase/migrations/20261026000100_loan_history_snapshot.sql",
+    "google-apps-script"
+  ],
+  "pagesPwa": "PASS scripts/test-pages-deployment.js",
+  "snapshotRuntime": "PASS scripts/test-history-snapshot-runtime.js",
+  "version": "2026102606",
+  "bundleSha256": "bbaf2b5b20ae4c0d0bfc6ec742973b085d834261448294838c3611ba2d94758c",
+  "visual320": "PASS: reviewed detail-320.png; same structure, amounts, dates and quota cards; no overlap",
+  "globalImageRegression": "NOT APPLICABLE: focal history repository/detail plus generated artifacts; no shared Auth/routing/assets/SW logic changes"
+}

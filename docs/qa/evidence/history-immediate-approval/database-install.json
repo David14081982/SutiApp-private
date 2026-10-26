@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "at": "2026-10-26T22:09:45.458Z",
+  "migration": "20261026000200",
+  "sourceSha256": "ee422be13eb497c4eae27a7e68a06f6637abfea1f5500ad7fee344055aec26d1",
+  "guardedSqlSha256": "f999ab692254ae327f2c196ac82c3e90666fd8851c9165102f254df4cfd29016",
+  "businessRowsExactlyPreserved": true,
+  "observationsExactlyPreserved": true,
+  "globalStatePublicationCronUnchanged": true,
+  "noGoogleOperations": true
+}

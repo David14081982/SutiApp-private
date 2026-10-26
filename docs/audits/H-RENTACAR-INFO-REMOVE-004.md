@@ -22,3 +22,13 @@ No data writes, unexpected files or new tests. Cache 2026102505.
 Bundle SHA256: 0cd2ced62742c767be6b4c207df140d96f790e70e8cb3652eb6c914ca19182f9.
 UI preservation and architect review: APPROVED for authorized publication.
 No owner decision. Verify public readback and stop.
+
+
+H-RENTACAR-INFO-REMOVE-004 RESULT
+Status: PASS. Code commit 76d30b0; Pages run 40255942628 successful.
+Production Chrome at 390px confirms exact public bundle/cache 2026102505;
+Information/category block absent, vehicle details/calendar/CTA retained.
+Build, existing focal test, invariants and UI preservation: PASS.
+Authority/security: unchanged. Legacy: NOT APPLICABLE. Unexpected files: none.
+No production data writes. Known limitations: none. Final architect review: APPROVED.
+Owner decision: NO. Next action: STOP.

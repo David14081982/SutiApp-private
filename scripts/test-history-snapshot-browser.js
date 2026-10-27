@@ -97,7 +97,7 @@ async function main(){
  try{for(const width of [390,320,1440]){
   const {page,errors,external}=await setup(browser,width),base=page.locator('[data-base]');
   assert.deepEqual(await count(page),{history:1,native:1,metadata:0,active:1});
-  assert.equal(await base.locator('.su-history-entry').count(),1,'native nonfinancial rows survive initial pending');
+  assert.equal(await base.locator('.su-history-entry').count(),2,'canonical native pending and nonfinancial rows survive initial source loading');
   await page.evaluate(()=>{delayHistory=false;resolveHistory();});await flush(page);
   const initial=await count(page),expected={'Todas':6,'En proceso':2,'Aprobadas':1,'En pago':1,'Liquidadas':1,'No aprobadas':1};
   for(const [name,size]of Object.entries(expected)){await base.getByRole('button',{name,exact:true}).click();await flush(page);assert.equal(await base.locator('.su-history-entry').count(),size,name);}

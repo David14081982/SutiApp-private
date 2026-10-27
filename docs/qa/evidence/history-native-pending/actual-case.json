@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "at": "2026-10-27T03:35:57.523Z",
+  "method": "Read-only actual requested row replay through real own repository/store and baseline/candidate merger; no impersonation or production transaction",
+  "uniqueOwnIdentity": true,
+  "nativePendingExists": true,
+  "publishedSourcePredatesCreation": true,
+  "beforeVisible": 0,
+  "afterVisible": 1,
+  "todas": true,
+  "enProceso": true,
+  "nativeFieldsAndTrackingUnchanged": true,
+  "sourceUnchanged": true,
+  "sameExistingNativeReadCount": true,
+  "noGoogleOperations": true,
+  "noDatabaseWrites": true,
+  "sourceSha256": "67156ca8941df38c4970e3386ee9a8a74a6ad2cb22f565b389bb3e51d6b0a1ef"
+}

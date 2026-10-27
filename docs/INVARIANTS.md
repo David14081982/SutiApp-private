@@ -505,3 +505,7 @@ A confirmed approval may appear for its original financial_approved_at plus 24 h
 ## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
 
 Every distinct source cuota row contributes once to its exact own loan; never deduplicate legitimate equal dates/amounts/quota numbers. Complete valid future-only schedules yield Total pagado=0. Missing/preparing/empty schedules or any invalid date/amount remain unavailable, including aggregate overflow; they never become invented zero. Date comparison uses the server-anchored Hermosillo calendar day. Raw individual amounts are not rounded or mutated. Existing balance/progress/excess formulas consume this sum; approval changes, source synchronization, routing, PDF pagination and ownership remain independent.
+
+## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
+
+Pending eligibility requires an own native financial/loan SR record, real sourceId, revision state and explicit submitted/requires_financial_processing/in_review requestStatus. Missing/unknown/terminal statuses cannot use the generic revision default. Do not gate a newly created request on financial_request_ids from an older LOAD or on the daily cutoff. Existing published/covered/confirmed-approval identities suppress duplicate pending cards. A source loading/error state remains explicit and supplies no invented data while independently loaded canonical pending requests remain visible. Own context guards, tracking, approval timing, amortization values, source-only absence and daily/manual synchronization remain unchanged.

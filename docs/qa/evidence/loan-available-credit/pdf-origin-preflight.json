@@ -1,0 +1,19 @@
+{
+  "status": "CAUSE_IDENTIFIED",
+  "method": "OPTIONS",
+  "endpoint": "/functions/v1/document-access",
+  "credentialsSent": false,
+  "productionDataMutations": 0,
+  "results": [
+    { "origin": "http://127.0.0.1:8789", "status": 403, "cors": "http://localhost:8080", "code": "ORIGIN_DENIED" },
+    { "origin": "http://localhost:8789", "status": 403, "cors": "http://localhost:8080", "code": "ORIGIN_DENIED" },
+    { "origin": "http://localhost:8080", "status": 204, "cors": "http://localhost:8080", "code": null },
+    { "origin": "http://localhost:8766", "status": 403, "cors": "http://localhost:8080", "code": "ORIGIN_DENIED" },
+    { "origin": "http://127.0.0.1:8080", "status": 403, "cors": "http://localhost:8080", "code": "ORIGIN_DENIED" }
+  ],
+  "finding": "The exact original local test origin http://127.0.0.1:8789 is rejected by the existing document-access CORS allowlist (explicitly tested, not inferred from localhost). The same candidate PDF surface passes on allowed http://localhost:8080; no backend policy or documents were changed.",
+  "documentWorkflowRepositorySha256": "3e9ca3a466c7e8d91dbfea65cc75206bd550c5f8fb907f042b88b442845db232",
+  "privateResourceDemandSha256": "1be9f7d98621fd1210e249c2f46e28b1183bf82d8c5fe4cfde1c6021c4d70f05",
+  "sharedDocumentSourcesEqualRootAndRelease": true,
+  "limitation": "Preflight evidence identifies origin rejection; only the repeated official suite can establish the full global regression result."
+}

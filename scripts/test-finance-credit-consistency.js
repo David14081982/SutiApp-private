@@ -5,5 +5,6 @@ assert.match(app,/FinancialLegacyRepository\.availableCreditTotal\(financial\.ov
 assert.match(finance,/FinancialLegacyRepository\.availableCreditTotal\(financial\.overview\)/);
 assert.match(finance,/data-finance-available-credit/);
 assert.doesNotMatch(finance,/value\(overview\.available_credit\)/);
-assert.match(repository,/return amounts\.reduce\(\(total, amount\) => total \+ amount, 0\)/);
+assert.match(repository,/program\.available_amount/);
+assert.match(repository,/Math\.round\(amount \* 100\)/);
 console.log('Finance credit consistency contract PASS');

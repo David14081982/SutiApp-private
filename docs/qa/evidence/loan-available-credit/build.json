@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "base": "dad2cdfbc3c6bd86806faebd1a6c3f09b503b7ba",
+  "version": "2026102609",
+  "bundleSha256": "d22be38a3bf4992922450a856eff30c87579fcc4c9f9b2b4c65720d3307f40ab",
+  "site": "C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\loan-available-credit\\site-d22be38a3bf4",
+  "changedChunks": [
+    "loan-availability-admin.js",
+    "screens-loan.jsx",
+    "screens-admin-finanzas.jsx",
+    "screens-financiera.jsx",
+    "app.jsx"
+  ],
+  "nonfocalCompiledDifferencesPreserved": []
+}

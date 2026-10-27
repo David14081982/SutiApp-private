@@ -6,10 +6,11 @@ const path = require('path');
 const source = fs.readFileSync(path.join(__dirname, '../app/screens-loan.jsx'), 'utf8');
 const normalize = source.slice(source.indexOf('  const DIACRITICS'), source.indexOf('  const programsForFund'));
 const selection = source.slice(source.indexOf('  const hasShortTerms'), source.indexOf('  const sameSelection'));
+const availability = source.slice(source.indexOf('  const availableAmountOf'), source.indexOf('  const textOrDash'));
 const context = vm.createContext({});
-vm.runInContext(normalize + selection + '\nthis.api={allowedTermsOf,deriveSelection,customTermAccepts};', context);
+vm.runInContext(normalize + availability + selection + '\nthis.api={allowedTermsOf,deriveSelection,customTermAccepts};', context);
 const { allowedTermsOf, deriveSelection, customTermAccepts } = context.api;
-const base = { id: 'isolated', min_amount: 1, max_amount: 40000, suggested_amount: 5000, allowed_terms: [6, 12, 18, 24], custom_term: { min: 1, max: 24, step: 1 } };
+const base = { id: 'isolated', min_amount: 1, max_amount: 40000, available_amount: 40000, suggested_amount: 5000, allowed_terms: [6, 12, 18, 24], custom_term: { min: 1, max: 24, step: 1 } };
 for (const fund of ['Caja Chica', 'Caja de Ahorro', 'Sutiexpress', '  CÁJA  CHICA ']) {
   const program = { ...base, fund };
   assert.deepEqual(Array.from(allowedTermsOf(program)), [6, 12]);

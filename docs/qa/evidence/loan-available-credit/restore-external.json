@@ -1,0 +1,225 @@
+{
+  "status": "PASS",
+  "capturedAt": "2026-10-27T05:37:37.289Z",
+  "scope": "External code/configuration restoration point; database baseline and workspace backup are separate artifacts.",
+  "privateDirectory": ".tmp/loan-available-credit/external-before",
+  "financial-legacy": {
+    "slug": "financial-legacy",
+    "version": 64,
+    "verifyJwt": true,
+    "status": "ACTIVE",
+    "entrypoint": "index.ts",
+    "metadata": {
+      "file": ".tmp/loan-available-credit/external-before/edge/financial-legacy/metadata.json",
+      "bytes": 463,
+      "sha256": "f4754559a29db37b8279d0c62846b72cdd85680bb98d10458b366fc4607eb244"
+    },
+    "bundle": {
+      "file": ".tmp/loan-available-credit/external-before/edge/financial-legacy/body.eszip",
+      "bytes": 686301,
+      "sha256": "e7cde36201657e09e4ff2ea80130280d3131cf95d845904888fc6fefbd29a5c1"
+    },
+    "sources": [
+      {
+        "file": ".tmp/loan-available-credit/external-before/edge/financial-legacy/sources/index.ts",
+        "bytes": 86896,
+        "sha256": "81bbbdcd109145dcd69788be621f6b225e8ba8260871115ffff4ee917622f5ad",
+        "name": "index.ts",
+        "localMatches": true
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/edge/financial-legacy/sources/visibility-policy.js",
+        "bytes": 2599,
+        "sha256": "3e622533039ed1fdacfc42abf571fa94f3c87d56490b86c777ad6e5d1bad218e",
+        "name": "visibility-policy.js",
+        "localMatches": false
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/edge/financial-legacy/sources/request-google-sync.js",
+        "bytes": 11425,
+        "sha256": "77d2b7c801e2b9c0fbc6d8218a9ce8111582ebc9c4c242047df96d89e08e6aec",
+        "name": "request-google-sync.js",
+        "localMatches": false
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/edge/financial-legacy/sources/savings-eligibility.ts",
+        "bytes": 1044,
+        "sha256": "229ae0c7aa13e6be521a4b7b4a48def6f765b879cf002e949a88bbd5bc88e0a1",
+        "name": "savings-eligibility.ts",
+        "localMatches": true
+      }
+    ],
+    "sourceRecovery": "Redeploy these captured source files with the captured metadata flags and relative entrypoint; original deployment version number is evidence, not reused."
+  },
+  "loan-history": {
+    "slug": "loan-history",
+    "version": 7,
+    "verifyJwt": true,
+    "status": "ACTIVE",
+    "entrypoint": "loan-history/index.ts",
+    "metadata": {
+      "file": ".tmp/loan-available-credit/external-before/edge/loan-history/metadata.json",
+      "bytes": 466,
+      "sha256": "e42ba76fa5939d126de296a0e9cd8b615531aa51af535ac5299769613ec4e97d"
+    },
+    "bundle": {
+      "file": ".tmp/loan-available-credit/external-before/edge/loan-history/body.eszip",
+      "bytes": 464377,
+      "sha256": "9a666f7a10335491d1a92e3d545557885a2f77fcf1aabb02ed3a10ae47200aad"
+    },
+    "sources": [
+      {
+        "file": ".tmp/loan-available-credit/external-before/edge/loan-history/sources/loan-history/index.ts",
+        "bytes": 2066,
+        "sha256": "797f785228211abac86bb4ac84ae36174422db8d482afcadc26a0030771ee17f",
+        "name": "loan-history/index.ts",
+        "localMatches": false
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/edge/loan-history/sources/loan-history/history.mjs",
+        "bytes": 10814,
+        "sha256": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2",
+        "name": "loan-history/history.mjs",
+        "localMatches": false
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/edge/loan-history/sources/loan-history/snapshot.mjs",
+        "bytes": 3332,
+        "sha256": "3b9824a8e59f2e6a2273ced844faa7c791231cd3418819c8da259d69c9aa81c8",
+        "name": "loan-history/snapshot.mjs",
+        "localMatches": false
+      }
+    ],
+    "sourceRecovery": "Redeploy these captured source files with the captured metadata flags and relative entrypoint; original deployment version number is evidence, not reused."
+  },
+  "google": {
+    "activeVersion": 23,
+    "headMatchesActive": true,
+    "sourceSha256": "3955a8296ecac24335e8c89b104e5c5a278d7e5a84e3ae4f194f5d3b55154892",
+    "files": [
+      {
+        "file": ".tmp/loan-available-credit/external-before/google/deployment.json",
+        "bytes": 715,
+        "sha256": "3ee949fe7cc984a106c96e44810806f31375ab5d6641ddd767759c24a1ae0c1b"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/google/content-active.json",
+        "bytes": 61051,
+        "sha256": "963290c06599ced1b25041ea58ce0e64b68dd10c326421973287903dbde0c710"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/google/content-head.json",
+        "bytes": 61051,
+        "sha256": "963290c06599ced1b25041ea58ce0e64b68dd10c326421973287903dbde0c710"
+      }
+    ],
+    "recovery": "Point the same existing deployment to the captured immutable version; restore HEAD only if this task actually changed it. No source data was read or changed."
+  },
+  "github": {
+    "repository": "David14081982/SutiApp-private",
+    "mainCommit": "dad2cdfbc3c6bd86806faebd1a6c3f09b503b7ba",
+    "pagesCommit": "dad2cdfbc3c6bd86806faebd1a6c3f09b503b7ba",
+    "pagesRun": 40446382466,
+    "pagesConclusion": "success",
+    "sourceArchive": {
+      "file": ".tmp/loan-available-credit/external-before/github/source-dad2cdfbc3c6bd86806faebd1a6c3f09b503b7ba.zip",
+      "bytes": 73962937,
+      "sha256": "2ee658eec997f60b2e2fac245a4238130a347a6cb60abe86cd974cff5816094a"
+    },
+    "pagesArtifact": {
+      "file": ".tmp/loan-available-credit/external-before/github/pages-artifact-12708207611.zip",
+      "bytes": 2642644,
+      "sha256": "59d8f2b2dc84684a69dadde4e8a5f80b598f9f726b42a8cd1d8ea756addea46a"
+    },
+    "recovery": "Restore the captured source commit/artifact by a new reviewed deployment. Do not reset or force-push shared branch history."
+  },
+  "pages": {
+    "url": "https://sutiapp.com/",
+    "version": "2026102608",
+    "bundleSha256": "7262a8951f0ec618c040c2c8ba901ae95d4d16ed73c0fc341277e6fef47c69fb",
+    "files": [
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/index.html",
+        "bytes": 23292,
+        "sha256": "29039e096388f4101846795c5227bbd08fc55d7a07f08d1e03e7463f1ff13a42"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/SutiApp.html",
+        "bytes": 23292,
+        "sha256": "29039e096388f4101846795c5227bbd08fc55d7a07f08d1e03e7463f1ff13a42",
+        "url": "https://sutiapp.com/SutiApp.html"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/sw.js",
+        "bytes": 9766,
+        "sha256": "a79f6f043afabd44aba5414dab0e4b99a7329925904a7a0007b3026523048b4e",
+        "url": "https://sutiapp.com/sw.js"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/bundle.js",
+        "bytes": 3671400,
+        "sha256": "7262a8951f0ec618c040c2c8ba901ae95d4d16ed73c0fc341277e6fef47c69fb",
+        "url": "https://sutiapp.com/app/bundle.js?v=2026102608"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/text-size.css",
+        "bytes": 13722,
+        "sha256": "167a372c726db3236212514f3efefda317e1e5a6e85d7f2b152e6c66da321af2",
+        "url": "https://sutiapp.com/app/text-size.css?v=245"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/vendor/react-18.3.1/react.production.min.js",
+        "bytes": 10751,
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+        "url": "https://sutiapp.com/app/vendor/react-18.3.1/react.production.min.js"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/vendor/react-dom-18.3.1/react-dom.production.min.js",
+        "bytes": 131835,
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+        "url": "https://sutiapp.com/app/vendor/react-dom-18.3.1/react-dom.production.min.js"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/vendor/supabase-js-2.112.3/supabase.min.js",
+        "bytes": 212199,
+        "sha256": "cf529fe8980cbe6f2dd3e3930ecf96352ed3d3d71233b6760e4f927f89b94b9f",
+        "url": "https://sutiapp.com/app/vendor/supabase-js-2.112.3/supabase.min.js"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/supabase-config.js",
+        "bytes": 191,
+        "sha256": "dfde0e9a0862f4996b321a9a4a639e30e95674e91555771460b0354ce7f32cb1",
+        "url": "https://sutiapp.com/app/supabase-config.js"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/supabase-client.js",
+        "bytes": 1163,
+        "sha256": "42a852138f9ed2cb4c6e9bef92d60b7a2840a491cd58db2610e42da76f8b3bf2",
+        "url": "https://sutiapp.com/app/supabase-client.js"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/affiliate-repository.js",
+        "bytes": 18644,
+        "sha256": "cbf298108fe918481ba14734540c58b628903e1e10994ebef8e6a3184472fc99",
+        "url": "https://sutiapp.com/app/affiliate-repository.js?v=profile-photo-20260916"
+      },
+      {
+        "file": ".tmp/loan-available-credit/external-before/pages/app/financial-legacy-repository.js",
+        "bytes": 21598,
+        "sha256": "065de271aef4f4cf075a8c4a06175b9b798daeecefd98415ebac5586b0382666",
+        "url": "https://sutiapp.com/app/financial-legacy-repository.js?v=2026100407"
+      }
+    ]
+  },
+  "externalWrites": 0,
+  "googleSheetReads": 0,
+  "googleWrites": 0,
+  "secretLogged": false,
+  "archiveVerification": {
+    "status": "PASS",
+    "sourceZipCRC": true,
+    "pagesZipCRC": true,
+    "bundleMatchesSourceAndPublishedArtifact": true,
+    "bundleSha256": "7262a8951f0ec618c040c2c8ba901ae95d4d16ed73c0fc341277e6fef47c69fb"
+  }
+}

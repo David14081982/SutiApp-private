@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "scope": "Existing production before this feature; not a deployed-candidate verification",
+  "target": "https://david14081982.github.io/SutiApp-private/",
+  "version": "2026102608",
+  "command": "node scripts/test-global-image-regression-production-live.js",
+  "toolSession": 76987,
+  "recordSource": "Summary of successful tool stdout; original raw report remains in the tool transcript",
+  "checks": {
+    "appAssets": "234/234",
+    "profile": "PASS",
+    "legacyAffiliateImages": "29/29",
+    "documentWorkflows": "loan/membership/expediente PASS",
+    "privateAdmin": "PASS",
+    "programCatalog": "226 assets / 116 items PASS",
+    "staticAssets": "11/11",
+    "branding": "7/7",
+    "marketplace": "3/3",
+    "membershipLogos": "6/6",
+    "fullscreenAndGallery": "PASS",
+    "adminPhotosAndThumbnails": "PASS",
+    "refreshProfileAndSeal": "PASS",
+    "withAndWithoutServiceWorker": "PASS",
+    "legitimatePdf": "HTTP 200 application/pdf opened PASS",
+    "browserErrors": 0
+  },
+  "productionBusinessDataMutations": 0
+}

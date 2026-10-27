@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "mode": "PRODUCTION_SQL_READ_ONLY_VERIFY",
+  "checkedAt": "2026-10-27T06:12:52.60231+00:00",
+  "migration": "20261027000100",
+  "migrationSha256": "203826dd3e9a703785495dced45bcfb86a6a5294a5e07ae0478014ebf84c60ff",
+  "previousFunctionsPreserved": 48,
+  "newFunctionDefinitionsVerified": 11,
+  "quoteMd5": "30906b8f4855359d661312a0b8ba7a46",
+  "quoteOidAclOwnerPreserved": true,
+  "existingTableMetadataPreserved": true,
+  "sourceAuthority": "existing daily/manual History publication",
+  "sourceVersion": "82ed397e-ae9a-4045-9c9b-0aadd73ecb1a",
+  "sourceUpdatedAt": "2026-10-26T22:00:37.595+00:00",
+  "sourceCronPreserved": true,
+  "initialPolicyOff": true,
+  "initialOverrides": 0,
+  "registrationMatchesExactSql": true,
+  "productionWrites": 0
+}

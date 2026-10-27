@@ -509,3 +509,29 @@ Every distinct source cuota row contributes once to its exact own loan; never de
 ## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
 
 Pending eligibility requires an own native financial/loan SR record, real sourceId, revision state and explicit submitted/requires_financial_processing/in_review requestStatus. Missing/unknown/terminal statuses cannot use the generic revision default. Do not gate a newly created request on financial_request_ids from an older LOAD or on the daily cutoff. Existing published/covered/confirmed-approval identities suppress duplicate pending cards. A source loading/error state remains explicit and supplies no invented data while independently loaded canonical pending requests remain visible. Own context guards, tracking, approval timing, amortization values, source-only absence and daily/manual synchronization remain unchanged.
+
+
+## H-LOAN-AVAILABLE-CREDIT-001 — invariantes del candidato local
+
+- El cupo de un fondo nunca supera su `financial_rules.max_amount` aplicable.
+- El saldo consumido reproduce `max(0, K - paidThrough(A/B))` de cada préstamo
+  propio del fondo. No se suman totales repetidos por fila ni se interpreta B=0
+  pasado como un descuento realizado.
+- La identidad del afiliado conserva su UUID y `numero_control` textual exacto.
+  El préstamo conserva su ID y el vínculo SR/ID existente; no se enlaza por monto,
+  fecha, nombre o email.
+- Una solicitud aún no representada reserva sólo su capital canónico. Cuando
+  aparece su amortización se cuenta su saldo y se retira esa misma reserva.
+  Canceladas/rechazadas no reservan. Dos envíos concurrentes se serializan en backend.
+- La fuente sigue la publicación diaria a las 15:00 Hermosillo/manual existente;
+  no hay nuevas consultas interactivas Google, copias ni fallback.
+- La exención global o individual elimina sólo la reducción por deuda/reservas.
+  Todos los límites, elegibilidad, tasas, plazos, documentos y aprobación existentes
+  permanecen. El global inicia apagado y su apagado no revoca decisiones individuales.
+- Inicio y Finanzas muestran la suma de los disponibles de los mismos fondos
+  visibles del simulador; cero es un disponible válido, no un error ni un máximo.
+- El snapshot de cálculo es privado, dura como máximo 15 minutos y corresponde
+  al mismo día de Hermosillo y a la versión publicada vigente de Historial.
+  La fecha de publicación se conserva separada de la fecha del cálculo.
+
+Estas invariantes describen el candidato LOCAL NOT APPLIED / NOT PUBLISHED.

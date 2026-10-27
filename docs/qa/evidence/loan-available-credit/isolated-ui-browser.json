@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "isolated": true,
+  "productionWrites": 0,
+  "externalRequests": 0,
+  "loan": [
+    "fund-cards-preserved",
+    "cents",
+    "max-capture",
+    "over-limit-disabled",
+    "zero-visible",
+    "no-infinite-loading",
+    "fund-switch",
+    "missing-source-fail-closed",
+    "terms-preserved"
+  ],
+  "admin": [
+    "global-default-off",
+    "explicit-save",
+    "exact-control",
+    "individual-grant",
+    "global-off-preserves-individual",
+    "individual-revoke",
+    "version-conflict",
+    "readonly",
+    "idempotency-key"
+  ],
+  "runtimeErrors": []
+}

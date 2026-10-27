@@ -20,7 +20,7 @@
             React.createElement(window.ResTile, { resKey: 'fin.summary.icon', size: 50, glow: true }),
             React.createElement('div', null,
               React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', color: 'var(--ink-3)', fontWeight: 700 } }, 'Préstamo disponible'),
-              React.createElement('div', { 'data-finance-available-credit': availableCredit===null?'loading':String(availableCredit), style: { fontSize: 'var(--text-32, 32px)', fontWeight: 800, letterSpacing: '-.025em', marginTop: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--navy)' } }, value(availableCredit)))),
+              React.createElement('div', { 'data-finance-available-credit': availableCredit===null?'loading':String(availableCredit), style: { fontSize: 'var(--text-32, 32px)', fontWeight: 800, letterSpacing: '-.025em', marginTop: 1, fontVariantNumeric: 'tabular-nums', color: 'var(--navy)' } }, availableCredit === null ? '—' : window.money(availableCredit, { dec: Number.isInteger(availableCredit) ? 0 : 2 })))),
           React.createElement(window.Badge, { tone: overview.status === 'AVAILABLE' ? 'green' : 'amber', icon: overview.status === 'AVAILABLE' ? 'checkCircle' : 'clock' }, financial.status === 'ready' ? (overview.eligibility_label || 'NO DISPONIBLE') : 'CONSULTANDO')),
         React.createElement('div', { style: { height: 1, background: 'var(--hairline)', margin: '16px 0' } }),
         React.createElement('div', { className: 'su-finance-mini-stats', style: { display: 'flex', gap: 18 } },

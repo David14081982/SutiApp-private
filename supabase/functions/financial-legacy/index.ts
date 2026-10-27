@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { BUSINESS_TIME_ZONE, evaluateVisibility } from "./visibility-policy.js";
 import { deliverRequestRegister, capturedDocumentReferences } from "./request-google-sync.js";
 import { filterSavingsLoanRules } from "./savings-eligibility.ts";
+import { projectLoanCapacity, applyLoanCapacity } from "./loan-capacity.mjs";
 
 // Supabase is intentionally schema-untyped in this standalone Edge bundle; database
 // contracts are enforced by migrations/RLS/RPCs and validated again at this boundary.
@@ -39,6 +40,7 @@ function reply(status: number, body: Record<string, unknown>, origin?: string | 
 }
 
 const FINANCIAL_WRITER_CODES = [
+  "LOAN_CAPACITY_EXCEEDED", "LOAN_CAPACITY_SOURCE_INVALID", "LOAN_CAPACITY_SOURCE_EXPIRED",
   "CONDITIONS_CHANGED", "REQUIRED_DOCUMENTS_MISSING", "PROGRAM_NOT_REQUESTABLE",
   "IDEMPOTENCY_CONTRACT_MISMATCH", "IDEMPOTENCY_KEY_REQUIRED",
   "SIGNATURE_AND_TERMS_REQUIRED", "FINANCIAL_REQUEST_TERMS_INVALID",
@@ -58,6 +60,7 @@ function classifyFinancialWriterError(error: unknown) {
   const rawPostgresCode = typeof candidate.code === "string" ? candidate.code.toUpperCase() : "";
   const postgresCode = /^[0-9A-Z]{5}$/.test(rawPostgresCode) ? rawPostgresCode : "UNKNOWN";
   const publicCodes = new Set([
+    "LOAN_CAPACITY_EXCEEDED",
     "CONDITIONS_CHANGED", "REQUIRED_DOCUMENTS_MISSING", "PROGRAM_NOT_REQUESTABLE",
     "IDEMPOTENCY_CONTRACT_MISMATCH", "SIGNATURE_AND_TERMS_REQUIRED",
     "FINANCIAL_REQUEST_TERMS_INVALID", "TERMS_VERSION_REQUIRED",
@@ -297,7 +300,7 @@ function allowedTerms(rule: CriteriaRule, policy: TermPolicy) {
 
 function publicProgram(rule: CriteriaRule, policy: TermPolicy) {
   return {
-    id: rule.id, program_id: rule.program_id, label: rule.fund, fund: rule.fund, status: rule.status,
+    id: rule.id, rule_id: rule.rule_id, program_id: rule.program_id, label: rule.fund, fund: rule.fund, status: rule.status,
     min_amount: 1, max_amount: rule.max_amount, suggested_amount: Math.min(5000, rule.max_amount),
     allowed_terms: allowedTerms(rule, policy), payment_period: rule.payment_period,
     custom_term: { min: policy.customMinTerm, max: rule.payment_count, step: policy.customStep },
@@ -383,6 +386,7 @@ type LoanSessionContext = {
 };
 
 type LoanSessionSnapshot = {
+  loan_capacity?: Record<string, any>;
   id: string;
   affiliate_id: string;
   actor_real_auth_user_id: string;
@@ -428,6 +432,60 @@ async function currentLoanSessionContext(userClient: SupabaseClientLike, actorId
     impersonationSessionId: rawContext?.session_id ? String(rawContext.session_id) : null,
     profile,
   };
+}
+
+function capacitySignature(value: any) {
+  return canonicalJson({ policy_version: value.policy_version, global_allow_full: value.global_allow_full,
+    funds: [...value.funds].sort((a: any, b: any) => a.rule_id.localeCompare(b.rule_id)) });
+}
+
+async function resolveLoanCapacity(privileged: SupabaseClientLike, context: LoanSessionContext,
+  source: Record<string, any>, rules: CriteriaRule[]) {
+  const { data, error } = await privileged.rpc("resolve_loan_available_capacity", {
+    p_affiliate_id: context.affiliateId, p_source: source,
+    p_rule_ids: rules.map(rule => rule.rule_id),
+  });
+  if (error || !data || !Array.isArray(data.funds)) throw new Error("LOAN_CAPACITY_UNAVAILABLE");
+  return data;
+}
+
+async function freshLoanCapacity(userClient: SupabaseClientLike, privileged: SupabaseClientLike,
+  context: LoanSessionContext, rules: CriteriaRule[]) {
+  const [runtime, published] = await Promise.all([
+    privileged.rpc("get_loan_capacity_runtime", { p_affiliate_id: context.affiliateId }),
+    userClient.rpc("get_self_loan_history_snapshot"),
+  ]);
+  if (runtime.error || !runtime.data) throw new Error("LOAN_CAPACITY_UNAVAILABLE");
+  const history = published.data;
+  if (published.error || !history?.source || !history.sync_version ||
+      history.context?.actor !== context.actorId || history.context?.affiliate_id !== context.affiliateId ||
+      history.context?.folio !== context.profile.numero_control || !Array.isArray(history.source.issues) ||
+      history.source.issues.length || !Number.isFinite(Date.parse(history.source_updated_at))) {
+    throw new Error("LOAN_CAPACITY_UNAVAILABLE");
+  }
+  // A session/impersonation/profile change during the source read cannot donate
+  // another affiliate's capacity to the original request.
+  const current = await currentLoanSessionContext(userClient, context.actorId);
+  if (current.profile.numero_control !== context.profile.numero_control ||
+      canonicalJson(profileFingerprintPayload(current)) !== canonicalJson(profileFingerprintPayload(context))) {
+    throw new Error("AFFILIATE_CONTEXT_DENIED");
+  }
+  const source: Record<string, any> = projectLoanCapacity({ ...history.source, folio: history.context.folio }, runtime.data, new Date().toISOString(), {
+    affiliate_id: context.affiliateId, numero_control: context.profile.numero_control,
+  });
+  source.source_version = history.sync_version;
+  source.source_updated_at = history.source_updated_at;
+  return { source: source as Record<string, any>, resolved: await resolveLoanCapacity(privileged, context, source, rules) };
+}
+
+function assertLoanCapacity(resolved: any, rules: CriteriaRule[], body: Record<string, unknown>, quote: Record<string, unknown>) {
+  const selected = rules.filter(rule => rule.status === "AVAILABLE" &&
+    (rule.id === body.program_id || rule.program_id === body.program_id && rule.fund === quote.fund));
+  if (selected.length !== 1) throw new Error("FINANCIAL_PROGRAM_NOT_ELIGIBLE");
+  const row = resolved.funds.find((item: any) => item.rule_id === selected[0].rule_id);
+  if (!row || typeof row.available_amount !== "number") throw new Error("LOAN_CAPACITY_UNAVAILABLE");
+  if (Number(body.amount) > row.available_amount) throw new Error("LOAN_CAPACITY_EXCEEDED");
+  return row;
 }
 
 function profileFingerprintPayload(context: LoanSessionContext) {
@@ -483,8 +541,11 @@ async function openPersonalizedLoanSession(
   const rules = await filterSavingsLoanRules(privileged, rawRules, context.affiliateId);
   const matched = rulesForProfile(rules, context.profile)
     .filter((rule) => rule.payment_count >= policy.customMinTerm);
-  const overview = resolveOverview(rules, context.profile, policy);
+  let overview = resolveOverview(rules, context.profile, policy);
   if (!matched.length) return { ...overview, loanSession: null, googleResolutionCount: 0 };
+  const capacity = await freshLoanCapacity(userClient, privileged, context, matched);
+  overview = applyLoanCapacity(overview, capacity.resolved);
+  capacity.source.initial_capacity = capacitySignature(capacity.resolved);
   const profileFingerprint = await sha256(profileFingerprintPayload(context));
   const criteriaFingerprint = await sha256(criteriaFingerprintPayload(matched));
   const policyFingerprint = await termPolicyFingerprint(policy);
@@ -505,6 +566,7 @@ async function openPersonalizedLoanSession(
     term_policy_fingerprint: policyFingerprint,
     calculation_contract_version: ADVANCE_LOAN_CALCULATION_CONTRACT_VERSION,
     session_purpose: "LOAN",
+    loan_capacity: capacity.source,
     created_at: now.toISOString(), expires_at: expiresAt.toISOString(),
   }).select("id,expires_at,financial_profile_version").single();
   if (error || !saved) throw new Error("FINANCIAL_SESSION_SNAPSHOT_WRITE_FAILED");
@@ -540,6 +602,12 @@ async function loadPersonalizedLoanSession(
   ).filter((rule) => rule.payment_count >= policy.customMinTerm);
   if (await sha256(criteriaFingerprintPayload(currentlyEligible)) !== snapshot.criteria_source_fingerprint) {
     await invalidateLoanSession(privileged, snapshot.id, "SAVINGS_LOAN_ELIGIBILITY_CHANGED");
+    throw new Error("SNAPSHOT_INVALID");
+  }
+  if (!snapshot.loan_capacity) throw new Error("SNAPSHOT_INVALID");
+  const capacity = await resolveLoanCapacity(privileged, context, snapshot.loan_capacity, currentlyEligible);
+  if (snapshot.loan_capacity.initial_capacity !== capacitySignature(capacity)) {
+    await invalidateLoanSession(privileged, snapshot.id, "LOAN_CAPACITY_CHANGED");
     throw new Error("SNAPSHOT_INVALID");
   }
   return snapshot;
@@ -840,7 +908,17 @@ async function confirmPersonalizedLoanSession(
     (matched.filter((rule) => rule.program_id === String(body.program_id)).length === 1
       ? matched.find((rule) => rule.program_id === String(body.program_id)) : undefined);
   if (!selectedRule) return { status: 409, body: { error: "CONDITIONS_CHANGED", correlation_id: correlationId, googleResolutionCount: 0 } };
+  let capacity: { source: Record<string, any>; resolved: any };
+  try {
+    capacity = await freshLoanCapacity(userClient, privileged, context, matched);
+    assertLoanCapacity(capacity.resolved, matched, body, result);
+  } catch (error) {
+    const code = error instanceof Error && error.message === "LOAN_CAPACITY_EXCEEDED"
+      ? "LOAN_CAPACITY_EXCEEDED" : "LOAN_CAPACITY_UNAVAILABLE";
+    return { status: 409, body: { error: code, correlation_id: correlationId } };
+  }
   const submissionSnapshot = {
+    loan_capacity: capacity.source,
     affiliate_id: context.affiliateId,
     actor_real_auth_user_id: context.actorId,
     impersonation_session_id: context.impersonationSessionId,
@@ -1296,8 +1374,11 @@ Deno.serve(async (req) => {
         const policy = await readTermPolicy(supabase);
         const snapshot = await loadPersonalizedLoanSession(privileged, context, policy, String(body.snapshot_id));
         const quote = await resolveQuote(privileged, snapshot.eligible_rules, context.profile, body, policy);
+        const capacity = await resolveLoanCapacity(privileged, context, snapshot.loan_capacity!, snapshot.eligible_rules);
+        const available = assertLoanCapacity(capacity, snapshot.eligible_rules, body, quote);
         return reply(200, { data: {
           ...await quoteWithPayroll(supabase, quote),
+          availableAmount: available.available_amount,
           loanSession: { id: snapshot.id, expires_at: snapshot.expires_at,
             financial_profile_version: snapshot.financial_profile_version },
           googleResolutionCount: 0,
@@ -1362,16 +1443,27 @@ Deno.serve(async (req) => {
   try { termPolicy = await readTermPolicy(supabase); }
   catch { return reply(503, { error: "LOAN_TERM_POLICY_UNAVAILABLE" }, origin || null); }
   if (["overview", "resolveEligibility", "resolveAvailableFunds"].includes(String(body.action))) {
-    return reply(200, { data: resolveOverview(rules, profile, termPolicy) }, origin || null);
+    try {
+      const context = await currentLoanSessionContext(supabase, userData.user.id);
+      const matched = rulesForProfile(rules, profile).filter(rule => rule.payment_count >= termPolicy.customMinTerm);
+      const overview = resolveOverview(rules, profile, termPolicy);
+      const capacity = matched.length ? await freshLoanCapacity(supabase, privilegedClient(supabaseUrl), context, matched) : null;
+      return reply(200, { data: capacity ? applyLoanCapacity(overview, capacity.resolved) : overview }, origin || null);
+    } catch { return reply(502, { error: "LOAN_CAPACITY_UNAVAILABLE" }, origin || null); }
   }
   try {
     const quote = await resolveQuote(privilegedClient(supabaseUrl), rules, profile, body, termPolicy);
+    const context = await currentLoanSessionContext(supabase, userData.user.id);
+    const matched = rulesForProfile(rules, profile).filter(rule => rule.payment_count >= termPolicy.customMinTerm);
+    const capacity = await freshLoanCapacity(supabase, privilegedClient(supabaseUrl), context, matched);
+    const available = assertLoanCapacity(capacity.resolved, matched, body, quote);
     const { data: payrollImpact, error: payrollImpactError } = await supabase.rpc(
       "get_current_declared_payroll_impact",
       { p_payment_per_period: quote.paymentPerPeriod },
     );
     return reply(200, { data: {
       ...quote,
+      availableAmount: available.available_amount,
       payrollImpact: payrollImpactError
         ? { status: "ERROR", source: "SUPABASE_DECLARED_PAYROLL", guidelinePercent: 30 }
         : payrollImpact,

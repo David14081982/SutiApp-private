@@ -721,6 +721,7 @@
       React.createElement('div', { className: 'su-app-scroll', style: { padding: 16, paddingBottom: 28 } },
         React.createElement(window.HistorySyncAdmin, {}),
         React.createElement(window.SavingsLoanAccessAdmin, { app }),
+        React.createElement(window.LoanAvailabilityAdmin, { app }),
         React.createElement('div', { style: { display: 'flex', gap: 10, marginBottom: 16 } },
           segBtn('sols', 'Solicitudes', null),
           segBtn('cots', 'Cotizaciones', cotPend || null)),

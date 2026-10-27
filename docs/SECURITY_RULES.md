@@ -439,3 +439,28 @@ loan_history_private has no anon/authenticated/service_role table access; servic
 ## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
 
 loan_history_approval_publication exposes only affiliate_id and an opaque version through authenticated own-effective-identity RLS, with the existing exact unique active control check. Its only writer is an internal trigger for changed confirmed approvals; callers cannot write it. get_self_loan_history_approvals has no parameters and reuses the existing secure identity context; Edge APPROVALS emits an allowlist of own approval-card fields, no owner/actor identity or installments. No new service-role/browser credential, impersonation mechanism or shared Auth change. Approval and snapshot response races are guarded independently and permission denial purges private memory.
+
+
+## H-LOAN-AVAILABLE-CREDIT-001 — seguridad del candidato local
+
+La política y las exenciones propuestas fuerzan RLS y niegan acceso directo a
+`anon`, `authenticated` y `service_role`. Sólo sus RPC de administración concedidas
+a `authenticated` pueden escribir tras verificar `financial_rules.write` y la
+frontera backend de Finanzas. Leer exige `financial_rules.read` o `financial_rules.write`
+y esa frontera; tener `program_requests.write` por sí solo no concede la exención.
+Motivo, versión esperada e idempotencia protegen cada comando administrativo.
+
+Los lectores runtime son service-only. El afiliado/contexto se resuelve con las
+RPC existentes, nunca desde un identificador enviado por el navegador. La
+cotización autenticada mantiene firma, OID, owner y ACL anteriores y agrega una
+validación privada de disponibilidad. El alta conserva su writer y añade un
+guard transaccional exclusivo de `program_id=prestamo`: bloqueo de afiliado,
+validación de publicación/identidad y lectura actual de reservas/exenciones.
+La auditoría SUBMIT conserva actor real, contexto asistido y la decisión exacta.
+
+`loan_capacity_events` es inmutable. No se exponen secretos, service_role, filas
+Google ni catálogos globales al frontend. Recovery preserva solicitudes y eventos.
+La suite PostgreSQL aislada prueba permisos, contexto ajeno, fuente inválida,
+revocación, cupo y recuperación; las carreras nativas tienen evidencia separada.
+Estado: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED; no afirmar estos guards
+instalados hasta la aplicación y verificación expresamente autorizadas.

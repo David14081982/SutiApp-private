@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "checks": [
+    "default global off; financial_rules permission and Finance module boundary; no browser table access; anonymous and unrelated request writers denied",
+    "40,000 minus 10,000 = 30,000; 25,000 minus 6,260 = 18,740; clamp zero; exact identity/day/TTL/source integrity and canonical rule checks; published History version required, age alone never expires daily source",
+    "canonical requests reserve principal; second competing request sees consumed capacity; rollback leaves no request; exact amortization identity replaces reservation once; cancellation/rejection release",
+    "per-person/per-fund waiver capped at original max; global supersedes all debts; disabling global preserves individual grant; revocation reapplies debt; stale/idempotent mutations",
+    "authenticated quote enforces current capacity and context; original max/pricing result unchanged; audit immutable and actor retained",
+    "recovery restores exact quote/OID/grants and removes new enforcement/API while preserving all requests, policy history, grants and observation evidence"
+  ],
+  "productionTouched": false,
+  "engine": "PGlite PostgreSQL",
+  "migration": "20261027000100"
+}

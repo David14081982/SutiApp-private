@@ -1,0 +1,55 @@
+{
+  "status": "PASS",
+  "environment": "Native PostgreSQL 18; loopback-only isolated synthetic fixtures",
+  "checks": [
+    {
+      "name": "two requests cannot spend the same remaining capacity",
+      "status": "PASS",
+      "independentConnections": true,
+      "actualLockWaitObserved": true,
+      "secondOutcome": "LOAN_CAPACITY_EXCEEDED"
+    },
+    {
+      "name": "two fitting requests commit without losing either reservation",
+      "status": "PASS",
+      "independentConnections": true,
+      "actualLockWaitObserved": true,
+      "secondOutcome": "COMMITTED"
+    },
+    {
+      "name": "individual revocation wins over a concurrent maximum request",
+      "status": "PASS",
+      "independentConnections": true,
+      "actualLockWaitObserved": true,
+      "secondOutcome": "LOAN_CAPACITY_EXCEEDED"
+    },
+    {
+      "name": "global revocation wins over a concurrent maximum request",
+      "status": "PASS",
+      "independentConnections": true,
+      "actualLockWaitObserved": true,
+      "secondOutcome": "LOAN_CAPACITY_EXCEEDED"
+    },
+    {
+      "name": "new publication invalidates concurrent use of previous observation",
+      "status": "PASS",
+      "independentConnections": true,
+      "actualLockWaitObserved": true,
+      "secondOutcome": "LOAN_CAPACITY_SOURCE_VERSION_CHANGED"
+    },
+    {
+      "name": "publication waits for an already validated request transaction",
+      "status": "PASS",
+      "independentConnections": true,
+      "actualLockWaitObserved": true,
+      "secondOutcome": "COMMITTED"
+    }
+  ],
+  "productionWrites": 0,
+  "migrationSha256": "203826dd3e9a703785495dced45bcfb86a6a5294a5e07ae0478014ebf84c60ff",
+  "fixtureSha256": "741ca7405886d71701620ee3914e1f173583929cb73775953a3bfcc61bed17f6",
+  "limitations": [
+    "Existing Auth, permission and quote helpers are fixture boundaries; no remote services or real identities used.",
+    "The actual new migration/trigger/resolver/admin RPC SQL is unmodified."
+  ]
+}

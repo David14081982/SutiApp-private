@@ -4384,3 +4384,30 @@ Implement the owner-approved Total pagado presentation from dated published quot
 ## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
 
 Preserve canonical own pending financial requests in Historial before the independent Google observation contains them. Restrict to explicit pending native statuses; deduplicate against published and confirmed-approval identities without requiring stale financial_request_ids. Existing own native load/event and tracking are reused, with no new network cadence, backend or financial/source writes. Audit, verification and release candidate: audits/H-HISTORY-NATIVE-PENDING-001.md and qa/evidence/history-native-pending.
+
+
+## H-LOAN-AVAILABLE-CREDIT-001 — candidato local preparado
+
+Requisito autorizado: reducir el disponible por la deuda del mismo fondo/perfil,
+mostrarlo en tarjetas y sumar los disponibles en Inicio/Finanzas; agregar
+exenciones individuales y global (apagado por defecto), sin cambiar los flujos.
+Se preparó primero un punto de restauración privado del workspace, Git y funciones
+remotas. El checkout de candidato conserva la publicación vigente más reciente.
+
+Backend propuesto: reutiliza la publicación diaria/manual de Historial y su saldo
+`max(0, K - paidThrough(A/B))`; reserva capital de solicitudes todavía no
+representadas; valida cupo/cambios de publicación en cotización y alta transaccional.
+Políticas se escriben con permisos de reglas financieras/frontera Finanzas y
+bitácora. No modifica Google, tasas ni solicitudes existentes. Recovery conserva
+historia y restaura exactamente el cotizador anterior.
+
+Evidencia local: `docs/qa/evidence/loan-available-credit/sql.json` y auditoría
+`docs/audits/H-LOAN-AVAILABLE-CREDIT-001.md`; proyección, SQL, seis carreras en
+PostgreSQL nativo, UI, build y regresión global local completados con PASS.
+Fixtures versionados sin PII permiten repetir las pruebas SQL. La regresión de
+Pages corresponde al baseline vigente; la comprobación posterior al despliegue
+del candidato sigue pendiente. La revisión independiente consta en la evidencia.
+
+Estado: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED. La revisión automática rechazó
+el envío al compilador cloud por falta de autorización explícita de payload/destino;
+Los artefactos locales están preparados para aprobación concreta de publicación.

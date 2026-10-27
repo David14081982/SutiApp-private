@@ -1492,3 +1492,39 @@ Owner explicitly confirmed the A/B/C/D rule and requested a focused implementati
 ## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
 
 After the read-only diagnosis showed that native pending loans were discarded before filters while the published observation predated creation, the owner explicitly instructed implementing the proposed immediate own pending presentation and ensuring the defect is corrected. Use the existing authenticated native request result and preserve one card when publication catches up. The decision extends only pending-card presentation; it does not authorize financial/source writes, Google edits, new polling or global synchronization. Preserve the existing approval and amortization update processes.
+
+
+## H-LOAN-AVAILABLE-CREDIT-001 — disponibilidad y exenciones autorizadas
+
+El propietario autorizó implementar quirúrgicamente la reducción del cupo por
+la deuda del mismo fondo, preservando todos los flujos, tasas, plazos, requisitos,
+aprobación, políticas de sindicato/categoría y la lógica vigente de Historial.
+El máximo de cada tarjeta «Hasta» debe mostrar el disponible efectivo. Inicio y
+Finanzas deben sumar exactamente los fondos visibles del simulador.
+
+La deuda reutiliza `max(0, K - paidThrough(A/B))` del Historial productivo. Los
+intereses y cargos contenidos en K consumen cupo; un descuento B=0 no se supone
+pagado. La fuente es la publicación diaria/manual ya autorizada; esta H no
+habilita Google interactivo. Para impedir el uso simultáneo del mismo disponible,
+se reserva el capital solicitado pendiente de representación en esa publicación.
+El total futuro del préstamo nuevo no sustituye al capital como máximo solicitado.
+
+Se aceptaron una exención individual persistente por afiliado/fondo y un switch
+global «Permitir solicitar el límite completo a todos», inicialmente apagado.
+Sólo omiten la reducción por deuda/reservas; no aumentan el límite aplicable ni
+conceden elegibilidad, documentos, aprobación o cambios financieros. Al apagar
+el global sobreviven las exenciones individuales hasta su revocación. Cambios
+requieren `financial_rules.write`, frontera Finanzas, motivo, versión y actor.
+
+El propietario pidió un punto de restauración previo. Existe respaldo privado
+verificado del workspace, refs Git y definiciones remotas; el recovery propuesto
+restaura el cotizador exacto, retira las nuevas entradas y conserva historia.
+Estado de implementación: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED; la revisión
+automática rechazó el envío del paquete al endpoint cloud de compilación y se
+requiere autorización concreta antes de esa operación externa o del despliegue.
+
+Continuación autorizada el mismo 26 de octubre: el propietario respondió a la
+solicitud concreta de publicación con «al terminar haz commit, push y publicalo».
+Esta instrucción autoriza migración, función Supabase, commit/push y GitHub Pages
+del paquete revisado. No cambia reglas de negocio ni autoriza datos sintéticos
+productivos. La restricción de aprobación anterior queda como antecedente.

@@ -44,19 +44,87 @@
     if (!overview || !Array.isArray(overview.programs)) return null;
     const visible = overview.programs.filter((program) => program && program.status === 'AVAILABLE');
     if (!visible.length) return 0;
-    const amounts = visible.map((program) => Number(program.max_amount));
-    if (!amounts.every((amount) => Number.isFinite(amount) && amount > 0)) return null;
-    return amounts.reduce((total, amount) => total + amount, 0);
+    // Availability is supplied by the server. Missing history never means no debt.
+    const amounts = visible.map((program) => program.available_amount);
+    if (!amounts.every((amount) => typeof amount === 'number' && Number.isFinite(amount) && amount >= 0)) return null;
+    return Math.round(amounts.reduce((total, amount) => total + Math.round(amount * 100), 0)) / 100;
   }
   const state = { status: 'idle', overview: null, quote: null, loanSession: null, authContextKey: null, error: null };
   let loanSessionOpenPromise = null;
   let ensureLoanSessionPromise = null;
+  let capacityEpoch = 0, capacityOwner, capacityChannel = null, capacityUnbind = null, capacitySignaledVersion = null;
   // Margen de refresco: cotizar contra un snapshot que expira en segundos
   // produce un SNAPSHOT_INVALID evitable. El TTL absoluto (15 min) NO se
   // extiende nunca; se abre una sesión nueva.
   const SESSION_REFRESH_MARGIN_MS = 60000;
   const listeners = new Set();
   const emit = () => listeners.forEach((fn) => fn());
+  function capacityContextKey() {
+    const auth = window.AffiliateAuth && window.AffiliateAuth.getState();
+    if (!auth || auth.phase !== 'authenticated' || !auth.session || !auth.session.user || !auth.session.user.id) return null;
+    const affiliate = auth.affiliate || {}, imp = auth.impersonation || affiliate._impersonation || {};
+    const admin = window.AdminRepository && window.AdminRepository.getState ? window.AdminRepository.getState() : {};
+    let sessionId = auth.session.session_id || '';
+    if (!sessionId && auth.session.access_token) {
+      try { sessionId = JSON.parse(atob(auth.session.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).session_id || ''; } catch (_) {}
+    }
+    return JSON.stringify([auth.session.user.id, sessionId, affiliate.id || '', affiliate.numero_control == null ? null : affiliate.numero_control,
+      imp.id || imp.session_id || null, admin.subjectKey || null, admin.assignment || null]);
+  }
+  function stopCapacityChannel() {
+    const previous = capacityChannel; capacityChannel = null; capacitySignaledVersion = null;
+    if (previous) { try { Promise.resolve(window.SutiSupabase.getClient().removeChannel(previous)).catch(() => {}); } catch (_) {} }
+  }
+  function invalidateCapacity(reload) {
+    capacityEpoch++; loanSessionOpenPromise = null; ensureLoanSessionPromise = null;
+    state.overview = null; state.quote = null; state.loanSession = null; state.authContextKey = null;
+    state.status = 'idle'; state.error = null; emit();
+    if (reload && listeners.size && capacityContextKey()) store.openLoanSession(false).catch(() => {});
+  }
+  function validateVisibleCapacity() {
+    if (listeners.size && !document.hidden && capacityContextKey()) store.ensureLoanSession().catch(() => {});
+  }
+  function syncCapacityContext() {
+    const next = capacityContextKey(), previous = capacityOwner;
+    if (next !== previous) {
+      capacityOwner = next; stopCapacityChannel();
+      if (previous !== undefined) invalidateCapacity(false);
+    }
+    if (!next || capacityChannel || !listeners.size) return;
+    const client = window.SutiSupabase && window.SutiSupabase.getClient();
+    if (!client || typeof client.channel !== 'function') return;
+    const owner = next;
+    const channel = client.channel('own-loan-capacity-publication').on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'loan_history_publication', filter: 'id=eq.true' }, (event) => {
+        if (capacityOwner !== owner || capacityContextKey() !== owner || !listeners.size) return;
+        const version = event.new && event.new.version;
+        if (version && version !== capacitySignaledVersion && version !== (state.overview && state.overview.capacity_source_version)) {
+          capacitySignaledVersion = version; invalidateCapacity(true);
+        }
+      });
+    capacityChannel = channel;
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED' && capacityChannel === channel && capacityContextKey() === owner) validateVisibleCapacity();
+    });
+    if (previous !== undefined && previous !== next) validateVisibleCapacity();
+  }
+  function bindCapacitySignals() {
+    if (capacityUnbind || !window.AffiliateAuth || typeof window.addEventListener !== 'function') return;
+    const onChange = () => invalidateCapacity(true);
+    const onVisibility = () => { if (!document.hidden) validateVisibleCapacity(); };
+    const unsubscribeAuth = window.AffiliateAuth.subscribe(syncCapacityContext);
+    const unsubscribeAdmin = window.AdminRepository && window.AdminRepository.subscribe ? window.AdminRepository.subscribe(syncCapacityContext) : null;
+    for (const event of ['suti:history-snapshot-changed', 'suti:loan-capacity-changed', 'suti:request-changed']) window.addEventListener(event, onChange);
+    window.addEventListener('focus', validateVisibleCapacity);
+    document.addEventListener('visibilitychange', onVisibility);
+    capacityUnbind = () => {
+      unsubscribeAuth(); if (unsubscribeAdmin) unsubscribeAdmin();
+      for (const event of ['suti:history-snapshot-changed', 'suti:loan-capacity-changed', 'suti:request-changed']) window.removeEventListener(event, onChange);
+      window.removeEventListener('focus', validateVisibleCapacity); document.removeEventListener('visibilitychange', onVisibility);
+      stopCapacityChannel(); capacityUnbind = null;
+    };
+    syncCapacityContext();
+  }
   function snapshot() { return Object.freeze({ status: state.status, overview: state.overview, quote: state.quote, loanSession: state.loanSession, error: state.error }); }
   async function throwInvocationError(error, data, fallback) {
     let payload = data && typeof data === 'object' ? data : null;
@@ -135,23 +203,27 @@
   }
   const store = {
     snapshot,
-    subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); },
+    subscribe(fn) { listeners.add(fn); bindCapacitySignals(); return () => { listeners.delete(fn); if (!listeners.size && capacityUnbind) capacityUnbind(); }; },
     async loadOverview() {
+      const epoch = capacityEpoch;
       state.status = 'loading'; state.error = null; emit();
-      try { state.overview = await invoke({ action: 'overview' }); state.status = 'ready'; }
-      catch (error) { state.overview = null; state.status = 'error'; state.error = error.message; }
+      try { const overview = await invoke({ action: 'overview' }); if (epoch !== capacityEpoch) return snapshot(); state.overview = overview; state.status = 'ready'; }
+      catch (error) { if (epoch !== capacityEpoch) return snapshot(); state.overview = null; state.status = 'error'; state.error = error.message; }
       emit(); return snapshot();
     },
     async openLoanSession(preserveExisting) {
       if (loanSessionOpenPromise) return loanSessionOpenPromise;
+      const epoch = capacityEpoch;
       loanSessionOpenPromise = (async () => {
         const contextKey = await currentAuthContextKey();
+        if (epoch !== capacityEpoch) return snapshot();
         if (preserveExisting !== true || !contextKey || state.authContextKey !== contextKey) {
           state.overview = null; state.quote = null; state.loanSession = null;
         }
         state.status = 'loading'; state.error = null; emit();
         try {
           const result = await invoke({ action: 'loanSessionOpen' });
+          if (epoch !== capacityEpoch) return snapshot();
           state.overview = result;
           state.loanSession = result.loanSession || null;
           state.authContextKey = contextKey;
@@ -160,43 +232,51 @@
             throw new Error('FINANCIAL_SESSION_SNAPSHOT_MISSING');
           }
         } catch (error) {
+          if (epoch !== capacityEpoch) return snapshot();
           state.overview = null; state.loanSession = null; state.authContextKey = contextKey;
           state.status = 'error'; state.error = error.code || error.message;
         }
         emit(); return snapshot();
       })();
-      try { return await loanSessionOpenPromise; } finally { loanSessionOpenPromise = null; }
+      const pending = loanSessionOpenPromise;
+      try { return await pending; } finally { if (loanSessionOpenPromise === pending) loanSessionOpenPromise = null; }
     },
     // Deduplicada: App, Financiera y Préstamo la invocan al montar. Sin esta
     // guarda dos resoluciones simultáneas se invalidan el snapshot entre sí y
     // la cotización en vuelo cae en SNAPSHOT_INVALID.
     ensureLoanSession() {
       if (ensureLoanSessionPromise) return ensureLoanSessionPromise;
+      const epoch = capacityEpoch;
       ensureLoanSessionPromise = (async () => {
         const contextKey = await currentAuthContextKey();
+        if (epoch !== capacityEpoch) return snapshot();
         const expiresAt = state.loanSession && Date.parse(state.loanSession.expires_at);
         if (contextKey && state.authContextKey === contextKey && state.overview && state.loanSession &&
             Number.isFinite(expiresAt) && expiresAt - SESSION_REFRESH_MARGIN_MS > Date.now()) {
           try {
             const validated = await invoke({ action: 'loanSessionValidate', snapshot_id: state.loanSession.id });
+            if (epoch !== capacityEpoch) return snapshot();
             if (validated.googleResolutionCount === 0 && validated.loanSession && validated.loanSession.id === state.loanSession.id) {
               state.loanSession = validated.loanSession; state.status = 'ready'; state.error = null; emit(); return snapshot();
             }
-          } catch (_) { /* Effective affiliate or impersonation context changed. */ }
+          } catch (_) { if (epoch !== capacityEpoch) return snapshot(); /* Effective affiliate or impersonation context changed. */ }
         }
         return store.openLoanSession(false);
       })();
+      const pending = ensureLoanSessionPromise;
       try { return ensureLoanSessionPromise; } finally {
-        ensureLoanSessionPromise.then(() => { ensureLoanSessionPromise = null; }, () => { ensureLoanSessionPromise = null; });
+        pending.then(() => { if (ensureLoanSessionPromise === pending) ensureLoanSessionPromise = null; }, () => { if (ensureLoanSessionPromise === pending) ensureLoanSessionPromise = null; });
       }
     },
     async requestQuote(programId, amount, term) {
+      const epoch = capacityEpoch;
       state.status = 'loading'; state.quote = null; state.error = null; emit();
       try {
         const result = await invoke({ action: 'quote', program_id: String(programId), amount: Number(amount), term: Number(term) });
+        if (epoch !== capacityEpoch) return snapshot();
         state.quote = assertFinancialSimulationResult(result); state.status = 'ready';
       }
-      catch (error) { state.quote = null; state.status = 'error'; state.error = error.message; }
+      catch (error) { if (epoch !== capacityEpoch) return snapshot(); state.quote = null; state.status = 'error'; state.error = error.message; }
       emit(); return snapshot();
     },
     // Cotización interactiva. NO emite un `status: 'loading'` global de apertura:
@@ -204,6 +284,7 @@
     // Financiera, que siguen montadas detrás de la ruta apilada. El estado
     // «Actualizando…» vive en el simulador, que es quien conoce la selección.
     async requestLoanSessionQuote(programId, amount, term, options) {
+      const epoch = capacityEpoch;
       const signal = options && options.signal;
       state.error = null;
       const runQuote = async () => {
@@ -211,6 +292,7 @@
         const result = await invokeLoanSnapshotRpc({ p_snapshot_id: state.loanSession.id,
           p_program_id: String(programId), p_amount: Number(amount), p_term: Number(term) }, { signal });
         if (signal && signal.aborted) throw abortedInvocation();
+        if (epoch !== capacityEpoch) throw abortedInvocation();
         state.loanSession = result.loanSession || state.loanSession;
         state.quote = assertFinancialSimulationResult(result); state.status = 'ready';
       };
@@ -231,6 +313,7 @@
           await runQuote();
         }
       } catch (error) {
+        if (epoch !== capacityEpoch) throw abortedInvocation();
         if ((error.code || error.message) === 'SIMULATION_REQUEST_ABORTED') {
           state.status = state.overview ? 'ready' : 'idle'; state.error = null; emit(); throw error;
         }

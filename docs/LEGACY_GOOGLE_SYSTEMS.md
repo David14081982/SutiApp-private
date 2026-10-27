@@ -190,3 +190,20 @@ This change reads the already published A/B/C/D observation only. It does not al
 ## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
 
 This focused repair changes only the frontend combination of own native pending requests and published history. No Google calls/writes, Apps Script, source reader, source observation, worker, schedule, trigger, loan status, quota, amount or date is changed. The native pending card represents the canonical request lifecycle, not a newly verified Google Y value. Existing source-derived records and financial calculations retain their authorities. Recovery reverts the frontend merger/version only.
+
+
+## H-LOAN-AVAILABLE-CREDIT-001 — lectura derivada existente, candidato local
+
+La disponibilidad reutiliza la observación publicada de `HISTORIAL P V2` y el
+proyector productivo de Historial: saldo por préstamo = `max(0, K - paidThrough(A/B))`.
+La suma de cuotas descontadas se obtiene con sus reglas actuales, incluyendo el
+caso pasado B=0 («No se descontó»). No se inventa otro cálculo de pagos.
+
+La cadencia autorizada permanece diaria a las 15:00 America/Hermosillo y manual
+desde Finanzas mediante el mecanismo existente. Esta H no añade Google interactivo,
+Apps Script, cron, fórmulas, triggers Google, correcciones, conciliación ni escrituras
+de saldos. La publicación conserva versión y fecha de origen; el TTL15m pertenece
+sólo al cálculo personalizado descartable.
+
+Estado: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED. La documentación del candidato
+no habilita nuevas acciones externas ni modifica el sistema legacy.

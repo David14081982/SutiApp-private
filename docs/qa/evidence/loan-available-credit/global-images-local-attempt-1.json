@@ -1,0 +1,12 @@
+{
+  "status": "FAIL",
+  "target": "http://127.0.0.1:8789/",
+  "version": "2026102609",
+  "bundleSha256": "d22be38a3bf4992922450a856eff30c87579fcc4c9f9b2b4c65720d3307f40ab",
+  "command": "node scripts/test-global-image-regression-production-live.js",
+  "toolSession": 79335,
+  "stage": "legitimatePdfSurface / DocumentWorkflowRepository.adminPreview",
+  "error": "DOCUMENT_PREVIEW_UNAVAILABLE",
+  "productionBusinessDataMutations": 0,
+  "note": "Recorded from stderr; full report is emitted only on successful completion. Read-only diagnosis pending; this attempt is not a PASS."
+}

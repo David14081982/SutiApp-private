@@ -1,0 +1,9 @@
+{
+  "name": "sutiapp-loan-available-credit-sql-tests",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Isolated PostgreSQL test dependency; no production runtime use",
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.8"
+  }
+}

@@ -1002,3 +1002,33 @@ For own Historial, detail and its statement, the owner now explicitly authorizes
 ## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
 
 The owner authorizes immediate own pending-card presentation from canonical program_requests already returned by list_self_program_request_history. This narrow exception supersedes waiting for Google publication for unmatched native SR requests in submitted/requires_financial_processing/in_review only. The card keeps its native tracking and values; it does not assert a fresh Google Y observation or create loan/amortization data. Published source/confirmed-approval representations take precedence and deduplicate by sourceId. Native pending remains valid while canonical pending exists, even if a later Google publication still lacks it; canonical terminal state/removal and identity invalidation remove eligibility. Published source-only records and loans still obey source absence. No persisted replica, alternative financial authority, extra request or error fallback is introduced.
+
+
+## H-LOAN-AVAILABLE-CREDIT-001 — candidato local, no aplicado
+
+La disponibilidad propuesta por fondo se deriva del mismo saldo que Amortización:
+por préstamo, `max(0, K - paidThrough(A/B))`; `paidThrough` es el proyector vigente
+de Historial y una cuota pasada con B=0 no libera cupo. `HISTORIAL P V2` conserva
+la autoridad financiera. El lector reutiliza exclusivamente la publicación
+existente de `get_self_loan_history_snapshot()`, con la actualización diaria a
+las 15:00 de Hermosillo o la actualización manual de Finanzas. No introduce otra
+lectura interactiva de Google, cron, réplica o escritor de cuotas.
+
+`financial_rules` y el perfil canónico conservan el límite y la elegibilidad. El
+saldo disponible es `max(0, límite - saldo pendiente del fondo - reservas)`.
+`program_requests.requested_amount` reserva el capital de solicitudes Suti Préstamo
+vigentes todavía no representadas por un préstamo de la publicación; el vínculo
+exacto SR/ID existente retira esa reserva cuando aparece su amortización, sin
+contarla dos veces. Rechazo y cancelación liberan únicamente su reserva.
+
+Las nuevas tablas propuestas `loan_capacity_policy` y `loan_capacity_overrides`
+son autoridad exclusiva de la exención global o individual por afiliado/fondo.
+`loan_capacity_events` es auditoría, no saldo. `financial_session_snapshots.loan_capacity`
+contiene un cálculo privado descartable, con identidad exacta, versión de la
+publicación, fecha de origen y TTL de cálculo de 15 minutos. Una publicación
+nueva invalida su uso; la antigüedad de la publicación diaria no crea otra regla
+de vencimiento. No hay fallback ni almacenamiento financiero en navegador.
+
+Estado: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED. La revisión automática no
+autorizó enviar el paquete al endpoint cloud de compilación. Las pruebas locales
+y el respaldo no significan instalación; véase la auditoría de esta H.

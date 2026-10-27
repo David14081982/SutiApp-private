@@ -480,3 +480,28 @@ and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-
 ## H-HISTORY-IMMEDIATE-APPROVAL-001 - 2026-10-26
 
 20261026000200_loan_history_approvals adds own opaque approval revisions, a private exact SQL-definition backup, the approval trigger and own metadata RPC, and extends context display fields. It performs no business-row backfill or financial DML, no cron/global-publication change and no Google operation. Recovery first rolls frontend/Edge back, restores the exact saved context definition with OID/owner/ACL checks, then removes only this metadata infrastructure. Local PostgreSQL must verify grants/RLS, exact controls, targeted events, no-op suppression, cascades and recovery before production installation. Installation status is recorded in the focused audit/evidence.
+
+
+## 20261027000100 — H-LOAN-AVAILABLE-CREDIT-001 — PREPARED, NOT APPLIED
+
+Migración aditiva propuesta: política global apagada, exenciones afiliado/fondo,
+auditoría inmutable, campo nullable de cálculo en `financial_session_snapshots`,
+RPC acotadas, guard AFTER INSERT sólo Suti Préstamo y parche mínimo del cotizador
+autenticado. No cambia el motor de tasas, los writers existentes, cuotas,
+solicitudes históricas, elegibilidad ni sincronización de Historial.
+
+El preflight de lectura verificó versión libre, objetos/columna ausentes, hash
+exacto del cotizador y cero solicitudes vigentes con principal o fondo irresoluble.
+La instalación exige el mismo hash del cotizador respaldado y conserva sus
+firma/OID/owner/ACL. El saldo deriva de la publicación existente; su UUID y fecha
+se revalidan bajo bloqueo junto con identidad, perfil, reservas y exenciones.
+
+El recovery verifica deriva antes de restaurar la función exacta, elimina el
+trigger nuevo, revoca las RPC nuevas e invalida sesiones derivadas. Conserva las
+nuevas tablas, eventos y evidencias; nunca borra decisiones ni solicitudes. Las
+pruebas PostgreSQL aisladas incluyen forward/recovery y denegaciones, con personas
+sintéticas; las carreras nativas se ejecutan separadamente.
+
+Estado: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED. La revisión automática rechazó
+el envío cloud de compilación por requerir autorización explícita del contenido
+y destino. No se aplicó esta migración ni se publicó el candidato.

@@ -1,0 +1,56 @@
+{
+  "mode": "READ_ONLY_OFFICIAL_PDF_SURFACE",
+  "officialTestModified": false,
+  "productionDataMutations": 0,
+  "rawUrlsLogged": 0,
+  "results": [
+    {
+      "target": "LOCAL_8080",
+      "status": "PASS",
+      "pdf": {
+        "status": "PASS",
+        "account": "H005_TEST",
+        "found": true,
+        "http": 200,
+        "mime": "application/pdf",
+        "opened": true
+      },
+      "network": [
+        {
+          "endpoint": "/functions/v1/document-access",
+          "http": 200,
+          "cors": "http://localhost:8080",
+          "origin": "http://localhost:8080"
+        },
+        {
+          "endpoint": "/storage/v1/object/<redacted>",
+          "failed": "net::ERR_ABORTED"
+        }
+      ]
+    },
+    {
+      "target": "GITHUB_PAGES",
+      "status": "PASS",
+      "pdf": {
+        "status": "PASS",
+        "account": "H005_TEST",
+        "found": true,
+        "http": 200,
+        "mime": "application/pdf",
+        "opened": true
+      },
+      "network": [
+        {
+          "endpoint": "/functions/v1/document-access",
+          "http": 200,
+          "cors": "https://sutiapp.com",
+          "origin": "https://sutiapp.com"
+        },
+        {
+          "endpoint": "/storage/v1/object/<redacted>",
+          "failed": "net::ERR_ABORTED"
+        }
+      ]
+    }
+  ]
+}

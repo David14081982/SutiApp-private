@@ -4,6 +4,9 @@
   const dash = '—';
   const moneyOrDash = (value) => typeof value === 'number' && Number.isFinite(value) ? window.money(value) : dash;
   const exactMoneyOrDash = (value) => typeof value === 'number' && Number.isFinite(value) ? window.money(value, { dec: 2 }) : dash;
+  const availableAmountOf = (program) => program && typeof program.available_amount === 'number' &&
+    Number.isFinite(program.available_amount) && program.available_amount >= 0 ? program.available_amount : null;
+  const availableMoney = (value) => exactMoneyOrDash(value).replace(/\.00$/, '');
   const textOrDash = (value) => typeof value === 'string' && value.trim() ? value.trim() : dash;
 
   // Fondo fijo por pantalla (Equipos Móviles → Caja Chica). Suti Préstamo NO
@@ -147,6 +150,7 @@
       INCOMPLETE: ['info', 'Completa tu perfil financiero', 'Se necesita tu categoría laboral y sindicato para consultar tus opciones.'],
       ERROR: ['info', 'No pudimos calcular la simulación.', 'Intenta nuevamente. Si continúa, solicita apoyo.'],
       UNAVAILABLE: ['clock', 'Simulador no disponible por el momento', 'Tus pasos y datos permanecen sin cambios.'],
+      NO_AVAILABLE_BALANCE: ['info', 'Sin saldo disponible en este fondo', 'Las cuotas pendientes ocupan el límite disponible. Puedes revisar otro fondo.'],
     };
     const item = notices[state];
     if (!item) return null;
@@ -178,7 +182,7 @@
           React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
             React.createElement(I, { name: 'wallet', size: 15, stroke: 2.2, style: { color: selected === item.id ? 'var(--guinda)' : 'var(--ink-3)' } }),
             React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800 } }, item.label || item.fund)),
-          React.createElement('div', { style: { fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 5 } }, 'Hasta ' + moneyOrDash(Number(item.max_amount))),
+          React.createElement('div', { 'data-fund-available': availableAmountOf(item) == null ? 'unavailable' : String(availableAmountOf(item)), style: { fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 5 } }, 'Hasta ' + availableMoney(availableAmountOf(item))),
           React.createElement('div', { 'data-fund-rate': '', style: { fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 2 } }, rateLabel));
         })));
   }
@@ -205,7 +209,7 @@
       React.createElement('span', { ref: text, className: 'su-result-fit-text' }, children));
   }
 
-  function ResultCard({ result, periodLabel, initialLoading, updating, failed, animationCycle, loadingCycle }) {
+  function ResultCard({ result, periodLabel, initialLoading, updating, failed, inactive, animationCycle, loadingCycle }) {
     const cells = [
       ['Recibes', result && result.amount],
       ['Interés', result && result.interest],
@@ -214,7 +218,7 @@
     ];
     const loadingMotion = initialLoading || updating;
     const placeholderCycle = loadingCycle + ':' + (failed ? 'error' : loadingMotion ? 'loading' : 'idle');
-    const resultState = initialLoading ? 'initial-loading' : failed ? 'error' : updating ? 'recalculating' : 'ready';
+    const resultState = inactive ? 'unavailable' : initialLoading ? 'initial-loading' : failed ? 'error' : updating ? 'recalculating' : 'ready';
     return React.createElement('div', { style: { position: 'sticky', top: -8, zIndex: 3, margin: '0 -20px', padding: '0 20px 10px', background: 'linear-gradient(var(--bg) 78%, transparent)' } },
       React.createElement('div', { className: 'su-result-card', 'data-simulator-result': resultState, 'aria-busy': initialLoading || updating ? 'true' : 'false', 'aria-label': 'Resultado de la simulación', style: { minHeight: 142, boxSizing: 'border-box', background: 'var(--grad-guinda)', color: '#fff', borderRadius: 24, padding: '16px 18px 14px', boxShadow: 'var(--glow-guinda)', position: 'relative', overflow: 'hidden' } },
         React.createElement('style', null, `
@@ -231,27 +235,27 @@
           React.createElement('div', { style: { minWidth: 0 } },
             React.createElement(ResultFit, { style: { fontSize: 'var(--text-12, 12px)', opacity: .8, fontWeight: 700, letterSpacing: '.02em' } }, 'Cada pago será de'),
             React.createElement(ResultFit, { className: 'su-result-payment', style: { borderRadius: 9, fontSize: 'var(--text-40, 40px)', fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } },
-              React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? result.paymentPerPeriod : null, loading: loadingMotion || !result, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle }))),
+              inactive ? dash : React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? result.paymentPerPeriod : null, loading: loadingMotion || !result, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle }))),
           React.createElement('div', { className: 'su-result-meta', style: { textAlign: 'right', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, opacity: .85, lineHeight: 1.45, paddingBottom: 5 } },
             updating && React.createElement(ResultFit, { style: { fontSize: 'var(--text-10-5, 10.5px)' } }, React.createElement('div', { role: 'status', 'aria-live': 'polite', style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 2, padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,.14)', fontSize: 'var(--text-10-5, 10.5px)' } },
               React.createElement('span', { className: 'su-spinner', 'aria-hidden': 'true', style: { width: 10, height: 10 } }), 'Actualizando…')),
-            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, !result
+            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, inactive ? dash : !result
               ? React.createElement(LoadingReels, { columns: 2, cycleKey: placeholderCycle })
               : result.paymentCount + (result.paymentCount === 1 ? ' pago' : ' pagos')),
-            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, !result
+            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, inactive ? dash : !result
               ? React.createElement(LoadingReels, { columns: 3, cycleKey: placeholderCycle })
               : result.rate + '% ' + result.ratePeriod))),
         React.createElement('div', { className: 'su-result-cells', style: { marginTop: 13, paddingTop: 11, borderTop: '1px solid rgba(255,255,255,.18)' } }, cells.map((cell) => React.createElement('div', { key: cell[0], style: { minWidth: 0 } },
           React.createElement(ResultFit, { style: { opacity: .72, fontWeight: 600, fontSize: 'var(--text-10-5, 10.5px)', whiteSpace: 'nowrap' } }, cell[0]),
           React.createElement(ResultFit, { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 'var(--text-13, 13px)', letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' } },
-            React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? cell[1] : null, loading: loadingMotion || !result, compact: true, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle, style: cellMoneyStyle }))))))));
+            inactive ? dash : React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? cell[1] : null, loading: loadingMotion || !result, compact: true, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle, style: cellMoneyStyle }))))))));
   }
 
   function AmountField({ amount, setAmount, commitAmount, min, max, disabled }) {
     const [editing, setEditing] = React.useState(false);
     const inputRef = React.useRef(null);
     React.useEffect(() => { if (editing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, [editing]);
-    const bounded = typeof min === 'number' && typeof max === 'number' && max >= min;
+    const bounded = typeof min === 'number' && typeof max === 'number' && Number.isFinite(min) && Number.isFinite(max) && max >= min;
     const settle = commitAmount || setAmount;
     // Arrastre y tecleo: valor continuo, entra al debounce.
     const change = (value) => {
@@ -272,13 +276,13 @@
       `),
       React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.01em' } }, '¿Cuánto necesitas?'),
       editing
-        ? React.createElement('input', { ref: inputRef, className: 'su-loan-amount', type: 'number', inputMode: 'numeric', value: amount || '', min: bounded ? min : undefined, max: bounded ? max : undefined, disabled: disabled || !bounded, onChange: (event) => change(event.target.value), onBlur: (event) => { commit(event.target.value); setEditing(false); }, onKeyDown: (event) => { if (event.key === 'Enter') event.target.blur(); }, 'aria-label': 'Monto solicitado' })
-        : React.createElement('button', { type: 'button', className: 'su-loan-amount', disabled: disabled || !bounded, onClick: () => setEditing(true), 'aria-label': 'Editar monto solicitado' }, bounded ? moneyOrDash(amount) : dash, React.createElement('span', { className: 'su-loan-amount-pen', 'aria-hidden': true }, React.createElement(I, { name: 'pencil', size: 19 }))),
+        ? React.createElement('input', { ref: inputRef, className: 'su-loan-amount', type: 'number', inputMode: 'decimal', step: '0.01', value: amount || '', min: bounded ? min : undefined, max: bounded ? max : undefined, disabled: disabled || !bounded, onChange: (event) => change(event.target.value), onBlur: (event) => { commit(event.target.value); setEditing(false); }, onKeyDown: (event) => { if (event.key === 'Enter') event.target.blur(); }, 'aria-label': 'Monto solicitado' })
+        : React.createElement('button', { type: 'button', className: 'su-loan-amount', disabled: disabled || !bounded, onClick: () => setEditing(true), 'aria-label': 'Editar monto solicitado' }, bounded ? availableMoney(amount) : dash, React.createElement('span', { className: 'su-loan-amount-pen', 'aria-hidden': true }, React.createElement(I, { name: 'pencil', size: 19 }))),
       React.createElement('div', { style: { display: 'flex', justifyContent: 'flex-end', fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 6 } },
-        React.createElement('span', null, 'Máximo ', bounded ? moneyOrDash(max) : dash)));
+        React.createElement('span', null, 'Máximo ', availableMoney(max))));
   }
 
-  function TermPicker({ terms, selected, setSelected, disabled, result, customTerm, presetsOnly }) {
+  function TermPicker({ terms, selected, setSelected, disabled, inactive, result, customTerm, presetsOnly }) {
     const min = Number(customTerm && customTerm.min), max = Number(customTerm && customTerm.max);
     const stepSize = Number(customTerm && customTerm.step) || 1;
     const hasCustomRange = !presetsOnly && Number.isFinite(min) && Number.isFinite(max) && max >= min;
@@ -314,11 +318,11 @@
           const active = value === selected && (presetsOnly || !free), payment = paymentFor(value);
           return React.createElement('button', { key: value, disabled, onClick: () => choosePreset(value), 'data-term-card': value, 'data-on': active ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px solid ' + (active ? 'var(--guinda)' : 'transparent'), background: active ? 'var(--guinda-50)' : 'var(--surface)', boxShadow: active ? 'none' : 'var(--neo-sm)', transition: 'border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease' } },
             React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink)' } }, value + ' pagos'),
-            React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3, fontVariantNumeric: 'tabular-nums' } }, payment ? exactMoneyOrDash(payment) : 'Cotizando…'),
+            React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3, fontVariantNumeric: 'tabular-nums' } }, payment ? exactMoneyOrDash(payment) : inactive ? dash : 'Cotizando…'),
             React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: active ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, 'por quincena'));
         }).concat(presetsOnly ? [] : React.createElement('button', { key: 'other', type: 'button', disabled, onClick: chooseFree, 'data-term-card': 'other', 'data-on': free ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px ' + (free ? 'solid var(--guinda)' : 'dashed var(--ink-3)'), background: free ? 'var(--guinda-50)' : 'transparent', boxShadow: 'none' } },
           React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink)' } }, free ? selected + (selected === 1 ? ' pago' : ' pagos') : 'Otro'),
-          React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3 } }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : (free ? 'Cotizando…' : 'a tu medida')),
+          React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3 } }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : (free ? (inactive ? dash : 'Cotizando…') : 'a tu medida')),
           React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: free ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, free ? 'por quincena' : 'elige quincenas'))) : React.createElement('div', { style: { width: '100%', padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 600 } }, 'Los plazos aparecerán al consultar tus condiciones.')),
       !presetsOnly && free && Number.isFinite(min) && Number.isFinite(max) && React.createElement('div', { 'data-custom-term-editor': '', style: { marginTop: 4, padding: 12, borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
@@ -403,12 +407,13 @@
   function deriveSelection(program, previous) {
     if (!program) return { programId: '', amount: 0, term: 0 };
     const terms = allowedTermsOf(program);
-    const min = Number(program.min_amount), max = Number(program.max_amount);
+    const min = Number(program.min_amount), max = availableAmountOf(program);
     const suggested = Number(program.suggested_amount || program.min_amount);
     const previousAmount = previous && Number(previous.amount);
-    const amount = Number.isFinite(previousAmount) && previousAmount > 0 && Number.isFinite(min) && Number.isFinite(max)
-      ? Math.min(max, Math.max(min, previousAmount))
-      : suggested;
+    const candidate = Number.isFinite(previousAmount) && previousAmount > 0 ? previousAmount : suggested;
+    const amount = Number.isFinite(min) && typeof max === 'number' && Number.isFinite(max)
+      ? max < min ? 0 : Math.min(max, Math.max(min, Number.isFinite(candidate) ? candidate : min))
+      : 0;
     const previousTerm = previous && previous.term;
     // Un plazo personalizado válido para el fondo nuevo se conserva: reiniciarlo
     // a `terms[0]` cambiaba la selección a espaldas del afiliado.
@@ -478,7 +483,7 @@
         const next = deriveSelection(program, current);
         return sameSelection(current, next) ? current : { ...next, immediate: true };
       });
-    }, [program && program.id, program && program.max_amount, program && program.min_amount]);
+    }, [program && program.id, program && program.available_amount, program && program.min_amount]);
 
     React.useEffect(() => () => {
       mounted.current = false;
@@ -491,7 +496,9 @@
     }, []);
 
     const minAmount = program && Number(program.min_amount);
-    const maxAmount = program && Number(program.max_amount);
+    const maxAmount = availableAmountOf(program);
+    const capacityUnknown = !!program && maxAmount == null;
+    const capacityExhausted = !!program && !capacityUnknown && Number.isFinite(minAmount) && maxAmount < minAmount;
     const customTerm = program && program.custom_term || {};
     const customMin = Number(customTerm.min), customMax = Number(customTerm.max), customStep = Number(customTerm.step);
     const validTerm = (!hasShortTerms(program) || terms.includes(term)) && Number.isInteger(term) && Number.isFinite(customMin) && Number.isFinite(customMax) && Number.isFinite(customStep) &&
@@ -596,9 +603,9 @@
     // already accepted the server quote. Reuse it only when it matches the exact
     // current selection; financial values are never recomputed in the browser.
     const storedQuote = financial && financial.quote;
-    const authoritative = confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)
+    const authoritative = validSelection && confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)
       ? confirmed.quote
-      : quoteMatchesSelection(storedQuote, program, amount, term) ? storedQuote : null;
+      : validSelection && quoteMatchesSelection(storedQuote, program, amount, term) ? storedQuote : null;
     // PLAZO SUGERIDO INSTANTÁNEO: la respuesta vigente para este fondo y este
     // monto ya trae `termOptions` con los importes de cada plazo estándar
     // resueltos por Supabase. Al tocar un plazo se proyecta ese renglón de
@@ -616,12 +623,12 @@
       [projectionBase, term]);
     const result = authoritative || projected;
     const overviewLoading = !financial.overview && (financial.status === 'idle' || financial.status === 'loading');
-    const effectiveError = validSelection ? requestError : financial.error;
+    const effectiveError = capacityUnknown ? 'LOAN_CAPACITY_UNAVAILABLE' : validSelection ? requestError : financial.error;
     const unavailableError = /NOT_CONFIGURED|UNAVAILABLE|REJECTED|INVALID_RESPONSE|CONTRACT_MISMATCH/.test(effectiveError || '');
-    const initialLoading = !result && !confirmed.quote && !effectiveError && (overviewLoading || !!program);
+    const initialLoading = !capacityExhausted && !result && !confirmed.quote && !effectiveError && (overviewLoading || validSelection);
     const updating = validSelection && !!confirmed.quote && !result && !effectiveError && !overviewLoading;
     const displayedResult = result;
-    const state = initialLoading ? 'LOADING'
+    const state = capacityExhausted ? 'NO_AVAILABLE_BALANCE' : initialLoading ? 'LOADING'
       : requestError ? 'ERROR'
       : effectiveError ? (unavailableError ? 'UNAVAILABLE' : 'ERROR')
       : result && eligibilityDenied(result.eligibility) ? 'NOT_ELIGIBLE'
@@ -673,16 +680,16 @@
         result,
         // Nunca continuar con una cotización de otra selección: `result` sólo
         // existe si coincide con el fondo, monto y plazo vigentes.
-        current: state === 'READY' && !!result && !updating && quoteMatchesSelection(result, program, amount, term),
+        current: validSelection && state === 'READY' && !!result && !updating && quoteMatchesSelection(result, program, amount, term),
       });
     }, [selectionKey, result, updating, state]);
 
     return React.createElement('div', { 'data-step-simulator-v2': '', 'data-state': state, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      React.createElement(ResultCard, { result: displayedResult, periodLabel: paymentPeriod, initialLoading, updating, failed: state === 'ERROR' || state === 'UNAVAILABLE', animationCycle: confirmed.revision, loadingCycle: selectionKey }),
+      React.createElement(ResultCard, { result: displayedResult, periodLabel: paymentPeriod, initialLoading, updating, failed: state === 'ERROR' || state === 'UNAVAILABLE', inactive: capacityExhausted || capacityUnknown, animationCycle: confirmed.revision, loadingCycle: selectionKey }),
       state !== 'READY' && React.createElement(StatusNotice, { state, onRetry: retry }),
       React.createElement(FundPicker, { programs, selected: program && program.id, setSelected: selectProgram, disabled: overviewLoading }),
-      React.createElement(AmountField, { amount, setAmount: selectAmount, commitAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading }),
-      React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading, result, customTerm: program && program.custom_term, presetsOnly: hasShortTerms(program) }),
+      React.createElement(AmountField, { amount, setAmount: selectAmount, commitAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading || capacityExhausted || capacityUnknown }),
+      React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading || capacityExhausted || capacityUnknown, inactive: capacityExhausted || capacityUnknown, result, customTerm: program && program.custom_term, presetsOnly: hasShortTerms(program) }),
       React.createElement(Breakdown, { result }),
       React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, lineHeight: 1.5, padding: '0 2px' } },
         React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),

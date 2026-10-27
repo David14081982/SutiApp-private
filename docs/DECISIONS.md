@@ -1517,14 +1517,20 @@ el global sobreviven las exenciones individuales hasta su revocación. Cambios
 requieren `financial_rules.write`, frontera Finanzas, motivo, versión y actor.
 
 El propietario pidió un punto de restauración previo. Existe respaldo privado
-verificado del workspace, refs Git y definiciones remotas; el recovery propuesto
+verificado del workspace, refs Git y definiciones remotas; el recovery verificado
 restaura el cotizador exacto, retira las nuevas entradas y conserva historia.
-Estado de implementación: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED; la revisión
-automática rechazó el envío del paquete al endpoint cloud de compilación y se
-requiere autorización concreta antes de esa operación externa o del despliegue.
+Como antecedente, la revisión automática rechazó inicialmente el envío del
+paquete al endpoint cloud de compilación por falta de autorización explícita
+del contenido y destino. La autorización posterior se registra a continuación.
 
 Continuación autorizada el mismo 26 de octubre: el propietario respondió a la
 solicitud concreta de publicación con «al terminar haz commit, push y publicalo».
 Esta instrucción autoriza migración, función Supabase, commit/push y GitHub Pages
 del paquete revisado. No cambia reglas de negocio ni autoriza datos sintéticos
 productivos. La restricción de aprobación anterior queda como antecedente.
+
+Ejecución autorizada: migración `20261027000100` aplicada y verificada, backend
+`financial-legacy` v65 activo con JWT y frontend Pages `9d743d3` publicado, con
+CI exitoso. La política global quedó apagada y sin excepciones individuales.
+Las verificaciones finales focal y global en producción terminaron con PASS;
+sus evidencias y el cierre integral se registran en la auditoría de esta H.

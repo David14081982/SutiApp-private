@@ -1,8 +1,8 @@
 # H-LOAN-AVAILABLE-CREDIT-001 — paquete local para publicación
 
 Estado actualizado: el propietario autorizó «al terminar haz commit, push y
-publicalo». Migración y Edge ya aplicados/verificados; frontend y verificación
-final en curso. Este plan conserva la secuencia aprobada para la versión
+publicalo». Migración, Edge, frontend y verificación final completados con PASS.
+Este plan conserva la secuencia aprobada para la versión
 `2026102609` en el Supabase existente y `David14081982/SutiApp-private`/GitHub Pages.
 
 ## Contenido exacto
@@ -66,3 +66,9 @@ compilación de Supabase: consideró insuficiente la autorización explícita pa
 ese payload/destino y posibles efectos remotos de `bundleOnly`. No se eludió el
 rechazo. Las pruebas locales y lecturas autorizadas continuaron sin mutaciones
 productivas; la aprobación solicitada debe cubrir migración, Edge y publicación.
+
+Autorización recibida y ejecutada: commit `9d743d3`, Pages run `40460349576`,
+migración `20261027000100`, Edge v65/JWT y versión frontend `2026102609`.
+La compilación cloud, lectura de fuentes instaladas, SQL productivo, comprobación
+focal publicada, artefacto CI y regresión global posterior resultaron PASS.
+El bloqueo descrito arriba se conserva únicamente como antecedente histórico.

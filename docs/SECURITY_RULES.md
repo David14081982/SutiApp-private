@@ -441,9 +441,9 @@ loan_history_private has no anon/authenticated/service_role table access; servic
 loan_history_approval_publication exposes only affiliate_id and an opaque version through authenticated own-effective-identity RLS, with the existing exact unique active control check. Its only writer is an internal trigger for changed confirmed approvals; callers cannot write it. get_self_loan_history_approvals has no parameters and reuses the existing secure identity context; Edge APPROVALS emits an allowlist of own approval-card fields, no owner/actor identity or installments. No new service-role/browser credential, impersonation mechanism or shared Auth change. Approval and snapshot response races are guarded independently and permission denial purges private memory.
 
 
-## H-LOAN-AVAILABLE-CREDIT-001 — seguridad del candidato local
+## H-LOAN-AVAILABLE-CREDIT-001 — seguridad instalada; verificación final PASS
 
-La política y las exenciones propuestas fuerzan RLS y niegan acceso directo a
+La política y las exenciones instaladas fuerzan RLS y niegan acceso directo a
 `anon`, `authenticated` y `service_role`. Sólo sus RPC de administración concedidas
 a `authenticated` pueden escribir tras verificar `financial_rules.write` y la
 frontera backend de Finanzas. Leer exige `financial_rules.read` o `financial_rules.write`
@@ -462,5 +462,9 @@ La auditoría SUBMIT conserva actor real, contexto asistido y la decisión exact
 Google ni catálogos globales al frontend. Recovery preserva solicitudes y eventos.
 La suite PostgreSQL aislada prueba permisos, contexto ajeno, fuente inválida,
 revocación, cupo y recuperación; las carreras nativas tienen evidencia separada.
-Estado: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED; no afirmar estos guards
-instalados hasta la aplicación y verificación expresamente autorizadas.
+La migración `20261027000100` está aplicada: la verificación productiva de sólo
+lectura confirmó cuerpos de funciones, RLS, permisos, triggers, OID/ACL/owner
+del cotizador, política global apagada y cero excepciones individuales.
+Backend `financial-legacy` v65 está activo con JWT y Pages `9d743d3` publicado,
+con CI exitoso, tras autorización expresa del propietario. Las verificaciones
+finales focal y global en producción terminaron con PASS.

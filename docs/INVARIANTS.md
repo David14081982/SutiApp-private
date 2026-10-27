@@ -511,7 +511,7 @@ Every distinct source cuota row contributes once to its exact own loan; never de
 Pending eligibility requires an own native financial/loan SR record, real sourceId, revision state and explicit submitted/requires_financial_processing/in_review requestStatus. Missing/unknown/terminal statuses cannot use the generic revision default. Do not gate a newly created request on financial_request_ids from an older LOAD or on the daily cutoff. Existing published/covered/confirmed-approval identities suppress duplicate pending cards. A source loading/error state remains explicit and supplies no invented data while independently loaded canonical pending requests remain visible. Own context guards, tracking, approval timing, amortization values, source-only absence and daily/manual synchronization remain unchanged.
 
 
-## H-LOAN-AVAILABLE-CREDIT-001 — invariantes del candidato local
+## H-LOAN-AVAILABLE-CREDIT-001 — invariantes de disponibilidad publicada
 
 - El cupo de un fondo nunca supera su `financial_rules.max_amount` aplicable.
 - El saldo consumido reproduce `max(0, K - paidThrough(A/B))` de cada préstamo
@@ -534,4 +534,7 @@ Pending eligibility requires an own native financial/loan SR record, real source
   al mismo día de Hermosillo y a la versión publicada vigente de Historial.
   La fecha de publicación se conserva separada de la fecha del cálculo.
 
-Estas invariantes describen el candidato LOCAL NOT APPLIED / NOT PUBLISHED.
+Estas invariantes corresponden a la migración `20261027000100`, backend
+`financial-legacy` v65 y frontend Pages `9d743d3` ya publicados, con CI exitoso.
+La verificación SQL productiva confirmó los controles instalados. Las pruebas
+finales focal y global en producción terminaron con PASS.

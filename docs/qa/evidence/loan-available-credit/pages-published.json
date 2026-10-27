@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "commit": "9d743d31d6862e46523b6e89384ad4099cd94e87",
+  "workflowRun": 40460349576,
+  "artifactId": 12714271467,
+  "artifactSha256": "5dc5ef10c6f14596605c5b526ac7431accad07c12e5dba343175e7bf7ca3eb07",
+  "bundleSha256": "d22be38a3bf4992922450a856eff30c87579fcc4c9f9b2b4c65720d3307f40ab",
+  "version": "2026102609",
+  "artifactFiles": 31,
+  "sourceMatchesIgnoringCheckoutLineEndings": [
+    "app/bundle.js",
+    "app/financial-legacy-repository.js",
+    "SutiApp.html",
+    "sw.js"
+  ],
+  "zipCrcValid": true,
+  "liveUrl": "https://sutiapp.com/",
+  "liveBundleMatches": true,
+  "liveVerification": "Independent real-browser live-production-readonly.json",
+  "directPythonFetch": "HTTP403; no access policy changed; browser verification PASS"
+}

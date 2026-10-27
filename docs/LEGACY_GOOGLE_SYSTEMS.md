@@ -192,7 +192,7 @@ This change reads the already published A/B/C/D observation only. It does not al
 This focused repair changes only the frontend combination of own native pending requests and published history. No Google calls/writes, Apps Script, source reader, source observation, worker, schedule, trigger, loan status, quota, amount or date is changed. The native pending card represents the canonical request lifecycle, not a newly verified Google Y value. Existing source-derived records and financial calculations retain their authorities. Recovery reverts the frontend merger/version only.
 
 
-## H-LOAN-AVAILABLE-CREDIT-001 — lectura derivada existente, candidato local
+## H-LOAN-AVAILABLE-CREDIT-001 — lectura derivada existente publicada
 
 La disponibilidad reutiliza la observación publicada de `HISTORIAL P V2` y el
 proyector productivo de Historial: saldo por préstamo = `max(0, K - paidThrough(A/B))`.
@@ -205,5 +205,8 @@ Apps Script, cron, fórmulas, triggers Google, correcciones, conciliación ni es
 de saldos. La publicación conserva versión y fecha de origen; el TTL15m pertenece
 sólo al cálculo personalizado descartable.
 
-Estado: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED. La documentación del candidato
-no habilita nuevas acciones externas ni modifica el sistema legacy.
+La migración `20261027000100`, backend `financial-legacy` v65 y frontend Pages
+`9d743d3` están publicados, con CI exitoso. La verificación SQL de sólo lectura
+confirmó que publicación, lector y cron de Historial siguen intactos. No hubo
+escrituras Google. Las verificaciones finales focal y global en producción
+terminaron con PASS.

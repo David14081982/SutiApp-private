@@ -482,9 +482,9 @@ and production-live.json; current result in docs/audits/H-HISTORY-LOAN-PAYMENTS-
 20261026000200_loan_history_approvals adds own opaque approval revisions, a private exact SQL-definition backup, the approval trigger and own metadata RPC, and extends context display fields. It performs no business-row backfill or financial DML, no cron/global-publication change and no Google operation. Recovery first rolls frontend/Edge back, restores the exact saved context definition with OID/owner/ACL checks, then removes only this metadata infrastructure. Local PostgreSQL must verify grants/RLS, exact controls, targeted events, no-op suppression, cascades and recovery before production installation. Installation status is recorded in the focused audit/evidence.
 
 
-## 20261027000100 — H-LOAN-AVAILABLE-CREDIT-001 — PREPARED, NOT APPLIED
+## 20261027000100 — H-LOAN-AVAILABLE-CREDIT-001 — APPLIED; production verification PASS
 
-Migración aditiva propuesta: política global apagada, exenciones afiliado/fondo,
+Migración aditiva aplicada: política global apagada, exenciones afiliado/fondo,
 auditoría inmutable, campo nullable de cálculo en `financial_session_snapshots`,
 RPC acotadas, guard AFTER INSERT sólo Suti Préstamo y parche mínimo del cotizador
 autenticado. No cambia el motor de tasas, los writers existentes, cuotas,
@@ -502,6 +502,14 @@ nuevas tablas, eventos y evidencias; nunca borra decisiones ni solicitudes. Las
 pruebas PostgreSQL aisladas incluyen forward/recovery y denegaciones, con personas
 sintéticas; las carreras nativas se ejecutan separadamente.
 
-Estado: LOCAL CANDIDATE, NOT APPLIED / NOT PUBLISHED. La revisión automática rechazó
-el envío cloud de compilación por requerir autorización explícita del contenido
-y destino. No se aplicó esta migración ni se publicó el candidato.
+La revisión automática rechazó inicialmente el envío cloud de compilación por
+requerir autorización explícita del contenido y destino. El propietario autorizó
+después terminar, hacer commit, push y publicar el paquete revisado.
+
+La migración se aplicó junto con su registro exacto en `supabase_migrations`
+dentro de una misma transacción. La verificación productiva de sólo lectura
+confirmó las 48 funciones previas sin cambios, el parche esperado del cotizador
+con OID/ACL/owner preservados, 11 funciones nuevas, RLS, triggers y recovery
+respaldado. La política global quedó apagada y sin excepciones individuales.
+Backend `financial-legacy` v65 y Pages `9d743d3` están publicados, con CI exitoso.
+Las verificaciones finales focal y global en producción terminaron con PASS.

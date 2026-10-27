@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "target": "LOCAL_WITH_LIVE_BACKEND",
+  "completedAt": "2026-10-27T06:19:29.151Z",
+  "scope": "Authenticated, read-only live financial capacity and UI verification",
+  "requestSubmissions": 0,
+  "policyWrites": 0,
+  "businessDataWrites": 0,
+  "piiReported": false,
+  "source": "LIVE_SUPABASE_AND_PUBLISHED_HISTORY",
+  "credentialCoverage": {
+    "configuredAccounts": 1,
+    "ordinaryAccount": "NOT_RUN_CREDENTIAL_NOT_CONFIGURED"
+  },
+  "checks": [
+    {
+      "account": "CONTROLLED_ADMIN_AFFILIATE",
+      "bundleSha256": "d22be38a3bf4992922450a856eff30c87579fcc4c9f9b2b4c65720d3307f40ab",
+      "overview": {
+        "status": "PASS",
+        "visibleFunds": 5,
+        "activeLoans": 0,
+        "contract": true,
+        "formulas": true,
+        "totalMatches": true,
+        "sourceMatches": true,
+        "sourceVersion": "82ed397e-ae9a-4045-9c9b-0aadd73ecb1a",
+        "sourceTimeMatches": true,
+        "homeMatches": true,
+        "reducedFunds": 2,
+        "exhaustedFunds": 0
+      },
+      "quote": {
+        "status": "PASS",
+        "reducedFundTested": true,
+        "validAtCapacity": true,
+        "returnedCapacityMatches": true,
+        "rejectedAboveCapacity": true,
+        "rejectionCode": "LOAN_CAPACITY_EXCEEDED",
+        "validErrorCode": null
+      },
+      "financeTotalMatches": true,
+      "fundCards": {
+        "count": 5,
+        "match": true,
+        "fourSteps": true
+      },
+      "admin": {
+        "exactPerson": true,
+        "funds": 36,
+        "individualSwitchPresent": true,
+        "policyUnchanged": true,
+        "configurePermission": true,
+        "authorizePermission": true
+      },
+      "navigationMethod": "DOM_CLICK_AS_OFFICIAL_GLOBAL_TEST",
+      "promotionalPopupDismissed": false
+    }
+  ],
+  "runtimeErrors": [],
+  "limitations": [
+    "One configured controlled account; ordinary account live browser coverage was not run.",
+    "No real applications submitted and no global or individual policy toggle persisted."
+  ],
+  "navigationFinding": "Initial physical click was intercepted by the existing promotional AdminPopup (admin-store.jsx). DOM click used the official global test pattern; full pointer navigation was then verified on the published candidate after normal popup dismissal."
+}

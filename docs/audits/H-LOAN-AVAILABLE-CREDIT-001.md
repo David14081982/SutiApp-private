@@ -1,6 +1,6 @@
 # H-LOAN-AVAILABLE-CREDIT-001
 
-Current status: publication authorized by the owner; backend installed and verified, frontend publication and final verification in progress. The earlier approval block below is historical.
+Status: PASS. Owner-authorized backend and frontend published and verified. The earlier approval block below is historical and resolved.
 
 ## AUDIT / AUTHORITY / PLAN / RISK
 
@@ -128,7 +128,7 @@ Local evidence is in the isolated candidate's
   Only the test origin changed; no CORS, product or fixture rewrites were made.
 - `global-images-production-baseline.json`: existing Pages baseline PASS before
   this deployment, plus `pdf-focused-allowed-origin.json` for local/Pages PDF.
-  Postdeployment candidate verification on Pages remains required.
+  Postdeployment verification is now recorded in global-images-production-final.json.
 - `workspace-preservation.json`: all 4,134 baseline files remain byte-identical.
 - `restore-external.json`: function sources/config, Pages artifact, repository
   source and unchanged Google receiver captured; hashes and ZIP CRC verified.
@@ -140,30 +140,33 @@ requires `financial_rules.write`; no new administrative grant is introduced.
 
 ## H-LOAN-AVAILABLE-CREDIT-001 RESULT
 
-Status: BLOCKED only for external publication; local candidate tests PASS.
+Status: PASS; migration, Edge and Pages published with postdeployment evidence.
 Files changed: isolated release's scoped source/test/migration/governance files;
 exact file list and hashes in `.tmp/loan-available-credit/package-2026102609/manifest.json`.
 Source-of-truth verdict: PASS; existing published Google projection and canonical
 Supabase requests/criteria retained; new policy stores only exemptions.
 Invariant verdict: PASS locally; original amortization/eligibility/flow preserved.
-Build: PASS local bundle and Pages artifact; cloud Edge bundle pending approval.
-Tests: PASS focal, SQL, true concurrency, UI, local global images and Pages baseline.
-Security: local grants/RLS/actor/context tests PASS; production application pending.
+Build: PASS local bundle, cloud Edge compile, CI artifact and published source hashes.
+Tests: PASS focal, SQL, true concurrency, UI, local global images and final Pages regression.
+Security: grants/RLS/actor/context tests PASS; production definitions, permissions,
+JWT, policy defaults and installed source readback verified.
 Legacy impact: no Google or financial legacy writers changed; same daily/manual
 publication; debt is derived using the existing paidThrough rule.
 Unexpected files changed: none; original workspace baseline unchanged.
 Known limitations: source refresh cadence remains unchanged; stale sessions may
-require reopening the simulator at deployment; no new full production integration
-test is claimed before applying SQL/Edge. A failed or unknown source never grants
-credit, including when an exemption is enabled.
+require reopening the simulator after deployment. Live focal verification uses
+one controlled account and covers native reservations; multiple active amortized
+loans and cross-role/concurrency cases use the real projector and isolated SQL
+fixtures. No real loan submission or authorization toggle was used for QA.
+A failed or unknown source never grants credit, including with an exemption.
 Evidence: paths above, independent `architect-review.md`, and `deployment-plan.md`.
 
 Automatic approval review rejected sending financial source to Supabase's cloud
 compilation endpoint, citing insufficient explicit authorization for the payload,
 destination and possible remote effects despite bundleOnly. No bypass was used.
-The final approval request covers this exact migration, Edge package and Pages
-version. The deploy/recovery plan is concrete; no further routine confirmation
-is required for local/read-only work already authorized.
+The owner subsequently authorized this exact migration, Edge package, commit,
+push and Pages publication. The deploy/recovery plan was executed; no further
+routine confirmation was requested for this authorized continuation.
 
 ## Authorized publication continuation — 2026-10-26
 
@@ -171,8 +174,8 @@ The owner responded to the concrete publication request with: "al terminar haz
 commit, push y publicalo". This authorizes the prepared migration, financial Edge
 package and GitHub/Pages release described above. The prior automatic-review
 block is resolved by this explicit instruction; it is retained as historical
-evidence, not a new approval requirement. Current phase: production preflight,
-deployment and verification in progress, without a product PASS claim yet.
+evidence, not a new approval requirement. At resumption the phase was production
+preflight, deployment and verification; the final result is recorded below.
 The release helper gains explicit atomic migration/Edge deployment operations;
 the migration registration and SQL apply are one transaction. Product hashes
 remain the approved candidate. Postdeployment evidence and the final independent
@@ -188,3 +191,26 @@ immutable audit, source publication and unchanged daily cron. Global policy OFF,
 zero individual exceptions; no historical business records rewritten.
 Evidence: migration-applied.json, edge-deployed.json, edge-readback.json,
 production-sql-preflight.json and production-sql-verify.json.
+
+## Publication and final verification
+
+Feature commit: `9d743d31d6862e46523b6e89384ad4099cd94e87`, pushed to main.
+GitHub Pages run `40460349576` and Membership contract run `40460349559` completed
+successfully. Pages version `2026102609` serves the exact approved bundle hash.
+The downloaded Pages artifact (ID `12714271467`, 31 files) passed ZIP CRC and
+source comparison for the bundle, financial repository, shell and service worker.
+
+`live-production-readonly.json`: PASS against real published frontend/backend,
+matching published History version, Inicio/Finanzas/fund totals, five funds,
+two reduced by canonical reservations, quote at available capacity and refusal
+of one cent above it with LOAN_CAPACITY_EXCEEDED. Admin global OFF/version zero,
+individual lookup and controls correct; no policy writes or real submissions.
+Normal pointer navigation passed after closing the existing promotional popup.
+
+`global-images-production-final.json`: official complete Pages regression PASS
+with exact bundle, legitimate images/PDF, all required surfaces, refresh and
+with/without service worker; zero browser errors and business data mutations.
+`workspace-preservation-final.json`: all 4,134 original files, original Git index
+and HEAD remain unchanged. The isolated checkout owns this release's commits.
+Final independent review: `architect-review-production.md`. The final evidence
+commit changes only documentation/derived registry and preserves runtime bytes.

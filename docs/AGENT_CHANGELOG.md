@@ -4418,3 +4418,19 @@ Historial intacta, política global apagada y cero excepciones individuales.
 Backend `financial-legacy` v65 activo con JWT y Pages `9d743d3` publicados,
 con CI exitoso. La verificación final productiva focal y global terminó con PASS;
 las evidencias y el cierre integral se registran en la auditoría de esta H.
+
+### H-LOAN-AVAILABLE-CREDIT-001 — seguimiento y aceptación, 2026-10-27
+
+Se guarda el cierre autorizado después de revisar cinco identidades, 22 préstamos
+y 244 cuotas con aritmética decimal independiente; las pruebas SQL aisladas de
+las funciones originales verificaron los límites de 16 fondos visibles. La
+revisión focal de calendarios desde 2026 abarca 17 préstamos y 172 filas; no
+excluye deudas anteriores que siguen vigentes. El propietario asigna la corrección
+de diferencias de importes a la encargada del programa, sin ajustes automáticos.
+
+Este seguimiento sólo agrega decisiones, auditoría y evidencia sanitizada. No
+modifica código, cuotas, perfiles, solicitudes, switches, fórmulas ni autoridades.
+Las pruebas con captura privada no equivalen a iniciar sesión o solicitar un
+préstamo como esos usuarios, ni certifican a todos los afiliados. El detalle
+personal permanece fuera de Git y del artefacto público. Véanse la auditoría de
+la H y `qa/evidence/loan-available-credit/closure-20261027.json`.

@@ -214,3 +214,70 @@ with/without service worker; zero browser errors and business data mutations.
 and HEAD remain unchanged. The isolated checkout owns this release's commits.
 Final independent review: `architect-review-production.md`. The final evidence
 commit changes only documentation/derived registry and preserves runtime bytes.
+
+## Owner-accepted follow-up closure — 2026-10-27
+
+The owner accepts the published capacity feature and assigns reconciliation of
+source cents/amount differences to the program manager. Column B retains cents;
+the previously observed rounding belongs to the amortization screen formatter.
+No source correction, automatic forgiveness, refund or presentation change is
+part of this closure. Calendar verification prioritizes 2026 onward, without
+discarding older outstanding loans or their earlier payments. Missing financial
+profile fields are not inferred or populated by the agent.
+
+Follow-up scope and evidence, beyond the earlier controlled-account live test:
+
+- Five explicitly authorized identities were inspected through a private captured
+  publication. Independent exact decimal arithmetic matched the existing history
+  and capacity projections for 22 loans / 244 rows, eight with positive balance.
+- The original installed SQL functions were evaluated in an isolated database
+  using captured inputs: 16 eligible fund limits; 15 positive limits accepted,
+  one zero-capacity case rejected, all 16 one-cent-above-limit cases rejected.
+  These tests did not create real requests or impersonate the named users.
+- Calendar dates A from 2026 onward cover 17 loans / 172 rows. Eleven loans were
+  authorized in 2026; two older loans still have positive balances and remain
+  included. Two full schedules fall short of K; one source liquidation label
+  disagrees with its positive computed residual. These source observations remain
+  for the program manager; accepting functionality does not certify their repair.
+- The dated read-only readiness check verified the installed SQL guards and
+  enabled submission trigger, global exception OFF, zero individual exceptions,
+  financial-legacy v65 ACTIVE with JWT, and the unchanged public bundle. Its exact
+  time is retained in closure-20261027.json, not presented as a new data audit.
+
+The anonymized aggregate evidence is
+`docs/qa/evidence/loan-available-credit/closure-20261027.json`. Private captures,
+individual identifiers, names and balances are excluded from the commit and Pages.
+The sample does not certify every affiliate or future calendars not yet recorded.
+Existing category/presentation behavior and publication cadence remain unchanged.
+
+Publication scope: append this audit, DECISIONS.md and AGENT_CHANGELOG.md; add the
+sanitized closure JSON and independent architect-review-closure.md. No runtime,
+schema, configuration, workflow, bundle or SW changes. The existing restoration
+point and published commit 5f52b1959f70e833e100d6aa23335e51a57ec0b4 remain recovery
+references; unrelated original-workspace edits are outside this commit.
+
+Verification: inspect the exact diff and privacy allowlist, run the Pages package
+test, compare runtime bytes, and check Registry freshness. Documentation-only
+staleness does not authorize inventing architecture changes or claiming FRESH.
+The new push triggers the existing Pages workflow; CI and served bytes are checked
+after publication. Prior financial and global-image tests remain dated evidence;
+they are not rerun solely for this documentation-only closure.
+
+### Follow-up closure verification
+
+Status: PASS for documentation candidate; new GitHub publication is verified
+separately after this commit is pushed.
+Files changed: the five declared documentation/evidence paths above.
+Source-of-truth verdict: PASS; unchanged authorities and no business writes.
+Invariant verdict: PASS; no runtime diff and owner decisions recorded faithfully.
+Build: PASS, `node scripts/test-pages-deployment.js` builds the allowlisted public
+artifact; PWA contract passes and zero forbidden files are present.
+Tests: `git diff --check` PASS; prior financial tests remain explicitly dated.
+Security: aggregate evidence only; private customer captures are not staged.
+Legacy impact: none; no quota/formula/source/synchronization changes.
+Unexpected files changed: none in the isolated release; root workspace retained.
+Known limitations: Registry check is STALE only for changed/new closure documents
+and evidence. No architecture changed, so the index is not regenerated and is
+not represented as fresh. Source differences remain assigned to the manager.
+Evidence: closure-20261027.json; independent architect-review-closure.md; private
+publication receipt records the new commit/run after deployment completes.

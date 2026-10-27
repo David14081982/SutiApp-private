@@ -1,0 +1,62 @@
+{
+  "task": "H-LOAN-AVAILABLE-CREDIT-001",
+  "recorded_at": "2026-10-27T14:23:36.191Z",
+  "scope": "Owner-accepted documentation closure; no runtime or business-data changes",
+  "owner_decisions": {
+    "source_amount_reconciliation": "Program manager responsibility; no agent correction or automatic forgiveness",
+    "column_B_preserves_cents": true,
+    "calendar_focus": "2026 onward",
+    "retain_older_outstanding_loans_and_all_registered_payments": true,
+    "no_refunds_or_extra_capacity_from_overpayment": true
+  },
+  "private_verification": {
+    "business_day": "2026-10-27",
+    "source_updated_at": "2026-10-26T22:00:37.595+00:00",
+    "affiliates": 5,
+    "loans": 22,
+    "quota_rows": 244,
+    "positive_balance_loans": 8,
+    "decimal_arithmetic": "PASS",
+    "isolated_original_SQL": "PASS",
+    "eligible_fund_boundaries": 16,
+    "positive_limits_accepted": 15,
+    "zero_capacity_requests_rejected": 1,
+    "one_cent_over_limit_rejected": 16,
+    "loans_with_2026_onward_installments": 17,
+    "installment_rows_2026_onward": 172,
+    "loans_authorized_2026_onward": 11,
+    "calendar_shortfall_count": 2,
+    "prior_origin_with_positive_balance_count": 2,
+    "coverage_limit": "Captured five-user inputs and isolated original functions, not authenticated UI sessions or real submissions for those users; not an all-affiliate audit"
+  },
+  "prior_installation_check": {
+    "checked_at": "2026-10-27T14:05:25.902805+00:00",
+    "status": "PASS_CURRENT_ENFORCEMENT_INSTALLED",
+    "policy": {
+      "version": 0,
+      "allow_full": false
+    },
+    "active_individual_exceptions": 0,
+    "submission_trigger": {
+      "enabled": "O",
+      "function": "enforce_loan_available_credit()"
+    },
+    "edge": {
+      "version": 65,
+      "status": "ACTIVE",
+      "verify_jwt": true
+    },
+    "pages": {
+      "version": "2026102609",
+      "sha256": "d22be38a3bf4992922450a856eff30c87579fcc4c9f9b2b4c65720d3307f40ab"
+    }
+  },
+  "private_evidence_hashes": {
+    "arithmetic_sha256": "60c7c988ad827b72a2b102e2856b8e9bebad1ff5634e9b8cb7e9bc4d99e598b6",
+    "sql_sha256": "23b2a7613ec782ac48bd63afc01ccf06e2ea3cca0bae6d0bcafbd6d8398b35ca",
+    "calendar_sha256": "2dfbb74a157c6913bc61de429b3baf4877fa6620beb32f1d6162e086abeb4dd5"
+  },
+  "production_mutations_during_follow_up": 0,
+  "personal_data_in_this_summary": false,
+  "remaining_observations": "Source reconciliation remains with program manager; existing source-status categories and screen rounding are unchanged. No universal source-data completeness claimed."
+}

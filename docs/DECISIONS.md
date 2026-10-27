@@ -1534,3 +1534,25 @@ Ejecución autorizada: migración `20261027000100` aplicada y verificada, backen
 CI exitoso. La política global quedó apagada y sin excepciones individuales.
 Las verificaciones finales focal y global en producción terminaron con PASS;
 sus evidencias y el cierre integral se registran en la auditoría de esta H.
+
+### H-LOAN-AVAILABLE-CREDIT-001 — cierre aceptado, 2026-10-27
+
+El propietario acepta el cierre de la funcionalidad publicada de límites y
+disponibilidad. Las diferencias de centavos e importes de origen deberán ser
+cuadradas por la encargada del programa. Esta decisión no autoriza al agente a
+reescribir cuotas, estados o históricos, perdonar saldos ni emitir devoluciones.
+K sigue siendo el total contractual a pagar; el saldo es cero cuando la suma de
+B con fecha A hasta el corte alcanza o supera K. Un excedente no incrementa el
+cupo por encima del máximo autorizado del programa/perfil.
+
+La columna B conserva centavos. La prioridad de revisión son los calendarios
+desde 2026; no se exige reconstruir calendarios antiguos cerrados sólo por falta
+de información. Se conservan en el cálculo las deudas anteriores aún vigentes y
+todos sus pagos registrados, incluidos los anteriores a 2026. Los perfiles sin
+sindicato no se completan por inferencia.
+
+La aceptación no declara corregidas las diferencias de datos ni cambia el estado
+X, el formato visual de Amortización, los flujos o la sincronización existentes.
+El propietario ordena guardar, hacer commit, push y publicar este cierre. Se
+registra únicamente documentación y evidencia sanitizada; el código productivo
+publicado conserva sus hashes y las capturas personales permanecen privadas.

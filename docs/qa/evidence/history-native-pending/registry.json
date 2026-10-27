@@ -1,0 +1,74 @@
+{
+  "status": "PASS",
+  "classification": "DERIVED_TECHNICAL_INDEX",
+  "runtime_authority": false,
+  "generator_modified": false,
+  "production_calls": 0,
+  "resource": {
+    "type": "repository",
+    "name": "LoanHistory",
+    "file": "app/history-loans-repository.js",
+    "alias": "Solicitudes pendientes inmediatas",
+    "source_of_truth": "DERIVED",
+    "authority": "Existing own program_requests reader supplies unmatched explicit canonical SR pending cards; published and confirmed-approval sourceIds take precedence; no new calls",
+    "evidence": "docs/audits/H-HISTORY-NATIVE-PENDING-001.md"
+  },
+  "fullSuite": {
+    "command": "python scripts/test-architecture-registry.py",
+    "runs": 1,
+    "exit_code": 0,
+    "status": "PASS",
+    "result": "PASS generation freshness stale lookup screen table column reverse admin permissions tests fallback incremental secrets determinism",
+    "includes_initial_generation": true
+  },
+  "check": {
+    "command": "python scripts/generate-architecture-registry.py check --json",
+    "stage": "after full suite and before adding this receipt",
+    "exit_code": 0,
+    "status": "FRESH",
+    "changed": [],
+    "added": [],
+    "removed": []
+  },
+  "lookups": [
+    {
+      "command": "python scripts/generate-architecture-registry.py lookup Historial --compact",
+      "query": "Historial",
+      "freshness": "FRESH",
+      "fallback_required": false,
+      "first_primary_file": "app/screens-historial.jsx",
+      "focal_primary_files": [
+        "app/screens-historial.jsx",
+        "app/history-loans-repository.js",
+        "app/history-loans.jsx"
+      ],
+      "mapped_resources": ["HistorialScreen", "LoanHistory", "LoanHistoryDetail", "loan-history"],
+      "note": "The existing broad Historial lookup also includes savings history and pre-existing identity consumers; navigation references do not imply changes to those domains."
+    },
+    {
+      "command": "python scripts/generate-architecture-registry.py lookup \"Solicitudes pendientes inmediatas\" --compact",
+      "query": "Solicitudes pendientes inmediatas",
+      "freshness": "FRESH",
+      "fallback_required": false,
+      "domains": ["finance"],
+      "first_primary_file": "app/history-loans-repository.js",
+      "mapped_resources": ["LoanHistory", "LoanHistoryDetail", "loan-history", "public.get_self_loan_history_snapshot", "public.get_self_loan_history_approvals"],
+      "cross_domain_impact": {"domains": [], "consumers": []}
+    }
+  ],
+  "postSuiteStatistics": {"nodes": 9576, "edges": 25614, "aliases": 118, "tests": 536},
+  "fixture_cleanup": {"path": "app/__navigator_incremental_fixture__.js", "exists": false},
+  "scope": {
+    "unexpected_files": [],
+    "writes": [
+      "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+      "docs/architecture/registry-code.json",
+      "docs/architecture/registry-data.json",
+      "docs/architecture/registry-edges.json",
+      "docs/architecture/registry-search.json",
+      "docs/qa/evidence/history-native-pending/registry.json"
+    ],
+    "overrides_modified_by_this_verification": false
+  },
+  "finalization": "This receipt is written before final generation/check so it is included in the fingerprint. Final command logs remain private; no tracked file is changed after final generation/check."
+}

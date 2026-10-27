@@ -1488,3 +1488,7 @@ The owner explicitly authorized two corrections: immediate affected-user approva
 ## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
 
 Owner explicitly confirmed the A/B/C/D rule and requested a focused implementation, label Total pagado, commit, push and publication. The rule replaces the V-based own-history paid summary, not the financial legacy, accounting ledger or existing loan process. Dates on/before today represent payments manually corroborated by the program manager; future dates remain scheduled. Invalid data must be reviewed rather than coerced to zero. UI and statement use the same projected total. No Google Sheets, historical records, source amounts, quota states/numbering or synchronization changes are authorized.
+
+## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
+
+After the read-only diagnosis showed that native pending loans were discarded before filters while the published observation predated creation, the owner explicitly instructed implementing the proposed immediate own pending presentation and ensuring the defect is corrected. Use the existing authenticated native request result and preserve one card when publication catches up. The decision extends only pending-card presentation; it does not authorize financial/source writes, Google edits, new polling or global synchronization. Preserve the existing approval and amortization update processes.

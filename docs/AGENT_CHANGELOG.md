@@ -4380,3 +4380,7 @@ Prepared two independently updated history channels: the existing Google-derived
 ## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
 
 Implement the owner-approved Total pagado presentation from dated published quotas, replacing V only in own loan history/detail/statement. Preserve source values, exact ownership, approval window, status, quota numbering, PDF design and daily/manual publication. Scope, validation and release state: audits/H-HISTORY-TOTAL-PAID-001.md and qa/evidence/history-total-paid.
+
+## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
+
+Preserve canonical own pending financial requests in Historial before the independent Google observation contains them. Restrict to explicit pending native statuses; deduplicate against published and confirmed-approval identities without requiring stale financial_request_ids. Existing own native load/event and tracking are reused, with no new network cadence, backend or financial/source writes. Audit, verification and release candidate: audits/H-HISTORY-NATIVE-PENDING-001.md and qa/evidence/history-native-pending.

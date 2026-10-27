@@ -186,3 +186,7 @@ The sole Apps Script addition is fixed read_history_snapshot/HISTORY_SNAPSHOT_RE
 ## H-HISTORY-TOTAL-PAID-001 - 2026-10-26
 
 This change reads the already published A/B/C/D observation only. It does not alter Google Sheets, Apps Script, formulas, triggers, snapshots, quotas, dates, amounts, J/K, V/W or X. The owner-authorized own-history presentation sum uses A<=today Hermosillo and B, by exact own C/D. Existing legacy readers, writers, loan calculations outside this display and daily/manual publication remain byte-identical. Recovery restores the prior reader/frontend; no business-data recovery is needed.
+
+## H-HISTORY-NATIVE-PENDING-001 - 2026-10-26
+
+This focused repair changes only the frontend combination of own native pending requests and published history. No Google calls/writes, Apps Script, source reader, source observation, worker, schedule, trigger, loan status, quota, amount or date is changed. The native pending card represents the canonical request lifecycle, not a newly verified Google Y value. Existing source-derived records and financial calculations retain their authorities. Recovery reverts the frontend merger/version only.

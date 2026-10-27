@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "version": "2026102608",
+  "build": "scripts/build-bundle.js with Babel 7.28.4; syntax and exact source chunk verified",
+  "modules": 163,
+  "changedModules": [
+    "history-loans-repository.js"
+  ],
+  "unchangedModules": 162,
+  "htmlAndServiceWorkerVersionOnly": true,
+  "protectedPathsUnchanged": [
+    "supabase",
+    "google-apps-script",
+    "app/operations-store.jsx",
+    "app/program-request-repository.js",
+    "app/screens-historial.jsx",
+    "app/history-loans.jsx",
+    "app/history-statement.js",
+    "app/history-sync-admin.js",
+    "app/screens-admin-finanzas.jsx",
+    "app/admin-finance-queue-repository.js",
+    "app/private-resource-demand.js",
+    "app/affiliate-auth.js",
+    "app/app.jsx"
+  ],
+  "bundleSha256": "7262a8951f0ec618c040c2c8ba901ae95d4d16ed73c0fc341277e6fef47c69fb",
+  "pagesPwa": "PASS scripts/test-pages-deployment.js",
+  "globalImageRegression": "NOT APPLICABLE: focal history merger and generated artifacts only; shared assets/Auth/routing/SW logic unchanged"
+}

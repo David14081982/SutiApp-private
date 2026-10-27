@@ -33250,12 +33250,16 @@ Object.assign(window, {
      upcoming:!!row.date&&row.date>today,closure:index===rows.length-1}))};
   });
  }
+ function nativePending(row){
+  return (row.kind==='loan'||row.financial===true)&&typeof row.sourceId==='string'&&!!row.sourceId.trim()&&typeof row.id==='string'&&/^SR-/.test(row.id)&&row.estado==='revision'&&['submitted','requires_financial_processing','in_review'].includes(row.requestStatus);
+ }
  function merge(existing,data,elapsed){
-  // Native workflows are independent of Google. Financial statuses still require their source.
-  if(!data)return existing.filter(row=>row.kind!=='loan'&&!row.financial);
-  const projected=project(data,elapsed),financial=new Set(data.financial_request_ids),covered=new Set([...data.covered_request_ids,...projected.map(entry=>entry.sourceId).filter(Boolean)]);
+  // Own pending intent belongs to the native workflow, independently of the
+  // financial observation. Published entries and confirmed approvals take precedence.
+  if(!data)return existing.filter(row=>nativePending(row)||(row.kind!=='loan'&&!row.financial));
+  const projected=project(data,elapsed),financial=new Set(data.financial_request_ids),covered=new Set([...data.covered_request_ids,...projected.map(entry=>entry.sourceId),...(data.approvals||[]).map(entry=>entry.sourceId)].filter(Boolean));
   const originals=new Map(existing.map(row=>[row.sourceId,row]));
-  const rows=existing.filter(row=>row.kind!=='loan'&&!row.financial&&!financial.has(row.sourceId)&&!covered.has(row.sourceId));
+  const rows=existing.filter(row=>!covered.has(row.sourceId)&&(nativePending(row)||(row.kind!=='loan'&&!row.financial&&!financial.has(row.sourceId))));
   for(const entry of projected){
    const original=originals.get(entry.sourceId),state={'En proceso':'revision','Aprobadas':'aprobado','En pago':'en_pago','Liquidadas':'liquidada','No aprobadas':'rechazado'}[entry.category]||'por_revisar';
    rows.push({...original,id:entry.id,sourceId:entry.sourceId,historyKey:entry.key,history:entry,kind:'history',

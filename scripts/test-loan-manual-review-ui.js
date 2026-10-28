@@ -24,7 +24,9 @@ async function main(){
  await page.evaluate(()=>{
   window.__root.unmount();
   const h=React.createElement;
-  window.AdminRepository={subscribe:()=>()=>{}};
+  window.__reviewReads=0;
+  window.__adminState={phase:'authorized',subjectKey:'synthetic-admin',assignment:{permissions:['program_requests.read']}};
+  window.AdminRepository={getState:()=>window.__adminState,subscribe:fn=>{window.__adminListener=fn;fn(window.__adminState);return()=>{};}};
   window.PrivateResourceDemand={useContext:()=>null}; // No document selected in this focal queue test.
   window.ProgramRequestRepository={listAdminFlowQueue:async()=>[],listFinancialMobile:async()=>[]};
   window.HistorySyncAdmin=()=>h('div',{'data-preserved-admin':'sync'},'Sincronización');
@@ -32,6 +34,7 @@ async function main(){
   window.LoanAvailabilityAdmin=()=>h('div',{'data-preserved-admin':'capacity'},'Disponibilidad');
   window.SutiSupabase={getClient:()=>({rpc:async(name)=>{
    if(name!=='list_admin_loan_historical_reviews')throw Error('Unexpected admin RPC');
+   window.__reviewReads++;
    return {data:Array.from({length:12},(_,i)=>({id:'case-'+i,affiliate_id:'synthetic-uuid-'+i,numero_control:i<5?null:String(90000+i),full_name:'Afiliado de prueba '+i,status:'PENDING',cause_code:i<5?'CONTROL_MISSING':'FUND_UNRESOLVED',cause:'Falta soporte documental de esta obligación histórica.',obligation_key:'loan:historic-'+i,evidence:['Hoja original · fila documentada','Relaciones canónicas revisadas'],previous_value:{fund:'Denominación histórica'},events:[{id:'event-'+i,created_at:'2026-10-28T00:00:00Z',actor_auth_user_id:'synthetic-actor',reason:'Registro autorizado de revisión con evidencia.'}]}))};
   }})};
  });
@@ -39,6 +42,9 @@ async function main(){
  await page.evaluate(()=>{window.__root=ReactDOM.createRoot(document.getElementById('root'));window.__root.render(React.createElement(window.FinanzasModule,{app:{admin:{has:()=>true}},onBack:()=>{},header:({title})=>React.createElement('h1',null,title)}));});
  await page.waitForSelector('[data-historical-review-queue="ready"]').catch(async e=>{console.error(JSON.stringify({errors,body:(await page.locator('body').innerText()).slice(0,800)}));throw e;});
  assert.equal(await page.locator('[data-historical-review-case]').count(),12);
+ assert.equal(await page.evaluate(()=>window.__reviewReads),1,'IMMEDIATE_SUBSCRIPTION_MUST_NOT_LOOP');
+ await page.evaluate(()=>window.__adminListener({...window.__adminState}));
+ assert.equal(await page.evaluate(()=>window.__reviewReads),1,'UNCHANGED_CONTEXT_MUST_NOT_RELOAD');
  await page.locator('[data-historical-review-case] summary').first().click();
  assert.match(await page.locator('[data-historical-review-queue]').innerText(),/Evidencia disponible/);
  assert.match(await page.locator('[data-historical-review-queue]').innerText(),/Actor:/);

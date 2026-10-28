@@ -52849,7 +52849,14 @@ Object.assign(window, {
       window.AdminFinanceQueueRepository.historicalReviews(initialAffiliateId).then(value => {
         if (active) { setRows(value); setPhase('ready'); }
       }).catch(() => { if (active) { setRows([]); setPhase('error'); } });
-      const invalidate = () => { active = false; setRows([]); setPhase('loading'); setNonce(n => n + 1); };
+      const contextKey = state => JSON.stringify([state?.phase, state?.subjectKey, state?.assignment]);
+      const initialContext = contextKey(window.AdminRepository?.getState?.());
+      const invalidate = state => {
+        // subscribe immediately emits the current state; only a real authority
+        // change invalidates the request, otherwise every mount reloads forever.
+        if (contextKey(state) === initialContext) return;
+        active = false; setRows([]); setPhase('loading'); setNonce(n => n + 1);
+      };
       const unsubscribe = window.AdminRepository?.subscribe?.(invalidate);
       return () => { active = false; unsubscribe?.(); };
     }, [initialAffiliateId, nonce]);

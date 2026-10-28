@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "ambiguousCasesProtected": "12/12",
+  "technicalCrashesFinalFocalRun": 0,
+  "debtIgnored": 0,
+  "automaticGuesses": 0,
+  "adminReviewVisible": "PASS",
+  "normalProfileRegression": "PASS",
+  "12087Regression": "PASS",
+  "balancesModified": 0,
+  "historicalRowsModified": 0,
+  "previouslyFixedCalculationLogicAltered": false,
+  "fullCohortReplayed": false,
+  "globalSuitesRun": false,
+  "runtimeCommit": "5251e6683cb17907f6efe690ede6822b0a74b6b3",
+  "pagesRun": 40645190974,
+  "frontendVersion": "2026102803",
+  "edgeVersion": 67,
+  "manualFactsStillPending": 12,
+  "manualResolutionExposed": false
+}

@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "profilesChecked": 3,
+  "adminPendingCases": 12,
+  "technicalCrashes": 0,
+  "requestSubmissions": 0,
+  "balanceWrites": 0,
+  "historicalWrites": 0,
+  "sessionsStarted": 3,
+  "sessionsEnded": 3,
+  "checks": [
+    {
+      "case": "normal",
+      "status": "PASS",
+      "visibleFunds": 1,
+      "quotedFunds": 1
+    },
+    {
+      "case": "12087",
+      "status": "PASS",
+      "visibleFunds": 2,
+      "quotedFunds": 2
+    },
+    {
+      "case": "AMBIGUOUS",
+      "status": "PASS",
+      "state": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "creditGranted": false
+    }
+  ],
+  "assets": {
+    "status": "PASS",
+    "bundleSha256": "b89eab2bf98c634ad765f8dcef7d2adb9dcd38e79f9595e1b394fcd6bc37d776",
+    "repositorySha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+    "serviceWorkerSha256": "13db769759141410451da4b3dac4eeaae364d55517855f711f1793243d658659",
+    "serviceWorkerControlled": true,
+    "expectedCachePresent": true
+  },
+  "adminReviewVisible": "PASS"
+}

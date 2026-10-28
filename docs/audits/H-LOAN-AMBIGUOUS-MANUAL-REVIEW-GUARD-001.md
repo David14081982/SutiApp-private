@@ -72,7 +72,7 @@ was authenticated and its write permission verified before registration.
 PASS: deployed financial-legacy v67, JWT enabled, all seven source files match;
 focused identity/request/history fingerprints unchanged; twelve REGISTER events,
 zero RESOLVE events. No balances or historical rows written.
-Frontend production acceptance: pending commit/push and focal browser verification.
+Frontend production acceptance: PASS; final evidence and publication receipts below.
 
 ## Architecture review before publication
 
@@ -91,3 +91,73 @@ existing source edits and overrides were not overwritten. Those root index
 changes are excluded from this isolated release. The release registry was then
 generated in the correct checkout. No root runtime or production data changed
 through that generation. Release file scope is checked independently.
+
+
+## Final production closure
+
+Status: PASS. Runtime commits 6970244e36e1c6ba88fdec94fb981f0957389c5d and
+5251e6683cb17907f6efe690ede6822b0a74b6b3 pushed to origin/main. Pages deployment
+40645190974 succeeded for the final runtime (2026102803). Backend financial-legacy
+v67 ACTIVE with JWT verification; seven installed source files match the release.
+
+The live check detected and corrected an immediate Admin subscription notification
+that restarted the new review panel repeatedly. The focal UI test now reproduces
+that notification and verifies both initial and unchanged-context emissions cause
+only one read. Production confirms twelve rows render. Earlier browser attempts
+also exposed a promotional-dialog navigation race in the test; the verifier now
+closes that dialog with its real button and avoids competing close actions.
+These failed attempts are not counted as passing production checks.
+
+Final production browser run: normal profile PASS (one visible/quoted fund),
+12087 PASS (two visible/quoted funds), ambiguous profile PASS (human explanation,
+no technical code, no quote or credit, continuation disabled), Finance panel PASS
+(twelve pending cases, cause, obligation, evidence, registration actor/date/reason).
+Actual Finance and pending-loan screenshots inspected visually; personal captures
+remain in ignored private artifacts. Three assisted sessions started and all three
+ended; no requests submitted, no business-write attempts, no browser exceptions.
+All prior failed attempts closed their own assisted sessions as well.
+
+Exact twelve documented affiliate UUIDs and obligation keys verified against the
+registered records, including five without control. Twelve REGISTER events and
+zero RESOLVE events. Focused pre/post fingerprints of identities, requests and
+historical observations remain equal. No cohort replay or global suite was run.
+Normal and 12087 prior projection outputs are byte-identical in the focal capture.
+The remaining 1,024 non-ambiguous profiles were not re-audited: their calculation
+engine/rules are untouched and the added guard applies only to registered pending
+identities. This is not a claim of a fresh 1,026-profile live test.
+
+H-LOAN-AMBIGUOUS-MANUAL-REVIEW-GUARD-001 RESULT
+Status: PASS
+Files changed: declared focal backend/UI/register/tests/docs and generated artifacts.
+Source-of-truth verdict: PASS; new authority holds review state only.
+Invariant verdict: PASS; debts preserved, no mapping guesses, no credit while pending.
+Build: PASS; 167/170 bundle modules unchanged, three declared modules regenerated.
+Tests: PASS; focused SQL, Edge, UI, two baseline projections, three live profiles/Admin.
+Security: PASS; Finance permission/module boundary, self privacy, immutable events.
+Legacy impact: no financial formulas, balances or historical rows changed.
+Unexpected files changed: none in release; root derived-registry incident noted above.
+Known limitations: twelve facts remain unresolved; future manual resolution needs
+supporting documents and an authorized audited writer. No resolution picker exposed.
+Evidence: ../qa/evidence/loan-manual-review/{sql,edge,ui,projection,build,
+registered-guard,backend-production,production,result}.json.
+
+Ambiguous cases protected: 12/12
+Technical crash: 0 in final focal production run
+Debt ignored: 0
+Automatic guesses: 0
+Admin review visible: PASS
+Normal profile regression: PASS
+12087 regression: PASS
+Balances modified: 0
+Historical rows modified: 0
+Previously fixed calculation logic altered: NO
+
+## Final architect review
+
+APPROVED. Same-agent evidence review, not an independent-agent attestation.
+Requested operational protection is complete and verified in production. Pending
+facts are explicitly retained, user and Admin states are controlled, direct/old
+credit paths remain guarded, and no unsupported financial resolution is introduced.
+Next instruction: record final evidence commit/publication receipt, verify served
+artifacts still match the passing runtime, and stop. No owner decision is required
+to close this guard; documentary decisions belong to the future resolution task.

@@ -151,15 +151,18 @@
       ERROR: ['info', 'No pudimos calcular la simulación.', 'Intenta nuevamente. Si continúa, solicita apoyo.'],
       UNAVAILABLE: ['clock', 'Simulador no disponible por el momento', 'Tus pasos y datos permanecen sin cambios.'],
       NO_AVAILABLE_BALANCE: ['info', 'Sin saldo disponible en este fondo', 'Las cuotas pendientes ocupan el límite disponible. Puedes revisar otro fondo.'],
+      HISTORICAL_LOAN_MAPPING_REQUIRED: ['info', 'Necesitamos revisar el fondo de un préstamo de tu historial', 'Solicita apoyo para identificar su fondo antes de continuar. Esto no significa que no tengas saldo disponible.'],
+      HISTORICAL_LOAN_DATA_REVIEW_REQUIRED: ['info', 'Necesitamos revisar un préstamo de tu historial', 'Solicita apoyo para verificar sus datos antes de continuar. Esto no significa que no tengas saldo disponible.'],
     };
     const item = notices[state];
     if (!item) return null;
-    return React.createElement('div', { role: state === 'ERROR' ? 'alert' : 'status', 'data-simulator-state': state, style: { display: 'flex', gap: 11, alignItems: 'flex-start', padding: '13px 14px', borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
+    const needsReview = state === 'HISTORICAL_LOAN_MAPPING_REQUIRED' || state === 'HISTORICAL_LOAN_DATA_REVIEW_REQUIRED';
+    return React.createElement('div', { role: state === 'ERROR' || needsReview ? 'alert' : 'status', 'data-simulator-state': state, 'data-credit-state': state === 'NO_AVAILABLE_BALANCE' ? 'NO_CREDIT_AVAILABLE' : state, style: { display: 'flex', gap: 11, alignItems: 'flex-start', padding: '13px 14px', borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
       React.createElement(window.IconTile, { icon: item[0], size: 38 }),
       React.createElement('div', { style: { flex: 1, minWidth: 0 } },
         React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink)' } }, item[1]),
         React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 2 } }, item[2])),
-      (state === 'ERROR' || state === 'UNAVAILABLE') && React.createElement('button', { onClick: onRetry, style: { border: 'none', background: 'transparent', color: 'var(--guinda)', font: '700 12px var(--font)', cursor: 'pointer', padding: '3px 0' } }, 'Reintentar'));
+      (state === 'ERROR' || state === 'UNAVAILABLE' || needsReview) && React.createElement('button', { onClick: onRetry, style: { border: 'none', background: 'transparent', color: 'var(--guinda)', font: '700 12px var(--font)', cursor: 'pointer', padding: '3px 0' } }, 'Reintentar'));
   }
 
   function FundPicker({ programs, selected, setSelected, disabled, onSelect }) {
@@ -217,6 +220,8 @@
       ['Total', result && result.total],
     ];
     const loadingMotion = initialLoading || updating;
+    // Error/empty values are not a pending quote: stop the wheels and show no amount.
+    const hideValues = inactive || failed || (!result && !loadingMotion);
     const placeholderCycle = loadingCycle + ':' + (failed ? 'error' : loadingMotion ? 'loading' : 'idle');
     const resultState = inactive ? 'unavailable' : initialLoading ? 'initial-loading' : failed ? 'error' : updating ? 'recalculating' : 'ready';
     return React.createElement('div', { style: { position: 'sticky', top: -8, zIndex: 3, margin: '0 -20px', padding: '0 20px 10px', background: 'linear-gradient(var(--bg) 78%, transparent)' } },
@@ -235,20 +240,20 @@
           React.createElement('div', { style: { minWidth: 0 } },
             React.createElement(ResultFit, { style: { fontSize: 'var(--text-12, 12px)', opacity: .8, fontWeight: 700, letterSpacing: '.02em' } }, 'Cada pago será de'),
             React.createElement(ResultFit, { className: 'su-result-payment', style: { borderRadius: 9, fontSize: 'var(--text-40, 40px)', fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } },
-              inactive ? dash : React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? result.paymentPerPeriod : null, loading: loadingMotion || !result, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle }))),
+              hideValues ? dash : React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? result.paymentPerPeriod : null, loading: loadingMotion || !result, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle }))),
           React.createElement('div', { className: 'su-result-meta', style: { textAlign: 'right', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, opacity: .85, lineHeight: 1.45, paddingBottom: 5 } },
             updating && React.createElement(ResultFit, { style: { fontSize: 'var(--text-10-5, 10.5px)' } }, React.createElement('div', { role: 'status', 'aria-live': 'polite', style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 2, padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,.14)', fontSize: 'var(--text-10-5, 10.5px)' } },
               React.createElement('span', { className: 'su-spinner', 'aria-hidden': 'true', style: { width: 10, height: 10 } }), 'Actualizando…')),
-            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, inactive ? dash : !result
+            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, hideValues ? dash : !result
               ? React.createElement(LoadingReels, { columns: 2, cycleKey: placeholderCycle })
               : result.paymentCount + (result.paymentCount === 1 ? ' pago' : ' pagos')),
-            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, inactive ? dash : !result
+            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, hideValues ? dash : !result
               ? React.createElement(LoadingReels, { columns: 3, cycleKey: placeholderCycle })
               : result.rate + '% ' + result.ratePeriod))),
         React.createElement('div', { className: 'su-result-cells', style: { marginTop: 13, paddingTop: 11, borderTop: '1px solid rgba(255,255,255,.18)' } }, cells.map((cell) => React.createElement('div', { key: cell[0], style: { minWidth: 0 } },
           React.createElement(ResultFit, { style: { opacity: .72, fontWeight: 600, fontSize: 'var(--text-10-5, 10.5px)', whiteSpace: 'nowrap' } }, cell[0]),
           React.createElement(ResultFit, { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 'var(--text-13, 13px)', letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' } },
-            inactive ? dash : React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? cell[1] : null, loading: loadingMotion || !result, compact: true, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle, style: cellMoneyStyle }))))))));
+            hideValues ? dash : React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? cell[1] : null, loading: loadingMotion || !result, compact: true, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle, style: cellMoneyStyle }))))))));
   }
 
   function AmountField({ amount, setAmount, commitAmount, min, max, disabled }) {
@@ -285,7 +290,7 @@
   function TermPicker({ terms, selected, setSelected, disabled, inactive, result, customTerm, presetsOnly }) {
     const min = Number(customTerm && customTerm.min), max = Number(customTerm && customTerm.max);
     const stepSize = Number(customTerm && customTerm.step) || 1;
-    const hasCustomRange = !presetsOnly && Number.isFinite(min) && Number.isFinite(max) && max >= min;
+    const hasCustomRange = !presetsOnly && !!customTerm && Number.isFinite(min) && min > 0 && Number.isFinite(max) && max >= min;
     const [free, setFree] = React.useState(!terms.includes(selected));
     const [draft, setDraft] = React.useState(String(selected || ''));
     React.useEffect(() => {
@@ -324,7 +329,7 @@
           React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink)' } }, free ? selected + (selected === 1 ? ' pago' : ' pagos') : 'Otro'),
           React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3 } }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : (free ? (inactive ? dash : 'Cotizando…') : 'a tu medida')),
           React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: free ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, free ? 'por quincena' : 'elige quincenas'))) : React.createElement('div', { style: { width: '100%', padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 600 } }, 'Los plazos aparecerán al consultar tus condiciones.')),
-      !presetsOnly && free && Number.isFinite(min) && Number.isFinite(max) && React.createElement('div', { 'data-custom-term-editor': '', style: { marginTop: 4, padding: 12, borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
+      !presetsOnly && free && hasCustomRange && React.createElement('div', { 'data-custom-term-editor': '', style: { marginTop: 4, padding: 12, borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
         React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
           React.createElement('button', { type: 'button', disabled: disabled || selected <= min, onClick: () => commit(selected - stepSize), 'aria-label': 'Reducir plazo', style: { width: 40, height: 40, border: 'none', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', fontSize: 'var(--text-20, 20px)', fontWeight: 800 } }, '−'),
           React.createElement('div', { style: { flex: 1, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 6 } },
@@ -621,14 +626,19 @@
     const projected = React.useMemo(
       () => (projectionBase ? projectTermOption(projectionBase, term) : null),
       [projectionBase, term]);
-    const result = authoritative || projected;
     const overviewLoading = !financial.overview && (financial.status === 'idle' || financial.status === 'loading');
-    const effectiveError = capacityUnknown ? 'LOAN_CAPACITY_UNAVAILABLE' : validSelection ? requestError : financial.error;
+    const effectiveError = financial.error || (capacityUnknown ? 'LOAN_CAPACITY_UNAVAILABLE' : validSelection ? requestError : null);
+    const historicalMappingRequired = effectiveError === 'HISTORICAL_LOAN_MAPPING_REQUIRED' || effectiveError === 'LOAN_CAPACITY_FUND_UNRESOLVED';
+    const historicalDataReviewRequired = effectiveError === 'HISTORICAL_LOAN_DATA_REVIEW_REQUIRED';
+    const historicalReviewRequired = historicalMappingRequired || historicalDataReviewRequired;
+    const result = effectiveError ? null : authoritative || projected;
     const unavailableError = /NOT_CONFIGURED|UNAVAILABLE|REJECTED|INVALID_RESPONSE|CONTRACT_MISMATCH/.test(effectiveError || '');
     const initialLoading = !capacityExhausted && !result && !confirmed.quote && !effectiveError && (overviewLoading || validSelection);
     const updating = validSelection && !!confirmed.quote && !result && !effectiveError && !overviewLoading;
     const displayedResult = result;
-    const state = capacityExhausted ? 'NO_AVAILABLE_BALANCE' : initialLoading ? 'LOADING'
+    const state = historicalMappingRequired ? 'HISTORICAL_LOAN_MAPPING_REQUIRED'
+      : historicalDataReviewRequired ? 'HISTORICAL_LOAN_DATA_REVIEW_REQUIRED'
+      : capacityExhausted ? 'NO_AVAILABLE_BALANCE' : initialLoading ? 'LOADING'
       : requestError ? 'ERROR'
       : effectiveError ? (unavailableError ? 'UNAVAILABLE' : 'ERROR')
       : result && eligibilityDenied(result.eligibility) ? 'NOT_ELIGIBLE'
@@ -678,18 +688,20 @@
         amount,
         term,
         result,
+        state,
+        pending: initialLoading || updating,
         // Nunca continuar con una cotización de otra selección: `result` sólo
         // existe si coincide con el fondo, monto y plazo vigentes.
         current: validSelection && state === 'READY' && !!result && !updating && quoteMatchesSelection(result, program, amount, term),
       });
-    }, [selectionKey, result, updating, state]);
+    }, [selectionKey, result, initialLoading, updating, state]);
 
-    return React.createElement('div', { 'data-step-simulator-v2': '', 'data-state': state, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      React.createElement(ResultCard, { result: displayedResult, periodLabel: paymentPeriod, initialLoading, updating, failed: state === 'ERROR' || state === 'UNAVAILABLE', inactive: capacityExhausted || capacityUnknown, animationCycle: confirmed.revision, loadingCycle: selectionKey }),
+    return React.createElement('div', { 'data-step-simulator-v2': '', 'data-state': state, 'data-credit-state': state === 'NO_AVAILABLE_BALANCE' ? 'NO_CREDIT_AVAILABLE' : state, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
+      React.createElement(ResultCard, { result: displayedResult, periodLabel: paymentPeriod, initialLoading, updating, failed: state === 'ERROR' || state === 'UNAVAILABLE' || historicalReviewRequired, inactive: capacityExhausted || capacityUnknown, animationCycle: confirmed.revision, loadingCycle: selectionKey }),
       state !== 'READY' && React.createElement(StatusNotice, { state, onRetry: retry }),
-      React.createElement(FundPicker, { programs, selected: program && program.id, setSelected: selectProgram, disabled: overviewLoading }),
-      React.createElement(AmountField, { amount, setAmount: selectAmount, commitAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading || capacityExhausted || capacityUnknown }),
-      React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading || capacityExhausted || capacityUnknown, inactive: capacityExhausted || capacityUnknown, result, customTerm: program && program.custom_term, presetsOnly: hasShortTerms(program) }),
+      React.createElement(FundPicker, { programs, selected: program && program.id, setSelected: selectProgram, disabled: overviewLoading || historicalReviewRequired }),
+      React.createElement(AmountField, { amount, setAmount: selectAmount, commitAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading || capacityExhausted || capacityUnknown || historicalReviewRequired }),
+      React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading || capacityExhausted || capacityUnknown || historicalReviewRequired, inactive: capacityExhausted || capacityUnknown || historicalReviewRequired, result, customTerm: program && program.custom_term, presetsOnly: hasShortTerms(program) }),
       React.createElement(Breakdown, { result }),
       React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, lineHeight: 1.5, padding: '0 2px' } },
         React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),
@@ -992,7 +1004,7 @@
         step === 3 && React.createElement(StepSummary, { simulation, deposit:{account:selectedDepositAccount,phone:deposit.phone}, signature, setSignature, accepted, setAccepted,terms:documentState.terms,missingDocuments:documentRecovery,onCorrectDocuments:()=>{setStep(2);setSubmitError('');},onCorrectDeposit:()=>{setStep(1);setSubmitError('');} })),
       React.createElement('div', { 'data-loan-flow-footer': '', style: { padding: '12px 20px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--hairline)', background: 'var(--surface)', boxShadow: '0 -8px 24px rgba(20,33,61,.05)' } },
         submitError && React.createElement('div', { role: 'alert', className: 'su-err', 'data-loan-submission-error': '', style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: '#C0341D', lineHeight: 1.4, marginBottom: 9 } }, submitError),
-        React.createElement(window.Btn, { full: true, size: 'lg', loading: submitting||deposit.saving, disabled: !canContinue, iconRight: step === 3 ? 'shield' : 'arrowR', onClick: () => step === 3 ? submit() : continueFlow() }, step === 3 ? 'Confirmar solicitud' : (step === 0 && simulation && !simulation.current ? 'Actualizando…' : 'Continuar'))));
+        React.createElement(window.Btn, { full: true, size: 'lg', loading: submitting||deposit.saving, disabled: !canContinue, iconRight: step === 3 ? 'shield' : 'arrowR', onClick: () => step === 3 ? submit() : continueFlow() }, step === 3 ? 'Confirmar solicitud' : (step === 0 && simulation && simulation.pending ? 'Actualizando…' : step === 0 && simulation && /^HISTORICAL_LOAN_/.test(simulation.state) ? 'Revisión requerida' : 'Continuar'))));
   }
 
   window.StepSimulatorV2 = StepSimulatorV2;

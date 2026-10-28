@@ -1034,3 +1034,7 @@ Estado: migración `20261027000100` aplicada y verificada; backend
 Las verificaciones finales focal y global en producción terminaron con PASS.
 El rechazo automático inicial del envío cloud quedó como antecedente
 tras la autorización expresa del propietario para commit, push y publicación.
+
+## H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001 ? derived program classification
+
+Existing canonical program request/financial criterion/fund relationships take precedence in borrowing capacity. Proven obligations belonging to other programs remain in their original contracts/history and are not loan debt. When no canonical link exists, financial-legacy/historical-obligation-map.mjs version1 classifies only exact audited historical names, with evidence/reason; it is not a balance source. Explicit product financing against a canonical loan fund retains its contractual debt. Unknown/conflicting positive loan debt requires HISTORICAL_LOAN_MAPPING_REQUIRED. Missing loan data requires HISTORICAL_LOAN_DATA_REVIEW_REQUIRED. K minus existing paidThrough and reservation deduplication remain unchanged.

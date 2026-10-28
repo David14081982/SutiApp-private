@@ -538,3 +538,7 @@ Estas invariantes corresponden a la migración `20261027000100`, backend
 `financial-legacy` v65 y frontend Pages `9d743d3` ya publicados, con CI exitoso.
 La verificación SQL productiva confirmó los controles instalados. Las pruebas
 finales focal y global en producción terminaron con PASS.
+
+## H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001
+
+Classify the obligation program before resolving a loan fund. Never blanket-ignore an unknown loan name or replace missing installments with zero. Never assign a historical fund by weak similarity. Cross-program classification cannot delete historical rows or override an explicit canonical financial contract. No-credit and historical-review states are distinct; a failed quote cannot display animated sample amounts as a result.

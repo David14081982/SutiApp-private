@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "bundleOnly": true,
+  "installedVersionUnchanged": 65,
+  "files": [
+    {
+      "file": "financial-legacy/index.ts",
+      "sha256": "5f0f55aa5e0fae402d6603e282791b3613955da65fdbb05ab1da036910a57a6c"
+    },
+    {
+      "file": "financial-legacy/loan-capacity.mjs",
+      "sha256": "16df307460c7dc5595e01450d719a8dee949a512089499f12445a91818810a5c"
+    },
+    {
+      "file": "financial-legacy/historical-obligation-map.mjs",
+      "sha256": "b9c6b7c539ae9234cb8ffbe44d1d09e7973ad9e637dc7b2375975fb69b4712de"
+    },
+    {
+      "file": "financial-legacy/visibility-policy.js",
+      "sha256": "2febf4075b49f3fd22c0483149c96215f193fbfe264e9d45997bd86ce7878edc"
+    },
+    {
+      "file": "financial-legacy/request-google-sync.js",
+      "sha256": "0e5760e20ca48a8eb8b3f7fe03029e0b693236af76dcd960b7ef74b17f73b07a"
+    },
+    {
+      "file": "financial-legacy/savings-eligibility.ts",
+      "sha256": "aa6b055e454725e924c70aeee8d1b3bced2fd10edfc26a803c2535e6ce4a1d64"
+    },
+    {
+      "file": "loan-history/history.mjs",
+      "sha256": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2"
+    }
+  ],
+  "responseFormat": "JSON compilation receipt; not ESZIP payload",
+  "receiptBytes": 407,
+  "receiptSha256": "2add6d537f28da4834589e34a3f5116533bd84cd6f81e73056f0c71c7ef99b52",
+  "compiledEzbrSha256": "9d03794101eee3b0e718b8a3895c2eb1b262f5af30c897a0a8a8356a9969d0aa"
+}

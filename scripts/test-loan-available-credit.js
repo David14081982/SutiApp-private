@@ -47,8 +47,8 @@ async function main(){
  });
  test('missing amounts, dates, states, duplicate source rows and ambiguous funds fail visibly',()=>{
   for(const patch of [{amount:null},{date:'2026-99-99'},{total:null},{status:'UNKNOWN'},{fund:'Unknown'}])assert.throws(()=>calculate([row('1','2026-11-01',6260,patch)]));
-  assert.throws(()=>calculate([row('1','2026-11-01',6260),row('1','2026-11-01',6260)]),/DUPLICATE/);
-  assert.throws(()=>projectLoanCapacity(source([row('1','2026-11-01',6260)]),{...runtime,funds:[...runtime.funds,{id:'other',name:'Caja Chica'}]},now,identity),/FUND_UNRESOLVED/);
+  assert.throws(()=>calculate([row('1','2026-11-01',6260),row('1','2026-11-01',6260)]),e=>e.message==='HISTORICAL_LOAN_DATA_REVIEW_REQUIRED'&&e.reason==='INSTALLMENT_DUPLICATE');
+  assert.throws(()=>projectLoanCapacity(source([row('1','2026-11-01',6260)]),{...runtime,funds:[...runtime.funds,{id:'other',name:'Caja Chica'}]},now,identity),e=>e.message==='HISTORICAL_LOAN_MAPPING_REQUIRED'&&e.reason==='FUND_UNRESOLVED');
   assert.throws(()=>calculate([row('1','2026-11-01',6260,{owner:'7'})]),/IDENTITY/);
  });
  test('immutable transfer identifies represented request and original fund after rename',()=>{
@@ -58,7 +58,7 @@ async function main(){
   const result=projectLoanCapacity(s,{...runtime,requests:[request]},now,identity);
   assert.deepEqual(result.represented_request_ids,['req']);assert.equal(result.funds[0].pending_amount,6260);
   const bad=structuredClone(s);bad.loans[0].fund='Caja Chica';
-  assert.throws(()=>projectLoanCapacity(bad,{...runtime,requests:[{...request,criterion_identity:'missing'}]},now,identity),/FUND_UNRESOLVED/);
+  assert.throws(()=>projectLoanCapacity(bad,{...runtime,requests:[{...request,criterion_identity:'missing'}]},now,identity),e=>e.message==='HISTORICAL_LOAN_MAPPING_REQUIRED'&&e.reason==='CANONICAL_CONTRACT_UNRESOLVED');
   s.loans.push({...s.loans[0],id:'43',source_row:3});s.requests.push({...s.requests[0],id:'43',receipt:{...s.requests[0].receipt,id:43}});
   assert.throws(()=>projectLoanCapacity(s,{...runtime,requests:[request]},now,identity),/REQUEST_IDENTITY_AMBIGUOUS/);
  });

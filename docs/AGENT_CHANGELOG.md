@@ -4434,3 +4434,7 @@ Las pruebas con captura privada no equivalen a iniciar sesión o solicitar un
 préstamo como esos usuarios, ni certifican a todos los afiliados. El detalle
 personal permanece fuera de Git y del artefacto público. Véanse la auditoría de
 la H y `qa/evidence/loan-available-credit/closure-20261027.json`.
+
+## H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001
+
+Program-first historical obligation resolution; canonical financing precedes exact versioned historical classification. No history/balance/schema changes. Exact cohort1038:974 unchanged,12 prior fixes preserved,40 additional fixes,12 documented pending decisions/data. Focal UI distinguishes no credit from historical mapping/data review and stops failed-result odometers. See audit and docs/qa/evidence/loan-historical-resolution. Production status is recorded by release evidence, not inferred from local tests.

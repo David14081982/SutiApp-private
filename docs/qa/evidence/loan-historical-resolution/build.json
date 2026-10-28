@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "base": "eb477def5be74824fddbe2303ab6337602a841d3",
+  "version": "2026102801",
+  "changedChunks": [
+    "screens-loan.jsx"
+  ],
+  "preservedModules": 169,
+  "bundleSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+  "repositorySha256": "29c872b8991530d28a12b40e3ae690b898b61ce7b91b42cd58d94460da2588d9",
+  "build": {
+    "status": "PASS",
+    "output": "C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\loan-historical-resolution\\site",
+    "files": 33
+  },
+  "globalSuitesRun": 0
+}

@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "isolated": true,
+  "productionWrites": 0,
+  "repository": [
+    {
+      "code": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "scenario": "opening",
+      "status": "PASS"
+    },
+    {
+      "code": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "scenario": "expiry-refresh",
+      "status": "PASS"
+    },
+    {
+      "code": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "scenario": "invalid-snapshot-refresh",
+      "status": "PASS"
+    },
+    {
+      "code": "HISTORICAL_LOAN_DATA_REVIEW_REQUIRED",
+      "scenario": "opening",
+      "status": "PASS"
+    },
+    {
+      "code": "HISTORICAL_LOAN_DATA_REVIEW_REQUIRED",
+      "scenario": "expiry-refresh",
+      "status": "PASS"
+    },
+    {
+      "code": "HISTORICAL_LOAN_DATA_REVIEW_REQUIRED",
+      "scenario": "invalid-snapshot-refresh",
+      "status": "PASS"
+    },
+    {
+      "code": "AFFILIATE_CONTEXT_UNAVAILABLE",
+      "scenario": "opening",
+      "status": "PASS"
+    },
+    {
+      "code": "AFFILIATE_CONTEXT_UNAVAILABLE",
+      "scenario": "expiry-refresh",
+      "status": "PASS"
+    },
+    {
+      "code": "AFFILIATE_CONTEXT_UNAVAILABLE",
+      "scenario": "invalid-snapshot-refresh",
+      "status": "PASS"
+    }
+  ],
+  "browser": {
+    "status": "PASS",
+    "browser": "Chrome",
+    "viewport": "390x844",
+    "checks": [
+      "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "HISTORICAL_LOAN_DATA_REVIEW_REQUIRED",
+      "approved-main-structure-equivalent",
+      "retry-recovers",
+      "amount-edit",
+      "term-select",
+      "breakdown",
+      "deposit-navigation",
+      "NO_CREDIT_AVAILABLE",
+      "zero-retains-fund-carousel",
+      "switch-to-available-fund",
+      "successful-quote-invalidated-on-source-error",
+      "generic-failure-stops-loading",
+      "back-navigation"
+    ],
+    "runtimeErrors": [],
+    "externalRequests": 0
+  }
+}

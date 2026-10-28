@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { BUSINESS_TIME_ZONE, evaluateVisibility } from "./visibility-policy.js";
 import { deliverRequestRegister, capturedDocumentReferences } from "./request-google-sync.js";
 import { filterSavingsLoanRules } from "./savings-eligibility.ts";
-import { projectLoanCapacity, applyLoanCapacity } from "./loan-capacity.mjs";
+import { projectLoanCapacity, applyLoanCapacity, publicLoanCapacityError } from "./loan-capacity.mjs";
 
 // Supabase is intentionally schema-untyped in this standalone Edge bundle; database
 // contracts are enforced by migrations/RLS/RPCs and validated again at this boundary.
@@ -914,7 +914,7 @@ async function confirmPersonalizedLoanSession(
     assertLoanCapacity(capacity.resolved, matched, body, result);
   } catch (error) {
     const code = error instanceof Error && error.message === "LOAN_CAPACITY_EXCEEDED"
-      ? "LOAN_CAPACITY_EXCEEDED" : "LOAN_CAPACITY_UNAVAILABLE";
+      ? "LOAN_CAPACITY_EXCEEDED" : publicLoanCapacityError(error);
     return { status: 409, body: { error: code, correlation_id: correlationId } };
   }
   const submissionSnapshot = {
@@ -1449,7 +1449,7 @@ Deno.serve(async (req) => {
       const overview = resolveOverview(rules, profile, termPolicy);
       const capacity = matched.length ? await freshLoanCapacity(supabase, privilegedClient(supabaseUrl), context, matched) : null;
       return reply(200, { data: capacity ? applyLoanCapacity(overview, capacity.resolved) : overview }, origin || null);
-    } catch { return reply(502, { error: "LOAN_CAPACITY_UNAVAILABLE" }, origin || null); }
+    } catch (error) { return reply(502, { error: publicLoanCapacityError(error) }, origin || null); }
   }
   try {
     const quote = await resolveQuote(privilegedClient(supabaseUrl), rules, profile, body, termPolicy);

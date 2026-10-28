@@ -1,0 +1,303 @@
+{
+  "status": "PASS",
+  "scope": "Synthetic focused loan historical resolution contracts",
+  "productionReads": 0,
+  "productionWrites": 0,
+  "historicalRowsModified": 0,
+  "passed": 73,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "empty owned history retains every catalog fund and original output contract",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy loan uses exact catalog fund and preserves K minus paidThrough",
+      "status": "PASS"
+    },
+    {
+      "name": "two real loans in the same fund preserve both debts",
+      "status": "PASS"
+    },
+    {
+      "name": "nomina remains a loan program and preserves its Sutiexpress debt",
+      "status": "PASS"
+    },
+    {
+      "name": "past zero deduction does not release capacity",
+      "status": "PASS"
+    },
+    {
+      "name": "paid historical unknown fund retains the preexisting zero-debt result",
+      "status": "PASS"
+    },
+    {
+      "name": "unknown positive debt produces an actionable mapping error",
+      "status": "PASS"
+    },
+    {
+      "name": "plural Descuentos is not guessed to be singular Descuento",
+      "status": "PASS"
+    },
+    {
+      "name": "historical dated fund is not reassigned to a different year",
+      "status": "PASS"
+    },
+    {
+      "name": "similar wording does not create an undocumented cross-program alias",
+      "status": "PASS"
+    },
+    {
+      "name": "two catalog funds with the same normalized historical name remain ambiguous",
+      "status": "PASS"
+    },
+    {
+      "name": "historical Vales y membresias stays in its own program",
+      "status": "PASS"
+    },
+    {
+      "name": "historical Seguro Colectivo Suti stays in its own program",
+      "status": "PASS"
+    },
+    {
+      "name": "historical Suti Terrenos stays in its own program",
+      "status": "PASS"
+    },
+    {
+      "name": "historical Suti Auto stays in its own program",
+      "status": "PASS"
+    },
+    {
+      "name": "historical Panel Solar stays in its own program",
+      "status": "PASS"
+    },
+    {
+      "name": "historical Suti Cirugias stays in its own program",
+      "status": "PASS"
+    },
+    {
+      "name": "historical Suti Tours stays in its own program",
+      "status": "PASS"
+    },
+    {
+      "name": "historical cross-program aliases tolerate accents, case and repeated whitespace only",
+      "status": "PASS"
+    },
+    {
+      "name": "membership and real loan coexist without losing real debt",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical membership has no loan reservation representation",
+      "status": "PASS"
+    },
+    {
+      "name": "proven membership data is not validated as loan debt and remains unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical membership conflicting with an actual loan fund fails closed",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical membership source request cannot contradict its amortization program",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy cross-program alias cannot override a source request for a real loan fund",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy duplicate source origins with the same proven program preserve all rows",
+      "status": "PASS"
+    },
+    {
+      "name": "legacy duplicate origins with conflicting or unknown programs require mapping review",
+      "status": "PASS"
+    },
+    {
+      "name": "nonfinancial canonical membership with a financial criterion is contradictory",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical criterion resolves a renamed loan ahead of historical text",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical financial Tours contract keeps its real loan funding",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical loan missing criterion is not repaired from a catalog-name fallback",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical unknown criterion is not repaired from historical aliases",
+      "status": "PASS"
+    },
+    {
+      "name": "missing canonical request is not replaced by a historical cross-program alias",
+      "status": "PASS"
+    },
+    {
+      "name": "unapproved membership does not authorize exclusion",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical criterion matching more than one fund remains ambiguous",
+      "status": "PASS"
+    },
+    {
+      "name": "amortized canonical loan is represented once so reservation is not also charged",
+      "status": "PASS"
+    },
+    {
+      "name": "paid canonical loan remains represented to avoid resurrecting its reservation",
+      "status": "PASS"
+    },
+    {
+      "name": "missing business identity remains a context error",
+      "status": "PASS"
+    },
+    {
+      "name": "source cannot substitute a different control",
+      "status": "PASS"
+    },
+    {
+      "name": "cross-program loans cannot escape exact owner validation",
+      "status": "PASS"
+    },
+    {
+      "name": "cross-program requests cannot escape exact owner validation",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical membership receipt with wrong loan id fails identity validation",
+      "status": "PASS"
+    },
+    {
+      "name": "canonical membership receipt with invalid integrity hash is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate canonical folio remains an identity error",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate canonical request id remains an identity error",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate source receipt cannot authorize exclusion or double charging",
+      "status": "PASS"
+    },
+    {
+      "name": "one canonical membership cannot authorize exclusions for two amortization identities",
+      "status": "PASS"
+    },
+    {
+      "name": "real loan null amount requires historical data review",
+      "status": "PASS"
+    },
+    {
+      "name": "real loan negative amount requires historical data review",
+      "status": "PASS"
+    },
+    {
+      "name": "real loan nonfinite amount requires historical data review",
+      "status": "PASS"
+    },
+    {
+      "name": "real loan invalid calendar date requires historical data review",
+      "status": "PASS"
+    },
+    {
+      "name": "real loan missing total requires historical data review",
+      "status": "PASS"
+    },
+    {
+      "name": "real loan unknown status requires historical data review",
+      "status": "PASS"
+    },
+    {
+      "name": "real loan invalid source row requires historical data review",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate installment does not silently double or erase debt",
+      "status": "PASS"
+    },
+    {
+      "name": "newly initiated future blank-state loan retains the full contract total",
+      "status": "PASS"
+    },
+    {
+      "name": "future blank-state acceptance preserves K when future deductions differ",
+      "status": "PASS"
+    },
+    {
+      "name": "future blank-state numeric legacy transfer retains its own exact fund",
+      "status": "PASS"
+    },
+    {
+      "name": "future blank-state canonical loan replaces its reservation with full amortization debt",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects no source request",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects source not initiated",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects past installment",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects installment due today",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects mixed blank and recognized states",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects null status",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects future authorization",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects absent authorization",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects different source total",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects different source principal",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects different source term",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects different source authorization date",
+      "status": "PASS"
+    },
+    {
+      "name": "blank-state exception rejects invalid future amount",
+      "status": "PASS"
+    },
+    {
+      "name": "capacity projection preserves original history, obligations and schedules",
+      "status": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,813 @@
+{
+  "task": "H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001",
+  "status": "PASS",
+  "scope": "DETERMINISTIC_CASES_AND_REGRESSION_WITH_12_DOCUMENTED_AMBIGUOUS",
+  "mode": "OFFLINE_EXACT_COHORT_REPLAY",
+  "cohort_sha256": "fa71be91ead30e331515beb22b04eab1d5363eee84b9f8409d8765ec71e7b132",
+  "observed_at": "2026-10-28T03:33:40.94068+00:00",
+  "profiles_checked": 1038,
+  "previously_correct_unchanged": "974 / 974",
+  "original_failures": 64,
+  "resolved_cross_program": [
+    "911b013b60bd0a82fa49",
+    "ac202ace34a76b93ee16",
+    "e5f5dd41d27f335467e0",
+    "8f38489aad619a3456eb",
+    "b3df95942a3ccdef12bf",
+    "6608d0219d2222833db6",
+    "e640f3b369aba77345ac",
+    "2405994b19fd2f4f4d7a",
+    "a443d635391768c69574",
+    "0ebca8f8041eab902f6e",
+    "7d520f16714224ce2972",
+    "65c93dd63add50b9d4f9",
+    "35d41d8e09ced9138497",
+    "680407e35a38841e98fc",
+    "147bbc902b57cfa95bab",
+    "9a57eb048464aff48b2c",
+    "709499c7d52f8dc8b39e",
+    "a8551a4a5a15d344ea94",
+    "a6af254d5c803c023d93",
+    "2fc15ff03e0f8832b7cb",
+    "b0fcdd129d5b9f26b785",
+    "e8963dff73322c8e4c50",
+    "183616cfe58e17584cf3",
+    "82c5ddff951fd2f3e9d5",
+    "147e2d667a468bd42eb0",
+    "cd215182210cbecf759b",
+    "6301811875bdea3e6015",
+    "f666ceffeeadc8d6ec1e",
+    "913f4f7ebdd6596ba4b0",
+    "41c87e57d368c7a74f15",
+    "d2cba81a562ed04387a1",
+    "c4bcdb5fbb68e04964eb",
+    "17deb7bea6304547f447",
+    "18566965f8423e9d5ad4",
+    "237d11a0734790f1a305",
+    "2d65256e6a9286caaa86",
+    "316f2dc3ef9eeb7146e2",
+    "c662f1433bb1e497bf9c",
+    "6b2f3ba463991771a82b",
+    "5c334ea177f25c2a7d40",
+    "17fa98a907c817217f62",
+    "83957f5c74634dc6ce1a",
+    "c4822d61402243efc52a",
+    "d0e8199b0cf0f563c241",
+    "5c2bd1cbe173c5f858b2",
+    "f3da355231a4223e3e06",
+    "f5d1c1ad123326074e18",
+    "e841e089d420e30576ba"
+  ],
+  "resolved_loan_canonical": [],
+  "resolved_loan_legacy": [],
+  "other_validation_resolved": [
+    "fb5831e8e22c37a1dcb4",
+    "91f2f791a9e2d7a3e08b",
+    "a65f25c65d394089dc6d",
+    "c4a2c0fda91c9c214d21"
+  ],
+  "remaining_ambiguous": [
+    {
+      "ref": "b849f6db3be81539464c",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "04cbbf27edf0a389bd61",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "5c07073c95a38347330b",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "bedb68cc6e12e8970aee",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "2dcd263336417029f200",
+      "baseline_error": "LOAN_CAPACITY_INSTALLMENT_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_DATA_REVIEW_REQUIRED",
+      "reason": "INSTALLMENT_UNRESOLVED"
+    },
+    {
+      "ref": "2665aaad60518bd1b2b9",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "9f399bd0d1146c8ccd2d",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "18eb0b1d8982057799f7",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "8555c211a33e1bfe4d21",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "47e0422798bb3bacf3c9",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "d4666ae208230fd7e0bd",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "adbf6ecad084ab23d051",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    }
+  ],
+  "counts": {
+    "beforePass": 974,
+    "originalFailures": 64,
+    "unchanged": 974,
+    "priorRecovered": 12,
+    "priorRecoveredUnchanged": 12,
+    "afterPass": 1026,
+    "recovered": 52,
+    "newlyRecovered": 40,
+    "resolvedCrossProgram": 48,
+    "resolvedCanonical": 0,
+    "resolvedLegacy": 0,
+    "resolvedOtherValidation": 4,
+    "ambiguous": 12,
+    "ambiguousFund": 6,
+    "ambiguousContext": 5,
+    "ambiguousData": 1,
+    "observedCrossProgram": 818,
+    "observedCanonical": 197,
+    "observedLegacy": 1443,
+    "includedPendingObligations": 973,
+    "representedRequestsVerified": 195,
+    "productFinancingPreserved": 7,
+    "productFinancingPreviouslyCorrect": 6
+  },
+  "target_12087": {
+    "status": "PASS",
+    "prior_fix_preserved": true,
+    "history_preserved": true,
+    "canonical_membership_excluded_from_loan_capacity": true
+  },
+  "financial_balances_changed": 0,
+  "historical_rows_modified": 0,
+  "false_debt_exclusions": 0,
+  "memberships_deducted_as_loans": 0,
+  "reservation_amortization_duplicate_identities": 0,
+  "regression": "0 / 974",
+  "inputs_immutable": true,
+  "history_projector_unchanged": true,
+  "formulas_and_included_obligation_balances_verified": true,
+  "all_64_cases": [
+    {
+      "ref": "911b013b60bd0a82fa49",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "ac202ace34a76b93ee16",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "b849f6db3be81539464c",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "e5f5dd41d27f335467e0",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "8f38489aad619a3456eb",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "04cbbf27edf0a389bd61",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "5c07073c95a38347330b",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "bedb68cc6e12e8970aee",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "b3df95942a3ccdef12bf",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "6608d0219d2222833db6",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "e640f3b369aba77345ac",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "2405994b19fd2f4f4d7a",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "a443d635391768c69574",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "0ebca8f8041eab902f6e",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "7d520f16714224ce2972",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "65c93dd63add50b9d4f9",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "35d41d8e09ced9138497",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "680407e35a38841e98fc",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "147bbc902b57cfa95bab",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "9a57eb048464aff48b2c",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "2dcd263336417029f200",
+      "baseline_error": "LOAN_CAPACITY_INSTALLMENT_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_DATA_REVIEW_REQUIRED",
+      "reason": "INSTALLMENT_UNRESOLVED"
+    },
+    {
+      "ref": "709499c7d52f8dc8b39e",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "fb5831e8e22c37a1dcb4",
+      "baseline_error": "LOAN_CAPACITY_LOAN_STATUS_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "OTHER_VALIDATION",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "a8551a4a5a15d344ea94",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "a6af254d5c803c023d93",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "2fc15ff03e0f8832b7cb",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "b0fcdd129d5b9f26b785",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "e8963dff73322c8e4c50",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "183616cfe58e17584cf3",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "2665aaad60518bd1b2b9",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "82c5ddff951fd2f3e9d5",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "147e2d667a468bd42eb0",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "cd215182210cbecf759b",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "6301811875bdea3e6015",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "f666ceffeeadc8d6ec1e",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "913f4f7ebdd6596ba4b0",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "91f2f791a9e2d7a3e08b",
+      "baseline_error": "LOAN_CAPACITY_LOAN_STATUS_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "OTHER_VALIDATION",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "41c87e57d368c7a74f15",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "d2cba81a562ed04387a1",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "9f399bd0d1146c8ccd2d",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "18eb0b1d8982057799f7",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "c4bcdb5fbb68e04964eb",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "17deb7bea6304547f447",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "18566965f8423e9d5ad4",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "237d11a0734790f1a305",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "2d65256e6a9286caaa86",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "8555c211a33e1bfe4d21",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "HISTORICAL_LOAN_MAPPING_REQUIRED",
+      "reason": "FUND_UNRESOLVED"
+    },
+    {
+      "ref": "316f2dc3ef9eeb7146e2",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "c662f1433bb1e497bf9c",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "6b2f3ba463991771a82b",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": true,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "5c334ea177f25c2a7d40",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "17fa98a907c817217f62",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "a65f25c65d394089dc6d",
+      "baseline_error": "LOAN_CAPACITY_LOAN_STATUS_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "OTHER_VALIDATION",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "c4a2c0fda91c9c214d21",
+      "baseline_error": "LOAN_CAPACITY_LOAN_STATUS_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "OTHER_VALIDATION",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "83957f5c74634dc6ce1a",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "c4822d61402243efc52a",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "d0e8199b0cf0f563c241",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "5c2bd1cbe173c5f858b2",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "47e0422798bb3bacf3c9",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "d4666ae208230fd7e0bd",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "adbf6ecad084ab23d051",
+      "baseline_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "prior_fix_pass": false,
+      "resolution": "AMBIGUOUS",
+      "classification": "AMBIGUOUS",
+      "current_error": "LOAN_CAPACITY_CONTEXT_INVALID",
+      "reason": null
+    },
+    {
+      "ref": "f3da355231a4223e3e06",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "f5d1c1ad123326074e18",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    },
+    {
+      "ref": "e841e089d420e30576ba",
+      "baseline_error": "LOAN_CAPACITY_FUND_UNRESOLVED",
+      "prior_fix_pass": false,
+      "resolution": "RESOLVED",
+      "classification": "CROSS_PROGRAM",
+      "current_error": null,
+      "reason": null
+    }
+  ],
+  "all_results_sha256": "3cbbef518e7f8422e5446e7ef0bbc7fade7a8e483c7712149e41519f3aa9e1dc",
+  "hashes": {
+    "before_projector": "c95ce354f7686e90ef67e48a0e00c33cf95e9d17555b0c82d39d5f3d3f0c484c",
+    "candidate_projector": "16df307460c7dc5595e01450d719a8dee949a512089499f12445a91818810a5c",
+    "historical_map": "b9c6b7c539ae9234cb8ffbe44d1d09e7973ad9e637dc7b2375975fb69b4712de",
+    "history_projector": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2",
+    "prior_replay": "da3f9eb3e46630eff500c78eba26cdf0582dc502265a232d0a2ff71730c32db8",
+    "provenance": "7c7e533294848b4581765e0880a884df33896b6a0a34248ed283091f987651b2",
+    "reviewed_report_classification": "fc561c4aaa9b1be98463e324fefac47d14bddb390b144e5068ac6bb5ce2d4354"
+  },
+  "limits": [
+    "This replays projections at the original captured timestamp, not authenticated end-to-end eligibility.",
+    "No database, Google, financial records, or production sessions are written.",
+    "Reservation evidence verifies exact unique represented request identities; backend reservation arithmetic is covered by separate focused SQL tests.",
+    "Pending identity, source-amount and historical-fund decisions remain blocked and are not treated as zero debt."
+  ]
+}

@@ -233,7 +233,7 @@
           }
         } catch (error) {
           if (epoch !== capacityEpoch) return snapshot();
-          state.overview = null; state.loanSession = null; state.authContextKey = contextKey;
+          state.overview = null; state.quote = null; state.loanSession = null; state.authContextKey = contextKey;
           state.status = 'error'; state.error = error.code || error.message;
         }
         emit(); return snapshot();
@@ -288,6 +288,9 @@
       const signal = options && options.signal;
       state.error = null;
       const runQuote = async () => {
+        // Opening/refreshing a session can reveal a historical-data error.
+        // Preserve that reason instead of replacing it with SNAPSHOT_INVALID.
+        if (state.status === 'error' && state.error) throw Object.assign(new Error(state.error), { code: state.error });
         if (!state.loanSession || !state.loanSession.id) throw Object.assign(new Error('SNAPSHOT_INVALID'), { code: 'SNAPSHOT_INVALID' });
         const result = await invokeLoanSnapshotRpc({ p_snapshot_id: state.loanSession.id,
           p_program_id: String(programId), p_amount: Number(amount), p_term: Number(term) }, { signal });

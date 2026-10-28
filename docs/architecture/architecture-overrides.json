@@ -69,7 +69,7 @@
         "reportesJC"
       ],
       "properties": {
-        "status": "PREPARED_NOT_DEPLOYED",
+        "status": "IMPLEMENTED",
         "entry": "Admin / left sidebar / reportes_jc"
       }
     },
@@ -90,7 +90,8 @@
         "evidence": "scripts/test-reports-jc-ui.js",
         "permissions": "program_requests.read AND savings.read AND savings.reports AND admin_module_boundary(reportes_jc,read); real actor, no impersonation",
         "authority": "Google request/loan facts and Supabase savings/refund facts remain separate authorities; report cells are derived counts with source evidence",
-        "export": "authorized immutable template; eight calculated tabs, all seventeen preserved; monthly XLSX or twelve-month ZIP"
+        "export": "Immutable private template; 17 tabs and original formulas preserved; strict validated XLSX/ZIP or explicit PROVISIONAL with scoped #N/A and cell notes; no invented counts",
+        "export_evidence": "scripts/test-reports-jc-provisional.js; scripts/test-reports-jc-browser.js"
       }
     },
     {

@@ -61,6 +61,7 @@ async function main() {
         return { data: { context: context(), data: action === 'TEMPLATE' ? { base64: window.__template } : report }, error: null };
       } } }) };
       const actual = window.SutiReportsJcExport;
+      window.__actualDownload = actual.download;
       window.SutiReportsJcExport = { ...actual, download: (bytes, filename, mime) => { window.__lastBytes = bytes; window.__downloads.push({ filename, mime, length: bytes.length }); } };
     }, { fixture, base64: template.TEMPLATE_BASE64 });
     for (const file of ['app/reports-jc-repository.js', 'app/reports-jc-admin.jsx']) await page.addScriptTag({ path: path.join(root, file) });
@@ -129,21 +130,32 @@ async function main() {
     await page.evaluate(() => {
       window.__loadError = null;
       window.__fixture.sheets['Préstamos Concentrado'].cells.B6 = { value: null, sourceIds: [], rule: 'Unresolved synthetic record' };
+      for (const address of ['E6', 'B18', 'E18']) window.__fixture.sheets['Préstamos Concentrado'].cells[address].value = null;
       window.__fixture.issues = [{ severity: 'error', code: 'SYNTHETIC_UNRESOLVED', sheets: ['Préstamos Concentrado'], months: [1], message: 'Registro sintético pendiente de resolver' }];
       window.__mount('unresolved');
     });
-    await page.getByText('Por determinar', { exact: true }).waitFor();
-    const beforeBlocked = await page.evaluate(() => window.__downloads.length);
-    await page.getByRole('button', { name: 'Exportar mes', exact: true }).click();
-    await page.waitForFunction(() => document.body.innerText.includes('incidencias pendientes'));
-    assert.equal(await page.evaluate(() => window.__downloads.length), beforeBlocked);
+    await page.getByText('Por determinar', { exact: true }).first().waitFor();
+    assert.equal(await page.getByText('Por determinar', { exact: true }).count(), 4);
+    const beforeProvisional = await page.evaluate(() => window.__downloads.length);
+    await page.evaluate(() => { window.SutiReportsJcExport = { ...window.SutiReportsJcExport, download: (bytes, filename, mime) => { window.__lastBytes = bytes; window.__downloads.push({ filename, mime, length: bytes.length }); window.__actualDownload(bytes, filename, mime); } }; });
+    const realDownload = page.waitForEvent('download');
+    await page.getByRole('button', { name: 'Exportar mes provisional', exact: true }).click();
+    const downloaded = await realDownload;
+    assert.match(downloaded.suggestedFilename(), /_PROVISIONAL\.xlsx$/);
+    await downloaded.cancel();
+    await page.waitForFunction(count => window.__downloads.length === count + 1, beforeProvisional);
+    assert.match((await page.evaluate(() => window.__downloads.at(-1))).filename, /_PROVISIONAL\.xlsx$/);
+    assert.match(await page.locator('[data-export-notice]').innerText(), /#N\/A/);
+    assert.equal(await page.locator('[data-report-pending-details]').getAttribute('open'), null);
+    await page.locator('[data-report-pending-details] > summary').click();
+    await page.getByText(/Registro sintético pendiente de resolver/).first().waitFor();
     await page.setViewportSize({ width: 430, height: 920 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
     await page.screenshot({ path: path.join(output, 'isolated-reports-jc-mobile.png'), fullPage: true });
     await page.evaluate(() => { window.__lastBytes = null; window.__template = null; });
     assert.deepEqual(errors, []);
     assert.deepEqual(external, []);
-    const result = { status: 'PASS', browser: 'Chrome', syntheticServiceOnly: true, externalRequests: 0, persistedDownloadedWorkbooks: 0, tabs: 8, monthlyExportSheets: 17, annualExportBooks: 12, receivedIncludingPendingRespectsPeriod: true, staleFilterExportProtected: true, changedContextRejected: true, nullValuesVisible: true, unresolvedExportBlocked: true, sourceFailureClearsReport: true, mobileNoPageOverflow: true };
+    const result = { status: 'PASS', browser: 'Chrome', syntheticServiceOnly: true, externalRequests: 0, persistedDownloadedWorkbooks: 0, tabs: 8, monthlyExportSheets: 17, annualExportBooks: 12, receivedIncludingPendingRespectsPeriod: true, staleFilterExportProtected: true, changedContextRejected: true, nullValuesVisible: true, unresolvedExportProvisional: true, realProvisionalDownloadEvent: true, sourceFailureClearsReport: true, mobileNoPageOverflow: true };
     fs.writeFileSync(path.join(output, 'browser-result.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result));
   } finally { await browser.close(); }

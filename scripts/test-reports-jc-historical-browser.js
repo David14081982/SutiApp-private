@@ -59,7 +59,7 @@ async function main(){
    window.SavingsRefundsAdmin=props=>React.createElement('div',{'data-shared-caja':true},React.createElement('p',null,'Misma captura Caja · '+props.initialYear),React.createElement('button',{onClick:()=>{window.__reportIssues=[];props.onSaved();}},'Simular constancia guardada'));
    window.__root.render(React.createElement(window.ReportsJcAdminModule,{onBack:()=>{}}));
   });
-  await page.getByText('Pendientes para exportar el libro completo',{exact:true}).waitFor();await page.getByLabel('Mes de consulta').selectOption('10');await page.getByText(/Periodo: Marzo de/).waitFor();
+  await page.getByText('Pendientes identificados en las fuentes',{exact:true}).waitFor();await page.getByLabel('Mes de consulta').selectOption('10');await page.locator('[data-report-pending-details] > summary').click();await page.getByText(/Periodo: Marzo de/).waitFor();
   await page.getByRole('button',{name:'Resolver en Caja de Ahorro'}).click();await page.locator('[data-shared-caja]').waitFor();await page.getByRole('button',{name:'Simular constancia guardada'}).click();await page.getByRole('button',{name:'Volver a Reportes JC'}).click();await page.getByText('Sin incidencias bloqueantes en las fuentes consultadas',{exact:true}).waitFor();assert.equal(await page.evaluate(()=>window.__reportLoads),2);
   checks.push('Annual blocker stays visible from another selected month; same Caja capture returns to a fresh report');
   assert.deepEqual(errors,[]);assert.deepEqual(external,[]);

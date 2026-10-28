@@ -1470,24 +1470,59 @@
     if (sheets.length && !sheets.includes(schema.name)) return false;
     return !schema.monthly || !Array.isArray(issue.months) || !issue.months.length || issue.months.map(Number).includes(month);
   }
-  function preparedCells(report, schema, month) {
+  function issueKey(issue) { return JSON.stringify([issue.code, issue.message, issue.sheets, issue.months, issue.sourceIds]); }
+  function uniqueIssues(issues) { return [...new Map(issues.map(issue => [issueKey(issue), issue])).values()]; }
+  function affectedInputs(issue, schema, month, inputs) {
+    const periods = Array.isArray(issue.months) && issue.months.length ? issue.months.map(Number) : MONTHS.map((_, i) => i + 1);
+    if (periods.some(value => !Number.isInteger(value) || value < 1 || value > 12)) fail('período de incidencia inválido.');
+    const candidates = inputs.filter(coord => schema.monthly || periods.includes(Number(coord.slice(1)) - (schema.kind === 'savingsYear' ? 3 : 5)));
+    // These scopes come from the report reader's explicit indicator contract.
+    // Unknown issue codes conservatively affect every input in their sheet/period.
+    if (issue.code === 'REFUND_PERIOD_UNCONFIRMED') {
+      if (schema.sheet === 8) return candidates.filter(coord => coord[0] === 'E');
+      if (schema.sheet === 3) return candidates.filter(coord => coord[0] === 'D');
+      if (schema.sheet === 4) return candidates.filter(coord => ['D7', 'D12'].includes(coord));
+    }
+    if (issue.code === 'HISTORICAL_TERMINATION_UNMAPPED' && schema.sheet === 8) return candidates.filter(coord => coord[0] === 'G');
+    if (['REFUND_PAYROLL_UNRESOLVED', 'REFUND_PAYROLL_PROCESS_UNRESOLVED'].includes(issue.code) && schema.sheet === 4) return candidates.filter(coord => ['D7', 'D12'].includes(coord));
+    if (['PAYROLL_CODE_UNMAPPED', 'INSTALLMENT_AMOUNT_INVALID', 'INSTALLMENT_DATE_INVALID', 'SAVINGS_PAYROLL_UNRESOLVED', 'PAYROLL_AMOUNT_NOT_RECORDED', 'PAYROLL_SCHEDULE_UNRESOLVED', 'PAYROLL_PROCESS_UNRESOLVED'].includes(issue.code)) {
+      if (schema.sheet === 3) return candidates.filter(coord => ['B', 'C'].includes(coord[0]));
+      if (schema.sheet === 4) return candidates.filter(coord => coord[0] === 'C');
+    }
+    return candidates.filter(coord => schema.kind !== 'loanMonth' || !['B10', 'C10', 'D10'].includes(coord));
+  }
+  function preparedCells(report, schema, month, provisional) {
     const sheet = report.sheets && report.sheets[schema.name];
     const selected = schema.monthly ? sheet && sheet.months && sheet.months[month] : sheet;
     if (!selected || !selected.cells || typeof selected.cells !== 'object') fail('faltan datos para ' + schema.name + '.');
-    const issues = [].concat(report.issues || [], sheet.issues || [], selected.issues || []);
-    if (issues.some(issue => issueBlocks(issue, schema, month))) fail('hay incidencias pendientes en ' + schema.name + '.');
+    const sourceIssues = [report.issues, sheet.issues, selected.issues];
+    if (sourceIssues.some(list => list != null && !Array.isArray(list))) fail('lista de incidencias inválida.');
+    const allIssues = [].concat(...sourceIssues.map(list => list || []));
+    for (const issue of allIssues) if (issue && issue.severity === 'error') {
+      if (issue.months != null && (!Array.isArray(issue.months) || issue.months.some(value => !Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 12))) fail('período de incidencia inválido.');
+      if (issue.sheets != null && (!Array.isArray(issue.sheets) || issue.sheets.some(name => typeof name !== 'string'))) fail('hojas de incidencia inválidas.');
+      if (issue.sourceIds != null && !Array.isArray(issue.sourceIds)) fail('referencias de incidencia inválidas.');
+    }
+    const issues = uniqueIssues(allIssues.filter(issue => issueBlocks(issue, schema, month)));
+    if (!provisional && issues.length) fail('hay incidencias pendientes en ' + schema.name + '.');
     const cells = selected.cells;
     const values = Object.create(null);
     const formulas = derived(schema);
     const inputCoords = coords(schema.inputs);
-    for (const coord of inputCoords) values[coord] = count(rawValue(cells[coord]), schema.name, coord);
+    // Validate the source payload before applying any mask. A provisional marker
+    // must never hide a negative, fractional, absent or otherwise malformed count.
+    for (const coord of inputCoords) {
+      const value = rawValue(cells[coord]);
+      values[coord] = provisional && value === null ? null : count(value, schema.name, coord);
+    }
     // The legacy external row remains in the exact template, without duplicating Sutiexpress.
     if (schema.kind === 'loanMonth' && ['B10', 'C10', 'D10'].some(coord => values[coord] !== 0)) fail('Sutiexpress debe contarse una sola vez en la fila 9.');
     const calculate = (coord, active) => {
       if (Object.prototype.hasOwnProperty.call(values, coord)) return values[coord];
       if (!formulas[coord] || active.has(coord)) fail('dependencia inválida en ' + schema.name + '!' + coord + '.');
       active.add(coord);
-      values[coord] = count(coords(formulas[coord]).reduce((sum, child) => sum + calculate(child, active), 0), schema.name, coord);
+      const children = coords(formulas[coord]).map(child => calculate(child, active));
+      values[coord] = children.includes(null) ? null : count(children.reduce((sum, child) => sum + child, 0), schema.name, coord);
       active.delete(coord);
       return values[coord];
     };
@@ -1509,7 +1544,28 @@
         if (Object.prototype.hasOwnProperty.call(formulas, coord) && rawValue(cells[coord]) !== values[coord]) fail('total incompatible en ' + schema.name + '!' + coord + '.');
       } else if (!labelCoords.includes(coord)) fail('celda fuera de alcance en ' + schema.name + '!' + coord + '.');
     }
-    return { values, formulas, labels };
+    const pending = Object.create(null);
+    if (provisional) {
+      for (const issue of issues) for (const coord of affectedInputs(issue, schema, month, inputCoords)) (pending[coord] ||= []).push(issue);
+      for (const coord of inputCoords) {
+        if (values[coord] === null && !pending[coord]) pending[coord] = [{ code: 'COUNT_UNDETERMINED', message: 'La fuente no determina todavía esta cantidad; no equivale a cero.', sourceIds: cells[coord]?.sourceIds || [] }];
+        if (pending[coord]) { pending[coord] = uniqueIssues(pending[coord]); values[coord] = null; }
+      }
+      // Preserve formulas and propagate an Excel error through all dependants.
+      // SUM would silently ignore text/blanks, so neither is a safe placeholder.
+      const propagate = coord => {
+        if (!formulas[coord]) return values[coord];
+        const dependencies = coords(formulas[coord]);
+        const children = dependencies.map(propagate);
+        if (children.includes(null)) {
+          values[coord] = null;
+          pending[coord] = uniqueIssues(dependencies.flatMap(child => pending[child] || []));
+        }
+        return values[coord];
+      };
+      for (const coord of Object.keys(formulas)) propagate(coord);
+    }
+    return { values, formulas, labels, pending, issues };
   }
   function setCell(xml, coord, value, stringValue, originalCells) {
     const cell = originalCells[coord];
@@ -1519,9 +1575,9 @@
     if (stringValue) body = '<is><t xml:space="preserve">' + escapeXml(value) + '</t></is>';
     else {
       const formula = cell && cell.inner.match(/<f\b[^>]*(?:\/>|>[\s\S]*?<\/f>)/);
-      body = (formula ? formula[0] : '') + '<v>' + value + '</v>';
+      body = (formula ? formula[0] : '') + '<v>' + (value === null ? '#N/A' : value) + '</v>';
     }
-    const replacement = '<c' + attrs + (stringValue ? ' t="inlineStr"' : '') + '>' + body + '</c>';
+    const replacement = '<c' + attrs + (stringValue ? ' t="inlineStr"' : value === null ? ' t="e"' : '') + '>' + body + '</c>';
     if (cell) return xml.replace(cell.full, replacement);
     const rowNumber = Number(coord.match(/\d+$/)[0]);
     let found = false;
@@ -1544,9 +1600,9 @@
     if (/\bt="s"/.test(cell.attrs) && value) return sharedStrings[Number(value[1])];
     return (cell.inner.match(/<t\b[^>]*>([\s\S]*?)<\/t>/g) || []).map(t => unescapeXml(t.replace(/^<t\b[^>]*>|<\/t>$/g, ''))).join('');
   }
-  function patchSheet(xml, sharedStrings, schema, report, year, month) {
+  function patchSheet(xml, sharedStrings, schema, report, year, month, provisional) {
     const original = readCells(xml);
-    const prepared = preparedCells(report, schema, month);
+    const prepared = preparedCells(report, schema, month, provisional);
     for (const [coord, value] of Object.entries(prepared.values)) {
       const formula = original[coord] && original[coord].inner.match(/<f\b[^>]*>([\s\S]*?)<\/f>/);
       if (formula && unescapeXml(formula[1]) !== 'SUM(' + prepared.formulas[coord] + ')') fail('fórmula inesperada en la plantilla.');
@@ -1556,9 +1612,62 @@
     const oldTitle = titleText(original[schema.title], sharedStrings);
     const ending = schema.monthly ? /Octubre 2026$/ : /2026$/;
     if (!ending.test(oldTitle)) fail('el título de la plantilla no coincide.');
-    xml = setCell(xml, schema.title, oldTitle.replace(ending, (schema.monthly ? MONTHS[month - 1] + ' ' : '') + year), true, original);
+    const title = oldTitle.replace(ending, (schema.monthly ? MONTHS[month - 1] + ' ' : '') + year);
+    xml = setCell(xml, schema.title, provisional ? 'PROVISIONAL · ' + title + ' · #N/A = pendiente' : title, true, original);
     if (schema.yearCell) xml = setCell(xml, schema.yearCell, year, false, original);
-    return xml;
+    return { xml, pending: prepared.pending };
+  }
+  function safeNoteText(value) { return String(value == null ? '' : value).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, ''); }
+  function noteText(schema, coord, issues, report, month, byId) {
+    const lines = ['REPORTE PROVISIONAL', schema.name + '!' + coord + ' · ' + report.year + (schema.monthly ? ' · ' + MONTHS[month - 1] : ''), '#N/A = cantidad pendiente de aclaración. No equivale a cero.'];
+    const reasons = uniqueIssues(issues);
+    for (const issue of reasons) {
+      lines.push(safeNoteText(issue.code || 'SOURCE_UNRESOLVED') + ': ' + safeNoteText(issue.message || 'Existe una incidencia en la fuente de este indicador.'));
+      if (Array.isArray(issue.months) && issue.months.length) lines.push('Periodos: ' + issue.months.map(value => MONTHS[Number(value) - 1]).join(', ') + '.');
+      const references = [...new Set((Array.isArray(issue.sourceIds) ? issue.sourceIds : []).map(id => {
+        const record = byId.get(id);
+        if (record && typeof record.sheet === 'string' && Number.isSafeInteger(record.row) && record.row > 0) return safeNoteText(record.sheet) + ' · fila ' + record.row;
+        const legacy = /^(requests|loans):([1-9]\d*)$/.exec(String(id));
+        if (legacy) return (legacy[1] === 'requests' ? 'Historial de solicitudes' : 'HISTORIAL P V2') + ' · fila ' + legacy[2];
+        if (record && typeof record.source_table === 'string' && record.source_id != null) return safeNoteText(record.source_table) + ' · registro ' + safeNoteText(record.source_id);
+        return 'Referencia de origen: ' + safeNoteText(id);
+      }))];
+      if (references.length) lines.push(...references.slice(0, 40));
+      if (references.length > 40) lines.push('Más referencias disponibles en las incidencias de Reportes JC: ' + (references.length - 40) + '.');
+      if (lines.join('\n').length > 26000) { lines.push('Consulte las demás incidencias en Reportes JC.'); break; }
+    }
+    if (derived(schema)[coord]) lines.push('Total pendiente: depende de una o más cantidades marcadas #N/A. Se conserva la fórmula original cuando existe.');
+    // Excel legacy notes have a 32,767-character text limit.
+    const text = lines.join('\n');
+    return text.length <= 30000 ? text : text.slice(0, 29800) + '\nConsulte el detalle completo de las incidencias en Reportes JC.';
+  }
+  async function addNotes(zip, xml, schema, pending, report, month) {
+    const addresses = Object.keys(pending);
+    if (!addresses.length) return xml;
+    if (/<legacyDrawing\b/.test(xml)) fail('la plantilla ya contiene notas incompatibles.');
+    const commentsPath = 'xl/comments/reportsJcSheet' + schema.sheet + '.xml';
+    const drawingPath = 'xl/drawings/reportsJcSheet' + schema.sheet + '.vml';
+    const relsPath = 'xl/worksheets/_rels/sheet' + schema.sheet + '.xml.rels';
+    const relsEntry = zip.file(relsPath);
+    let rels = relsEntry ? await relsEntry.async('string') : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+    if (zip.file(commentsPath) || zip.file(drawingPath) || /rIdJcNotes(?:Vml|Comments)/.test(rels)) fail('las referencias de notas ya existen.');
+    const byId = new Map((Array.isArray(report.records) ? report.records : []).map(record => [record.id, record]));
+    const comments = addresses.map(coord => '<comment ref="' + coord + '" authorId="0"><text><t xml:space="preserve">' + escapeXml(noteText(schema, coord, pending[coord], report, month, byId)) + '</t></text></comment>').join('');
+    zip.file(commentsPath, '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Reportes JC</author></authors><commentList>' + comments + '</commentList></comments>', { createFolders: false });
+    const shapes = addresses.map((coord, index) => {
+      const col = coord.charCodeAt(0) - 65, row = Number(coord.slice(1)) - 1;
+      return '<v:shape id="_x0000_s' + (1025 + index) + '" type="#_x0000_t202" style="position:absolute;margin-left:59.25pt;margin-top:1.5pt;width:320pt;height:144pt;z-index:1;visibility:hidden" fillcolor="#ffffe1" o:insetmode="auto"><v:fill color2="#ffffe1"/><v:shadow on="t" color="black" obscured="t"/><v:path o:connecttype="none"/><v:textbox style="mso-direction-alt:auto"><div style="text-align:left"/></v:textbox><x:ClientData ObjectType="Note"><x:MoveWithCells/><x:SizeWithCells/><x:Anchor>' + [col + 1, 15, row, 2, col + 5, 15, row + 8, 2].join(', ') + '</x:Anchor><x:AutoFill>False</x:AutoFill><x:Row>' + row + '</x:Row><x:Column>' + col + '</x:Column></x:ClientData></v:shape>';
+    }).join('');
+    zip.file(drawingPath, '<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout><v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe"><v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/></v:shapetype>' + shapes + '</xml>', { createFolders: false });
+    rels = rels.replace('</Relationships>', '<Relationship Id="rIdJcNotesComments" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="../comments/reportsJcSheet' + schema.sheet + '.xml"/><Relationship Id="rIdJcNotesVml" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/vmlDrawing" Target="../drawings/reportsJcSheet' + schema.sheet + '.vml"/></Relationships>');
+    zip.file(relsPath, rels, { createFolders: false, ...(relsEntry ? { date: relsEntry.date, unixPermissions: relsEntry.unixPermissions, dosPermissions: relsEntry.dosPermissions } : {}) });
+    let types = await zip.file('[Content_Types].xml').async('string');
+    const vmlType = /<Default\b[^>]*\bExtension="vml"/.test(types) ? '' : '<Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/>';
+    types = types.replace('</Types>', vmlType + '<Override PartName="/' + commentsPath + '" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/></Types>');
+    const typesEntry = zip.file('[Content_Types].xml');
+    zip.file('[Content_Types].xml', types, { createFolders: false, date: typesEntry.date, unixPermissions: typesEntry.unixPermissions, dosPermissions: typesEntry.dosPermissions });
+    if (!/\bxmlns:r=/.test(xml)) xml = xml.replace('<worksheet ', '<worksheet xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" ');
+    return xml.replace('</worksheet>', '<legacyDrawing r:id="rIdJcNotesVml"/></worksheet>');
   }
   async function openTemplate(base64) {
     if (typeof base64 !== 'string' || base64.length > 200000) fail('plantilla inválida.');
@@ -1579,6 +1688,18 @@
     if (!options.report || Number(options.report.year) !== year) fail('el año del reporte no coincide.');
     return { year, month };
   }
+  function exportStatus(report, month, mode) {
+    period({ year: report && report.year, month, report });
+    if (mode != null && !['month', 'year'].includes(mode)) fail('modo de exportación inválido.');
+    const months = mode === 'year' ? MONTHS.map((_, index) => index + 1) : [Number(month)];
+    const pending = new Set(), issues = new Set();
+    for (const selected of months) for (const schema of SCHEMA) {
+      const prepared = preparedCells(report, schema, selected, true);
+      for (const coord of Object.keys(prepared.pending)) pending.add(schema.sheet + ':' + (schema.monthly ? selected : 'year') + ':' + coord);
+      for (const issue of prepared.issues) issues.add(issueKey(issue));
+    }
+    return { provisionalNeeded: pending.size > 0, pendingCells: pending.size, issueCount: issues.size };
+  }
   async function buildWorkbook(options) {
     const { year, month } = period(options);
     const { zip, sharedStrings } = await openTemplate(options.templateBase64);
@@ -1586,7 +1707,9 @@
       const path = 'xl/worksheets/sheet' + schema.sheet + '.xml';
       const entry = zip.file(path);
       const xml = await entry.async('string');
-      zip.file(path, patchSheet(xml, sharedStrings, schema, options.report, year, month), { date: entry.date, createFolders: false, unixPermissions: entry.unixPermissions, dosPermissions: entry.dosPermissions });
+      const prepared = patchSheet(xml, sharedStrings, schema, options.report, year, month, options.provisional === true);
+      const output = options.provisional === true ? await addNotes(zip, prepared.xml, schema, prepared.pending, options.report, month) : prepared.xml;
+      zip.file(path, output, { date: entry.date, createFolders: false, unixPermissions: entry.unixPermissions, dosPermissions: entry.dosPermissions });
     }
     return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   }
@@ -1594,7 +1717,7 @@
     const Zip = library(), output = new Zip();
     for (let month = 1; month <= 12; month++) {
       const bytes = await buildWorkbook({ ...options, month });
-      output.file('Reporte_JC_' + options.year + '-' + String(month).padStart(2, '0') + '.xlsx', bytes);
+      output.file('Reporte_JC_' + options.year + '-' + String(month).padStart(2, '0') + (options.provisional === true ? '_PROVISIONAL' : '') + '.xlsx', bytes);
     }
     return output.generateAsync({ type: 'uint8array', compression: 'STORE' });
   }
@@ -1604,7 +1727,7 @@
     anchor.href = url; anchor.download = filename; anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
-  const api = Object.freeze({ buildWorkbook, buildYearZip, download, TEMPLATE_SHA256, SCHEMA });
+  const api = Object.freeze({ buildWorkbook, buildYearZip, exportStatus, download, TEMPLATE_SHA256, SCHEMA });
   root.SutiReportsJcExport = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : window);
@@ -1650,8 +1773,24 @@
   let subject;try{subject=window.ReportsJcRepository.contextKey();}catch(_){subject='denied';}
   useEffect(()=>{setRegularization(null);regularizationDirty.current=false;regularizationChanged.current=false;},[subject]);
   useEffect(()=>{const id=++sequence.current;exportSequence.current++;setDetail(null);setNotice('');setState({loading:true,data:null,error:null});window.ReportsJcRepository.load(year).then(data=>{if(id===sequence.current)setState({loading:false,data,error:null});}).catch(error=>{if(id===sequence.current)setState({loading:false,data:null,error});});return()=>{sequence.current++;exportSequence.current++;};},[year,revision,subject]);
-  async function exportFile(){if(exporting||!state.data)return;const report=state.data,id=++exportSequence.current,selectedMonth=month,selectedMode=mode;setExporting(true);setNotice('');try{const key=window.ReportsJcRepository.contextKey(),template=await window.ReportsJcRepository.template();const exporter=window.SutiReportsJcExport;if(!exporter)throw Error('EXPORT_UNAVAILABLE');const options={templateBase64:template.base64,report,year:report.year,month:selectedMonth};const bytes=selectedMode==='year'?await exporter.buildYearZip(options):await exporter.buildWorkbook(options);if(id!==exportSequence.current||window.ReportsJcRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');const file='Reporte_JC_'+report.year+(selectedMode==='year'?'':'-'+String(selectedMonth).padStart(2,'0'))+(selectedMode==='year'?'.zip':'.xlsx');exporter.download(bytes,file,selectedMode==='year'?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');setNotice('Archivo generado: '+file);}catch(error){setNotice(explain(error));}finally{setExporting(false);}}
+  async function exportFile(){
+   if(exporting||!state.data)return;
+   const report=state.data,id=++exportSequence.current,selectedMonth=month,selectedMode=mode;
+   setExporting(true);setNotice('');
+   try{
+    const key=window.ReportsJcRepository.contextKey(),template=await window.ReportsJcRepository.template(),exporter=window.SutiReportsJcExport;
+    if(!exporter)throw Error('EXPORT_UNAVAILABLE');
+    const provisional=exporter.exportStatus(report,selectedMonth,selectedMode).provisionalNeeded;
+    const options={templateBase64:template.base64,report,year:report.year,month:selectedMonth,provisional};
+    const bytes=selectedMode==='year'?await exporter.buildYearZip(options):await exporter.buildWorkbook(options);
+    if(id!==exportSequence.current||window.ReportsJcRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');
+    const file='Reporte_JC_'+report.year+(selectedMode==='year'?'':'-'+String(selectedMonth).padStart(2,'0'))+(provisional?'_PROVISIONAL':'')+(selectedMode==='year'?'.zip':'.xlsx');
+    exporter.download(bytes,file,selectedMode==='year'?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    setNotice('Archivo generado: '+file+(provisional?' · Provisional: las celdas #N/A están pendientes de aclaración. Consulta sus notas en Excel.':''));
+   }catch(error){setNotice(explain(error));}finally{setExporting(false);}
+  }
   const report=state.data,sheet=report?.sheets?.[tab],isMonth=/ Mes$/.test(tab),cells=(isMonth?sheet?.months?.[month]?.cells:sheet?.cells)||{},layout=grid(tab,cells);
+  const exportPlan=(()=>{if(!report)return {provisionalNeeded:false};try{return window.SutiReportsJcExport.exportStatus(report,month,mode);}catch(error){return {error};}})();
   const annualIssues=[...new Map((report?.issues||[]).filter(item=>item.severity==='error').map(item=>[JSON.stringify([item.code,item.sourceIds,item.months]),item])).values()];
   function closeRegularization(){if(regularizationDirty.current&&!window.confirm('Hay una captura sin guardar. ¿Quieres descartarla?'))return;setRegularization(null);regularizationDirty.current=false;if(regularizationChanged.current)setRevision(n=>n+1);regularizationChanged.current=false;}
   const issues=[...new Map([...(report?.issues||[]),...(sheet?.issues||[]),...(isMonth?sheet?.months?.[month]?.issues||[]:[])].filter(item=>(!item.sheets?.length||item.sheets.includes(tab))&&(!isMonth||!item.months?.length||item.months.includes(month))).map(item=>[JSON.stringify([item.code,item.sourceIds,item.months,item.message]),item])).values()];
@@ -1663,10 +1802,20 @@
     h('label',null,'Exportación',h('select',{value:mode,disabled:exporting,onChange:e=>{exportSequence.current++;setNotice('');setMode(e.target.value);}},h('option',{value:'month'},'Un mes · Excel'),h('option',{value:'year'},'Todo el año · 12 archivos'))),
     h('label',null,'Mes de consulta',h('select',{value:month,disabled:exporting,onChange:e=>{exportSequence.current++;setNotice('');setMonth(Number(e.target.value));setDetail(null);}},months.map((label,i)=>h('option',{key:label,value:i+1},label)))),
     h('button',{className:'rjc-btn',type:'submit',disabled:state.loading||exporting},state.loading?'Consultando…':'Actualizar'),
-    h('button',{className:'rjc-btn primary',type:'button',onClick:exportFile,disabled:!report||state.loading||exporting},exporting?'Generando…':mode==='year'?'Exportar año':'Exportar mes')),
+    h('button',{className:'rjc-btn primary',type:'button',onClick:exportFile,disabled:!report||state.loading||exporting||!!exportPlan.error},exporting?'Generando…':(mode==='year'?'Exportar año':'Exportar mes')+(exportPlan.provisionalNeeded?' provisional':''))),
    h('p',{className:'rjc-note'},'Los concentrados muestran los doce meses del año. Las hojas «Mes» usan el mes elegido. La descarga conserva las 17 pestañas de la plantilla y actualiza las ocho incluidas.'),
-   report&&h('div',{className:annualIssues.length?'rjc-issue':'rjc-note','data-report-readiness':true},h('strong',null,annualIssues.length?'Pendientes para exportar el libro completo':'Sin incidencias bloqueantes en las fuentes consultadas'),annualIssues.length>0&&h('p',null,'También deben resolverse los pendientes de los concentrados anuales, aunque correspondan a otro mes.'),annualIssues.map((issue,i)=>h('div',{key:i},h('p',null,issue.message||issue.code,' · Periodo: ',issue.months?.length?issue.months.map(m=>months[m-1]).join(', ')+' de '+year:'Año '+year,' · Hojas: ',(issue.sheets||[]).join(', '),issue.count?' · '+issue.count+' caso(s)':''),Array.isArray(issue.sourceIds)&&issue.sourceIds.length>0&&h('details',null,h('summary',null,'Identificadores de los registros pendientes'),h('p',null,issue.sourceIds.join(', '))),/^(REFUND_|HISTORICAL_TERMINATION_)/.test(issue.code)&&h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:issue.sourceIds||[]})},'Resolver en Caja de Ahorro'))),h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:[]})},'Revisar históricos de Caja de Ahorro')),
-   notice&&h('p',{role:'status',className:'rjc-note'},notice),state.error&&h('p',{role:'alert',className:'rjc-error'},explain(state.error)),
+   exportPlan.provisionalNeeded&&h('p',{className:'rjc-note','data-provisional-export':true},'Puedes descargar un archivo PROVISIONAL. Las cifras pendientes y sus totales se marcan como #N/A, con una nota que explica el motivo. Los datos completos conservan su valor. Al resolver los pendientes podrás generar el libro validado.'),
+   notice&&h('p',{role:'status',className:'rjc-note','data-export-notice':true},notice),
+   exportPlan.error&&h('p',{role:'alert',className:'rjc-error'},explain(exportPlan.error)),
+   report&&h('div',{className:annualIssues.length?'rjc-issue':'rjc-note','data-report-readiness':true},
+    h('strong',null,annualIssues.length?'Pendientes identificados en las fuentes':'Sin incidencias bloqueantes en las fuentes consultadas'),
+    annualIssues.length>0&&h('p',null,'Los pendientes de los concentrados anuales también se identifican en cada libro mensual.'),
+    annualIssues.length>0&&h('details',{'data-report-pending-details':true},h('summary',null,'Ver '+annualIssues.length+' pendiente(s) y sus registros de origen'),
+     annualIssues.map((issue,i)=>h('div',{key:i},h('p',null,issue.message||issue.code,' · Periodo: ',issue.months?.length?issue.months.map(m=>months[m-1]).join(', ')+' de '+year:'Año '+year,' · Hojas: ',(issue.sheets||[]).join(', '),issue.count?' · '+issue.count+' caso(s)':''),
+      Array.isArray(issue.sourceIds)&&issue.sourceIds.length>0&&h('details',null,h('summary',null,'Identificadores de los registros pendientes'),h('p',null,issue.sourceIds.join(', '))),
+      /^(REFUND_|HISTORICAL_TERMINATION_)/.test(issue.code)&&h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:issue.sourceIds||[]})},'Resolver en Caja de Ahorro')))),
+    h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:[]})},'Revisar históricos de Caja de Ahorro')),
+   state.error&&h('p',{role:'alert',className:'rjc-error'},explain(state.error)),
    state.loading&&h('p',{role:'status',className:'rjc-note'},'Consultando solicitudes, descuentos y movimientos de Ahorro…'),
    report&&h(React.Fragment,null,h('p',{className:'rjc-note'},'Consulta de '+report.year+' · Actualizada: '+new Date(report.consultedAt).toLocaleString('es-MX',{timeZone:'America/Hermosillo'})+' · Selecciona una cifra para ver de dónde se obtiene.'),
     report.summary&&h('div',{className:'rjc-bar','aria-label':'Solicitudes recibidas'},Object.entries({received:'Recibidas',approved:'Aprobadas',rejected:'Rechazadas o canceladas',pending:'Pendientes',unknown:'Sin estado definido'}).map(([key,label])=>h('div',{key},h('strong',null,(mode==='year'?report.summary:report.summary.months?.[month])?.[key]??'—'),h('div',{className:'rjc-note'},label))),h('p',{className:'rjc-note'},mode==='year'?'Todas las solicitudes recibidas en el año.':'Todas las solicitudes recibidas en '+months[month-1]+', incluyendo las pendientes.')),

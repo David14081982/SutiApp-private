@@ -37,8 +37,24 @@
   let subject;try{subject=window.ReportsJcRepository.contextKey();}catch(_){subject='denied';}
   useEffect(()=>{setRegularization(null);regularizationDirty.current=false;regularizationChanged.current=false;},[subject]);
   useEffect(()=>{const id=++sequence.current;exportSequence.current++;setDetail(null);setNotice('');setState({loading:true,data:null,error:null});window.ReportsJcRepository.load(year).then(data=>{if(id===sequence.current)setState({loading:false,data,error:null});}).catch(error=>{if(id===sequence.current)setState({loading:false,data:null,error});});return()=>{sequence.current++;exportSequence.current++;};},[year,revision,subject]);
-  async function exportFile(){if(exporting||!state.data)return;const report=state.data,id=++exportSequence.current,selectedMonth=month,selectedMode=mode;setExporting(true);setNotice('');try{const key=window.ReportsJcRepository.contextKey(),template=await window.ReportsJcRepository.template();const exporter=window.SutiReportsJcExport;if(!exporter)throw Error('EXPORT_UNAVAILABLE');const options={templateBase64:template.base64,report,year:report.year,month:selectedMonth};const bytes=selectedMode==='year'?await exporter.buildYearZip(options):await exporter.buildWorkbook(options);if(id!==exportSequence.current||window.ReportsJcRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');const file='Reporte_JC_'+report.year+(selectedMode==='year'?'':'-'+String(selectedMonth).padStart(2,'0'))+(selectedMode==='year'?'.zip':'.xlsx');exporter.download(bytes,file,selectedMode==='year'?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');setNotice('Archivo generado: '+file);}catch(error){setNotice(explain(error));}finally{setExporting(false);}}
+  async function exportFile(){
+   if(exporting||!state.data)return;
+   const report=state.data,id=++exportSequence.current,selectedMonth=month,selectedMode=mode;
+   setExporting(true);setNotice('');
+   try{
+    const key=window.ReportsJcRepository.contextKey(),template=await window.ReportsJcRepository.template(),exporter=window.SutiReportsJcExport;
+    if(!exporter)throw Error('EXPORT_UNAVAILABLE');
+    const provisional=exporter.exportStatus(report,selectedMonth,selectedMode).provisionalNeeded;
+    const options={templateBase64:template.base64,report,year:report.year,month:selectedMonth,provisional};
+    const bytes=selectedMode==='year'?await exporter.buildYearZip(options):await exporter.buildWorkbook(options);
+    if(id!==exportSequence.current||window.ReportsJcRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');
+    const file='Reporte_JC_'+report.year+(selectedMode==='year'?'':'-'+String(selectedMonth).padStart(2,'0'))+(provisional?'_PROVISIONAL':'')+(selectedMode==='year'?'.zip':'.xlsx');
+    exporter.download(bytes,file,selectedMode==='year'?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    setNotice('Archivo generado: '+file+(provisional?' · Provisional: las celdas #N/A están pendientes de aclaración. Consulta sus notas en Excel.':''));
+   }catch(error){setNotice(explain(error));}finally{setExporting(false);}
+  }
   const report=state.data,sheet=report?.sheets?.[tab],isMonth=/ Mes$/.test(tab),cells=(isMonth?sheet?.months?.[month]?.cells:sheet?.cells)||{},layout=grid(tab,cells);
+  const exportPlan=(()=>{if(!report)return {provisionalNeeded:false};try{return window.SutiReportsJcExport.exportStatus(report,month,mode);}catch(error){return {error};}})();
   const annualIssues=[...new Map((report?.issues||[]).filter(item=>item.severity==='error').map(item=>[JSON.stringify([item.code,item.sourceIds,item.months]),item])).values()];
   function closeRegularization(){if(regularizationDirty.current&&!window.confirm('Hay una captura sin guardar. ¿Quieres descartarla?'))return;setRegularization(null);regularizationDirty.current=false;if(regularizationChanged.current)setRevision(n=>n+1);regularizationChanged.current=false;}
   const issues=[...new Map([...(report?.issues||[]),...(sheet?.issues||[]),...(isMonth?sheet?.months?.[month]?.issues||[]:[])].filter(item=>(!item.sheets?.length||item.sheets.includes(tab))&&(!isMonth||!item.months?.length||item.months.includes(month))).map(item=>[JSON.stringify([item.code,item.sourceIds,item.months,item.message]),item])).values()];
@@ -50,10 +66,20 @@
     h('label',null,'Exportación',h('select',{value:mode,disabled:exporting,onChange:e=>{exportSequence.current++;setNotice('');setMode(e.target.value);}},h('option',{value:'month'},'Un mes · Excel'),h('option',{value:'year'},'Todo el año · 12 archivos'))),
     h('label',null,'Mes de consulta',h('select',{value:month,disabled:exporting,onChange:e=>{exportSequence.current++;setNotice('');setMonth(Number(e.target.value));setDetail(null);}},months.map((label,i)=>h('option',{key:label,value:i+1},label)))),
     h('button',{className:'rjc-btn',type:'submit',disabled:state.loading||exporting},state.loading?'Consultando…':'Actualizar'),
-    h('button',{className:'rjc-btn primary',type:'button',onClick:exportFile,disabled:!report||state.loading||exporting},exporting?'Generando…':mode==='year'?'Exportar año':'Exportar mes')),
+    h('button',{className:'rjc-btn primary',type:'button',onClick:exportFile,disabled:!report||state.loading||exporting||!!exportPlan.error},exporting?'Generando…':(mode==='year'?'Exportar año':'Exportar mes')+(exportPlan.provisionalNeeded?' provisional':''))),
    h('p',{className:'rjc-note'},'Los concentrados muestran los doce meses del año. Las hojas «Mes» usan el mes elegido. La descarga conserva las 17 pestañas de la plantilla y actualiza las ocho incluidas.'),
-   report&&h('div',{className:annualIssues.length?'rjc-issue':'rjc-note','data-report-readiness':true},h('strong',null,annualIssues.length?'Pendientes para exportar el libro completo':'Sin incidencias bloqueantes en las fuentes consultadas'),annualIssues.length>0&&h('p',null,'También deben resolverse los pendientes de los concentrados anuales, aunque correspondan a otro mes.'),annualIssues.map((issue,i)=>h('div',{key:i},h('p',null,issue.message||issue.code,' · Periodo: ',issue.months?.length?issue.months.map(m=>months[m-1]).join(', ')+' de '+year:'Año '+year,' · Hojas: ',(issue.sheets||[]).join(', '),issue.count?' · '+issue.count+' caso(s)':''),Array.isArray(issue.sourceIds)&&issue.sourceIds.length>0&&h('details',null,h('summary',null,'Identificadores de los registros pendientes'),h('p',null,issue.sourceIds.join(', '))),/^(REFUND_|HISTORICAL_TERMINATION_)/.test(issue.code)&&h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:issue.sourceIds||[]})},'Resolver en Caja de Ahorro'))),h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:[]})},'Revisar históricos de Caja de Ahorro')),
-   notice&&h('p',{role:'status',className:'rjc-note'},notice),state.error&&h('p',{role:'alert',className:'rjc-error'},explain(state.error)),
+   exportPlan.provisionalNeeded&&h('p',{className:'rjc-note','data-provisional-export':true},'Puedes descargar un archivo PROVISIONAL. Las cifras pendientes y sus totales se marcan como #N/A, con una nota que explica el motivo. Los datos completos conservan su valor. Al resolver los pendientes podrás generar el libro validado.'),
+   notice&&h('p',{role:'status',className:'rjc-note','data-export-notice':true},notice),
+   exportPlan.error&&h('p',{role:'alert',className:'rjc-error'},explain(exportPlan.error)),
+   report&&h('div',{className:annualIssues.length?'rjc-issue':'rjc-note','data-report-readiness':true},
+    h('strong',null,annualIssues.length?'Pendientes identificados en las fuentes':'Sin incidencias bloqueantes en las fuentes consultadas'),
+    annualIssues.length>0&&h('p',null,'Los pendientes de los concentrados anuales también se identifican en cada libro mensual.'),
+    annualIssues.length>0&&h('details',{'data-report-pending-details':true},h('summary',null,'Ver '+annualIssues.length+' pendiente(s) y sus registros de origen'),
+     annualIssues.map((issue,i)=>h('div',{key:i},h('p',null,issue.message||issue.code,' · Periodo: ',issue.months?.length?issue.months.map(m=>months[m-1]).join(', ')+' de '+year:'Año '+year,' · Hojas: ',(issue.sheets||[]).join(', '),issue.count?' · '+issue.count+' caso(s)':''),
+      Array.isArray(issue.sourceIds)&&issue.sourceIds.length>0&&h('details',null,h('summary',null,'Identificadores de los registros pendientes'),h('p',null,issue.sourceIds.join(', '))),
+      /^(REFUND_|HISTORICAL_TERMINATION_)/.test(issue.code)&&h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:issue.sourceIds||[]})},'Resolver en Caja de Ahorro')))),
+    h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:[]})},'Revisar históricos de Caja de Ahorro')),
+   state.error&&h('p',{role:'alert',className:'rjc-error'},explain(state.error)),
    state.loading&&h('p',{role:'status',className:'rjc-note'},'Consultando solicitudes, descuentos y movimientos de Ahorro…'),
    report&&h(React.Fragment,null,h('p',{className:'rjc-note'},'Consulta de '+report.year+' · Actualizada: '+new Date(report.consultedAt).toLocaleString('es-MX',{timeZone:'America/Hermosillo'})+' · Selecciona una cifra para ver de dónde se obtiene.'),
     report.summary&&h('div',{className:'rjc-bar','aria-label':'Solicitudes recibidas'},Object.entries({received:'Recibidas',approved:'Aprobadas',rejected:'Rechazadas o canceladas',pending:'Pendientes',unknown:'Sin estado definido'}).map(([key,label])=>h('div',{key},h('strong',null,(mode==='year'?report.summary:report.summary.months?.[month])?.[key]??'—'),h('div',{className:'rjc-note'},label))),h('p',{className:'rjc-note'},mode==='year'?'Todas las solicitudes recibidas en el año.':'Todas las solicitudes recibidas en '+months[month-1]+', incluyendo las pendientes.')),

@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "profiles": 2,
+  "fullCohortReplay": false,
+  "checks": [
+    {
+      "case": "normal",
+      "result": "PASS",
+      "exactPriorOutput": true
+    },
+    {
+      "case": "12087",
+      "result": "PASS",
+      "exactPriorOutput": true
+    }
+  ]
+}

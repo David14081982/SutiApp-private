@@ -1,0 +1,40 @@
+{
+  "status": "PASS",
+  "destination": "https://api.supabase.com/v1/projects/jsucdyothkuptosvskqf",
+  "edgeVersionBefore": 66,
+  "files": [
+    {
+      "file": "financial-legacy/index.ts",
+      "sha256": "e552a28f2ca428bb0d4ebd42f887f0d0f185103fffa218395a251045efa88dcc"
+    },
+    {
+      "file": "financial-legacy/loan-capacity.mjs",
+      "sha256": "16df307460c7dc5595e01450d719a8dee949a512089499f12445a91818810a5c"
+    },
+    {
+      "file": "financial-legacy/historical-obligation-map.mjs",
+      "sha256": "6237c357ea4c9be17f0e5add9fef65457442d940309206410963fc3d615e0b62"
+    },
+    {
+      "file": "financial-legacy/visibility-policy.js",
+      "sha256": "2febf4075b49f3fd22c0483149c96215f193fbfe264e9d45997bd86ce7878edc"
+    },
+    {
+      "file": "financial-legacy/request-google-sync.js",
+      "sha256": "0e5760e20ca48a8eb8b3f7fe03029e0b693236af76dcd960b7ef74b17f73b07a"
+    },
+    {
+      "file": "financial-legacy/savings-eligibility.ts",
+      "sha256": "aa6b055e454725e924c70aeee8d1b3bced2fd10edfc26a803c2535e6ce4a1d64"
+    },
+    {
+      "file": "loan-history/history.mjs",
+      "sha256": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2"
+    }
+  ],
+  "migrationSha256": "abc514eee8c7f1eb7d51cef05877146b71e81968b3cfccea9707e74c08a638a0",
+  "privateSeedSha256": "5ddaf289d193e4a8a5e973eef87a450695ee6014ef8c3a3cb2576f1b7747c9ca",
+  "seedCases": 12,
+  "authorization": "Owner: Si PASS publica, verifica producción y detente.",
+  "noFinancialOrHistoricalDml": true
+}

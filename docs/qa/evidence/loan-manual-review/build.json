@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "version": "2026102802",
+  "changedChunks": [
+    "admin-finance-queue-repository.js",
+    "screens-admin-finanzas.jsx",
+    "screens-loan.jsx"
+  ],
+  "unchangedChunks": 167,
+  "bundleSha256": "cfd619714e9b44f826037037eb886611178f592a1f1fb7c498686792c8541aa6",
+  "build": {
+    "status": "PASS",
+    "output": "C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\loan-manual-review\\site",
+    "files": 33
+  },
+  "serviceWorkerLogicChanged": false
+}

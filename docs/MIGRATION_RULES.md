@@ -513,3 +513,7 @@ con OID/ACL/owner preservados, 11 funciones nuevas, RLS, triggers y recovery
 respaldado. La política global quedó apagada y sin excepciones individuales.
 Backend `financial-legacy` v65 y Pages `9d743d3` están publicados, con CI exitoso.
 Las verificaciones finales focal y global en producción terminaron con PASS.
+
+## 20261028000100 ? historical loan manual-review guard
+
+Owner-authorized additive operational register, pending-state RPCs and loan guard. Prepends a single review assertion to loan_capacity_private.resolve, retaining its exact prior definition privately; no financial statement changes. A before-insert/approval trigger closes direct writer bypasses. Twelve audited registrations are seeded in the same transaction using existing affiliate UUIDs, without personal cases in the public migration. Isolated PostgreSQL tests cover permissions, missing controls, fast quotes, insert/approval denial, audit immutability and evidence-preserving recovery. Prior Edge/frontend must be restored before retiring read RPCs during recovery; credit guards remain. Production state is recorded in the task evidence.

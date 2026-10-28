@@ -705,6 +705,34 @@
     return React.createElement(window.Badge, { tone: e.tone, icon: e.icon }, e.label);
   }
 
+  function HistoricalReviewQueue({ initialAffiliateId }) {
+    const [rows, setRows] = useState([]), [phase, setPhase] = useState('loading'), [nonce, setNonce] = useState(0);
+    useEffect(() => {
+      let active = true;
+      setRows([]); setPhase('loading');
+      window.AdminFinanceQueueRepository.historicalReviews(initialAffiliateId).then(value => {
+        if (active) { setRows(value); setPhase('ready'); }
+      }).catch(() => { if (active) { setRows([]); setPhase('error'); } });
+      const invalidate = () => { active = false; setRows([]); setPhase('loading'); setNonce(n => n + 1); };
+      const unsubscribe = window.AdminRepository?.subscribe?.(invalidate);
+      return () => { active = false; unsubscribe?.(); };
+    }, [initialAffiliateId, nonce]);
+    return h('section', { className: 'finwb-card', 'data-historical-review-queue': phase, style: { marginBottom: 16 } },
+      h('h3', null, 'REVISIÓN DE HISTORIAL REQUERIDA'),
+      h('p', { style: { fontSize: 13, lineHeight: 1.5 } }, 'Estos pendientes conservan sus obligaciones. El crédito permanece sin calcular hasta contar con soporte documental.'),
+      phase === 'loading' ? h('p', { role: 'status' }, 'Consultando revisiones…') :
+      phase === 'error' ? h('p', { role: 'alert' }, 'No fue posible consultar los pendientes. ', h('button', { type: 'button', onClick: () => setNonce(n => n + 1) }, 'Reintentar')) :
+      h(React.Fragment, null, h('p', { role: 'status' }, rows.length ? rows.length + ' revisión(es) pendiente(s)' : 'Sin revisiones pendientes.'),
+        rows.map(row => h('details', { key: row.id, 'data-historical-review-case': row.id, style: { borderTop: '1px solid var(--line)', padding: '12px 0', overflowWrap: 'anywhere' } },
+          h('summary', { style: { cursor: 'pointer', fontWeight: 800 } }, row.full_name || 'Afiliado', ' · ', row.numero_control ? 'Control ' + row.numero_control : 'UUID ' + row.affiliate_id, ' · Pendiente'),
+          h('p', null, row.cause),
+          h('p', null, row.cause_code === 'CONTROL_MISSING' ? 'Registro problemático: identidad sin número de control.' : 'Obligación problemática: ' + row.obligation_key.replace(/^loan:/, '')),
+          h('strong', null, 'Evidencia disponible'), h('ul', null, row.evidence.map((item, i) => h('li', { key: i }, item))),
+          h('p', null, 'Valor anterior registrado: ', h('code', null, JSON.stringify(row.previous_value))),
+          row.events.map(event => h('p', { key: event.id, style: { fontSize: 12 } }, 'Registro de revisión · ', dateValue(event.created_at), ' · Actor: ', event.actor_auth_user_id, ' · ', event.reason)),
+          h('p', { style: { fontSize: 12, fontWeight: 700 } }, 'La resolución manual requiere soporte documental, actor, fecha, motivo, valor anterior y decisión auditada. Este panel conserva el pendiente; no permite asignar un fondo ni liberar crédito.')))));
+  }
+
   function FinanzasModule({ app, onBack, header, initialAffiliateId }) {
     const desktop = useDesktop();
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
@@ -722,6 +750,7 @@
         React.createElement(window.HistorySyncAdmin, {}),
         React.createElement(window.SavingsLoanAccessAdmin, { app }),
         React.createElement(window.LoanAvailabilityAdmin, { app }),
+        React.createElement(HistoricalReviewQueue, { initialAffiliateId }),
         React.createElement('div', { style: { display: 'flex', gap: 10, marginBottom: 16 } },
           segBtn('sols', 'Solicitudes', null),
           segBtn('cots', 'Cotizaciones', cotPend || null)),

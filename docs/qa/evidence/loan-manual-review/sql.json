@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "engine": "PGlite PostgreSQL",
+  "checks": [
+    "12 pending UUIDs protected including five missing controls; old/fast quote and direct loan creation denied",
+    "normal and previously fixed synthetic profiles retain exact original capacity payload",
+    "Admin permission plus Finance boundary enforced; self state contains no case or foreign identity details; browser tables and anonymous RPC denied",
+    "immutable prior values and audit; incomplete manual resolution rejected; approval guard prevents granting doubtful credit",
+    "recovery retires reader access while retaining all evidence and safety guards"
+  ],
+  "syntheticCases": 12,
+  "productionTouched": false
+}

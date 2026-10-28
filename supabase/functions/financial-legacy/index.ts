@@ -1290,6 +1290,19 @@ Deno.serve(async (req) => {
   const { data: userData, error: userError } = await supabase.auth.getUser(authHeader.slice(7));
   if (userError || !userData.user) return reply(401, { error: "AUTH_INVALID" }, origin || null);
 
+  // Pending historical cases are a business state, before profile/control checks.
+  // The RPC derives the effective affiliate; callers cannot supply another UUID.
+  if (["loanSessionOpen", "loanSessionValidate", "loanSessionQuote", "loanSessionConfirm",
+    "overview", "resolveEligibility", "resolveAvailableFunds", "quote", "resolveSimulation"].includes(String(body.action))) {
+    const review = await supabase.rpc("get_self_loan_historical_review");
+    if (review.error || !["CLEAR", "HISTORICAL_LOAN_MAPPING_REQUIRED"].includes(review.data?.status)) {
+      return reply(503, { error: "LOAN_CAPACITY_UNAVAILABLE" }, origin || null);
+    }
+    if (review.data.status === "HISTORICAL_LOAN_MAPPING_REQUIRED") {
+      return reply(409, { error: "HISTORICAL_LOAN_MAPPING_REQUIRED", status: "PENDING_REVIEW" }, origin || null);
+    }
+  }
+
   if (body.action === "syncRequest" || body.action === "handoff") {
     if (body.action === "handoff" && !await requireExportPermission(supabase)) return reply(403, { error: "ADMIN_APPROVAL_REQUIRED" }, origin || null);
     if (body.action === "handoff") {

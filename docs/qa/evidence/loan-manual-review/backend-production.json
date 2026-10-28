@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "version": 67,
+  "verifyJwt": true,
+  "sourceFilesVerified": 7,
+  "cases": 12,
+  "auditedRegistrations": 12,
+  "resolutions": 0,
+  "focalBusinessFingerprintsUnchanged": true
+}

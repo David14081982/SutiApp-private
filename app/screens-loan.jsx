@@ -151,7 +151,7 @@
       ERROR: ['info', 'No pudimos calcular la simulación.', 'Intenta nuevamente. Si continúa, solicita apoyo.'],
       UNAVAILABLE: ['clock', 'Simulador no disponible por el momento', 'Tus pasos y datos permanecen sin cambios.'],
       NO_AVAILABLE_BALANCE: ['info', 'Sin saldo disponible en este fondo', 'Las cuotas pendientes ocupan el límite disponible. Puedes revisar otro fondo.'],
-      HISTORICAL_LOAN_MAPPING_REQUIRED: ['info', 'Necesitamos revisar el fondo de un préstamo de tu historial', 'Solicita apoyo para identificar su fondo antes de continuar. Esto no significa que no tengas saldo disponible.'],
+      HISTORICAL_LOAN_MAPPING_REQUIRED: ['info', 'Necesitamos revisar un dato de tu historial antes de calcular correctamente tu crédito.', 'Tu información está registrada y será revisada por Finanzas.'],
       HISTORICAL_LOAN_DATA_REVIEW_REQUIRED: ['info', 'Necesitamos revisar un préstamo de tu historial', 'Solicita apoyo para verificar sus datos antes de continuar. Esto no significa que no tengas saldo disponible.'],
     };
     const item = notices[state];

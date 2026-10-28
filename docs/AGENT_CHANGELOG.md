@@ -4440,3 +4440,7 @@ la H y `qa/evidence/loan-available-credit/closure-20261027.json`.
 Program-first historical obligation resolution; canonical financing precedes exact versioned historical classification. No history/balance/schema changes. Exact cohort1038:974 unchanged,12 prior fixes preserved,40 additional fixes,12 documented pending decisions/data. Focal UI distinguishes no credit from historical mapping/data review and stops failed-result odometers. See audit and docs/qa/evidence/loan-historical-resolution. Production status is recorded by release evidence, not inferred from local tests.
 
 Closure: backend66 and Pages2026102801 published; production12087 has2visible/positive/quotedfunds, with/withoutSW andrefreshPASS.2assisted sessionsclosed,0loan submissions/businesswrites. Seeproduction-verification.json. No further execution after evidence closure.
+
+## H-LOAN-AMBIGUOUS-MANUAL-REVIEW-GUARD-001 ? prepared
+
+Added controlled pending-state protection for the twelve documented historical cases, with a private operational review register and Finance panel. No guessed mappings, historical edits, debt exclusions or balance changes. Focused PostgreSQL, Edge and Chrome checks PASS; the normal profile and 12087 retain exact prior projection outputs. No mass replay or global suite. Production receipt and final status: docs/audits/H-LOAN-AMBIGUOUS-MANUAL-REVIEW-GUARD-001.md.

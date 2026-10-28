@@ -18,5 +18,10 @@
       requested_fund: funds.get(row.id) || null,
     }))));
   }
-  window.AdminFinanceQueueRepository = Object.freeze({ enrich });
+  async function historicalReviews(affiliateId) {
+    const result = await window.SutiSupabase.getClient().rpc('list_admin_loan_historical_reviews', { p_affiliate_id: affiliateId || null });
+    if (result.error || !Array.isArray(result.data)) throw new Error('HISTORICAL_REVIEW_READ_UNAVAILABLE');
+    return result.data;
+  }
+  window.AdminFinanceQueueRepository = Object.freeze({ enrich, historicalReviews });
 })();

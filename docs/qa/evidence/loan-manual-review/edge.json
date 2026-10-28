@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "controlledPending": true,
+  "missingControlGuardBeforeProfile": true,
+  "oldSessionGuard": true,
+  "reviewAuthorityFailureClosed": true,
+  "networkCalls": 0
+}

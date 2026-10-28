@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "commit": "fb29dfac69e589898f750ef0b912e4b2ab571a4e",
+  "reason": "Git normalizes CRLF to LF before GitHub Pages builds. Local Windows build evidence reports worktree bytes; deployed bytes must match committed blobs.",
+  "files": [
+    {
+      "file": "app/bundle.js",
+      "windowsWorktreeSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+      "gitPublishedSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+      "normalizedSourceEqual": true
+    },
+    {
+      "file": "app/financial-legacy-repository.js",
+      "windowsWorktreeSha256": "29c872b8991530d28a12b40e3ae690b898b61ce7b91b42cd58d94460da2588d9",
+      "gitPublishedSha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+      "normalizedSourceEqual": true
+    },
+    {
+      "file": "sw.js",
+      "windowsWorktreeSha256": "50c1d154809634d8ba1409d75022c7c31066c10e17f9a926065de3d39aad5848",
+      "gitPublishedSha256": "50c1d154809634d8ba1409d75022c7c31066c10e17f9a926065de3d39aad5848",
+      "normalizedSourceEqual": true
+    },
+    {
+      "file": "SutiApp.html",
+      "windowsWorktreeSha256": "23123ebc9825ebc6fc526b8910cf051be77fc65a7b8e02b1cceddf959293c75e",
+      "gitPublishedSha256": "23123ebc9825ebc6fc526b8910cf051be77fc65a7b8e02b1cceddf959293c75e",
+      "normalizedSourceEqual": true
+    }
+  ]
+}

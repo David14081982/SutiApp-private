@@ -1,0 +1,28 @@
+{
+  "title": "LOAN FUND RESOLUTION RESULT",
+  "status": "PASS",
+  "profilesChecked": 1038,
+  "previouslyCorrectUnchanged": "974 / 974",
+  "originalFailures": 64,
+  "resolvedCrossProgram": 48,
+  "resolvedLoanCanonical": 0,
+  "resolvedLoanLegacy": 0,
+  "otherValidationResolved": 4,
+  "remainingAmbiguous": 12,
+  "target12087": "PASS",
+  "financialBalancesChanged": 0,
+  "historicalRowsModified": 0,
+  "falseDebtExclusions": 0,
+  "membershipsDeductedAsLoans": 0,
+  "reservationAmortizationDoubleDeductions": 0,
+  "regression": "0 / 1038",
+  "previous12Preserved": true,
+  "newlyResolvedAmongRemaining52": 40,
+  "published": {
+    "backend": 66,
+    "frontend": "2026102801",
+    "runtimeCommit": "fb29dfac69e589898f750ef0b912e4b2ab571a4e"
+  },
+  "production": "PASS",
+  "exactPrivatePendingList": ".tmp/loan-historical-resolution/AMBIGUOUS-OWNER-REVIEW.md"
+}

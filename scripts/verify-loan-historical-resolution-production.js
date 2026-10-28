@@ -5,6 +5,7 @@
  * Credentials are read only from the workspace supabase.env. Never log/store tokens.
  */
 const fs = require('fs'), path = require('path'), crypto = require('crypto'), assert = require('assert/strict');
+const { execFileSync } = require('child_process');
 const root = path.resolve(__dirname, '..');
 const H = 'H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001';
 const sha = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -48,7 +49,14 @@ function blockedMutationReason(url, method, body) {
   return 'UNEXPECTED_POST_BLOCKED';
 }
 function expectedAssets() {
-  const html = fs.readFileSync(path.join(root, 'SutiApp.html'), 'utf8'), worker = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  // GitHub Pages deploys committed Git bytes. Windows checkout CRLF is not the
+  // published artifact; require equivalent source, then hash the exact blob.
+  const committed = (file) => {
+    const bytes = execFileSync('git', ['-c', 'safe.directory=' + root.replace(/\\/g, '/'), 'show', 'HEAD:' + file], { cwd: root, maxBuffer: 32 * 1024 * 1024, windowsHide: true });
+    assert.equal(fs.readFileSync(path.join(root, file), 'utf8').replace(/\r\n/g, '\n'), bytes.toString('utf8').replace(/\r\n/g, '\n'), 'UNCOMMITTED_RUNTIME_' + file);
+    return bytes;
+  };
+  const html = committed('SutiApp.html').toString('utf8'), workerBytes = committed('sw.js'), worker = workerBytes.toString('utf8');
   const bundle = /src="(app\/bundle\.js\?v=[^"]+)"/.exec(html)?.[1];
   const repository = /src="(app\/financial-legacy-repository\.js\?v=[^"]+)"/.exec(html)?.[1];
   const serviceWorker = /serviceWorkerUrl\s*=\s*"\.\/(sw\.js\?v=[^"]+)"/.exec(html)?.[1];
@@ -56,9 +64,9 @@ function expectedAssets() {
   assert(bundle && repository && serviceWorker && cache, 'LOCAL_ASSET_VERSION_CONTRACT_MISSING');
   assert(worker.includes("'./" + bundle + "'") && worker.includes("'./" + repository + "'"), 'LOCAL_SW_CORE_VERSION_MISMATCH');
   assert.equal(cache, 'sutiapp-v' + new URL(serviceWorker, 'https://local.invalid/').searchParams.get('v'), 'LOCAL_SW_CACHE_VERSION_MISMATCH');
-  const bundleBytes = fs.readFileSync(path.join(root, 'app/bundle.js'));
+  const bundleBytes = committed('app/bundle.js');
   assert(bundleBytes.includes('HISTORICAL_LOAN_MAPPING_REQUIRED') && bundleBytes.includes('NO_CREDIT_AVAILABLE'), 'LOCAL_BUNDLE_MISSING_CORRECTION');
-  return { bundle: { source: bundle, sha256: sha(bundleBytes) }, repository: { source: repository, sha256: sha(fs.readFileSync(path.join(root, 'app/financial-legacy-repository.js'))) }, serviceWorker: { source: serviceWorker, sha256: sha(worker) }, cache };
+  return { bundle: { source: bundle, sha256: sha(bundleBytes) }, repository: { source: repository, sha256: sha(committed('app/financial-legacy-repository.js')) }, serviceWorker: { source: serviceWorker, sha256: sha(workerBytes) }, cache };
 }
 async function managementRead(values, query) {
   assert(/^select\b/i.test(query.trim()), 'READ_ONLY_QUERY_REQUIRED');

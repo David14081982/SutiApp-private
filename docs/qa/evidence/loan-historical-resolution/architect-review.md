@@ -1,16 +1,15 @@
 # ARCHITECT REVIEW
 
-Task reviewed: H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001, isolated release
-candidate and verified backend deployment. Frontend production closure remains
-pending at this review checkpoint.
+Task reviewed: H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001, final deterministic
+correction, backend deployment, Pages publication and production verification.
 
 Verdict: APPROVED
 
-This verdict approves the reviewed implementation and evidence for the remaining
-authorized publication steps. It does not claim that Pages or the authenticated
-production loan screen have already passed. The owner's current instruction is
-the authorization to publish deterministic corrections and stop after production
-verification; this reviewer grants no additional authority.
+This verdict approves the completed deterministic correction and its publication.
+The twelve unresolved cases remain documented without invented mappings or data
+corrections, as the owner explicitly required. The owner's current instruction
+authorized publication once deterministic cases passed and requires stopping
+after production verification; this reviewer grants no additional authority.
 
 ## Review basis
 
@@ -101,6 +100,30 @@ even when the sum of future installments differs.
   deployment; zero financial business writes or historical modifications.
 - `edge-compile.json` correctly identifies the 407-byte response as a JSON
   compilation receipt, not an ESZIP binary. Its server bundle hash is recorded.
+- `pages-deployment.json`: runtime commit
+  `fb29dfac69e589898f750ef0b912e4b2ab571a4e`, frontend version `2026102801`,
+  GitHub Pages workflow `40633791698`, conclusion `success`.
+- `production-verification.json`: four URL/service-worker cases PASS. The two
+  canonical-origin cases authenticated the exact assisted 12087 context with
+  service workers allowed and blocked, respectively. Both displayed and quoted
+  two positive available funds, matched the server result, retained all four
+  steps, enabled Continue, stopped loading/error states and passed refresh.
+  The two GitHub Pages URL cases verified the expected redirect to that same
+  canonical origin and exact artifact hashes; they were not additional
+  independently authenticated quote sessions. No runtime error occurred.
+- Production identity evidence preserves the real actor separately from the
+  effective affiliate. Both audited assistance sessions ended. There were zero
+  request submissions, business-data writes, balance changes or historical-row
+  modifications; only the existing ephemeral financial sessions were used.
+- `publication-normalization.json` proves that delivered frontend bytes match
+  the committed Git blobs. The repository file's Windows CRLF/LF difference is
+  normalization only. The production verifier's final diff adds exact committed
+  blob hashes and an equality guard against uncommitted runtime changes, plus
+  command-scoped `safe.directory`; it does not relax assertions or change runtime.
+- `result.json` agrees with the cohort, deployment and production evidence:
+  48 CROSS_PROGRAM and four OTHER_VALIDATION recoveries, twelve documented
+  ambiguities, prior twelve preserved, forty additional recoveries, 12087 PASS,
+  zero changes to financial/history data and zero cohort regressions.
 
 ## Architecture, authority, security and legacy
 
@@ -132,15 +155,17 @@ The runtime issues found during review were corrected and tested: source-fund
 contradictions before cross-program exclusion, a canonical membership reused by
 two obligations, blank-status term/date discrepancies, and legacy duplicate
 origins with exact consistent classification. No unresolved runtime defect was
-identified in this checkpoint.
+identified in the final reviewed implementation.
 
-Production Pages delivery and the authenticated read-only 12087/ambiguous/error
-flow checks are still required for final H closure. The offline cohort and a
-backend source readback do not substitute for those checks. Missing control
-identities must not be described as having no debt. Historical unknown labels
-must not be guessed, and incomplete installment amounts must not be filled with
-zero. These documented ambiguities are intentionally outside the deterministic
-repair and do not prevent its owner-authorized publication.
+Production verification is complete for the exact 12087 flow and published
+artifacts. The 1,038-profile evidence remains an exact frozen replay, not 1,038
+live browser sessions. The blocked mapping/data and no-credit UI scenarios were
+verified in isolated browser tests; no live ambiguous user's financial record
+was altered to manufacture a successful scenario. Missing control identities
+must not be described as having no debt. Historical unknown labels must not be
+guessed, and incomplete installment amounts must not be filled with zero. These
+documented ambiguities are intentionally outside the deterministic repair and
+do not prevent its owner-authorized closure.
 
 Owner decision required for this publication: NO.
 Later source/fund/identity decisions for the twelve documented ambiguities remain
@@ -148,29 +173,29 @@ with the owner or the authorized source administrator.
 
 ## RESPONSE TO CODEX
 
-Approve the reviewed deterministic correction. Complete the already authorized
-Pages publication using only the audited isolated release, verify the actual
-production frontend artifacts and read-only loan flow for 12087, preserve the
-prior recoveries and demonstrate the distinct blocked/no-credit states. Record
-exact evidence and update this checkpoint with the production result before
-claiming full closure. Do not submit a loan, modify balances/history, infer an
-ambiguous mapping, run global suites or begin another H. Deliver the requested
-result and the private exact pending-case list, then stop.
+Approve and close the reviewed deterministic correction. Preserve the completed
+production evidence and finish only the documentation/derived Registry closure
+without runtime changes. Deliver the requested result and the private exact list
+of twelve unresolved cases with evidence. Then stop. Do not submit a loan,
+modify balances/history, infer an ambiguous mapping, run global suites or begin
+another H. Resolving the remaining source/fund/identity ambiguities requires
+separate authoritative evidence or a later owner instruction.
 
-Autocontinuation from WORK_QUEUE/task-orchestrator: not asserted. These remaining
-actions derive from the user's explicit instruction for this same H.
+Autocontinuation to another task from WORK_QUEUE/task-orchestrator: not asserted.
+No further implementation or publication of runtime changes is required by this
+review.
 
 ## SUTIAPP ARCHITECT REVIEW
 
-Task: H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001, pre-Pages checkpoint.
+Task: H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001, final review.
 Verdict: APPROVED.
-Critical findings: no remaining implementation blocker; Pages/production UI
-verification still pending and must not be represented as passed.
+Critical findings: no remaining implementation or publication blocker;
+deterministic cases and production 12087 flow PASS; twelve ambiguities retained.
 Source of truth: preserved.
 Architecture: focused derived classification and controlled errors.
 Security: unchanged identity/backend authorization boundaries.
 Data: no business/history mutations; twelve ambiguities retained.
 Legacy: existing history calculation and source remain unchanged.
 Owner decision: NO for the authorized deterministic publication.
-Next action: complete production verification for this H and stop.
+Next action: deliver the result and exact private pending list, then STOP.
 Response generated for Codex: YES.

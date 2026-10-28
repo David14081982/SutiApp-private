@@ -1,0 +1,115 @@
+{
+  "task": "H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001",
+  "status": "PASS",
+  "scope": "Derived registry refresh and bounded architecture diff",
+  "classification": "DERIVED_TECHNICAL_INDEX",
+  "runtimeAuthority": false,
+  "changes": {
+    "removedNodes": 0,
+    "addedNodes": 35,
+    "addedEdges": 83,
+    "dataOrSecurityArchitectureChanged": false,
+    "literalMapImportIndexed": true
+  },
+  "inheritedMainFilesVerifiedUnchangedAfterLineEndingNormalization": [
+    "app/reports-jc-export.js",
+    "app/reports-jc-repository.js",
+    "app/savings-panel-admin.jsx",
+    "app/savings-refunds-admin.jsx",
+    "app/savings-refunds-repository.js",
+    "app/savings-regularization-admin.jsx",
+    "app/screens-admin.jsx",
+    "app/vendor/jszip-3.10.1/jszip.min.js",
+    "docs/architecture/architecture-overrides.json",
+    "docs/qa/evidence/loan-available-credit/edge-local.json",
+    "docs/qa/evidence/loan-available-credit/projection.json",
+    "scripts/build-bundle.js",
+    "scripts/build-pages-site.js",
+    "scripts/build-reports-jc-template.js",
+    "scripts/build-reports-jc.js",
+    "scripts/test-reports-jc-browser.js",
+    "scripts/test-reports-jc-export.js",
+    "scripts/test-reports-jc-export.py",
+    "scripts/test-reports-jc-google-auth.mjs",
+    "scripts/test-reports-jc-historical-browser.js",
+    "scripts/test-reports-jc-historical-export.js",
+    "scripts/test-reports-jc-provisional.js",
+    "scripts/test-reports-jc-public-release.py",
+    "scripts/test-reports-jc-rules.mjs",
+    "scripts/test-reports-jc-screen.js",
+    "scripts/test-savings-refunds-browser.js",
+    "scripts/test-savings-refunds-history-browser.js",
+    "scripts/test-savings-refunds.js",
+    "scripts/verify-reports-jc-public-release.py",
+    "supabase/functions/reports-jc/google-auth.mjs",
+    "supabase/functions/reports-jc/index.ts",
+    "supabase/functions/reports-jc/report.mjs",
+    "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+    "supabase/migrations/20261027000400_reports_jc_historical.sql"
+  ],
+  "newFilesIndexed": [
+    "docs/audits/H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001.md",
+    "docs/qa/evidence/loan-historical-resolution/backend-tests.json",
+    "docs/qa/evidence/loan-historical-resolution/build.json",
+    "docs/qa/evidence/loan-historical-resolution/cohort.json",
+    "docs/qa/evidence/loan-historical-resolution/edge-compile.json",
+    "docs/qa/evidence/loan-historical-resolution/edge-deployed.json",
+    "docs/qa/evidence/loan-historical-resolution/edge-production.json",
+    "docs/qa/evidence/loan-historical-resolution/existing-edge-tests.json",
+    "docs/qa/evidence/loan-historical-resolution/existing-projection-tests.json",
+    "docs/qa/evidence/loan-historical-resolution/release-preflight.json",
+    "docs/qa/evidence/loan-historical-resolution/ui-browser.json",
+    "scripts/inspect-loan-historical-resolution.js",
+    "scripts/release-loan-historical-resolution.js",
+    "scripts/test-loan-historical-resolution.js",
+    "scripts/test-loan-historical-resolution-ui.js",
+    "scripts/verify-loan-historical-resolution-cohort.js",
+    "scripts/verify-loan-historical-resolution-production.js",
+    "supabase/functions/financial-legacy/historical-obligation-map.mjs",
+    "docs/qa/evidence/loan-historical-resolution/architect-review.md",
+    "docs/qa/evidence/loan-historical-resolution/pages-deployment.json",
+    "docs/qa/evidence/loan-historical-resolution/production-verification.json",
+    "docs/qa/evidence/loan-historical-resolution/publication-normalization.json",
+    "docs/qa/evidence/loan-historical-resolution/registry.json",
+    "docs/qa/evidence/loan-historical-resolution/result.json"
+  ],
+  "interpretation": "The first publication indexed all runtime changes. The final closure refresh also indexes the final architect review, production evidence, report and verifier normalization; no financial authority or runtime change is introduced by this refresh.",
+  "checks": {
+    "zeroRemovedNodes": true,
+    "noNewTablesColumnsRPCPoliciesPermissionsStorageOrAuthorities": true,
+    "unchangedGenerator": true,
+    "unchangedOverrides": true,
+    "onlyDerivedRegistryOutputsWritten": true
+  },
+  "limitations": [
+    "Existing syntax heuristics classify some test labels/constants as route/component nodes; these do not represent newly created application routes.",
+    "The acceptance suite creates an app fixture, so it was not run under this registry-only write scope. Read-only structural assertions and generator freshness were used instead."
+  ],
+  "firstPublicationSnapshotCheck": {
+    "status": "STALE",
+    "changed": [],
+    "added": [
+      "docs/qa/evidence/loan-historical-resolution/architect-review.md"
+    ],
+    "removed": []
+  },
+  "closure": {
+    "trackedChanges": [
+      "docs/AGENT_CHANGELOG.md",
+      "docs/audits/H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001.md",
+      "scripts/verify-loan-historical-resolution-production.js"
+    ],
+    "newEvidenceFiles": [
+      "docs/qa/evidence/loan-historical-resolution/architect-review.md",
+      "docs/qa/evidence/loan-historical-resolution/pages-deployment.json",
+      "docs/qa/evidence/loan-historical-resolution/production-verification.json",
+      "docs/qa/evidence/loan-historical-resolution/publication-normalization.json",
+      "docs/qa/evidence/loan-historical-resolution/registry.json",
+      "docs/qa/evidence/loan-historical-resolution/result.json"
+    ],
+    "architectReviewSHA256": "722f7d83f700a2d9a18ff27e99653c49d9954dd2cfd096264a0c06b7339ebaef",
+    "requiredFinalFreshness": "FRESH",
+    "finalVerificationReceipt": ".tmp/loan-historical-resolution/registry-final-check.json",
+    "receiptOutsideIndexedTree": true
+  }
+}

@@ -83,3 +83,18 @@ The versioned historical map proves seven other-program classifications. Canonic
 73 focused backend checks, 8 existing projection groups, 5 Edge groups, 9 repository error contracts and 14 browser checks PASS. Two existing UI suites PASS. Historical test-loan-simulator-ui-cutover fails identically on baseline main and candidate due to its obsolete cache-version assertion; it is not a regression. Bundle preserves 169/170 modules byte-for-byte; only screens-loan changes. No global suites per owner.
 
 Evidence: docs/qa/evidence/loan-historical-resolution/{cohort,build,ui-browser,release-preflight}.json. Exact ambiguous identities/source rows live only in ignored .tmp/loan-historical-resolution/AMBIGUOUS-OWNER-REVIEW.md and classification-private.json. Public cohort evidence uses hashed case references. Production publication/readback and independent final review will be recorded separately.
+
+## H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001 RESULT
+
+Status: PASS for all deterministic corrections, published and verified. Twelve unresolved cases are documented for later owner/data decisions, as explicitly required; no guessed resolution.
+Files changed: program classifier/capacity, public error propagation, loan repository/screen, generated focal bundle/cache literals, focused tests/verifiers, audit/governance/derived Registry/evidence.
+Source-of-truth verdict: PASS; same authoritative financial contracts, rules, savings and published history.
+Invariant verdict: PASS; 974/974 and previous12 byte-equivalent; no missing debt ignored, no membership loan deduction, no duplicate reserve/amortization.
+Build: PASS;170modules,169preserved; Pages runtimecommit fb29dfac69e589898f750ef0b912e4b2ab571a4e, version2026102801, workflow40633791698 success.
+Tests: PASS73focused backend+8existingprojection+5Edge+9repository+14Chrome; exact1038cohort; production12087 SWallow/block+refresh+Pagesredirect.
+Security: PASS; backendAuth/context unchanged; deployedverify_jwt=true; separate real actor/effectiveaffiliate;2auditedassistance sessions started/ended;0submissions/0businesswrites.
+Legacy impact: zero source/history/balance/rule mutations; existinghistoryprojector unchanged; backend66source hashes verified and businessfingerprints unchanged.
+Unexpected files changed:0 in isolatedrelease. Existingdirtyroot preserved.
+Known limitations:12 unresolved cases (6mapping,5missingcontrol,1missingamount). Cohort proof is exact frozen replay, not1038livebrowser sessions. Historical obsolete cacheassertion fails identically onbaseline; no regression.
+Evidence: cohort.json,backend-tests.json,existing-projection-tests.json,existing-edge-tests.json,ui-browser.json,build.json,edge-compile.json,edge-production.json,pages-deployment.json,production-verification.json,publication-normalization.json,registry.json,architect-review.md. Private exact list: .tmp/loan-historical-resolution/AMBIGUOUS-OWNER-REVIEW.md.
+Next action: stop. Do not change ambiguous data/funds without new authoritative evidence or owner decision.

@@ -1,0 +1,187 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-28T04:45:30.079Z",
+  "targetControl": "12087",
+  "cases": [
+    {
+      "target": "https://sutiapp.com/",
+      "serviceWorkers": "allow",
+      "status": "PASS",
+      "finalOrigin": "https://sutiapp.com",
+      "redirected": false,
+      "assets": {
+        "status": "PASS",
+        "bundleSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+        "repositorySha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+        "serviceWorkerSha256": "50c1d154809634d8ba1409d75022c7c31066c10e17f9a926065de3d39aad5848",
+        "serviceWorkerControlled": true,
+        "expectedCachePresent": true
+      },
+      "context": {
+        "actorUnchanged": true,
+        "targetExact": true,
+        "actorSeparate": true,
+        "effectiveMatches": true,
+        "auditedContext": true
+      },
+      "projection": {
+        "status": "PASS",
+        "visibleFunds": 2,
+        "positiveFunds": 2,
+        "quotedFunds": 2,
+        "balancesContract": true,
+        "fingerprint": "9d7ec5f9c0a9fab9f861bad35fc8457cc0a0f384ad6abf087130a26c416f2155"
+      },
+      "ui": {
+        "count": 2,
+        "match": true,
+        "fourSteps": true,
+        "ready": true,
+        "priceMatchesServer": true,
+        "noPendingWheels": true,
+        "noErrorNotice": true,
+        "continueEnabled": true,
+        "notUpdating": true,
+        "exactControlBanner": true
+      },
+      "refreshedAssets": {
+        "status": "PASS",
+        "bundleSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+        "repositorySha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+        "serviceWorkerSha256": "50c1d154809634d8ba1409d75022c7c31066c10e17f9a926065de3d39aad5848",
+        "serviceWorkerControlled": true,
+        "expectedCachePresent": true
+      },
+      "refreshedUi": {
+        "count": 2,
+        "match": true,
+        "fourSteps": true,
+        "ready": true,
+        "priceMatchesServer": true,
+        "noPendingWheels": true,
+        "noErrorNotice": true,
+        "continueEnabled": true,
+        "notUpdating": true,
+        "exactControlBanner": true
+      },
+      "refresh": "PASS",
+      "cleanup": {
+        "ended": true
+      },
+      "blockedBusinessWriteAttempts": 0,
+      "runtimeErrors": 0
+    },
+    {
+      "target": "https://sutiapp.com/",
+      "serviceWorkers": "block",
+      "status": "PASS",
+      "finalOrigin": "https://sutiapp.com",
+      "redirected": false,
+      "assets": {
+        "status": "PASS",
+        "bundleSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+        "repositorySha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+        "serviceWorkerSha256": "50c1d154809634d8ba1409d75022c7c31066c10e17f9a926065de3d39aad5848",
+        "serviceWorkerControlled": false,
+        "expectedCachePresent": false
+      },
+      "context": {
+        "actorUnchanged": true,
+        "targetExact": true,
+        "actorSeparate": true,
+        "effectiveMatches": true,
+        "auditedContext": true
+      },
+      "projection": {
+        "status": "PASS",
+        "visibleFunds": 2,
+        "positiveFunds": 2,
+        "quotedFunds": 2,
+        "balancesContract": true,
+        "fingerprint": "9d7ec5f9c0a9fab9f861bad35fc8457cc0a0f384ad6abf087130a26c416f2155"
+      },
+      "ui": {
+        "count": 2,
+        "match": true,
+        "fourSteps": true,
+        "ready": true,
+        "priceMatchesServer": true,
+        "noPendingWheels": true,
+        "noErrorNotice": true,
+        "continueEnabled": true,
+        "notUpdating": true,
+        "exactControlBanner": true
+      },
+      "refreshedAssets": {
+        "status": "PASS",
+        "bundleSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+        "repositorySha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+        "serviceWorkerSha256": "50c1d154809634d8ba1409d75022c7c31066c10e17f9a926065de3d39aad5848",
+        "serviceWorkerControlled": false,
+        "expectedCachePresent": false
+      },
+      "refreshedUi": {
+        "count": 2,
+        "match": true,
+        "fourSteps": true,
+        "ready": true,
+        "priceMatchesServer": true,
+        "noPendingWheels": true,
+        "noErrorNotice": true,
+        "continueEnabled": true,
+        "notUpdating": true,
+        "exactControlBanner": true
+      },
+      "refresh": "PASS",
+      "cleanup": {
+        "ended": true
+      },
+      "blockedBusinessWriteAttempts": 0,
+      "runtimeErrors": 0
+    },
+    {
+      "target": "https://david14081982.github.io/SutiApp-private/",
+      "serviceWorkers": "allow",
+      "status": "PASS",
+      "finalOrigin": "https://sutiapp.com",
+      "redirected": true,
+      "assets": {
+        "status": "PASS",
+        "bundleSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+        "repositorySha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+        "serviceWorkerSha256": "50c1d154809634d8ba1409d75022c7c31066c10e17f9a926065de3d39aad5848",
+        "serviceWorkerControlled": true,
+        "expectedCachePresent": true
+      },
+      "reusesVerifiedCanonicalOrigin": true,
+      "blockedBusinessWriteAttempts": 0,
+      "runtimeErrors": 0
+    },
+    {
+      "target": "https://david14081982.github.io/SutiApp-private/",
+      "serviceWorkers": "block",
+      "status": "PASS",
+      "finalOrigin": "https://sutiapp.com",
+      "redirected": true,
+      "assets": {
+        "status": "PASS",
+        "bundleSha256": "bf408a34eaaf65fc02e8790901a3658619de438ed18379c3efc1b27799df2e81",
+        "repositorySha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+        "serviceWorkerSha256": "50c1d154809634d8ba1409d75022c7c31066c10e17f9a926065de3d39aad5848",
+        "serviceWorkerControlled": false,
+        "expectedCachePresent": false
+      },
+      "reusesVerifiedCanonicalOrigin": true,
+      "blockedBusinessWriteAttempts": 0,
+      "runtimeErrors": 0
+    }
+  ],
+  "requestSubmissions": 0,
+  "businessDataWrites": 0,
+  "financialBalancesChanged": 0,
+  "historicalRowsModified": 0,
+  "administrativeSessionsStarted": 2,
+  "administrativeSessionsEnded": 2,
+  "snapshots": "Existing ephemeral loan sessions only",
+  "serviceWorkerComparison": "PASS"
+}

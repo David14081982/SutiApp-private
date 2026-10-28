@@ -90,8 +90,8 @@
         "evidence": "scripts/test-reports-jc-ui.js",
         "permissions": "program_requests.read AND savings.read AND savings.reports AND admin_module_boundary(reportes_jc,read); real actor, no impersonation",
         "authority": "Google request/loan facts and Supabase savings/refund facts remain separate authorities; report cells are derived counts with source evidence",
-        "export": "Immutable private template; 17 tabs and original formulas preserved; strict validated XLSX/ZIP or explicit PROVISIONAL with scoped #N/A and cell notes; no invented counts",
-        "export_evidence": "scripts/test-reports-jc-provisional.js; scripts/test-reports-jc-browser.js"
+        "export": "Immutable private template; 17 tabs and original formulas preserved; strict validated XLSX/ZIP or PROVISIONAL observed counts with cell notes; only undetermined nulls become #N/A; no invented counts",
+        "export_evidence": "scripts/test-reports-jc-provisional.js; scripts/test-reports-jc-browser.js; scripts/test-reports-jc-source-values.mjs"
       }
     },
     {

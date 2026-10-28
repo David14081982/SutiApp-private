@@ -1549,7 +1549,9 @@
       for (const issue of issues) for (const coord of affectedInputs(issue, schema, month, inputCoords)) (pending[coord] ||= []).push(issue);
       for (const coord of inputCoords) {
         if (values[coord] === null && !pending[coord]) pending[coord] = [{ code: 'COUNT_UNDETERMINED', message: 'La fuente no determina todavía esta cantidad; no equivale a cero.', sourceIds: cells[coord]?.sourceIds || [] }];
-        if (pending[coord]) { pending[coord] = uniqueIssues(pending[coord]); values[coord] = null; }
+        // An issue qualifies the observed count; it does not erase it. Only an
+        // actual null from the reader represents an undetermined quantity.
+        if (pending[coord]) pending[coord] = uniqueIssues(pending[coord]);
       }
       // Preserve formulas and propagate an Excel error through all dependants.
       // SUM would silently ignore text/blanks, so neither is a safe placeholder.
@@ -1557,10 +1559,9 @@
         if (!formulas[coord]) return values[coord];
         const dependencies = coords(formulas[coord]);
         const children = dependencies.map(propagate);
-        if (children.includes(null)) {
-          values[coord] = null;
-          pending[coord] = uniqueIssues(dependencies.flatMap(child => pending[child] || []));
-        }
+        if (children.includes(null)) values[coord] = null;
+        const inherited = dependencies.flatMap(child => pending[child] || []);
+        if (inherited.length) pending[coord] = uniqueIssues(inherited);
         return values[coord];
       };
       for (const coord of Object.keys(formulas)) propagate(coord);
@@ -1613,13 +1614,13 @@
     const ending = schema.monthly ? /Octubre 2026$/ : /2026$/;
     if (!ending.test(oldTitle)) fail('el título de la plantilla no coincide.');
     const title = oldTitle.replace(ending, (schema.monthly ? MONTHS[month - 1] + ' ' : '') + year);
-    xml = setCell(xml, schema.title, provisional ? 'PROVISIONAL · ' + title + ' · #N/A = pendiente' : title, true, original);
+    xml = setCell(xml, schema.title, provisional ? 'PROVISIONAL · ' + title + ' · Conteos registrados; consultar notas' : title, true, original);
     if (schema.yearCell) xml = setCell(xml, schema.yearCell, year, false, original);
-    return { xml, pending: prepared.pending };
+    return { xml, pending: prepared.pending, values: prepared.values };
   }
   function safeNoteText(value) { return String(value == null ? '' : value).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, ''); }
-  function noteText(schema, coord, issues, report, month, byId) {
-    const lines = ['REPORTE PROVISIONAL', schema.name + '!' + coord + ' · ' + report.year + (schema.monthly ? ' · ' + MONTHS[month - 1] : ''), '#N/A = cantidad pendiente de aclaración. No equivale a cero.'];
+  function noteText(schema, coord, issues, report, month, byId, value) {
+    const lines = ['REPORTE PROVISIONAL', schema.name + '!' + coord + ' · ' + report.year + (schema.monthly ? ' · ' + MONTHS[month - 1] : ''), value === null ? '#N/A = cantidad no determinada por la fuente. No equivale a cero.' : 'Cantidad registrada: ' + value + '. Cuenta los registros clasificables de la fuente. Las incidencias siguientes pueden afectar su integridad; no es una cifra definitiva. Cero significa cero casos clasificados, no certifica ausencia de casos pendientes.'];
     const reasons = uniqueIssues(issues);
     for (const issue of reasons) {
       lines.push(safeNoteText(issue.code || 'SOURCE_UNRESOLVED') + ': ' + safeNoteText(issue.message || 'Existe una incidencia en la fuente de este indicador.'));
@@ -1636,12 +1637,12 @@
       if (references.length > 40) lines.push('Más referencias disponibles en las incidencias de Reportes JC: ' + (references.length - 40) + '.');
       if (lines.join('\n').length > 26000) { lines.push('Consulte las demás incidencias en Reportes JC.'); break; }
     }
-    if (derived(schema)[coord]) lines.push('Total pendiente: depende de una o más cantidades marcadas #N/A. Se conserva la fórmula original cuando existe.');
+    if (derived(schema)[coord]) lines.push(value === null ? 'Total no determinado: depende de una o más cantidades #N/A. Se conserva la fórmula original cuando existe.' : 'Total de las cantidades registradas, sujeto a las observaciones de sus componentes. Se conserva la fórmula original cuando existe.');
     // Excel legacy notes have a 32,767-character text limit.
     const text = lines.join('\n');
     return text.length <= 30000 ? text : text.slice(0, 29800) + '\nConsulte el detalle completo de las incidencias en Reportes JC.';
   }
-  async function addNotes(zip, xml, schema, pending, report, month) {
+  async function addNotes(zip, xml, schema, pending, report, month, values) {
     const addresses = Object.keys(pending);
     if (!addresses.length) return xml;
     if (/<legacyDrawing\b/.test(xml)) fail('la plantilla ya contiene notas incompatibles.');
@@ -1652,7 +1653,7 @@
     let rels = relsEntry ? await relsEntry.async('string') : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
     if (zip.file(commentsPath) || zip.file(drawingPath) || /rIdJcNotes(?:Vml|Comments)/.test(rels)) fail('las referencias de notas ya existen.');
     const byId = new Map((Array.isArray(report.records) ? report.records : []).map(record => [record.id, record]));
-    const comments = addresses.map(coord => '<comment ref="' + coord + '" authorId="0"><text><t xml:space="preserve">' + escapeXml(noteText(schema, coord, pending[coord], report, month, byId)) + '</t></text></comment>').join('');
+    const comments = addresses.map(coord => '<comment ref="' + coord + '" authorId="0"><text><t xml:space="preserve">' + escapeXml(noteText(schema, coord, pending[coord], report, month, byId, values[coord])) + '</t></text></comment>').join('');
     zip.file(commentsPath, '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><comments xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><authors><author>Reportes JC</author></authors><commentList>' + comments + '</commentList></comments>', { createFolders: false });
     const shapes = addresses.map((coord, index) => {
       const col = coord.charCodeAt(0) - 65, row = Number(coord.slice(1)) - 1;
@@ -1708,7 +1709,7 @@
       const entry = zip.file(path);
       const xml = await entry.async('string');
       const prepared = patchSheet(xml, sharedStrings, schema, options.report, year, month, options.provisional === true);
-      const output = options.provisional === true ? await addNotes(zip, prepared.xml, schema, prepared.pending, options.report, month) : prepared.xml;
+      const output = options.provisional === true ? await addNotes(zip, prepared.xml, schema, prepared.pending, options.report, month, prepared.values) : prepared.xml;
       zip.file(path, output, { date: entry.date, createFolders: false, unixPermissions: entry.unixPermissions, dosPermissions: entry.dosPermissions });
     }
     return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
@@ -1786,7 +1787,7 @@
     if(id!==exportSequence.current||window.ReportsJcRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');
     const file='Reporte_JC_'+report.year+(selectedMode==='year'?'':'-'+String(selectedMonth).padStart(2,'0'))+(provisional?'_PROVISIONAL':'')+(selectedMode==='year'?'.zip':'.xlsx');
     exporter.download(bytes,file,selectedMode==='year'?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    setNotice('Archivo generado: '+file+(provisional?' · Provisional: las celdas #N/A están pendientes de aclaración. Consulta sus notas en Excel.':''));
+    setNotice('Archivo generado: '+file+(provisional?' · Provisional: conserva las cantidades registradas y explica sus pendientes en las notas de Excel. #N/A indica únicamente una cantidad aún no determinada.':''));
    }catch(error){setNotice(explain(error));}finally{setExporting(false);}
   }
   const report=state.data,sheet=report?.sheets?.[tab],isMonth=/ Mes$/.test(tab),cells=(isMonth?sheet?.months?.[month]?.cells:sheet?.cells)||{},layout=grid(tab,cells);
@@ -1804,7 +1805,7 @@
     h('button',{className:'rjc-btn',type:'submit',disabled:state.loading||exporting},state.loading?'Consultando…':'Actualizar'),
     h('button',{className:'rjc-btn primary',type:'button',onClick:exportFile,disabled:!report||state.loading||exporting||!!exportPlan.error},exporting?'Generando…':(mode==='year'?'Exportar año':'Exportar mes')+(exportPlan.provisionalNeeded?' provisional':''))),
    h('p',{className:'rjc-note'},'Los concentrados muestran los doce meses del año. Las hojas «Mes» usan el mes elegido. La descarga conserva las 17 pestañas de la plantilla y actualiza las ocho incluidas.'),
-   exportPlan.provisionalNeeded&&h('p',{className:'rjc-note','data-provisional-export':true},'Puedes descargar un archivo PROVISIONAL. Las cifras pendientes y sus totales se marcan como #N/A, con una nota que explica el motivo. Los datos completos conservan su valor. Al resolver los pendientes podrás generar el libro validado.'),
+   exportPlan.provisionalNeeded&&h('p',{className:'rjc-note','data-provisional-export':true},'Puedes descargar un archivo PROVISIONAL con las cantidades registradas. Las notas de cada cifra explican los registros pendientes que pueden afectar el conteo. Sólo las cantidades que la fuente aún no determina y sus totales aparecen como #N/A. Al resolver los pendientes podrás generar el libro validado.'),
    notice&&h('p',{role:'status',className:'rjc-note','data-export-notice':true},notice),
    exportPlan.error&&h('p',{role:'alert',className:'rjc-error'},explain(exportPlan.error)),
    report&&h('div',{className:annualIssues.length?'rjc-issue':'rjc-note','data-report-readiness':true},

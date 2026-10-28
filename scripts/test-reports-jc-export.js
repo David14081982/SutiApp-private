@@ -41,7 +41,7 @@ async function main() {
   const options = { templateBase64: template.TEMPLATE_BASE64, report, year: 2028, month: 10 };
   const { buildReport } = await import(pathToFileURL(path.resolve(__dirname, '../supabase/functions/reports-jc/report.mjs')).href);
   const headers = Array(26).fill('');
-  Object.assign(headers, { 0: 'ID', 1: 'Número de control', 4: 'Fondo', 9: 'Fecha solicitud', 24: 'Estado', 25: 'Observaciones' });
+  Object.assign(headers, { 0: 'ID', 1: 'Número de control', 3: 'Proceso', 4: 'Fondo', 9: 'Fecha solicitud', 24: 'Estado', 25: 'Observaciones' });
   const request = Array(26).fill('');
   Object.assign(request, { 0: 'isolated-request', 1: 'TEST-001', 4: 'Vales y membresias', 9: '2028-10-01', 24: 'Iniciado', 25: 'Proveedor adicional de prueba' });
   const engineReport = buildReport({ year: 2028, requests: [headers, request], loans: [['Fecha', 'Cuotas', 'ID', 'Folio', '', 'Proceso', 'Fondo'], ['2028-10-15', 100, 'isolated-loan', 'TEST-001', '', '1', 'Caja Chica']], savings: { year: 2028, events: [], issues: [], coverage: { status: 'complete', synthetic: true } }, consultedAt: '2028-10-27T18:00:00Z' });

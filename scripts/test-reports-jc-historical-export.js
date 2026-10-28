@@ -4,7 +4,7 @@ const assert=require('node:assert/strict'),fs=require('fs'),path=require('path')
 const {pathToFileURL}=require('url'),JSZip=require('../app/vendor/jszip-3.10.1/jszip.min.js'),exporter=require('../app/reports-jc-export.js');
 async function main(){
  const root=path.resolve(__dirname,'..'),{buildReport}=await import(pathToFileURL(path.join(root,'supabase/functions/reports-jc/report.mjs')).href),{TEMPLATE_BASE64}=await import(pathToFileURL(path.join(root,'supabase/functions/reports-jc/template.mjs')).href);
- const headers=Array(26).fill('');Object.assign(headers,{0:'ID',1:'Número de control',4:'Fondo',9:'Fecha solicitud',24:'Estado',25:'Observaciones'});
+ const headers=Array(26).fill('');Object.assign(headers,{0:'ID',1:'Número de control',3:'Proceso',4:'Fondo',9:'Fecha solicitud',24:'Estado',25:'Observaciones'});
  const refund={id:'refund:test-case',kind:'refund_paid',occurred_on:'2025-03-20',source_table:'savings_refunds_private.cases',source_id:'test-case',numero_control:'TEST-001',detail:{amount:800,payroll_code:580,origin:'HISTORICAL'}};
  const termination={id:'termination-attested:test-source',kind:'cancellation',occurred_on:'2025-02-28',source_table:'savings_refunds_private.termination_versions',source_id:'test-source',numero_control:'TEST-001',detail:{version:1,historical:true,evidence_reference:'SYNTHETIC'}};
  const build=(events,issues=[])=>buildReport({year:2025,requests:[headers],loans:[['Fecha','Cuotas','ID','Folio','','Proceso','Fondo']],savings:{year:2025,events,issues,coverage:{synthetic:true}},consultedAt:'2026-10-27T20:00:00Z'});

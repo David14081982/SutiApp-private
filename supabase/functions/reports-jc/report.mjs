@@ -41,20 +41,24 @@ export function requestStatus(value){
 }
 export function fundGroup(value){
   const s=text(value),k=key(value);
-  if(/^\d{4}-\d{1,2}-\d{1,2}(?:\s|$)/.test(s)||/^\d{1,2}\/\d{1,2}\/\d{4}(?:\s|$)/.test(s)||k.includes('ADELANTODENOMINA'))return 'advance';
+  if(/^\d{4}-\d{1,2}-\d{1,2}(?=\s|[—–-]|$)/.test(s)||/^\d{1,2}\/\d{1,2}\/\d{4}(?=\s|[—–-]|$)/.test(s)||k.includes('ADELANTODENOMINA'))return 'advance';
   if(['CAJADEAHORRO','CAJAAHORRO','PRESTAMODECAJADEAHORRO'].includes(k))return 'loanSavings';
   if(['CAJACHICA','PRESTAMODECAJACHICA'].includes(k))return 'pettyCash';
   if(k==='SUTIEXPRESS'||k==='SUTIEXPRES'||k==='SUTIEXPRESSEXTERNO')return 'sutiexpress';
   if(['VALESYMEMBRESIAS','VALESYMEMBRESIA','MEMBRESIAS','MEMBRESIA'].includes(k))return 'membership';
-  if(k==='DESCUENTOSUTISSSTESON'||k==='SUTISSSTESON')return 'union';
+  if(['DESCUENTOSUTISSSTESON','DESCUENTOSSUTISSSTESON','SUTISSSTESON'].includes(k))return 'union';
   if(k==='SEGUROCOLECTIVOSUTI'||k==='SEGUROCOLECTIVO')return 'insurance';
   if(['PROYECTOSSUTI','PANELSOLAR','PANELESSOLARES','SUTIAUTO','SUTIAUTOS','SUTICIRUGIAS','SUTITERRENOS'].includes(k))return 'projects';
   if(['SUTITOURS','SUTIVIAJES'].includes(k))return 'travel';
   if(k==='SUTICOMPRAS')return 'purchases';
   return null;
 }
+function membershipProvider(value){
+  const original=text(value),parts=original.split('/');
+  return parts.length===2&&has(parts[1])&&['SOLICITUDDEMEMBRESIA','VALES','VALEDEGASOLINA'].includes(key(parts[0]))?text(parts[1]):original;
+}
 export function membershipRow(value){
-  const k=key(value);
+  const k=key(membershipProvider(value));
   if(['RIVERAGAS','RIVERAGASVALES'].includes(k))return 6;
   if(['ARCO','ARCOGASOLINERA','ARCOGASOLINA'].includes(k))return 7;
   if(k==='CASALEY')return 8;
@@ -112,14 +116,22 @@ function calculateTotals(sheets){
 }
 export function buildReport({year,requests,loans,savings,consultedAt=new Date().toISOString()}){
   if(!Number.isInteger(year)||year<2000||year>2100)throw new ReportError('REQUEST_INVALID');
-  assertHeaders(requests,REQUEST_SHEET,{0:['ID'],1:['Número de control'],4:['Fondo'],9:['Fecha solicitud'],24:['Estado'],25:['Observaciones']});
+  assertHeaders(requests,REQUEST_SHEET,{0:['ID'],1:['Número de control'],3:['Proceso'],4:['Fondo'],9:['Fecha solicitud'],24:['Estado'],25:['Observaciones']});
   assertHeaders(loans,LOAN_SHEET,{0:['Fecha'],1:['Cuotas','Cuota'],2:['ID'],5:['Proceso'],6:['Fondo']});
   if(!savings||savings.year!==year||!Array.isArray(savings.events)||!Array.isArray(savings.issues)||!savings.coverage)throw new ReportError('SAVINGS_SOURCE_INVALID');
   const sheets=buildSheets(),records=[],issues=[],today=localToday(consultedAt),requestKeys=new Map(),loanKeys=new Map(),eventIds=new Set();
+  // A blank payroll process can be read from its one exact request in this same
+  // workbook. Neither request dates nor statuses are inferred from this join.
+  const processKey=(id,control,fund)=>has(id)&&has(control)&&has(fund)?JSON.stringify([text(id),text(control),key(fund)]):null;
+  const requestProcesses=new Map();
+  for(let i=1;i<requests.length;i++){
+    const row=requests[i]||[],identity=processKey(row[0],row[1],row[4]);
+    if(identity!==null)requestProcesses.set(identity,requestProcesses.has(identity)?null:{value:text(row[3]),row:i+1});
+  }
   // Preserve the six named template rows; additional providers use its existing six spare rows.
   const extraProviders=new Map();
   for(const r of requests.slice(1))if(fundGroup(r?.[4])==='membership'&&isYear(sourceDate(r?.[9]),year)&&has(r?.[25])&&!membershipRow(r[25])){
-    const normalized=key(r[25]),label=text(r[25]);if(!extraProviders.has(normalized)||label<extraProviders.get(normalized))extraProviders.set(normalized,label);
+    const label=membershipProvider(r[25]),normalized=key(label);if(!extraProviders.has(normalized)||label<extraProviders.get(normalized))extraProviders.set(normalized,label);
   }
   const extras=[...extraProviders.entries()].sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0),extraRows=new Map(extras.slice(0,6).map(([provider],i)=>[provider,12+i]));
   for(const month of MONTHS)extras.slice(0,6).forEach(([,label],i)=>{sheets[SHEETS.membershipMonth].months[month].cells['A'+(12+i)]={value:label,sourceIds:[],rule:'source_provider_in_existing_spare_row'};});
@@ -146,14 +158,14 @@ export function buildReport({year,requests,loans,savings,consultedAt=new Date().
     if(identity){const prior=requestKeys.get(identity);if(prior)issue('REQUEST_IDENTITY_COLLISION','Dos filas comparten identidad, persona, fecha y fondo. Se conservan ambas; revisar antes de exportar.',names,[month],[prior,id],included?'error':'warning');else requestKeys.set(identity,id);}
     if(group==='membership'){
       for(const name of [SHEETS.membership,SHEETS.financing])countRequest(name,month+5,record);
-      const providerRow=membershipRow(record.provider)||extraRows.get(key(record.provider));
+      const providerRow=membershipRow(record.provider)||extraRows.get(key(membershipProvider(record.provider)));
       if(providerRow)countRequest(SHEETS.membershipMonth,providerRow,record,month);
       else issue(record.provider?'MEMBERSHIP_PROVIDER_OVERFLOW':'MEMBERSHIP_PROVIDER_MISSING',record.provider?'Los proveedores adicionales superan las seis filas libres de la plantilla.':'La solicitud no tiene proveedor en Observaciones.',[SHEETS.membershipMonth],[month],[id]);
     }else if(['loanSavings','pettyCash','advance','sutiexpress'].includes(group)){
       countRequest(SHEETS.loan,month+5,record);countRequest(SHEETS.loanMonth,({loanSavings:6,pettyCash:7,advance:8,sutiexpress:9})[group],record,month);
     }
   }
-  let zeroInstallments=0,scheduledInstallments=0,paidInstallments=0;
+  let zeroInstallments=0,scheduledInstallments=0,paidInstallments=0,resolvedPayrollProcesses=0;
   for(let i=1;i<loans.length;i++){
     const r=loans[i]||[];if(![0,1,2,3,5,6].some(c=>has(r[c])))continue;
     const id='loans:'+String(i+1),date=sourceDate(r[0]);
@@ -162,12 +174,18 @@ export function buildReport({year,requests,loans,savings,consultedAt=new Date().
     if(r[1]===0){zeroInstallments++;continue;}
     if(!date){issue('INSTALLMENT_DATE_INVALID','La cuota positiva no tiene una fecha válida.',DISCOUNT_REPORTS,[],[id]);continue;}
     if(!isYear(date,year))continue;
-    const month=monthOf(date),code=payrollCode(r[6],r[5]),phase=date<=today?'paid':'scheduled';
-    const record={id,source:'google_loans',sheet:LOAN_SHEET,row:i+1,requestId:text(r[2]),numero_control:text(r[3]),date,fund:text(r[6]),process:text(r[5]),amount:r[1],payrollCode:code,phase};records.push(record);
+    const originalProcess=text(r[5]),matchedRequest=!has(r[5])?requestProcesses.get(processKey(r[2],r[3],r[6])):null;
+    const resolved=matchedRequest&&has(matchedRequest.value)&&payrollCode(r[6],matchedRequest.value)!==null;
+    const process=resolved?matchedRequest.value:originalProcess;
+    if(resolved)resolvedPayrollProcesses++;
+    const month=monthOf(date),code=payrollCode(r[6],process),phase=date<=today?'paid':'scheduled';
+    const record={id,source:'google_loans',sheet:LOAN_SHEET,row:i+1,requestId:text(r[2]),numero_control:text(r[3]),date,fund:text(r[6]),process,amount:r[1],payrollCode:code,phase};
+    if(resolved)Object.assign(record,{originalProcess,processSource:{source:'google_requests',sheet:REQUEST_SHEET,row:matchedRequest.row,column:'D'}});
+    records.push(record);
     if(phase==='paid')paidInstallments++;else scheduledInstallments++;
     if(!record.requestId)issue('INSTALLMENT_ID_MISSING','La cuota conserva su fila original, pero no tiene identificador de préstamo.',DISCOUNT_REPORTS,[month],[id],'warning');
     if(!code){issue('PAYROLL_CODE_UNMAPPED','El fondo o proceso de la cuota no tiene clave de descuento autorizada.',DISCOUNT_REPORTS,[month],[id]);continue;}
-    const isJub=['JUB','JUBILADOSYPENSIONADOS','JUBILADOSYPENS','JUBILADO','PENSIONADO'].includes(key(r[5]));
+    const isJub=['JUB','JUBILADOSYPENSIONADOS','JUBILADOSYPENS','JUBILADO','PENSIONADO'].includes(key(process));
     add(SHEETS.discount,(isJub?'C':'B')+(month+5),id,null,'count_positive_installments_including_valid_schedule');
     add(SHEETS.discountMonth,'C'+PAYROLL_ROWS[code],id,month);
     const collision=[record.requestId,record.numero_control,date,record.amount,key(record.fund)].join('|');
@@ -220,11 +238,11 @@ export function buildReport({year,requests,loans,savings,consultedAt=new Date().
   return {version:1,year,consultedAt,sources:[{id:'google_requests',authority:'Google Sheets',workbook:WORKBOOK,sheet:REQUEST_SHEET,dateColumn:'J',statusColumn:'Y'},
     {id:'google_loans',authority:'Google Sheets',workbook:WORKBOOK,sheet:LOAN_SHEET,dateColumn:'A',amountColumn:'B'},
     {id:'supabase_savings',authority:'Supabase',reader:'get_admin_reports_jc_savings'}],summary,records,issues,sheets,
-    coverage:{savings:savings.coverage,zeroInstallmentsExcluded:zeroInstallments,paidInstallments,scheduledInstallments,sourceRows:{requests:requests.length-1,loans:loans.length-1}}};
+    coverage:{savings:savings.coverage,zeroInstallmentsExcluded:zeroInstallments,paidInstallments,scheduledInstallments,resolvedPayrollProcesses,sourceRows:{requests:requests.length-1,loans:loans.length-1}}};
 }
 
 // Fixed, minimal, unbounded column ranges. Google is never sent a write request.
-export const GOOGLE_RANGES=Object.freeze(["'Historial de solicitudes'!A:B","'Historial de solicitudes'!E:E","'Historial de solicitudes'!J:J","'Historial de solicitudes'!Y:Z","'HISTORIAL P V2'!A:D","'HISTORIAL P V2'!F:G"]);
+export const GOOGLE_RANGES=Object.freeze(["'Historial de solicitudes'!A:B","'Historial de solicitudes'!D:E","'Historial de solicitudes'!J:J","'Historial de solicitudes'!Y:Z","'HISTORIAL P V2'!A:D","'HISTORIAL P V2'!F:G"]);
 export async function readGoogle(env,fetcher=fetch){
   let assertion;try{assertion=await createReadOnlyAssertion(env);}catch(_){throw new ReportError('GOOGLE_NOT_CONFIGURED');}
   try{
@@ -237,7 +255,7 @@ export async function readGoogle(env,fetcher=fetch){
       throw new ReportError(response.status===403?'GOOGLE_ACCESS_DENIED':'GOOGLE_UNAVAILABLE',{googleStatus:response.status,googleReason:reason});
     }
     const data=await response.json();if(data.spreadsheetId!==WORKBOOK||!Array.isArray(data.valueRanges)||data.valueRanges.length!==GOOGLE_RANGES.length)throw new ReportError('GOOGLE_RESPONSE_INVALID');
-    const requests=[],loans=[],targets=[[requests,0],[requests,4],[requests,9],[requests,24],[loans,0],[loans,5]];
+    const requests=[],loans=[],targets=[[requests,0],[requests,3],[requests,9],[requests,24],[loans,0],[loans,5]];
     data.valueRanges.forEach((range,index)=>{if(!Array.isArray(range.values))throw new ReportError('GOOGLE_RESPONSE_INVALID');const [target,column]=targets[index];range.values.forEach((row,i)=>{if(!Array.isArray(row))throw new ReportError('GOOGLE_RESPONSE_INVALID');target[i]??=[];row.forEach((value,c)=>target[i][column+c]=value);});});
     return {requests:Array.from(requests,r=>r||[]),loans:Array.from(loans,r=>r||[])};
   }catch(error){if(error instanceof ReportError)throw error;throw new ReportError('GOOGLE_UNAVAILABLE');}

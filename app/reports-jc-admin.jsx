@@ -50,7 +50,7 @@
     if(id!==exportSequence.current||window.ReportsJcRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');
     const file='Reporte_JC_'+report.year+(selectedMode==='year'?'':'-'+String(selectedMonth).padStart(2,'0'))+(provisional?'_PROVISIONAL':'')+(selectedMode==='year'?'.zip':'.xlsx');
     exporter.download(bytes,file,selectedMode==='year'?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    setNotice('Archivo generado: '+file+(provisional?' · Provisional: las celdas #N/A están pendientes de aclaración. Consulta sus notas en Excel.':''));
+    setNotice('Archivo generado: '+file+(provisional?' · Provisional: conserva las cantidades registradas y explica sus pendientes en las notas de Excel. #N/A indica únicamente una cantidad aún no determinada.':''));
    }catch(error){setNotice(explain(error));}finally{setExporting(false);}
   }
   const report=state.data,sheet=report?.sheets?.[tab],isMonth=/ Mes$/.test(tab),cells=(isMonth?sheet?.months?.[month]?.cells:sheet?.cells)||{},layout=grid(tab,cells);
@@ -68,7 +68,7 @@
     h('button',{className:'rjc-btn',type:'submit',disabled:state.loading||exporting},state.loading?'Consultando…':'Actualizar'),
     h('button',{className:'rjc-btn primary',type:'button',onClick:exportFile,disabled:!report||state.loading||exporting||!!exportPlan.error},exporting?'Generando…':(mode==='year'?'Exportar año':'Exportar mes')+(exportPlan.provisionalNeeded?' provisional':''))),
    h('p',{className:'rjc-note'},'Los concentrados muestran los doce meses del año. Las hojas «Mes» usan el mes elegido. La descarga conserva las 17 pestañas de la plantilla y actualiza las ocho incluidas.'),
-   exportPlan.provisionalNeeded&&h('p',{className:'rjc-note','data-provisional-export':true},'Puedes descargar un archivo PROVISIONAL. Las cifras pendientes y sus totales se marcan como #N/A, con una nota que explica el motivo. Los datos completos conservan su valor. Al resolver los pendientes podrás generar el libro validado.'),
+   exportPlan.provisionalNeeded&&h('p',{className:'rjc-note','data-provisional-export':true},'Puedes descargar un archivo PROVISIONAL con las cantidades registradas. Las notas de cada cifra explican los registros pendientes que pueden afectar el conteo. Sólo las cantidades que la fuente aún no determina y sus totales aparecen como #N/A. Al resolver los pendientes podrás generar el libro validado.'),
    notice&&h('p',{role:'status',className:'rjc-note','data-export-notice':true},notice),
    exportPlan.error&&h('p',{role:'alert',className:'rjc-error'},explain(exportPlan.error)),
    report&&h('div',{className:annualIssues.length?'rjc-issue':'rjc-note','data-report-readiness':true},

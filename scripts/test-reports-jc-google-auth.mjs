@@ -115,7 +115,7 @@ try{
    assert.equal(query.pathname,'/v4/spreadsheets/'+WORKBOOK+'/values:batchGet');
    assert.equal(options.method,'GET');assert.equal(options.body,undefined);
    assert.deepEqual(options.headers,{Authorization:'Bearer isolated-access-token'});
-   const ranges=["'Historial de solicitudes'!A:B","'Historial de solicitudes'!E:E","'Historial de solicitudes'!J:J","'Historial de solicitudes'!Y:Z","'HISTORIAL P V2'!A:D","'HISTORIAL P V2'!F:G"];
+   const ranges=["'Historial de solicitudes'!A:B","'Historial de solicitudes'!D:E","'Historial de solicitudes'!J:J","'Historial de solicitudes'!Y:Z","'HISTORIAL P V2'!A:D","'HISTORIAL P V2'!F:G"];
    assert.deepEqual(GOOGLE_RANGES,ranges);assert.deepEqual(query.searchParams.getAll('ranges'),ranges);
    assert.deepEqual([...new Set(query.searchParams.keys())].sort(),['dateTimeRenderOption','ranges','valueRenderOption']);
    assert.equal(query.searchParams.get('valueRenderOption'),'UNFORMATTED_VALUE');

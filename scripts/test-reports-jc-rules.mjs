@@ -3,17 +3,34 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {generateKeyPairSync} from 'node:crypto';
 import {READER_EMAIL,READER_PROJECT,READER_SECRET} from '../supabase/functions/reports-jc/google-auth.mjs';
-import {buildReport,loadReport,readGoogle,sourceDate,fundGroup,payrollCode,WORKBOOK,GOOGLE_RANGES,SHEETS} from '../supabase/functions/reports-jc/report.mjs';
-const requestHeader=Array(26).fill('');Object.assign(requestHeader,{0:'ID',1:'Número de control',4:'Fondo',9:'Fecha solicitud',24:'Estado',25:'Observaciones'});
+import {buildReport,loadReport,readGoogle,sourceDate,fundGroup,payrollCode,membershipRow,WORKBOOK,GOOGLE_RANGES,SHEETS} from '../supabase/functions/reports-jc/report.mjs';
+const requestHeader=Array(26).fill('');Object.assign(requestHeader,{0:'ID',1:'Número de control',3:'Proceso',4:'Fondo',9:'Fecha solicitud',24:'Estado',25:'Observaciones'});
 const loanHeader=['Fecha','Cuotas','ID','Folio','','Proceso','Fondo'];
-const request=(id,fund,date,status,provider='',control='TEST-001')=>{const row=Array(26).fill('');Object.assign(row,{0:id,1:control,4:fund,9:date,24:status,25:provider});return row;};
+const request=(id,fund,date,status,provider='',control='TEST-001',process='1')=>{const row=Array(26).fill('');Object.assign(row,{0:id,1:control,3:process,4:fund,9:date,24:status,25:provider});return row;};
 const installment=(id,fund,date,amount=100,process='1')=>[date,amount,id,'TEST-001','',process,fund];
 const emptySavings=()=>({year:2026,events:[],issues:[],coverage:{status:'complete',synthetic:true}});
 const build=(requestRows=[],loanRows=[],savings=emptySavings())=>buildReport({year:2026,requests:[requestHeader,...requestRows],loans:[loanHeader,...loanRows],savings,consultedAt:'2026-10-27T20:00:00Z'});
 const cell=(report,sheet,coordinate,month)=>month?report.sheets[sheet].months[month].cells[coordinate]:report.sheets[sheet].cells[coordinate];
 assert.equal(sourceDate('31/02/2026'),null);assert.equal(sourceDate('01/02/2026'),'2026-02-01');assert.equal(sourceDate(46113),'2026-04-01');assert.equal(sourceDate('2026-02-30'),null);
 assert.equal(fundGroup('2026-12-15 Adelanto'),'advance');assert.equal(fundGroup('Sutiexpress externo'),'sutiexpress');
+for(const fund of ['15/01/2027—Incentivos trimestrales','30/11/2026–Aguinaldos','2026-12-15-Adelanto'])assert.equal(fundGroup(fund),'advance');
+assert.equal(fundGroup('15/01/2027abc'),null,'a date-like prefix without a delimiter is not a dated fund');
+assert.equal(fundGroup('Descuentos SUTISSSTESON'),'union');assert.equal(payrollCode('Descuentos SUTISSSTESON','3'),446);
 assert.equal(payrollCode('Caja de Ahorro','JUB'),581);assert.equal(payrollCode('Caja de Ahorro','1'),575);assert.equal(payrollCode('Caja Chica','desconocido'),null);
+const prefixedProviders=[['Solicitud de membresia / Costco',9],['Solicitud de membresia / Sams Club',10],['Vales / Casa Ley',8],['Vale de gasolina / Arco gasolinera',7],['Vales / RiveraGas',6]];
+for(const [provider,row] of prefixedProviders)assert.equal(membershipRow(provider),row);
+assert.equal(membershipRow('Solicitud de membresía / Costco'),9);
+for(const provider of ['Reembolso / Costco','Solicitud de membresia / Costco / Otro','Vales / Casa Ley Especial','Compra en Costco','Vales /','Bud Tv Ultra'])assert.equal(membershipRow(provider),null,'unknown description must not become a known provider: '+provider);
+const providerReport=build([
+ ...prefixedProviders.map(([provider],i)=>request('prefixed-'+i,'Vales y membresias','2026-01-01','Aprobado',provider)),
+ request('direct-costco','Vales y membresias','2026-01-01','Iniciado','Costco'),
+ request('prefixed-extra','Vales y membresias','2026-01-01','Aprobado','Vales / Diesgas'),
+ request('direct-extra','Vales y membresias','2026-01-01','Rechazado','Diesgas')
+]);
+assert.equal(cell(providerReport,SHEETS.membershipMonth,'B9',1).value,2,'prefixed and direct Costco share its original row');
+assert.equal(cell(providerReport,SHEETS.membershipMonth,'A12',1).value,'Diesgas');assert.equal(cell(providerReport,SHEETS.membershipMonth,'B12',1).value,1);assert.equal(cell(providerReport,SHEETS.membershipMonth,'C12',1).value,1);assert.equal(cell(providerReport,SHEETS.membershipMonth,'A13',1),undefined,'prefixed providers do not consume duplicate spare rows');
+assert.equal(cell(providerReport,SHEETS.membershipMonth,'B18',1).value,7);assert.equal(cell(providerReport,SHEETS.membershipMonth,'C18',1).value,1);assert(providerReport.records.some(r=>r.provider==='Vales / Diesgas'),'original Z is retained for source inspection');
+assert(!providerReport.issues.some(i=>i.code==='MEMBERSHIP_PROVIDER_OVERFLOW'));
 
 const report=build([
   request('A','Caja Chica','2026-01-01','Aprobado'),request('B','Caja Chica','2026-01-02','Iniciado'),
@@ -50,6 +67,35 @@ assert(unresolved.issues.some(i=>i.code==='REQUEST_STATUS_UNMAPPED'&&i.months[0]
 const overflow=build(Array.from({length:7},(_,i)=>request('extra'+i,'Vales y membresias','2026-01-01','Aprobado','Proveedor '+i)));
 assert.equal(cell(overflow,SHEETS.membership,'B6').value,7);assert(overflow.issues.some(i=>i.code==='MEMBERSHIP_PROVIDER_OVERFLOW'&&i.sheets[0]===SHEETS.membershipMonth));
 assert.throws(()=>buildReport({year:2026,requests:[['wrong']],loans:[loanHeader],savings:emptySavings()}),/SOURCE_HEADERS_INVALID/);
+const missingProcessHeader=[...requestHeader];missingProcessHeader[3]='';assert.throws(()=>buildReport({year:2026,requests:[missingProcessHeader],loans:[loanHeader],savings:emptySavings()}),/SOURCE_HEADERS_INVALID/);
+
+// The only permitted completion is a blank F joined to one matching A/B/E
+// request, including prior-year requests. Recorded F always wins.
+const processRequest=request('join','Sutiexpress','2025-12-01','Aprobado','','TEST-001','3');
+const missingProcess=installment('join','Sutiexpress','2026-01-15',10,'');
+const linked=build([processRequest],[missingProcess]);
+assert.equal(cell(linked,SHEETS.discountMonth,'C10',1).value,1);assert.equal(cell(linked,SHEETS.discount,'B6').value,1);
+assert.equal(linked.coverage.resolvedPayrollProcesses,1);assert(!linked.issues.some(i=>i.code==='PAYROLL_CODE_UNMAPPED'));
+const linkedRecord=linked.records.find(r=>r.source==='google_loans');assert.equal(linkedRecord.originalProcess,'');assert.equal(linkedRecord.process,'3');
+assert.deepEqual(linkedRecord.processSource,{source:'google_requests',sheet:'Historial de solicitudes',row:2,column:'D'});
+assert.equal(missingProcess[5],'','a report projection never changes source rows');
+const priorYearRetiree=[...processRequest];priorYearRetiree[3]='JUB';
+const linkedRetiree=build([priorYearRetiree],[missingProcess]);assert.equal(cell(linkedRetiree,SHEETS.discount,'C6').value,1);assert.equal(cell(linkedRetiree,SHEETS.discountMonth,'C15',1).value,1);
+for(const candidates of [
+ [processRequest,processRequest],
+ [processRequest,request('join','Sutiexpress','2025-12-02','Aprobado','','TEST-001','')],
+ [request('join','Sutiexpress','2025-12-01','Aprobado','','OTHER','3')],
+ [request('join','Caja Chica','2025-12-01','Aprobado','','TEST-001','3')],
+ [request('different','Sutiexpress','2025-12-01','Aprobado','','TEST-001','3')],
+ [request('join','Sutiexpress','2025-12-01','Aprobado','','TEST-001','unknown')]
+]){
+ const unlinked=build(candidates,[missingProcess]);assert.equal(unlinked.coverage.resolvedPayrollProcesses,0);assert(unlinked.issues.some(i=>i.code==='PAYROLL_CODE_UNMAPPED'));assert.equal(cell(unlinked,SHEETS.discountMonth,'C10',1).value,0);
+}
+const nonblank=build([processRequest],[installment('join','Sutiexpress','2026-01-15',10,'JUB')]);assert.equal(cell(nonblank,SHEETS.discount,'C6').value,1);assert.equal(nonblank.coverage.resolvedPayrollProcesses,0);assert.equal(nonblank.records.find(r=>r.source==='google_loans').processSource,undefined);
+const unknownNonblank=build([processRequest],[installment('join','Sutiexpress','2026-01-15',10,'unknown')]);assert(unknownNonblank.issues.some(i=>i.code==='PAYROLL_CODE_UNMAPPED'));assert.equal(unknownNonblank.coverage.resolvedPayrollProcesses,0);
+const normalizedFund=build([request('join','SUTÍEXPRESS','2025-12-01','Aprobado','','TEST-001','3')],[missingProcess]);assert.equal(normalizedFund.coverage.resolvedPayrollProcesses,1,'same normalized fund is accepted');
+const exactControl=build([request('join','Sutiexpress','2025-12-01','Aprobado','','001','3')],[[...missingProcess.slice(0,3),'1',...missingProcess.slice(4)]]);assert(exactControl.issues.some(i=>i.code==='PAYROLL_CODE_UNMAPPED'),'control leading zeroes are significant');
+const absentRequestDate=build([request('join','Sutiexpress','','','','TEST-001','3')],[missingProcess]);assert(absentRequestDate.issues.some(i=>i.code==='REQUEST_DATE_INVALID'));assert.equal(cell(absentRequestDate,SHEETS.discountMonth,'C10',1).value,1,'process resolution does not invent a request date');
 
 const savings=emptySavings();savings.events=[
   {id:'intake:1',kind:'intake',occurred_on:'2026-03-01',source_table:'savings_registrations',source_id:'1',numero_control:'TEST-001'},
@@ -87,11 +133,12 @@ const sessionClient=client(),sessionRpc=sessionClient.rpc;sessionClient.rpc=asyn
 assert.equal((await loadReport({action:'TEMPLATE'},client(),source,template)).data.filename,'synthetic.xlsx');
 await assert.rejects(loadReport({action:'LOAD',year:2026},client(),async()=>{throw Error('SOURCE_FAILED');},template),/SOURCE_FAILED/);
 
-const calls=[];const rangeValues=[[["ID","Número de control"],...Array.from({length:20005},(_,i)=>['synthetic-'+i,'TEST'])],[['Fondo']],[['Fecha solicitud']],[['Estado','Observaciones']],[['Fecha','Cuotas','ID','Folio']],[['Proceso','Fondo']]];
+const calls=[];const rangeValues=[[["ID","Número de control"],...Array.from({length:20005},(_,i)=>['synthetic-'+i,'TEST'])],[['Proceso','Fondo'],['3','Sutiexpress']],[['Fecha solicitud']],[['Estado','Observaciones']],[['Fecha','Cuotas','ID','Folio']],[['Proceso','Fondo']]];
 const syntheticKey=generateKeyPairSync('rsa',{modulusLength:2048}).privateKey.export({type:'pkcs8',format:'pem'});
 const syntheticAccount=JSON.stringify({type:'service_account',client_email:READER_EMAIL,project_id:READER_PROJECT,private_key:syntheticKey});
 const google=await readGoogle(name=>name===READER_SECRET?syntheticAccount:null,async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>calls.length===1?{access_token:'synthetic-token'}:{spreadsheetId:WORKBOOK,valueRanges:rangeValues.map(values=>({values}))}};});
 assert.equal(google.requests.length,20006,'reader must not silently cap source rows');assert.equal(calls[1].options.method,'GET');
+assert.equal(google.requests[0][3],'Proceso');assert.equal(google.requests[0][4],'Fondo');assert.equal(google.requests[1][3],'3');assert.equal(google.requests[1][4],'Sutiexpress');assert.equal(google.requests[1][2],undefined,'D:E merge preserves unused C');
 assert(calls[1].url.includes('/values:batchGet?'));for(const range of GOOGLE_RANGES)assert(new URL(calls[1].url).searchParams.getAll('ranges').includes(range));
 assert(!calls[1].url.includes(':batchUpdate'));assert(!calls[1].url.includes('20000'));
 await assert.rejects(readGoogle(()=>null,async()=>{throw Error('must not fetch');}),/GOOGLE_NOT_CONFIGURED/);

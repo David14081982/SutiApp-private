@@ -13,12 +13,12 @@ async function main() {
   const template = await import(pathToFileURL(path.join(root, 'supabase/functions/reports-jc/template.mjs')).href);
   const { buildReport } = await import(pathToFileURL(path.join(root, 'supabase/functions/reports-jc/report.mjs')).href);
   const requestHeader = Array(26).fill('');
-  Object.assign(requestHeader, { 0: 'ID', 1: 'Número de control', 4: 'Fondo', 9: 'Fecha solicitud', 24: 'Estado', 25: 'Observaciones' });
+  Object.assign(requestHeader, { 0: 'ID', 1: 'Número de control', 3: 'Proceso', 4: 'Fondo', 9: 'Fecha solicitud', 24: 'Estado', 25: 'Observaciones' });
   const requests = [requestHeader], loans = [['Fecha', 'Cuotas', 'ID', 'Folio', '', 'Proceso', 'Fondo']];
   let serial = 0;
   const request = (month, fund, status, provider = '') => {
     const row = Array(26).fill('');
-    Object.assign(row, { 0: 'isolated-request-' + (++serial), 1: 'TEST-001', 4: fund, 9: `2028-${String(month).padStart(2, '0')}-01`, 24: status, 25: provider });
+    Object.assign(row, { 0: 'isolated-request-' + (++serial), 1: 'TEST-001', 3: '1', 4: fund, 9: `2028-${String(month).padStart(2, '0')}-01`, 24: status, 25: provider });
     requests.push(row);
   };
   for (let month = 1; month <= 12; month++) {
@@ -129,6 +129,26 @@ async function main() {
     assert.equal(await page.getByRole('tab').count(), 0, 'Failed source must not leave old report values visible.');
     await page.evaluate(() => {
       window.__loadError = null;
+      window.__fixture.issues = [{ severity: 'error', code: 'REQUEST_DATE_INVALID', sheets: ['Préstamos Concentrado', 'Préstamos Mes'], months: [], sourceIds: ['requests:900'], message: 'Fecha sintética sin resolver' }];
+      window.__mount('known-counts-with-issue');
+    });
+    await page.getByRole('button', { name: 'Exportar mes provisional', exact: true }).waitFor();
+    assert.equal(await page.getByText('Por determinar', { exact: true }).count(), 0, 'An issue alone must not erase observed counts in the screen');
+    const beforeObservedExport = await page.evaluate(() => window.__downloads.length);
+    await page.getByRole('button', { name: 'Exportar mes provisional', exact: true }).click();
+    await page.waitForFunction(count => window.__downloads.length === count + 1, beforeObservedExport);
+    const observedExport = await page.evaluate(async () => {
+      const zip = await JSZip.loadAsync(window.__lastBytes);
+      const xml = await zip.file('xl/worksheets/sheet1.xml').async('string');
+      const notes = await zip.file('xl/comments/reportsJcSheet1.xml').async('string');
+      const read = address => xml.match(new RegExp('<c\\b[^>]*r="' + address + '"[^>]*>[\\s\\S]*?<v>(.*?)</v>'))?.[1];
+      return { annual: ['B18', 'C18', 'D18', 'E18'].map(read), errors: (xml.match(/t="e"/g) || []).length, sourceNote: notes.includes('REQUEST_DATE_INVALID') && notes.includes('fila 900'), numericTotalNote: notes.includes('Cantidad registrada: 36.') };
+    });
+    // The original columns are approved, rejected, and deposited. Its preserved
+    // formula sums those three indicators; pending requests remain in Recibidas.
+    assert.deepEqual(observedExport, { annual: ['12', '12', '12', '36'], errors: 0, sourceNote: true, numericTotalNote: true }, 'One undated request must preserve observed annual counts and their totals with a source note');
+    await page.evaluate(() => {
+      window.__loadError = null;
       window.__fixture.sheets['Préstamos Concentrado'].cells.B6 = { value: null, sourceIds: [], rule: 'Unresolved synthetic record' };
       for (const address of ['E6', 'B18', 'E18']) window.__fixture.sheets['Préstamos Concentrado'].cells[address].value = null;
       window.__fixture.issues = [{ severity: 'error', code: 'SYNTHETIC_UNRESOLVED', sheets: ['Préstamos Concentrado'], months: [1], message: 'Registro sintético pendiente de resolver' }];
@@ -155,7 +175,7 @@ async function main() {
     await page.evaluate(() => { window.__lastBytes = null; window.__template = null; });
     assert.deepEqual(errors, []);
     assert.deepEqual(external, []);
-    const result = { status: 'PASS', browser: 'Chrome', syntheticServiceOnly: true, externalRequests: 0, persistedDownloadedWorkbooks: 0, tabs: 8, monthlyExportSheets: 17, annualExportBooks: 12, receivedIncludingPendingRespectsPeriod: true, staleFilterExportProtected: true, changedContextRejected: true, nullValuesVisible: true, unresolvedExportProvisional: true, realProvisionalDownloadEvent: true, sourceFailureClearsReport: true, mobileNoPageOverflow: true };
+    const result = { status: 'PASS', browser: 'Chrome', syntheticServiceOnly: true, externalRequests: 0, persistedDownloadedWorkbooks: 0, tabs: 8, monthlyExportSheets: 17, annualExportBooks: 12, receivedIncludingPendingRespectsPeriod: true, staleFilterExportProtected: true, changedContextRejected: true, observedAnnualCountsAndTotalsRetainedWithSourceNotes: true, nullValuesVisible: true, unresolvedExportProvisional: true, realProvisionalDownloadEvent: true, sourceFailureClearsReport: true, mobileNoPageOverflow: true };
     fs.writeFileSync(path.join(output, 'browser-result.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result));
   } finally { await browser.close(); }

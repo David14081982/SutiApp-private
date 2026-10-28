@@ -2,149 +2,2031 @@
   "version": "1.0.0",
   "purpose": "Minimal semantic metadata that cannot be inferred safely from syntax alone.",
   "domain_rules": [
-    {"domain": "voting", "patterns": ["votaciones", "voting", "votos", "consultas sindicales"]},
-    {"domain": "identity", "patterns": ["credencial", "affiliate", "auth", "expediente", "profile photo", "private assets"]},
-    {"domain": "agreements", "patterns": ["convenios", "companies repository", "company benefits"]},
-    {"domain": "finance", "patterns": ["loan", "prestamo", "financial legacy", "payroll declaration", "loan term", "savings", "ahorro", "sicof"]},
-    {"domain": "architecture", "patterns": ["architecture registry", "navigator"]}
+    {
+      "domain": "voting",
+      "patterns": [
+        "votaciones",
+        "voting",
+        "votos",
+        "consultas sindicales"
+      ]
+    },
+    {
+      "domain": "identity",
+      "patterns": [
+        "credencial",
+        "affiliate",
+        "auth",
+        "expediente",
+        "profile photo",
+        "private assets"
+      ]
+    },
+    {
+      "domain": "agreements",
+      "patterns": [
+        "convenios",
+        "companies repository",
+        "company benefits"
+      ]
+    },
+    {
+      "domain": "finance",
+      "patterns": [
+        "loan",
+        "prestamo",
+        "financial legacy",
+        "payroll declaration",
+        "loan term",
+        "savings",
+        "ahorro",
+        "sicof",
+        "reports-jc",
+        "reportes jc",
+        "reportes_jc",
+        "reembolsos",
+        "bajas historicas",
+        "regularizacion de ahorro"
+      ]
+    },
+    {
+      "domain": "architecture",
+      "patterns": [
+        "architecture registry",
+        "navigator"
+      ]
+    }
   ],
   "nodes": [
-    {"type":"screen","name":"LoanHistoryDetail","file":"app/history-loans.jsx","domain":"finance","aliases":["Amortización de pagos","Detalle de préstamo","Estado de cuenta préstamo"],"source_of_truth":"DERIVED","properties":{"route":"TrackingScreen delegates owned historyKey to LoanHistoryDetail","authority":"Google published private observation; own RPC","status":"CANDIDATE_NOT_DEPLOYED"}},
-    {"type":"external_legacy_source","name":"Google Historial de solicitudes","file":"google-apps-script/financial-handoff/Code.gs","domain":"finance","source_of_truth":"GOOGLE_LEGACY","properties":{"mode":"PROTECTED_READ_ONLY_SNAPSHOT","sheet_id":10616270}},
-    {"type":"repository","name":"LoanHistory","file":"app/history-loans-repository.js","domain":"finance","aliases":["Mi Historial","Amortización de pagos","Historial de solicitudes","Aprobaciones inmediatas","Total pagado","Solicitudes pendientes inmediatas"],"source_of_truth":"DERIVED","properties":{"authority":"Amortization: published Google observation; approval cards: confirmed Finance snapshot and financial_approved_at","reader":"loan-history LOAD -> get_self_loan_history_snapshot; APPROVALS -> get_self_loan_history_approvals","identity":"exact effective Folio; no browser owner selectors","refresh":"One mounted Realtime channel; global source publication and own approval revision remain independent; no polling","approval_refresh":"Own card metadata only; does not refetch or replace installment schedules","evidence":"docs/audits/H-HISTORY-IMMEDIATE-APPROVAL-001.md","total_paid":"Sum published B where valid A <= current Hermosillo day, grouped by exact own D/C; invalid or empty schedule stays unavailable; V is not this display authority","total_paid_evidence":"docs/audits/H-HISTORY-TOTAL-PAID-001.md","native_pending":"Existing own program_requests reader supplies unmatched canonical SR pending cards immediately; published/confirmed-approval sourceIds deduplicate; no extra calls","native_pending_evidence":"docs/audits/H-HISTORY-NATIVE-PENDING-001.md"}},
-    {"type":"edge_function","name":"loan-history","file":"supabase/functions/loan-history/index.ts","domain":"finance","source_of_truth":"DERIVED","properties":{"reader":"LOAD/SUMMARY/DETAIL use get_self_loan_history_snapshot; APPROVALS uses get_self_loan_history_approvals; own effective affiliate only","google_calls":0,"approval_contract":"Allowlisted confirmed approval card fields; no schedule, balance or observation reads for APPROVALS","evidence":"docs/audits/H-HISTORY-IMMEDIATE-APPROVAL-001.md"}},
-    {"type":"edge_function","name":"loan-history-sync","file":"supabase/functions/loan-history-sync/index.ts","domain":"finance","source_of_truth":"DERIVED","properties":{"source":"Google HISTORIAL P V2 + Historial de solicitudes","cadence":"15:00 America/Hermosillo + Finance manual","status":"CANDIDATE_NOT_DEPLOYED"}},
-    {"type":"component","name":"HistorySyncAdmin","file":"app/history-sync-admin.js","domain":"finance","aliases":["Actualizar historial","Sincronizar amortizaciones"],"source_of_truth":"DERIVED"},
-    {"type":"table","name":"loan_history_private.observations","file":"supabase/migrations/20261026000100_loan_history_snapshot.sql","domain":"finance","source_of_truth":"DERIVED","properties":{"authority":"Not master; Google authoritative","access":"No client table grants; exact Folio via own RPC"}},
-    {"type":"table","name":"public.loan_history_publication","file":"supabase/migrations/20261026000100_loan_history_snapshot.sql","domain":"finance","source_of_truth":"DERIVED","properties":{"content":"version/time only; no financial data"}},
-    {"type":"table","name":"public.loan_history_approval_publication","file":"supabase/migrations/20261026000200_loan_history_approvals.sql","domain":"finance","aliases":["Señal propia de aprobación","Historial aprobación inmediata"],"source_of_truth":"DERIVED","properties":{"content":"affiliate_id and opaque version only; no financial values or history rows","writer":"loan_history_private.publish_approval_revision trigger; meaningful confirmed approval changes only","security":"Forced RLS, authenticated SELECT only, exact effective affiliate and unique addressable control","refresh":"Own INSERT/UPDATE invalidates approval metadata; never starts global synchronization","evidence":"docs/qa/evidence/history-immediate-approval/db.json"}},
-    {"type":"rpc","name":"public.get_self_loan_history_approvals","file":"supabase/migrations/20261026000200_loan_history_approvals.sql","domain":"finance","aliases":["Consulta aprobaciones propias","Historial aprobadas 24 horas"],"source_of_truth":"SUPABASE","properties":{"access":"Authenticated, no input selectors; unchanged effective identity and exact unique Folio checks","reader":"get_self_loan_history_context; approval_revision and frozen approval_display fund/principal/total/term","excluded":"No Google, observations, installments, loan calculations or sync dispatch","evidence":"docs/qa/evidence/history-immediate-approval/db.json"}},
-    {"type":"rpc","name":"public.get_self_loan_history_context","file":"supabase/migrations/20261026000200_loan_history_approvals.sql","domain":"finance","source_of_truth":"SUPABASE","properties":{"approval_display":"Only confirmed financial status approved, no rental, persisted financial_approved_at; literal frozen financialResult fields","identity":"Existing authenticated effective affiliate; no browser selector","recovery":"Exact original definition/OID/owner/ACL captured in private approval_context_backup"}},
-    {"type":"trigger","name":"loan_history_approval_revision","file":"supabase/migrations/20261026000200_loan_history_approvals.sql","domain":"finance","aliases":["Disparador de aprobación propia"],"source_of_truth":"DERIVED","properties":{"definition_evidence":"supabase/migrations/20261026000200_loan_history_approvals.sql:89","table":"public.program_requests","events":"AFTER INSERT OR UPDATE OR DELETE","handler":"loan_history_private.publish_approval_revision","business_mutation":"None; only approval metadata revision, no-op/handoff excluded, missing-parent cascade preserved"}},
-    {"type":"rpc","name":"loan_history_private.publish_approval_revision","file":"supabase/migrations/20261026000200_loan_history_approvals.sql","domain":"finance","source_of_truth":"DERIVED","properties":{"access":"Private trigger function; no public/anon/authenticated/service_role EXECUTE grants","write_scope":"Only affected affiliate metadata revisions; never loans, observations, Google or global synchronization","evidence":"docs/qa/evidence/history-immediate-approval/db.json"}},
-    {"type":"table","name":"loan_history_private.approval_context_backup","file":"supabase/migrations/20261026000200_loan_history_approvals.sql","domain":"finance","source_of_truth":"DERIVED","properties":{"content":"Technical function definition/hash/OID/owner/ACL only; no user records","access":"Private schema, forced RLS, no client or service grants","recovery":"supabase/recovery/20261026000200_loan_history_approvals.sql"}},
-    {"type": "rpc", "name": "public.change_admin_affiliate_control", "file": "supabase/migrations/20261015000100_affiliate_control_change.sql", "domain": "identity", "aliases": ["cambiar número de control", "editar numero_control", "corregir número afiliado"], "source_of_truth": "SUPABASE", "properties": {"status": "APPLIED_BACKEND_VERIFIED", "permission": "affiliates.read + affiliates.write + admin_module_boundary(affiliates,update)", "evidence": "docs/audits/H-AFFILIATE-CONTROL-CHANGE-001.md", "history": "private immutable report; manual review; no financial/Google rewrite"}},
-    {"type":"component","name":"WithdrawalHistory","file":"app/savings-panel-admin.jsx","domain":"finance","aliases":["Historial de retiros","Historial Ahorro","Retiros entregados","Solicitudes de retiro"],"source_of_truth":"SUPABASE","properties":{"navigation":"Admin Ahorro / Historial, after Reporte RH","identity":"Each request remains a separate row; exact participant_id opens existing InlinePerson and exact request id opens GeneratedDocuments","reader":"Paginated operational withdrawals; independent of capped get_admin_savings_runtime_requests","states":"Requested, under review, authorized pending delivery, settled, rejected and cancelled remain distinct","financial_values":"Stored requested and delivered amounts remain distinct; missing delivered amount stays null; no calculation or writer"}},
-    {"type":"repository","name":"SavingsWithdrawalHistoryRepository","file":"app/savings-withdrawal-history-repository.js","domain":"finance","aliases":["Repositorio historial retiros"],"source_of_truth":"SUPABASE","properties":{"rpc":"get_admin_savings_withdrawal_history","scope":"Read-only repository for the Historial tab; no persistent cache or fallback","context":"Reject response after Savings actor/context or revision changes; optional abort signal"}},
-    {"type":"rpc","name":"public.get_admin_savings_withdrawal_history","file":"supabase/migrations/20261014000200_savings_withdrawal_history.sql","domain":"finance","aliases":["Consulta historial retiros ahorro"],"source_of_truth":"SUPABASE","properties":{"permission":"authenticated + savings.read; fixed empty search_path","authority":"CANONICAL savings_requests joined to CANONICAL savings_participants; SAVINGS_RUNTIME_V1 origin and WITHDRAW/EXTRAORDINARY_WITHDRAWAL only","pagination":"Total before pagination; stable submitted_at/id descending; limit 1..50; tab requests 20","search":"Literal substring by current display name, saver Folio or request Folio; explicit state filter","delivery":"Only SETTLED projects existing requested_capital_amount and requested_yield_amount settlement columns; null component stays null","writes":"none; existing readers, financial writers and private document authorization unchanged"}},
-    {"type": "rpc", "name": "document_private.reissue", "file": "supabase/migrations/20261014000100_savings_withdrawal_document_signers.sql", "domain": "documents", "aliases": ["Actualizar PDF de Membresias", "Membership document reissue"], "source_of_truth": "SUPABASE", "properties": {"access": "private; only public.document_generation_command REISSUE after permission and module checks", "membership_exception": "membership + MEMBERSHIP_APPROVAL: current effective configured signer versions, order, titles, roles and assets; configuration provenance audited", "savings_withdrawal_exception": "caja + SAVINGS_WITHDRAWAL_APPROVAL: corrected revision uses current effective configured signer versions, order, names, titles, roles and assets; original business snapshot and old PDFs preserved", "other_programs": "loans and other types retain historical signers", "history": "new idempotent latest-parent revision; prior PDF and sealed business event/identity/financial values preserved"}},
-    {"type":"admin_screen","name":"SutifinanzasAdminModule","file":"app/sutifinanzas-admin.jsx","domain":"finance","aliases":["SUTIFINANZAS","Gasto por Secretaría"],"source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"route":"Admin / sutifinanzas","status":"PUBLISHED_LIVE_REPORT_VERIFIED","evidence":"docs/audits/H-SUTIFINANZAS-ADMIN-001.md","permission":"program_requests.read AND admin_module_boundary(sutifinanzas,read)","cache":"component session memory only; explicit refresh reads Google","pivot":"configurable row dimensions; inline expansion/subtotals; month/year/total columns","expense_type_header":"TIPO DE GASTOS"}},
-    {"type":"repository","name":"SutifinanzasRepository","file":"app/sutifinanzas-repository.js","domain":"finance","source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"edge":"sutifinanzas","persistent_cache":false}},
-    {"type":"edge_function","name":"sutifinanzas","file":"supabase/functions/sutifinanzas/index.ts","domain":"finance","source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"source":"Google Gasto por secretaría","deployment":"v14 dedicated service account; expense-type header and live configurable pivot verified; legacy untouched","writes":0}},
-    {"type":"external_legacy_source","name":"Google Gasto por secretaría","file":"supabase/functions/sutifinanzas/report.mjs","domain":"finance","source_of_truth":"GOOGLE_SHEETS_DIRECT","properties":{"spreadsheet_id":"1-ijVLS90bCtFN6bFW5gEs1Geo2sKri88ER94dH42n60","tab":"Gasto por secretaría","header_mapping":"exact names; column-order independent","year":"AÑO","amount":"Gran total Comprobado","date":"FECHA DEL GASTO","google_writes":0,"supabase_financial_copy":false}},
-    {"type":"admin_screen","name":"SicofAdminModule","file":"app/sicof-admin.jsx","domain":"finance","aliases":["Sicof","Rendimientos por semestre","Simulador de rendimiento","Informe final ahorro"],"source_of_truth":"DERIVED","properties":{"deployment_evidence":"docs/audits/H-SICOF-RELEASE-001.md","route":"Admin / sicof","permission":"savings.read plus module boundary; savings.config and savings.reports for restricted actions","authority":"Canonical savings_transactions plus authenticated fixed HISTORIAL P V2 reader; simulations never post money"}},
-    {"type":"repository","name":"SicofRepository","file":"app/sicof-repository.js","domain":"finance","source_of_truth":"DERIVED","properties":{"edge":"sicof","cache":"pending request deduplication only; no persisted balances or fallback","identity":"real actor, Auth session, effective affiliate; exact Folio remains business identity"}},
-    {"type":"edge_function","name":"sicof","file":"supabase/functions/sicof/index.ts","domain":"finance","source_of_truth":"DERIVED","properties":{"deployment_evidence":"docs/audits/H-SICOF-RELEASE-001.md","loan_source":"SutiApp Final / HISTORIAL P V2 fixed authenticated read_sicof_financial action","savings_source":"get_admin_sicof_context, canonical ledger and explicit origin metadata","outputs":"simulations, immutable scenario snapshots, reports; no yield credit or withdrawal writer","historical_excel":"private immutable source template and exact values; never imported as money"}},
-    {"type":"component","name":"SavingsPeriodBalances","file":"app/savings-period-breakdown.jsx","domain":"finance","aliases":["Saldo por año y semestre","Origen del retiro"],"source_of_truth":"DERIVED","properties":{"deployment_evidence":"docs/audits/H-SICOF-RELEASE-001.md","authority":"same canonical projection as Savings; origin metadata does not create another balance","withdrawal":"existing SETTLE writer with atomic exact component/origin slices; original loan checks preserved"}},
-    {"type":"component","name":"SicofPaymentBehavior","file":"app/sicof-payment-behavior.jsx","domain":"finance","aliases":["Comportamiento de pagos","Indicador en solicitudes"],"source_of_truth":"DERIVED","properties":{"deployment_evidence":"docs/audits/H-SICOF-RELEASE-001.md","scope":"authorized Finance request subject or SICOF admin","meaning":"current source status and installment comparison; no bureau or punctuality score without original dates"}},
-    {"type": "component", "name": "SavingsRhReport", "file": "app/savings-rh-report.jsx", "domain": "finance", "aliases": ["Reporte RH", "Reporte de descuentos RH", "Nomina Ahorro"], "source_of_truth": "SUPABASE", "properties": {"navigation": "Admin Ahorro after Programa", "format": "XLSX", "scope": "monthly date or annual instructions; positive amounts only"}},
-    {"type": "repository", "name": "SavingsRhRepository", "file": "app/savings-rh-repository.js", "domain": "finance", "aliases": ["Reporte RH repository"], "source_of_truth": "SUPABASE", "properties": {"edge": "savings-rh-report", "rpc": "get_admin_savings_rh_report", "permission": "savings.reports", "authority": "certified historical snapshot before cutoff; canonical dated contribution plans afterwards; exact affiliate identity", "excluded": "AB opening balance, AR embedded DT yield, zero amounts", "cache": "none"}},
-    {"type": "admin_screen", "name": "AdminDocumentGeneration", "file": "app/screens-admin-document-generation.jsx", "domain": "documents", "aliases": ["Documentos y Firmas", "Generacion PDF", "Plantillas y firmantes", "Asignacion documental", "Formato de membresias", "Vista previa PDF"], "source_of_truth": "SUPABASE", "properties": {"assignment_projection": "DASHBOARD.layout_assignments: latest exact program/document_type/fund_key; includes explicit unassignment", "configuration": "general assigned scope uses LAYOUT_CONFIGURE atomically; no-layout scope retains SAVE_CONFIGURATION followed by explicit designer activation", "preview_renderer": "DocumentLayoutDesigner.PDFPreview; actual server PDF rendered with local PDF.js canvas, independent of native PDF plugins; issued-document viewers unchanged"}},
-    {"type": "repository", "name": "DocumentGenerationRepository", "file": "app/document-generation-repository.js", "domain": "documents", "source_of_truth": "SUPABASE", "properties": {"authority": "document_private immutable configuration, snapshots and records", "rpc": "document_generation_command", "edge": "document-generation", "access": "program documents: administrative permission + module boundary only; savings: effective affiliate owner or explicit admin capabilities; no browser cache"}},
-    {"type": "component", "name": "DocumentLayoutDesigner", "file": "app/document-layout-designer.jsx", "domain": "documents", "aliases": ["Diseñador visual de documentos", "Diseñar documento", "Document layout"], "source_of_truth": "SUPABASE", "properties": {"authority": "document_private.layouts + layout_activations", "scope": "program + document_type + fund_key; compatible type assignments; pinned template version", "unit": "mm", "renderer": "existing document-generation renderer", "history": "immutable sealed snapshots; new documents require matching assignment; explicit unassignment blocks inheritance", "preview_export": "PDFPreview: internal Documentos y Firmas canvas component with pagination, cancellation and explicit retry; vendor pdfjs-5.4.149"}},
-    {"type": "repository", "name": "DocumentLayoutRepository", "file": "app/document-layout-repository.js", "domain": "documents", "source_of_truth": "SUPABASE", "properties": {"edge": "document-generation LAYOUT actions including LAYOUT_CONFIGURE / LAYOUT_CONFIGURE_PREVIEW", "rpc": "document_layout_context / document_layout_persist", "permissions": "config.read/config.write; service-only persistence", "cache": "none", "configuration_candidate": "selected pinned template + draft signers + immutable expected assignment definition; synthetic real-render validation before write"}},
-    {"type": "rpc", "name": "public.document_generation_command", "file": "supabase/migrations/20261007000200_document_assignment_consistency.sql", "domain": "documents", "properties": {"dashboard": "layout_assignments metadata only; latest exact scope ordered by created_at/id; no definitions or personal data", "preview": "PREVIEW_CONFIG configuration_candidate validates signer assignments and current validity", "serialization": "SAVE_CONFIGURATION shares layout-scope transaction lock; post-lock configuration timestamp"}},
-    {"type": "rpc", "name": "public.document_layout_context", "file": "supabase/migrations/20261007000200_document_assignment_consistency.sql", "domain": "documents", "properties": {"assignment_lookup": "ASSIGNMENT: permission-checked expected immutable assignment in exact scope; used for idempotent retry rendering", "configuration_projection": "latest_configuration_id for CAS independently from current effective configuration", "identity": "authenticated actor and effective affiliate; never supplied by browser"}},
-    {"type": "rpc", "name": "public.document_layout_persist", "file": "supabase/migrations/20261007000200_document_assignment_consistency.sql", "domain": "documents", "properties": {"configure": "CONFIGURE: service-only atomic configuration + optional immutable layout clone + general-scope activation + audit", "concurrency": "CAS latest configuration_id and assignment_id under shared advisory lock; same operation/payload retries return previous result", "preservation": "clone only on template change; preserve definition, specific funds, global template and historical records", "recovery": "supabase/recovery/20261007000200_document_assignment_consistency.sql restores saved function definitions/OID/owner/ACL without deleting configuration history"}},
-    {"type": "storage_bucket", "name": "generated-documents", "file": "supabase/migrations/20260928000100_document_generation_core.sql", "domain": "documents", "source_of_truth": "STORAGE", "properties": {"private": true, "isolation": "restrictive storage.objects policy; service-role only; authorized signed URLs"}},
-
-    {"type": "screen", "name": "VotingHome", "file": "app/screens-voting.jsx", "domain": "voting", "aliases": ["Votaciones afiliado", "Votaciones"], "source_of_truth": "SUPABASE"},
-    {"type": "admin_screen", "name": "VotingAdmin", "file": "app/screens-voting.jsx", "domain": "voting", "aliases": ["Votaciones Admin", "Votos identificados", "Pregunta activa"], "source_of_truth": "SUPABASE"},
-    {"type": "admin_screen", "name": "VotingLive", "file": "app/screens-voting.jsx", "domain": "voting", "aliases": ["Votación en vivo", "Pantalla gigante", "Resultados en vivo"], "source_of_truth": "SUPABASE", "properties": {"reader": "get_voting_live", "refresh": "Realtime voting_live_state + 2 s foreground polling", "permission": "votaciones.results"}},
-    {"type": "repository", "name": "VotingRepository", "file": "app/voting-repository.js", "domain": "voting", "source_of_truth": "SUPABASE", "properties": {"authority": "voting_consultations + voting_questions + voting_votes + voting_live_state", "identity": "get_effective_affiliate_id", "audit": "admin_audit_log", "live_signal": "Realtime postgres_changes on voting_live_state (RLS voting_live_visible)", "electorate": "voting_electorate(audience), derived on read"}},
-
-    {"type": "screen", "name": "SettingsScreen", "file": "app/app.jsx", "domain": "identity", "aliases": ["Text size settings", "Configuracion personal"], "source_of_truth": "SUPABASE", "properties": {"route": "settings", "implementation": "SettingsScreen renders TextSizeSettings using app.textPreference"}},
-    {"type": "service", "name": "TextSizePreferences", "file": "app/text-size-preferences.js", "domain": "identity", "source_of_truth": "SUPABASE", "aliases": ["Text size", "Personal preferences", "Accesibilidad", "Configuracion"], "properties": {"authority": "Supabase Auth user_metadata.sutiapp_text_size", "reader": "auth.getUser", "writer": "auth.updateUser data allowlist; JWT owner only", "scope": "Personal visual preference; never business identity or permissions"}},
-    {"type": "domain", "name": "Admin Access Protected Contract", "file": "docs/ADMIN_ACCESS_PROTECTED_CONTRACT.md", "domain": "admin-authorization", "aliases": ["Administradores", "Permisos por pantalla", "Tomar control", "impersonation"], "source_of_truth": "SUPABASE", "properties": {"mode": "PROTECTED_CLOSED_CONTRACT", "protected_sha": "b8c1f6c0057dabded90804ffadd5bd012fb41a1a", "adr": "ADR-098", "regression_guard": "scripts/test-admin-access-protected-contract.js"}},
-    {"type": "test", "name": "scripts/test-admin-access-protected-contract.js", "file": "scripts/test-admin-access-protected-contract.js", "domain": "admin-authorization", "aliases": ["admin access regression guard"], "properties": {"scope": "FOCUSED", "global_default": false}},
-    {"type": "screen", "name": "CredencialScreen", "file": "app/screens-credencial.jsx", "domain": "identity", "aliases": ["Credencial", "Credencial digital", "Fotografía de credencial", "Perfil"], "source_of_truth": "SUPABASE", "properties": {"protected_boundary": "Auth affiliate identity + private Storage/RLS"}},
-    {"type": "service", "name": "AffiliateAuth", "file": "app/affiliate-auth.js", "domain": "identity", "source_of_truth": "SUPABASE"},
-    {"type": "service", "name": "createAffiliateViewModel", "file": "app/affiliate-view-model.js", "domain": "identity", "aliases": ["photoUrl", "proyección de fotografía"], "source_of_truth": "DERIVED"},
-    {"type": "component", "name": "Avatar", "file": "app/ui.jsx", "domain": "identity", "aliases": ["fotografía", "foto de perfil", "profile photo"]},
-    {"type": "test", "name": "scripts/test-profile-photo-browser.js", "file": "scripts/test-profile-photo-browser.js", "domain": "identity", "aliases": ["fotografía credencial", "profile photo test"]},
-    {"type": "screen", "name": "ConveniosScreen", "file": "app/screens-convenios.jsx", "domain": "agreements", "aliases": ["Convenios", "Acuerdos", "Directorio de empresas"], "source_of_truth": "SUPABASE"},
-    {"type": "repository", "name": "ConveniosRepository", "file": "app/convenios-repository.js", "domain": "agreements", "aliases": ["Proyección pública de convenios", "Empresas y Educación"], "source_of_truth": "DERIVED", "properties": {"authority": "Supabase companies and educational_resources; no duplicated master records"}},
-    {"type": "admin_screen", "name": "ConveniosModule", "file": "app/screens-admin-convenios.jsx", "domain": "agreements", "aliases": ["Admin Convenios", "Administrar convenios"], "source_of_truth": "SUPABASE"},
-    {"type": "screen", "name": "LoanScreen", "file": "app/screens-loan.jsx", "domain": "finance", "aliases": ["Suti Préstamo", "Préstamo", "Loan", "Simula tu préstamo"], "source_of_truth": "GOOGLE_LEGACY", "properties": {"protected_boundary": "Financial legacy read-only adapter; Supabase only for authorized supporting domains"}},
-    {"type":"screen","name":"SavingsScreen","file":"app/screens-savings.jsx","domain":"finance","aliases":["Ahorro","Ahorrar","Mi ahorro","Savings"],"source_of_truth":"SUPABASE_SHADOW","properties":{"protected_boundary":"PRIVATE keeps the existing user read model; PUBLISHED selects certified Supabase balances via the single savings_publication_state gate after owner acceptance"}},
-    {"type": "admin_screen", "name": "AdminSavingsScreen", "file": "app/screens-admin-savings.jsx", "domain": "finance", "aliases": ["Admin Ahorro", "Administrar ahorro"], "source_of_truth": "SUPABASE_SHADOW"},
-    {"type":"repository","name":"SavingsRepository","file":"app/savings-repository.js","domain":"finance","aliases":["Repositorio de ahorro"],"source_of_truth":"SUPABASE_SHADOW","properties":{"publication":"get_my_savings_dashboard gates PRIVATE/PUBLISHED in Supabase; all three user surfaces share this read model","self_join":"get_self_savings_join_context + submit_self_savings_join (expected affiliate) are allowed during PRIVATE according to intake configuration; other self writes remain publication-gated"}},
-    {"type":"repository","name":"SavingsPanelRepository","file":"app/savings-panel-repository.js","domain":"finance","aliases":["Panel de ahorro","Revision privada de ahorro"],"properties":{"authority":"Supabase savings_review_records/events preserve source and corrections; savings_balance_certifications and savings_transactions own confirmed balances; private server RPCs only"}},
-    {"type":"edge_function","name":"savings-settlement","file":"supabase/functions/savings-settlement/index.ts","domain":"finance","aliases":["Retiro excepcional","Excepcion de permanencia","P0 retiro"],"properties":{"deployment":"PREPARED_NOT_DEPLOYED; isolated validation only; production requires separate explicit owner authorization","authority":"HISTORIAL P V2 read-only; savings_requests and savings_audit_events for decisions; no loan cache","permissions":"savings.approve; savings.withdrawal.override independent from savings.yield.override"}},
-    {"type":"external_legacy_source","name":"Google HISTORIAL P V2","file":"supabase/functions/savings-settlement/loan-status.js","domain":"finance","aliases":["Estatus del prestamo","SALDO ATRASADO"],"source_of_truth":"GOOGLE_LEGACY","properties":{"mode":"PROTECTED_READ_ONLY","identity":"D exact Folio; C loan ID; G fund; X uniform current status across every loan row"}},
-    {"type":"permission","name":"savings.withdrawal.override","file":"supabase/migrations/20260920000100_savings_settlement_exceptions.sql","domain":"finance","properties":{"deployment":"PREPARED_NOT_APPLIED","scope":"Specific overdue-loan withdrawal exception only"}},
-    {"type":"permission","name":"savings.yield.override","file":"supabase/migrations/20260920000100_savings_settlement_exceptions.sql","domain":"finance","properties":{"deployment":"PREPARED_NOT_APPLIED","scope":"Individual/global tenure exception in one yield period only"}},
-    {"type":"admin_screen","name":"SavingsPanelAdmin","file":"app/savings-panel-admin.jsx","domain":"finance","aliases":["Cobranza de ahorro","Ahorradores","Retiros y cambios","Historial de retiros","Historial Ahorro"],"properties":{"entry":"SavingsAdminModule existing administrative route","publication":"PRIVATE installed; explicit readiness-checked publication coordinates Savings, Home and Finance after physical acceptance","withdrawal_history":"Additive Historial tab uses WithdrawalHistory with its paginated readonly repository; existing InlinePerson and exact request documents reused"}},
-    {"type":"table","name":"public.savings_transactions","domain":"finance","aliases":["ledger de ahorro","capital y rendimiento"],"source_of_truth":"SUPABASE","properties":{"authority":"Canonical posted movements after certification; projected future amounts are excluded; user visibility controlled by savings_publication_state"}},
-    {"type": "table", "name": "public.affiliates", "domain": "identity", "source_of_truth": "SUPABASE", "aliases": ["afiliados"]},
-    {"type": "table", "name": "public.affiliate_files", "domain": "identity", "source_of_truth": "SUPABASE", "aliases": ["documentos de afiliado", "foto de perfil"]},
-    {"type": "table", "name": "public.private_assets", "domain": "identity", "source_of_truth": "SUPABASE"},
-    {"type": "storage_bucket", "name": "private-assets", "domain": "identity", "source_of_truth": "STORAGE"},
-    {"type": "table", "name": "public.companies", "domain": "agreements", "source_of_truth": "SUPABASE", "aliases": ["empresas", "convenios"]},
-    {"type": "table", "name": "public.company_benefits", "domain": "agreements", "source_of_truth": "SUPABASE"},
-    {"type": "edge_function", "name": "financial-legacy", "domain": "finance", "source_of_truth": "DERIVED", "properties": {"upstream_authority": "GOOGLE_LEGACY + authorized Supabase context"}},
-    {"type": "external_legacy_source", "name": "Google Criterios de fondos", "domain": "finance", "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED"}},
-    {"type": "external_legacy_source", "name": "Google Ahorro", "domain": "finance", "aliases": ["Ahorro legacy"], "source_of_truth": "GOOGLE_LEGACY", "properties": {"mode": "PROTECTED_PRODUCTIVE"}}
+    {
+      "type": "route",
+      "name": "reportes_jc",
+      "file": "app/screens-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Reportes JC",
+        "Reporte JC",
+        "reportesJC"
+      ],
+      "properties": {
+        "status": "PREPARED_NOT_DEPLOYED",
+        "entry": "Admin / left sidebar / reportes_jc"
+      }
+    },
+    {
+      "type": "admin_screen",
+      "name": "ReportsJcAdminModule",
+      "file": "app/reports-jc-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Reportes JC",
+        "Reportes Secretaría de Finanzas",
+        "Reporte mensual JC"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "route": "Admin / reportes_jc",
+        "evidence": "scripts/test-reports-jc-ui.js",
+        "permissions": "program_requests.read AND savings.read AND savings.reports AND admin_module_boundary(reportes_jc,read); real actor, no impersonation",
+        "authority": "Google request/loan facts and Supabase savings/refund facts remain separate authorities; report cells are derived counts with source evidence",
+        "export": "authorized immutable template; eight calculated tabs, all seventeen preserved; monthly XLSX or twelve-month ZIP"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "ReportsJcRepository",
+      "file": "app/reports-jc-repository.js",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "edge": "reports-jc",
+        "identity": "real actor + stable Auth session + effective affiliate checked before/after response",
+        "cache": "no persistent data cache or fallback"
+      }
+    },
+    {
+      "type": "edge_function",
+      "name": "reports-jc",
+      "file": "supabase/functions/reports-jc/index.ts",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "permissions": "get_admin_reports_jc_context gates LOAD and TEMPLATE before and after work",
+        "sources": "fixed Google SutiApp Final read + get_admin_reports_jc_savings",
+        "writes": 0,
+        "google_connection": "exact sutifinanzas-reader service account authorized; RS256 spreadsheets.readonly; six fixed ranges live PASS; existing server secret unchanged; Edge v1 installed; existing server secrets unchanged",
+        "google_auth_helper": "supabase/functions/reports-jc/google-auth.mjs"
+      }
+    },
+    {
+      "type": "external_legacy_source",
+      "name": "Google SutiApp Final Reportes JC",
+      "file": "supabase/functions/reports-jc/report.mjs",
+      "domain": "finance",
+      "aliases": [
+        "Historial de solicitudes Reportes JC",
+        "HISTORIAL P V2 Reportes JC"
+      ],
+      "source_of_truth": "GOOGLE_LEGACY",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "mode": "PROTECTED_READ_ONLY",
+        "spreadsheet_id": "1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80",
+        "request_mapping": "Historial de solicitudes: J request date, E fund, Y status, Z provider",
+        "discount_mapping": "HISTORIAL P V2: A date, B positive quota, C loan id, D control, F process, G fund",
+        "google_writes": 0,
+        "supabase_financial_copy": false
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_admin_reports_jc_context",
+      "file": "supabase/migrations/20261027000300_reports_jc_screen.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "permissions": "program_requests.read AND savings.read AND savings.reports; module boundary + module visibility; authenticated real actor; no impersonation",
+        "role_grants_changed": false
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_admin_reports_jc_savings",
+      "file": "supabase/migrations/20261027000400_reports_jc_historical.sql",
+      "domain": "finance",
+      "aliases": [
+        "Reportes JC ahorro",
+        "Conteos Caja de Ahorro"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "authority": "canonical savings requests/history/plans plus reviewed historical representations and savings_refunds_private cases; archived IDs establish import completeness only",
+        "permissions": "same three read/report permissions and Reportes JC context boundary",
+        "refund_count": "one completed case in final payment month, never one count per partial payment",
+        "writes": 0,
+        "historical_dates": "Private original report reader plus immutable exact-source attestations; unresolved remains blocking"
+      }
+    },
+    {
+      "type": "permission",
+      "name": "savings.reports",
+      "domain": "finance",
+      "properties": {
+        "scope": "Existing capability required with savings.read and program_requests.read for Reportes JC; no new role grant"
+      }
+    },
+    {
+      "type": "component",
+      "name": "SavingsRefundsAdmin",
+      "file": "app/savings-refunds-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Reembolsos",
+        "Devoluciones de ahorro",
+        "Descuentos dobles",
+        "Reembolso posterior a baja"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "entry": "Admin / Caja de Ahorro / Atención / Reembolsos",
+        "evidence": "scripts/test-savings-refunds.js",
+        "permissions": "savings.read; savings.write for capture/submission; savings.approve for approval/payment/cancellation/period coverage; savings module boundary",
+        "balance": "records explicit treatment of excess; never posts or adjusts savings balances"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "SavingsRefundsRepository",
+      "file": "app/savings-refunds-repository.js",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "authority": "savings_refunds_private operational case registry",
+        "identity": "real actor + stable Auth session + effective affiliate; stale responses rejected",
+        "writes": "save_admin_savings_refund and save_admin_savings_termination; idempotency and expected version"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_admin_savings_refunds",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "permissions": "savings.read AND admin_module_boundary(savings,read)",
+        "detail": "case-specific audit events; participant identity and period coverage"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.save_admin_savings_refund",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "authority": "new savings_refunds_private cases, deductions, payments, events and reporting_periods only",
+        "permissions": "savings.read plus savings.write or savings.approve by command, savings module update boundary, real actor and context",
+        "safety": "versioned commands, idempotency, unique discount reference per participant and payment reference per case, immutable payments/events, forced RLS and no direct client table grants",
+        "savings_ledger_writes": 0,
+        "google_writes": 0
+      }
+    },
+    {
+      "type": "table",
+      "name": "savings_refunds_private.cases",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "authority": "operational refund facts; does not replace public.savings_transactions",
+        "identity": "participant + affiliate + numero_control; no historical savings rewrite"
+      }
+    },
+    {
+      "type": "table",
+      "name": "savings_refunds_private.deductions",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "balance": "explicit treatment and optional existing adjustment reference; no ledger posting"
+      }
+    },
+    {
+      "type": "table",
+      "name": "savings_refunds_private.payments",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "history": "immutable partial payments with real payment date and unique bank reference within the case"
+      }
+    },
+    {
+      "type": "table",
+      "name": "savings_refunds_private.events",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "history": "immutable actor/context audit and idempotency records"
+      }
+    },
+    {
+      "type": "table",
+      "name": "savings_refunds_private.reporting_periods",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "authority": "explicit confirmation of captured refund history only; does not reconfirm savings amounts"
+      }
+    },
+    {
+      "type": "screen",
+      "name": "LoanHistoryDetail",
+      "file": "app/history-loans.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Amortización de pagos",
+        "Detalle de préstamo",
+        "Estado de cuenta préstamo"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "route": "TrackingScreen delegates owned historyKey to LoanHistoryDetail",
+        "authority": "Google published private observation; own RPC",
+        "status": "CANDIDATE_NOT_DEPLOYED"
+      }
+    },
+    {
+      "type": "external_legacy_source",
+      "name": "Google Historial de solicitudes",
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "domain": "finance",
+      "source_of_truth": "GOOGLE_LEGACY",
+      "properties": {
+        "mode": "PROTECTED_READ_ONLY_SNAPSHOT",
+        "sheet_id": 10616270
+      }
+    },
+    {
+      "type": "repository",
+      "name": "LoanHistory",
+      "file": "app/history-loans-repository.js",
+      "domain": "finance",
+      "aliases": [
+        "Mi Historial",
+        "Amortización de pagos",
+        "Historial de solicitudes",
+        "Aprobaciones inmediatas",
+        "Total pagado",
+        "Solicitudes pendientes inmediatas"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Amortization: published Google observation; approval cards: confirmed Finance snapshot and financial_approved_at",
+        "reader": "loan-history LOAD -> get_self_loan_history_snapshot; APPROVALS -> get_self_loan_history_approvals",
+        "identity": "exact effective Folio; no browser owner selectors",
+        "refresh": "One mounted Realtime channel; global source publication and own approval revision remain independent; no polling",
+        "approval_refresh": "Own card metadata only; does not refetch or replace installment schedules",
+        "evidence": "docs/audits/H-HISTORY-IMMEDIATE-APPROVAL-001.md",
+        "total_paid": "Sum published B where valid A <= current Hermosillo day, grouped by exact own D/C; invalid or empty schedule stays unavailable; V is not this display authority",
+        "total_paid_evidence": "docs/audits/H-HISTORY-TOTAL-PAID-001.md",
+        "native_pending": "Existing own program_requests reader supplies unmatched canonical SR pending cards immediately; published/confirmed-approval sourceIds deduplicate; no extra calls",
+        "native_pending_evidence": "docs/audits/H-HISTORY-NATIVE-PENDING-001.md"
+      }
+    },
+    {
+      "type": "edge_function",
+      "name": "loan-history",
+      "file": "supabase/functions/loan-history/index.ts",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "reader": "LOAD/SUMMARY/DETAIL use get_self_loan_history_snapshot; APPROVALS uses get_self_loan_history_approvals; own effective affiliate only",
+        "google_calls": 0,
+        "approval_contract": "Allowlisted confirmed approval card fields; no schedule, balance or observation reads for APPROVALS",
+        "evidence": "docs/audits/H-HISTORY-IMMEDIATE-APPROVAL-001.md"
+      }
+    },
+    {
+      "type": "edge_function",
+      "name": "loan-history-sync",
+      "file": "supabase/functions/loan-history-sync/index.ts",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "source": "Google HISTORIAL P V2 + Historial de solicitudes",
+        "cadence": "15:00 America/Hermosillo + Finance manual",
+        "status": "CANDIDATE_NOT_DEPLOYED"
+      }
+    },
+    {
+      "type": "component",
+      "name": "HistorySyncAdmin",
+      "file": "app/history-sync-admin.js",
+      "domain": "finance",
+      "aliases": [
+        "Actualizar historial",
+        "Sincronizar amortizaciones"
+      ],
+      "source_of_truth": "DERIVED"
+    },
+    {
+      "type": "table",
+      "name": "loan_history_private.observations",
+      "file": "supabase/migrations/20261026000100_loan_history_snapshot.sql",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Not master; Google authoritative",
+        "access": "No client table grants; exact Folio via own RPC"
+      }
+    },
+    {
+      "type": "table",
+      "name": "public.loan_history_publication",
+      "file": "supabase/migrations/20261026000100_loan_history_snapshot.sql",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "content": "version/time only; no financial data"
+      }
+    },
+    {
+      "type": "table",
+      "name": "public.loan_history_approval_publication",
+      "file": "supabase/migrations/20261026000200_loan_history_approvals.sql",
+      "domain": "finance",
+      "aliases": [
+        "Señal propia de aprobación",
+        "Historial aprobación inmediata"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "content": "affiliate_id and opaque version only; no financial values or history rows",
+        "writer": "loan_history_private.publish_approval_revision trigger; meaningful confirmed approval changes only",
+        "security": "Forced RLS, authenticated SELECT only, exact effective affiliate and unique addressable control",
+        "refresh": "Own INSERT/UPDATE invalidates approval metadata; never starts global synchronization",
+        "evidence": "docs/qa/evidence/history-immediate-approval/db.json"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_self_loan_history_approvals",
+      "file": "supabase/migrations/20261026000200_loan_history_approvals.sql",
+      "domain": "finance",
+      "aliases": [
+        "Consulta aprobaciones propias",
+        "Historial aprobadas 24 horas"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "access": "Authenticated, no input selectors; unchanged effective identity and exact unique Folio checks",
+        "reader": "get_self_loan_history_context; approval_revision and frozen approval_display fund/principal/total/term",
+        "excluded": "No Google, observations, installments, loan calculations or sync dispatch",
+        "evidence": "docs/qa/evidence/history-immediate-approval/db.json"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_self_loan_history_context",
+      "file": "supabase/migrations/20261026000200_loan_history_approvals.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "approval_display": "Only confirmed financial status approved, no rental, persisted financial_approved_at; literal frozen financialResult fields",
+        "identity": "Existing authenticated effective affiliate; no browser selector",
+        "recovery": "Exact original definition/OID/owner/ACL captured in private approval_context_backup"
+      }
+    },
+    {
+      "type": "trigger",
+      "name": "loan_history_approval_revision",
+      "file": "supabase/migrations/20261026000200_loan_history_approvals.sql",
+      "domain": "finance",
+      "aliases": [
+        "Disparador de aprobación propia"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "definition_evidence": "supabase/migrations/20261026000200_loan_history_approvals.sql:89",
+        "table": "public.program_requests",
+        "events": "AFTER INSERT OR UPDATE OR DELETE",
+        "handler": "loan_history_private.publish_approval_revision",
+        "business_mutation": "None; only approval metadata revision, no-op/handoff excluded, missing-parent cascade preserved"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "loan_history_private.publish_approval_revision",
+      "file": "supabase/migrations/20261026000200_loan_history_approvals.sql",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "access": "Private trigger function; no public/anon/authenticated/service_role EXECUTE grants",
+        "write_scope": "Only affected affiliate metadata revisions; never loans, observations, Google or global synchronization",
+        "evidence": "docs/qa/evidence/history-immediate-approval/db.json"
+      }
+    },
+    {
+      "type": "table",
+      "name": "loan_history_private.approval_context_backup",
+      "file": "supabase/migrations/20261026000200_loan_history_approvals.sql",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "content": "Technical function definition/hash/OID/owner/ACL only; no user records",
+        "access": "Private schema, forced RLS, no client or service grants",
+        "recovery": "supabase/recovery/20261026000200_loan_history_approvals.sql"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.change_admin_affiliate_control",
+      "file": "supabase/migrations/20261015000100_affiliate_control_change.sql",
+      "domain": "identity",
+      "aliases": [
+        "cambiar número de control",
+        "editar numero_control",
+        "corregir número afiliado"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "APPLIED_BACKEND_VERIFIED",
+        "permission": "affiliates.read + affiliates.write + admin_module_boundary(affiliates,update)",
+        "evidence": "docs/audits/H-AFFILIATE-CONTROL-CHANGE-001.md",
+        "history": "private immutable report; manual review; no financial/Google rewrite"
+      }
+    },
+    {
+      "type": "component",
+      "name": "WithdrawalHistory",
+      "file": "app/savings-panel-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Historial de retiros",
+        "Historial Ahorro",
+        "Retiros entregados",
+        "Solicitudes de retiro"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "navigation": "Admin Ahorro / Historial, after Reporte RH",
+        "identity": "Each request remains a separate row; exact participant_id opens existing InlinePerson and exact request id opens GeneratedDocuments",
+        "reader": "Paginated operational withdrawals; independent of capped get_admin_savings_runtime_requests",
+        "states": "Requested, under review, authorized pending delivery, settled, rejected and cancelled remain distinct",
+        "financial_values": "Stored requested and delivered amounts remain distinct; missing delivered amount stays null; no calculation or writer"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "SavingsWithdrawalHistoryRepository",
+      "file": "app/savings-withdrawal-history-repository.js",
+      "domain": "finance",
+      "aliases": [
+        "Repositorio historial retiros"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "rpc": "get_admin_savings_withdrawal_history",
+        "scope": "Read-only repository for the Historial tab; no persistent cache or fallback",
+        "context": "Reject response after Savings actor/context or revision changes; optional abort signal"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_admin_savings_withdrawal_history",
+      "file": "supabase/migrations/20261014000200_savings_withdrawal_history.sql",
+      "domain": "finance",
+      "aliases": [
+        "Consulta historial retiros ahorro"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "permission": "authenticated + savings.read; fixed empty search_path",
+        "authority": "CANONICAL savings_requests joined to CANONICAL savings_participants; SAVINGS_RUNTIME_V1 origin and WITHDRAW/EXTRAORDINARY_WITHDRAWAL only",
+        "pagination": "Total before pagination; stable submitted_at/id descending; limit 1..50; tab requests 20",
+        "search": "Literal substring by current display name, saver Folio or request Folio; explicit state filter",
+        "delivery": "Only SETTLED projects existing requested_capital_amount and requested_yield_amount settlement columns; null component stays null",
+        "writes": "none; existing readers, financial writers and private document authorization unchanged"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "document_private.reissue",
+      "file": "supabase/migrations/20261014000100_savings_withdrawal_document_signers.sql",
+      "domain": "documents",
+      "aliases": [
+        "Actualizar PDF de Membresias",
+        "Membership document reissue"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "access": "private; only public.document_generation_command REISSUE after permission and module checks",
+        "membership_exception": "membership + MEMBERSHIP_APPROVAL: current effective configured signer versions, order, titles, roles and assets; configuration provenance audited",
+        "savings_withdrawal_exception": "caja + SAVINGS_WITHDRAWAL_APPROVAL: corrected revision uses current effective configured signer versions, order, names, titles, roles and assets; original business snapshot and old PDFs preserved",
+        "other_programs": "loans and other types retain historical signers",
+        "history": "new idempotent latest-parent revision; prior PDF and sealed business event/identity/financial values preserved"
+      }
+    },
+    {
+      "type": "admin_screen",
+      "name": "SutifinanzasAdminModule",
+      "file": "app/sutifinanzas-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "SUTIFINANZAS",
+        "Gasto por Secretaría"
+      ],
+      "source_of_truth": "GOOGLE_SHEETS_DIRECT",
+      "properties": {
+        "route": "Admin / sutifinanzas",
+        "status": "PUBLISHED_LIVE_REPORT_VERIFIED",
+        "evidence": "docs/audits/H-SUTIFINANZAS-ADMIN-001.md",
+        "permission": "program_requests.read AND admin_module_boundary(sutifinanzas,read)",
+        "cache": "component session memory only; explicit refresh reads Google",
+        "pivot": "configurable row dimensions; inline expansion/subtotals; month/year/total columns",
+        "expense_type_header": "TIPO DE GASTOS"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "SutifinanzasRepository",
+      "file": "app/sutifinanzas-repository.js",
+      "domain": "finance",
+      "source_of_truth": "GOOGLE_SHEETS_DIRECT",
+      "properties": {
+        "edge": "sutifinanzas",
+        "persistent_cache": false
+      }
+    },
+    {
+      "type": "edge_function",
+      "name": "sutifinanzas",
+      "file": "supabase/functions/sutifinanzas/index.ts",
+      "domain": "finance",
+      "source_of_truth": "GOOGLE_SHEETS_DIRECT",
+      "properties": {
+        "source": "Google Gasto por secretaría",
+        "deployment": "v14 dedicated service account; expense-type header and live configurable pivot verified; legacy untouched",
+        "writes": 0
+      }
+    },
+    {
+      "type": "external_legacy_source",
+      "name": "Google Gasto por secretaría",
+      "file": "supabase/functions/sutifinanzas/report.mjs",
+      "domain": "finance",
+      "source_of_truth": "GOOGLE_SHEETS_DIRECT",
+      "properties": {
+        "spreadsheet_id": "1-ijVLS90bCtFN6bFW5gEs1Geo2sKri88ER94dH42n60",
+        "tab": "Gasto por secretaría",
+        "header_mapping": "exact names; column-order independent",
+        "year": "AÑO",
+        "amount": "Gran total Comprobado",
+        "date": "FECHA DEL GASTO",
+        "google_writes": 0,
+        "supabase_financial_copy": false
+      }
+    },
+    {
+      "type": "admin_screen",
+      "name": "SicofAdminModule",
+      "file": "app/sicof-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Sicof",
+        "Rendimientos por semestre",
+        "Simulador de rendimiento",
+        "Informe final ahorro"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "deployment_evidence": "docs/audits/H-SICOF-RELEASE-001.md",
+        "route": "Admin / sicof",
+        "permission": "savings.read plus module boundary; savings.config and savings.reports for restricted actions",
+        "authority": "Canonical savings_transactions plus authenticated fixed HISTORIAL P V2 reader; simulations never post money"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "SicofRepository",
+      "file": "app/sicof-repository.js",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "edge": "sicof",
+        "cache": "pending request deduplication only; no persisted balances or fallback",
+        "identity": "real actor, Auth session, effective affiliate; exact Folio remains business identity"
+      }
+    },
+    {
+      "type": "edge_function",
+      "name": "sicof",
+      "file": "supabase/functions/sicof/index.ts",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "deployment_evidence": "docs/audits/H-SICOF-RELEASE-001.md",
+        "loan_source": "SutiApp Final / HISTORIAL P V2 fixed authenticated read_sicof_financial action",
+        "savings_source": "get_admin_sicof_context, canonical ledger and explicit origin metadata",
+        "outputs": "simulations, immutable scenario snapshots, reports; no yield credit or withdrawal writer",
+        "historical_excel": "private immutable source template and exact values; never imported as money"
+      }
+    },
+    {
+      "type": "component",
+      "name": "SavingsPeriodBalances",
+      "file": "app/savings-period-breakdown.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Saldo por año y semestre",
+        "Origen del retiro"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "deployment_evidence": "docs/audits/H-SICOF-RELEASE-001.md",
+        "authority": "same canonical projection as Savings; origin metadata does not create another balance",
+        "withdrawal": "existing SETTLE writer with atomic exact component/origin slices; original loan checks preserved"
+      }
+    },
+    {
+      "type": "component",
+      "name": "SicofPaymentBehavior",
+      "file": "app/sicof-payment-behavior.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Comportamiento de pagos",
+        "Indicador en solicitudes"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "deployment_evidence": "docs/audits/H-SICOF-RELEASE-001.md",
+        "scope": "authorized Finance request subject or SICOF admin",
+        "meaning": "current source status and installment comparison; no bureau or punctuality score without original dates"
+      }
+    },
+    {
+      "type": "component",
+      "name": "SavingsRhReport",
+      "file": "app/savings-rh-report.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Reporte RH",
+        "Reporte de descuentos RH",
+        "Nomina Ahorro"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "navigation": "Admin Ahorro after Programa",
+        "format": "XLSX",
+        "scope": "monthly date or annual instructions; positive amounts only"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "SavingsRhRepository",
+      "file": "app/savings-rh-repository.js",
+      "domain": "finance",
+      "aliases": [
+        "Reporte RH repository"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "edge": "savings-rh-report",
+        "rpc": "get_admin_savings_rh_report",
+        "permission": "savings.reports",
+        "authority": "certified historical snapshot before cutoff; canonical dated contribution plans afterwards; exact affiliate identity",
+        "excluded": "AB opening balance, AR embedded DT yield, zero amounts",
+        "cache": "none"
+      }
+    },
+    {
+      "type": "admin_screen",
+      "name": "AdminDocumentGeneration",
+      "file": "app/screens-admin-document-generation.jsx",
+      "domain": "documents",
+      "aliases": [
+        "Documentos y Firmas",
+        "Generacion PDF",
+        "Plantillas y firmantes",
+        "Asignacion documental",
+        "Formato de membresias",
+        "Vista previa PDF"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "assignment_projection": "DASHBOARD.layout_assignments: latest exact program/document_type/fund_key; includes explicit unassignment",
+        "configuration": "general assigned scope uses LAYOUT_CONFIGURE atomically; no-layout scope retains SAVE_CONFIGURATION followed by explicit designer activation",
+        "preview_renderer": "DocumentLayoutDesigner.PDFPreview; actual server PDF rendered with local PDF.js canvas, independent of native PDF plugins; issued-document viewers unchanged"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "DocumentGenerationRepository",
+      "file": "app/document-generation-repository.js",
+      "domain": "documents",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "authority": "document_private immutable configuration, snapshots and records",
+        "rpc": "document_generation_command",
+        "edge": "document-generation",
+        "access": "program documents: administrative permission + module boundary only; savings: effective affiliate owner or explicit admin capabilities; no browser cache"
+      }
+    },
+    {
+      "type": "component",
+      "name": "DocumentLayoutDesigner",
+      "file": "app/document-layout-designer.jsx",
+      "domain": "documents",
+      "aliases": [
+        "Diseñador visual de documentos",
+        "Diseñar documento",
+        "Document layout"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "authority": "document_private.layouts + layout_activations",
+        "scope": "program + document_type + fund_key; compatible type assignments; pinned template version",
+        "unit": "mm",
+        "renderer": "existing document-generation renderer",
+        "history": "immutable sealed snapshots; new documents require matching assignment; explicit unassignment blocks inheritance",
+        "preview_export": "PDFPreview: internal Documentos y Firmas canvas component with pagination, cancellation and explicit retry; vendor pdfjs-5.4.149"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "DocumentLayoutRepository",
+      "file": "app/document-layout-repository.js",
+      "domain": "documents",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "edge": "document-generation LAYOUT actions including LAYOUT_CONFIGURE / LAYOUT_CONFIGURE_PREVIEW",
+        "rpc": "document_layout_context / document_layout_persist",
+        "permissions": "config.read/config.write; service-only persistence",
+        "cache": "none",
+        "configuration_candidate": "selected pinned template + draft signers + immutable expected assignment definition; synthetic real-render validation before write"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.document_generation_command",
+      "file": "supabase/migrations/20261007000200_document_assignment_consistency.sql",
+      "domain": "documents",
+      "properties": {
+        "dashboard": "layout_assignments metadata only; latest exact scope ordered by created_at/id; no definitions or personal data",
+        "preview": "PREVIEW_CONFIG configuration_candidate validates signer assignments and current validity",
+        "serialization": "SAVE_CONFIGURATION shares layout-scope transaction lock; post-lock configuration timestamp"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.document_layout_context",
+      "file": "supabase/migrations/20261007000200_document_assignment_consistency.sql",
+      "domain": "documents",
+      "properties": {
+        "assignment_lookup": "ASSIGNMENT: permission-checked expected immutable assignment in exact scope; used for idempotent retry rendering",
+        "configuration_projection": "latest_configuration_id for CAS independently from current effective configuration",
+        "identity": "authenticated actor and effective affiliate; never supplied by browser"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.document_layout_persist",
+      "file": "supabase/migrations/20261007000200_document_assignment_consistency.sql",
+      "domain": "documents",
+      "properties": {
+        "configure": "CONFIGURE: service-only atomic configuration + optional immutable layout clone + general-scope activation + audit",
+        "concurrency": "CAS latest configuration_id and assignment_id under shared advisory lock; same operation/payload retries return previous result",
+        "preservation": "clone only on template change; preserve definition, specific funds, global template and historical records",
+        "recovery": "supabase/recovery/20261007000200_document_assignment_consistency.sql restores saved function definitions/OID/owner/ACL without deleting configuration history"
+      }
+    },
+    {
+      "type": "storage_bucket",
+      "name": "generated-documents",
+      "file": "supabase/migrations/20260928000100_document_generation_core.sql",
+      "domain": "documents",
+      "source_of_truth": "STORAGE",
+      "properties": {
+        "private": true,
+        "isolation": "restrictive storage.objects policy; service-role only; authorized signed URLs"
+      }
+    },
+    {
+      "type": "screen",
+      "name": "VotingHome",
+      "file": "app/screens-voting.jsx",
+      "domain": "voting",
+      "aliases": [
+        "Votaciones afiliado",
+        "Votaciones"
+      ],
+      "source_of_truth": "SUPABASE"
+    },
+    {
+      "type": "admin_screen",
+      "name": "VotingAdmin",
+      "file": "app/screens-voting.jsx",
+      "domain": "voting",
+      "aliases": [
+        "Votaciones Admin",
+        "Votos identificados",
+        "Pregunta activa"
+      ],
+      "source_of_truth": "SUPABASE"
+    },
+    {
+      "type": "admin_screen",
+      "name": "VotingLive",
+      "file": "app/screens-voting.jsx",
+      "domain": "voting",
+      "aliases": [
+        "Votación en vivo",
+        "Pantalla gigante",
+        "Resultados en vivo"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "reader": "get_voting_live",
+        "refresh": "Realtime voting_live_state + 2 s foreground polling",
+        "permission": "votaciones.results"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "VotingRepository",
+      "file": "app/voting-repository.js",
+      "domain": "voting",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "authority": "voting_consultations + voting_questions + voting_votes + voting_live_state",
+        "identity": "get_effective_affiliate_id",
+        "audit": "admin_audit_log",
+        "live_signal": "Realtime postgres_changes on voting_live_state (RLS voting_live_visible)",
+        "electorate": "voting_electorate(audience), derived on read"
+      }
+    },
+    {
+      "type": "screen",
+      "name": "SettingsScreen",
+      "file": "app/app.jsx",
+      "domain": "identity",
+      "aliases": [
+        "Text size settings",
+        "Configuracion personal"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "route": "settings",
+        "implementation": "SettingsScreen renders TextSizeSettings using app.textPreference"
+      }
+    },
+    {
+      "type": "service",
+      "name": "TextSizePreferences",
+      "file": "app/text-size-preferences.js",
+      "domain": "identity",
+      "source_of_truth": "SUPABASE",
+      "aliases": [
+        "Text size",
+        "Personal preferences",
+        "Accesibilidad",
+        "Configuracion"
+      ],
+      "properties": {
+        "authority": "Supabase Auth user_metadata.sutiapp_text_size",
+        "reader": "auth.getUser",
+        "writer": "auth.updateUser data allowlist; JWT owner only",
+        "scope": "Personal visual preference; never business identity or permissions"
+      }
+    },
+    {
+      "type": "domain",
+      "name": "Admin Access Protected Contract",
+      "file": "docs/ADMIN_ACCESS_PROTECTED_CONTRACT.md",
+      "domain": "admin-authorization",
+      "aliases": [
+        "Administradores",
+        "Permisos por pantalla",
+        "Tomar control",
+        "impersonation"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "mode": "PROTECTED_CLOSED_CONTRACT",
+        "protected_sha": "b8c1f6c0057dabded90804ffadd5bd012fb41a1a",
+        "adr": "ADR-098",
+        "regression_guard": "scripts/test-admin-access-protected-contract.js"
+      }
+    },
+    {
+      "type": "test",
+      "name": "scripts/test-admin-access-protected-contract.js",
+      "file": "scripts/test-admin-access-protected-contract.js",
+      "domain": "admin-authorization",
+      "aliases": [
+        "admin access regression guard"
+      ],
+      "properties": {
+        "scope": "FOCUSED",
+        "global_default": false
+      }
+    },
+    {
+      "type": "screen",
+      "name": "CredencialScreen",
+      "file": "app/screens-credencial.jsx",
+      "domain": "identity",
+      "aliases": [
+        "Credencial",
+        "Credencial digital",
+        "Fotografía de credencial",
+        "Perfil"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "protected_boundary": "Auth affiliate identity + private Storage/RLS"
+      }
+    },
+    {
+      "type": "service",
+      "name": "AffiliateAuth",
+      "file": "app/affiliate-auth.js",
+      "domain": "identity",
+      "source_of_truth": "SUPABASE"
+    },
+    {
+      "type": "service",
+      "name": "createAffiliateViewModel",
+      "file": "app/affiliate-view-model.js",
+      "domain": "identity",
+      "aliases": [
+        "photoUrl",
+        "proyección de fotografía"
+      ],
+      "source_of_truth": "DERIVED"
+    },
+    {
+      "type": "component",
+      "name": "Avatar",
+      "file": "app/ui.jsx",
+      "domain": "identity",
+      "aliases": [
+        "fotografía",
+        "foto de perfil",
+        "profile photo"
+      ]
+    },
+    {
+      "type": "test",
+      "name": "scripts/test-profile-photo-browser.js",
+      "file": "scripts/test-profile-photo-browser.js",
+      "domain": "identity",
+      "aliases": [
+        "fotografía credencial",
+        "profile photo test"
+      ]
+    },
+    {
+      "type": "screen",
+      "name": "ConveniosScreen",
+      "file": "app/screens-convenios.jsx",
+      "domain": "agreements",
+      "aliases": [
+        "Convenios",
+        "Acuerdos",
+        "Directorio de empresas"
+      ],
+      "source_of_truth": "SUPABASE"
+    },
+    {
+      "type": "repository",
+      "name": "ConveniosRepository",
+      "file": "app/convenios-repository.js",
+      "domain": "agreements",
+      "aliases": [
+        "Proyección pública de convenios",
+        "Empresas y Educación"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Supabase companies and educational_resources; no duplicated master records"
+      }
+    },
+    {
+      "type": "admin_screen",
+      "name": "ConveniosModule",
+      "file": "app/screens-admin-convenios.jsx",
+      "domain": "agreements",
+      "aliases": [
+        "Admin Convenios",
+        "Administrar convenios"
+      ],
+      "source_of_truth": "SUPABASE"
+    },
+    {
+      "type": "screen",
+      "name": "LoanScreen",
+      "file": "app/screens-loan.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Suti Préstamo",
+        "Préstamo",
+        "Loan",
+        "Simula tu préstamo"
+      ],
+      "source_of_truth": "GOOGLE_LEGACY",
+      "properties": {
+        "protected_boundary": "Financial legacy read-only adapter; Supabase only for authorized supporting domains"
+      }
+    },
+    {
+      "type": "screen",
+      "name": "SavingsScreen",
+      "file": "app/screens-savings.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Ahorro",
+        "Ahorrar",
+        "Mi ahorro",
+        "Savings"
+      ],
+      "source_of_truth": "SUPABASE_SHADOW",
+      "properties": {
+        "protected_boundary": "PRIVATE keeps the existing user read model; PUBLISHED selects certified Supabase balances via the single savings_publication_state gate after owner acceptance"
+      }
+    },
+    {
+      "type": "admin_screen",
+      "name": "AdminSavingsScreen",
+      "file": "app/screens-admin-savings.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Admin Ahorro",
+        "Administrar ahorro"
+      ],
+      "source_of_truth": "SUPABASE_SHADOW"
+    },
+    {
+      "type": "repository",
+      "name": "SavingsRepository",
+      "file": "app/savings-repository.js",
+      "domain": "finance",
+      "aliases": [
+        "Repositorio de ahorro"
+      ],
+      "source_of_truth": "SUPABASE_SHADOW",
+      "properties": {
+        "publication": "get_my_savings_dashboard gates PRIVATE/PUBLISHED in Supabase; all three user surfaces share this read model",
+        "self_join": "get_self_savings_join_context + submit_self_savings_join (expected affiliate) are allowed during PRIVATE according to intake configuration; other self writes remain publication-gated"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "SavingsPanelRepository",
+      "file": "app/savings-panel-repository.js",
+      "domain": "finance",
+      "aliases": [
+        "Panel de ahorro",
+        "Revision privada de ahorro"
+      ],
+      "properties": {
+        "authority": "Supabase savings_review_records/events preserve source and corrections; savings_balance_certifications and savings_transactions own confirmed balances; private server RPCs only"
+      }
+    },
+    {
+      "type": "edge_function",
+      "name": "savings-settlement",
+      "file": "supabase/functions/savings-settlement/index.ts",
+      "domain": "finance",
+      "aliases": [
+        "Retiro excepcional",
+        "Excepcion de permanencia",
+        "P0 retiro"
+      ],
+      "properties": {
+        "deployment": "PREPARED_NOT_DEPLOYED; isolated validation only; production requires separate explicit owner authorization",
+        "authority": "HISTORIAL P V2 read-only; savings_requests and savings_audit_events for decisions; no loan cache",
+        "permissions": "savings.approve; savings.withdrawal.override independent from savings.yield.override"
+      }
+    },
+    {
+      "type": "external_legacy_source",
+      "name": "Google HISTORIAL P V2",
+      "file": "supabase/functions/savings-settlement/loan-status.js",
+      "domain": "finance",
+      "aliases": [
+        "Estatus del prestamo",
+        "SALDO ATRASADO"
+      ],
+      "source_of_truth": "GOOGLE_LEGACY",
+      "properties": {
+        "mode": "PROTECTED_READ_ONLY",
+        "identity": "D exact Folio; C loan ID; G fund; X uniform current status across every loan row"
+      }
+    },
+    {
+      "type": "permission",
+      "name": "savings.withdrawal.override",
+      "file": "supabase/migrations/20260920000100_savings_settlement_exceptions.sql",
+      "domain": "finance",
+      "properties": {
+        "deployment": "PREPARED_NOT_APPLIED",
+        "scope": "Specific overdue-loan withdrawal exception only"
+      }
+    },
+    {
+      "type": "permission",
+      "name": "savings.yield.override",
+      "file": "supabase/migrations/20260920000100_savings_settlement_exceptions.sql",
+      "domain": "finance",
+      "properties": {
+        "deployment": "PREPARED_NOT_APPLIED",
+        "scope": "Individual/global tenure exception in one yield period only"
+      }
+    },
+    {
+      "type": "admin_screen",
+      "name": "SavingsPanelAdmin",
+      "file": "app/savings-panel-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Cobranza de ahorro",
+        "Ahorradores",
+        "Retiros y cambios",
+        "Historial de retiros",
+        "Historial Ahorro"
+      ],
+      "properties": {
+        "entry": "SavingsAdminModule existing administrative route",
+        "publication": "PRIVATE installed; explicit readiness-checked publication coordinates Savings, Home and Finance after physical acceptance",
+        "withdrawal_history": "Additive Historial tab uses WithdrawalHistory with its paginated readonly repository; existing InlinePerson and exact request documents reused"
+      }
+    },
+    {
+      "type": "table",
+      "name": "public.savings_transactions",
+      "domain": "finance",
+      "aliases": [
+        "ledger de ahorro",
+        "capital y rendimiento"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "authority": "Canonical posted movements after certification; projected future amounts are excluded; user visibility controlled by savings_publication_state"
+      }
+    },
+    {
+      "type": "table",
+      "name": "public.affiliates",
+      "domain": "identity",
+      "source_of_truth": "SUPABASE",
+      "aliases": [
+        "afiliados"
+      ]
+    },
+    {
+      "type": "table",
+      "name": "public.affiliate_files",
+      "domain": "identity",
+      "source_of_truth": "SUPABASE",
+      "aliases": [
+        "documentos de afiliado",
+        "foto de perfil"
+      ]
+    },
+    {
+      "type": "table",
+      "name": "public.private_assets",
+      "domain": "identity",
+      "source_of_truth": "SUPABASE"
+    },
+    {
+      "type": "storage_bucket",
+      "name": "private-assets",
+      "domain": "identity",
+      "source_of_truth": "STORAGE"
+    },
+    {
+      "type": "table",
+      "name": "public.companies",
+      "domain": "agreements",
+      "source_of_truth": "SUPABASE",
+      "aliases": [
+        "empresas",
+        "convenios"
+      ]
+    },
+    {
+      "type": "table",
+      "name": "public.company_benefits",
+      "domain": "agreements",
+      "source_of_truth": "SUPABASE"
+    },
+    {
+      "type": "edge_function",
+      "name": "financial-legacy",
+      "domain": "finance",
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "upstream_authority": "GOOGLE_LEGACY + authorized Supabase context"
+      }
+    },
+    {
+      "type": "external_legacy_source",
+      "name": "Google Criterios de fondos",
+      "domain": "finance",
+      "source_of_truth": "GOOGLE_LEGACY",
+      "properties": {
+        "mode": "PROTECTED"
+      }
+    },
+    {
+      "type": "external_legacy_source",
+      "name": "Google Ahorro",
+      "domain": "finance",
+      "aliases": [
+        "Ahorro legacy"
+      ],
+      "source_of_truth": "GOOGLE_LEGACY",
+      "properties": {
+        "mode": "PROTECTED_PRODUCTIVE"
+      }
+    },
+    {
+      "type": "component",
+      "name": "SavingsRegularizationAdmin",
+      "file": "app/savings-regularization-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "bajas historicas",
+        "regularizacion de ahorro",
+        "historial de reembolsos"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "entry": "Shared Caja de Ahorro historical evidence and monthly review; same component reachable from Reportes JC",
+        "authority": "Missing historic event dates only; no account/financial writes"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_admin_savings_regularization",
+      "file": "supabase/migrations/20261027000400_reports_jc_historical.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "boundary": "Savings backend permissions, exact existing identity, real actor, no impersonation"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.save_admin_savings_termination",
+      "file": "supabase/migrations/20261027000400_reports_jc_historical.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "boundary": "Savings backend permissions, exact existing identity, real actor, no impersonation"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_admin_savings_refund_people",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "boundary": "Savings backend permissions, exact existing identity, real actor, no impersonation"
+      }
+    },
+    {
+      "type": "table",
+      "name": "savings_refunds_private.termination_versions",
+      "file": "supabase/migrations/20261027000400_reports_jc_historical.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "authority": "Immutable exact-source historical termination attestations; canonical linkage deduplicated; original source retained"
+      }
+    },
+    {
+      "type": "table",
+      "name": "savings_refunds_private.payroll_evidence_versions",
+      "file": "supabase/migrations/20261027000200_reports_jc_refunds.sql",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "authority": "Immutable historical payroll classification corrections; dated canonical enrollment remains authoritative"
+      }
+    }
   ],
   "relationships": [
-    {"from_type":"screen","from":"LoanHistoryDetail","to_type":"repository","to":"LoanHistory","type":"USES"},
-    {"from_type":"edge_function","from":"loan-history","to_type":"rpc","to":"public.get_self_loan_history_snapshot","type":"CALLS"},
-    {"from_type":"edge_function","from":"loan-history","to_type":"rpc","to":"public.get_self_loan_history_approvals","type":"CALLS"},
-    {"from_type":"rpc","from":"public.get_self_loan_history_approvals","to_type":"rpc","to":"public.get_self_loan_history_context","type":"CALLS"},
-    {"from_type":"rpc","from":"public.get_self_loan_history_context","to_type":"table","to":"public.program_requests","type":"READS"},
-    {"from_type":"rpc","from":"public.get_self_loan_history_context","to_type":"table","to":"public.loan_history_approval_publication","type":"READS"},
-    {"from_type":"table","from":"public.program_requests","to_type":"trigger","to":"loan_history_approval_revision","type":"TRIGGERS"},
-    {"from_type":"trigger","from":"loan_history_approval_revision","to_type":"rpc","to":"loan_history_private.publish_approval_revision","type":"CALLS"},
-    {"from_type":"rpc","from":"loan_history_private.publish_approval_revision","to_type":"table","to":"public.loan_history_approval_publication","type":"WRITES"},
-    {"from_type":"repository","from":"LoanHistory","to_type":"table","to":"public.loan_history_approval_publication","type":"READS"},
-    {"from_type":"component","from":"HistorySyncAdmin","to_type":"rpc","to":"public.request_admin_loan_history_sync","type":"CALLS"},
-    {"from_type":"edge_function","from":"loan-history-sync","to_type":"external_legacy_source","to":"Google HISTORIAL P V2","type":"READS"},
-    {"from_type":"edge_function","from":"loan-history-sync","to_type":"external_legacy_source","to":"Google Historial de solicitudes","type":"READS"},
-    {"from_type":"repository","from":"LoanHistory","to_type":"edge_function","to":"loan-history","type":"CALLS"},
-    {"from_type":"edge_function","from":"loan-history","to_type":"table","to":"loan_history_private.observations","type":"READS_VIA_RPC"},
-    {"from_type":"edge_function","from":"loan-history-sync","to_type":"table","to":"loan_history_private.observations","type":"WRITES"},
-    {"from_type":"repository","from":"LoanHistory","to_type":"table","to":"public.loan_history_publication","type":"READS"},
-    {"from_type":"admin_screen","from":"SavingsPanelAdmin","to_type":"component","to":"WithdrawalHistory","type":"USES"},
-    {"from_type":"component","from":"WithdrawalHistory","to_type":"repository","to":"SavingsWithdrawalHistoryRepository","type":"USES"},
-    {"from_type":"component","from":"WithdrawalHistory","to_type":"component","to":"InlinePerson","type":"USES"},
-    {"from_type":"component","from":"WithdrawalHistory","to_type":"component","to":"GeneratedDocuments","type":"USES"},
-    {"from_type":"repository","from":"SavingsWithdrawalHistoryRepository","to_type":"rpc","to":"public.get_admin_savings_withdrawal_history","type":"CALLS"},
-    {"from_type":"rpc","from":"public.get_admin_savings_withdrawal_history","to_type":"table","to":"public.savings_requests","type":"READS"},
-    {"from_type":"rpc","from":"public.get_admin_savings_withdrawal_history","to_type":"table","to":"public.savings_participants","type":"READS"},
-    {"from_type":"rpc","from":"public.get_admin_savings_withdrawal_history","to_type":"permission","to":"savings.read","type":"REQUIRES"},
-    {"from_type": "rpc", "from": "public.document_generation_command", "to_type": "rpc", "to": "document_private.reissue", "type": "CALLS"},
-    {"from_type":"admin_screen","from":"SutifinanzasAdminModule","to_type":"repository","to":"SutifinanzasRepository","type":"USES"},
-    {"from_type":"repository","from":"SutifinanzasRepository","to_type":"edge_function","to":"sutifinanzas","type":"CALLS"},
-    {"from_type":"edge_function","from":"sutifinanzas","to_type":"external_legacy_source","to":"Google Gasto por secretaría","type":"READS"},
-    {"from_type":"admin_screen","from":"SicofAdminModule","to_type":"repository","to":"SicofRepository","type":"USES"},
-    {"from_type":"repository","from":"SicofRepository","to_type":"edge_function","to":"sicof","type":"CALLS"},
-    {"from_type":"edge_function","from":"sicof","to_type":"external_legacy_source","to":"Google HISTORIAL P V2","type":"READS"},
-    {"from_type":"edge_function","from":"sicof","to_type":"table","to":"public.savings_transactions","type":"READS_VIA_RPC"},
-    {"from_type":"component","from":"SicofPaymentBehavior","to_type":"repository","to":"SicofRepository","type":"USES"},
-    {"from_type": "route", "from": "settings", "to_type": "screen", "to": "SettingsScreen", "type": "ROUTES_TO"},
-    {"from_type": "screen", "from": "SettingsScreen", "to_type": "service", "to": "TextSizePreferences", "type": "USES"},
-    {"from_type": "test", "from": "scripts/test-admin-access-protected-contract.js", "to_type": "domain", "to": "Admin Access Protected Contract", "type": "PROTECTS"},
-    {"from_type": "screen", "from": "CredencialScreen", "to_type": "repository", "to": "AffiliateRepository", "type": "USES"},
-    {"from_type": "screen", "from": "CredencialScreen", "to_type": "service", "to": "AffiliateAuth", "type": "USES"},
-    {"from_type": "service", "from": "AffiliateAuth", "to_type": "repository", "to": "AffiliateRepository", "type": "USES"},
-    {"from_type": "service", "from": "AffiliateAuth", "to_type": "service", "to": "createAffiliateViewModel", "type": "USES"},
-    {"from_type": "repository", "from": "AffiliateRepository", "to_type": "table", "to": "public.affiliate_files", "type": "READS"},
-    {"from_type": "table", "from": "public.affiliate_files", "to_type": "table", "to": "public.private_assets", "type": "RELATES_TO"},
-    {"from_type": "table", "from": "public.private_assets", "to_type": "storage_bucket", "to": "private-assets", "type": "RESOLVES_TO"},
-    {"from_type": "screen", "from": "ConveniosScreen", "to_type": "repository", "to": "ConveniosRepository", "type": "USES"},
-    {"from_type": "repository", "from": "ConveniosRepository", "to_type": "table", "to": "public.companies", "type": "READS"},
-    {"from_type": "repository", "from": "ConveniosRepository", "to_type": "table", "to": "public.educational_resources", "type": "READS"},
-    {"from_type": "repository", "from": "CompaniesRepository", "to_type": "table", "to": "public.companies", "type": "READS"},
-    {"from_type": "admin_screen", "from": "ConveniosModule", "to_type": "table", "to": "public.companies", "type": "ADMINISTERS"},
-    {"from_type": "admin_screen", "from": "ConveniosModule", "to_type": "screen", "to": "ConveniosScreen", "type": "REFLECTS_IN"},
-    {"from_type": "screen", "from": "LoanScreen", "to_type": "repository", "to": "FinancialLegacyRepository", "type": "USES"},
-    {"from_type": "repository", "from": "FinancialLegacyRepository", "to_type": "edge_function", "to": "financial-legacy", "type": "CALLS"},
-    {"from_type": "edge_function", "from": "financial-legacy", "to_type": "external_legacy_source", "to": "Google Criterios de fondos", "type": "READS"},
-    {"from_type": "screen", "from": "SavingsScreen", "to_type": "repository", "to": "SavingsRepository", "type": "USES"},
-    {"from_type": "admin_screen", "from": "AdminSavingsScreen", "to_type": "repository", "to": "SavingsRepository", "type": "USES"},
-    {"from_type": "repository", "from": "SavingsRepository", "to_type": "table", "to": "public.savings_transactions", "type": "READS_VIA_RPC"},
-    {"from_type":"repository","from":"SavingsPanelRepository","to_type":"edge_function","to":"savings-settlement","type":"CALLS"},
-    {"from_type":"edge_function","from":"savings-settlement","to_type":"external_legacy_source","to":"Google HISTORIAL P V2","type":"READS"},
-    {"from_type": "external_legacy_source", "from": "Google Ahorro", "to_type": "table", "to": "public.savings_transactions", "type": "NOT_CONNECTED_SHADOW_BOUNDARY"}
+    {
+      "from_type": "route",
+      "from": "reportes_jc",
+      "to_type": "admin_screen",
+      "to": "ReportsJcAdminModule",
+      "type": "ROUTES_TO"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "ReportsJcAdminModule",
+      "to_type": "repository",
+      "to": "ReportsJcRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "ReportsJcRepository",
+      "to_type": "edge_function",
+      "to": "reports-jc",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "reports-jc",
+      "to_type": "external_legacy_source",
+      "to": "Google SutiApp Final Reportes JC",
+      "type": "READS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "reports-jc",
+      "to_type": "rpc",
+      "to": "public.get_admin_reports_jc_context",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "reports-jc",
+      "to_type": "rpc",
+      "to": "public.get_admin_reports_jc_savings",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_reports_jc_context",
+      "to_type": "permission",
+      "to": "program_requests.read",
+      "type": "REQUIRES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_reports_jc_context",
+      "to_type": "permission",
+      "to": "savings.read",
+      "type": "REQUIRES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_reports_jc_context",
+      "to_type": "permission",
+      "to": "savings.reports",
+      "type": "REQUIRES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_reports_jc_savings",
+      "to_type": "table",
+      "to": "public.savings_transactions",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_reports_jc_savings",
+      "to_type": "table",
+      "to": "savings_refunds_private.cases",
+      "type": "READS"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "SavingsPanelAdmin",
+      "to_type": "component",
+      "to": "SavingsRefundsAdmin",
+      "type": "USES"
+    },
+    {
+      "from_type": "component",
+      "from": "SavingsRefundsAdmin",
+      "to_type": "repository",
+      "to": "SavingsRefundsRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "SavingsRefundsRepository",
+      "to_type": "rpc",
+      "to": "public.get_admin_savings_refunds",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "repository",
+      "from": "SavingsRefundsRepository",
+      "to_type": "rpc",
+      "to": "public.save_admin_savings_refund",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_savings_refunds",
+      "to_type": "table",
+      "to": "savings_refunds_private.cases",
+      "type": "READS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.save_admin_savings_refund",
+      "to_type": "table",
+      "to": "savings_refunds_private.cases",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.save_admin_savings_refund",
+      "to_type": "table",
+      "to": "savings_refunds_private.deductions",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.save_admin_savings_refund",
+      "to_type": "table",
+      "to": "savings_refunds_private.payments",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.save_admin_savings_refund",
+      "to_type": "table",
+      "to": "savings_refunds_private.events",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.save_admin_savings_refund",
+      "to_type": "table",
+      "to": "savings_refunds_private.reporting_periods",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.save_admin_savings_refund",
+      "to_type": "table",
+      "to": "public.savings_transactions",
+      "type": "READS"
+    },
+    {
+      "from_type": "screen",
+      "from": "LoanHistoryDetail",
+      "to_type": "repository",
+      "to": "LoanHistory",
+      "type": "USES"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "loan-history",
+      "to_type": "rpc",
+      "to": "public.get_self_loan_history_snapshot",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "loan-history",
+      "to_type": "rpc",
+      "to": "public.get_self_loan_history_approvals",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_self_loan_history_approvals",
+      "to_type": "rpc",
+      "to": "public.get_self_loan_history_context",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_self_loan_history_context",
+      "to_type": "table",
+      "to": "public.program_requests",
+      "type": "READS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_self_loan_history_context",
+      "to_type": "table",
+      "to": "public.loan_history_approval_publication",
+      "type": "READS"
+    },
+    {
+      "from_type": "table",
+      "from": "public.program_requests",
+      "to_type": "trigger",
+      "to": "loan_history_approval_revision",
+      "type": "TRIGGERS"
+    },
+    {
+      "from_type": "trigger",
+      "from": "loan_history_approval_revision",
+      "to_type": "rpc",
+      "to": "loan_history_private.publish_approval_revision",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "loan_history_private.publish_approval_revision",
+      "to_type": "table",
+      "to": "public.loan_history_approval_publication",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "repository",
+      "from": "LoanHistory",
+      "to_type": "table",
+      "to": "public.loan_history_approval_publication",
+      "type": "READS"
+    },
+    {
+      "from_type": "component",
+      "from": "HistorySyncAdmin",
+      "to_type": "rpc",
+      "to": "public.request_admin_loan_history_sync",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "loan-history-sync",
+      "to_type": "external_legacy_source",
+      "to": "Google HISTORIAL P V2",
+      "type": "READS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "loan-history-sync",
+      "to_type": "external_legacy_source",
+      "to": "Google Historial de solicitudes",
+      "type": "READS"
+    },
+    {
+      "from_type": "repository",
+      "from": "LoanHistory",
+      "to_type": "edge_function",
+      "to": "loan-history",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "loan-history",
+      "to_type": "table",
+      "to": "loan_history_private.observations",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "loan-history-sync",
+      "to_type": "table",
+      "to": "loan_history_private.observations",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "repository",
+      "from": "LoanHistory",
+      "to_type": "table",
+      "to": "public.loan_history_publication",
+      "type": "READS"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "SavingsPanelAdmin",
+      "to_type": "component",
+      "to": "WithdrawalHistory",
+      "type": "USES"
+    },
+    {
+      "from_type": "component",
+      "from": "WithdrawalHistory",
+      "to_type": "repository",
+      "to": "SavingsWithdrawalHistoryRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "component",
+      "from": "WithdrawalHistory",
+      "to_type": "component",
+      "to": "InlinePerson",
+      "type": "USES"
+    },
+    {
+      "from_type": "component",
+      "from": "WithdrawalHistory",
+      "to_type": "component",
+      "to": "GeneratedDocuments",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "SavingsWithdrawalHistoryRepository",
+      "to_type": "rpc",
+      "to": "public.get_admin_savings_withdrawal_history",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_savings_withdrawal_history",
+      "to_type": "table",
+      "to": "public.savings_requests",
+      "type": "READS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_savings_withdrawal_history",
+      "to_type": "table",
+      "to": "public.savings_participants",
+      "type": "READS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_savings_withdrawal_history",
+      "to_type": "permission",
+      "to": "savings.read",
+      "type": "REQUIRES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.document_generation_command",
+      "to_type": "rpc",
+      "to": "document_private.reissue",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "SutifinanzasAdminModule",
+      "to_type": "repository",
+      "to": "SutifinanzasRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "SutifinanzasRepository",
+      "to_type": "edge_function",
+      "to": "sutifinanzas",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "sutifinanzas",
+      "to_type": "external_legacy_source",
+      "to": "Google Gasto por secretaría",
+      "type": "READS"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "SicofAdminModule",
+      "to_type": "repository",
+      "to": "SicofRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "SicofRepository",
+      "to_type": "edge_function",
+      "to": "sicof",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "sicof",
+      "to_type": "external_legacy_source",
+      "to": "Google HISTORIAL P V2",
+      "type": "READS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "sicof",
+      "to_type": "table",
+      "to": "public.savings_transactions",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from_type": "component",
+      "from": "SicofPaymentBehavior",
+      "to_type": "repository",
+      "to": "SicofRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "route",
+      "from": "settings",
+      "to_type": "screen",
+      "to": "SettingsScreen",
+      "type": "ROUTES_TO"
+    },
+    {
+      "from_type": "screen",
+      "from": "SettingsScreen",
+      "to_type": "service",
+      "to": "TextSizePreferences",
+      "type": "USES"
+    },
+    {
+      "from_type": "test",
+      "from": "scripts/test-admin-access-protected-contract.js",
+      "to_type": "domain",
+      "to": "Admin Access Protected Contract",
+      "type": "PROTECTS"
+    },
+    {
+      "from_type": "screen",
+      "from": "CredencialScreen",
+      "to_type": "repository",
+      "to": "AffiliateRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "screen",
+      "from": "CredencialScreen",
+      "to_type": "service",
+      "to": "AffiliateAuth",
+      "type": "USES"
+    },
+    {
+      "from_type": "service",
+      "from": "AffiliateAuth",
+      "to_type": "repository",
+      "to": "AffiliateRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "service",
+      "from": "AffiliateAuth",
+      "to_type": "service",
+      "to": "createAffiliateViewModel",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "AffiliateRepository",
+      "to_type": "table",
+      "to": "public.affiliate_files",
+      "type": "READS"
+    },
+    {
+      "from_type": "table",
+      "from": "public.affiliate_files",
+      "to_type": "table",
+      "to": "public.private_assets",
+      "type": "RELATES_TO"
+    },
+    {
+      "from_type": "table",
+      "from": "public.private_assets",
+      "to_type": "storage_bucket",
+      "to": "private-assets",
+      "type": "RESOLVES_TO"
+    },
+    {
+      "from_type": "screen",
+      "from": "ConveniosScreen",
+      "to_type": "repository",
+      "to": "ConveniosRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "ConveniosRepository",
+      "to_type": "table",
+      "to": "public.companies",
+      "type": "READS"
+    },
+    {
+      "from_type": "repository",
+      "from": "ConveniosRepository",
+      "to_type": "table",
+      "to": "public.educational_resources",
+      "type": "READS"
+    },
+    {
+      "from_type": "repository",
+      "from": "CompaniesRepository",
+      "to_type": "table",
+      "to": "public.companies",
+      "type": "READS"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "ConveniosModule",
+      "to_type": "table",
+      "to": "public.companies",
+      "type": "ADMINISTERS"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "ConveniosModule",
+      "to_type": "screen",
+      "to": "ConveniosScreen",
+      "type": "REFLECTS_IN"
+    },
+    {
+      "from_type": "screen",
+      "from": "LoanScreen",
+      "to_type": "repository",
+      "to": "FinancialLegacyRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "FinancialLegacyRepository",
+      "to_type": "edge_function",
+      "to": "financial-legacy",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "financial-legacy",
+      "to_type": "external_legacy_source",
+      "to": "Google Criterios de fondos",
+      "type": "READS"
+    },
+    {
+      "from_type": "screen",
+      "from": "SavingsScreen",
+      "to_type": "repository",
+      "to": "SavingsRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "AdminSavingsScreen",
+      "to_type": "repository",
+      "to": "SavingsRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "SavingsRepository",
+      "to_type": "table",
+      "to": "public.savings_transactions",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from_type": "repository",
+      "from": "SavingsPanelRepository",
+      "to_type": "edge_function",
+      "to": "savings-settlement",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "edge_function",
+      "from": "savings-settlement",
+      "to_type": "external_legacy_source",
+      "to": "Google HISTORIAL P V2",
+      "type": "READS"
+    },
+    {
+      "from_type": "external_legacy_source",
+      "from": "Google Ahorro",
+      "to_type": "table",
+      "to": "public.savings_transactions",
+      "type": "NOT_CONNECTED_SHADOW_BOUNDARY"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "ReportsJcAdminModule",
+      "to_type": "component",
+      "to": "SavingsRefundsAdmin",
+      "type": "USES"
+    },
+    {
+      "from_type": "component",
+      "from": "SavingsRefundsAdmin",
+      "to_type": "component",
+      "to": "SavingsRegularizationAdmin",
+      "type": "USES"
+    },
+    {
+      "from_type": "component",
+      "from": "SavingsRegularizationAdmin",
+      "to_type": "repository",
+      "to": "SavingsRefundsRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "SavingsRefundsRepository",
+      "to_type": "rpc",
+      "to": "public.get_admin_savings_regularization",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "repository",
+      "from": "SavingsRefundsRepository",
+      "to_type": "rpc",
+      "to": "public.save_admin_savings_termination",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "repository",
+      "from": "SavingsRefundsRepository",
+      "to_type": "rpc",
+      "to": "public.get_admin_savings_refund_people",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.save_admin_savings_termination",
+      "to_type": "table",
+      "to": "savings_refunds_private.termination_versions",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_reports_jc_savings",
+      "to_type": "table",
+      "to": "savings_refunds_private.termination_versions",
+      "type": "READS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_savings_regularization",
+      "to_type": "table",
+      "to": "savings_refunds_private.termination_versions",
+      "type": "READS"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.save_admin_savings_refund",
+      "to_type": "table",
+      "to": "savings_refunds_private.payroll_evidence_versions",
+      "type": "WRITES"
+    },
+    {
+      "from_type": "rpc",
+      "from": "public.get_admin_reports_jc_savings",
+      "to_type": "table",
+      "to": "savings_refunds_private.payroll_evidence_versions",
+      "type": "READS"
+    }
   ]
 }

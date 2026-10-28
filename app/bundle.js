@@ -1385,6 +1385,479 @@
   window.SutifinanzasAdminModule = SutifinanzasAdminModule;
 })();
 })();
+/* @@file reports-jc-repository.js */
+(function(){
+/* Reportes JC: authenticated read-only projection. Nothing persists in the browser. */
+(function(){
+ 'use strict';
+ function context(){
+  const auth=window.AffiliateAuth?.getState(),admin=window.AdminRepository?.getState();
+  if(auth?.phase!=='authenticated'||!auth.session?.user?.id)throw Error('AUTH_REQUIRED');
+  let session=auth.session.session_id||'';
+  if(!session&&auth.session.access_token){try{session=JSON.parse(atob(auth.session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).session_id||'';}catch(_){}}
+  return {actor:auth.session.user.id,effective_affiliate:auth.affiliate?.id||null,session,key:JSON.stringify([auth.session.user.id,session,auth.affiliate?.id,auth.impersonation,admin?.phase,admin?.subjectKey,admin?.assignment])};
+ }
+ async function invoke(action,values){
+  const before=context(),result=await window.SutiSupabase.getClient().functions.invoke('reports-jc',{body:{action,...values}});
+  if(context().key!==before.key)throw Error('CONTEXT_CHANGED');
+  if(result.error){let response;try{response=await result.error.context.clone().json();}catch(_){}throw Error(response?.error||'SOURCE_UNAVAILABLE');}
+  const envelope=result.data,received=envelope?.context;
+  if(!received||received.actor!==before.actor||received.effective_affiliate!==before.effective_affiliate||(before.session&&received.session!==before.session))throw Error('CONTEXT_CHANGED');
+  if(!envelope.data||envelope.error)throw Error(envelope.error||'RESPONSE_INVALID');
+  return envelope.data;
+ }
+ window.ReportsJcRepository=Object.freeze({contextKey:()=>context().key,load:year=>invoke('LOAD',{year}),template:()=>invoke('TEMPLATE',{})});
+})();
+})();
+/* @@file reports-jc-export.js */
+(function(){
+/* Exact-template Reportes JC exports. All report inputs come from the authorized backend. */
+(function (root) {
+  'use strict';
+  const TEMPLATE_SHA256 = 'da8c9785b4f4a62bc087403a06492766cf8dae59e2d239589396a31f842e32eb';
+  const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const SCHEMA = [
+    { name: 'Préstamos Concentrado', sheet: 1, inputs: 'B6:D17', kind: 'loanYear', title: 'A2', yearCell: 'A5' },
+    { name: 'Préstamos Mes', sheet: 2, inputs: 'B6:D10', kind: 'loanMonth', title: 'A2', monthly: true },
+    { name: 'DtosViaNomina Concentrado', sheet: 3, inputs: 'B6:D17', kind: 'loanYear', title: 'A2', yearCell: 'A5' },
+    { name: 'DtosViaNomina Mes', sheet: 4, inputs: 'C6:D20', kind: 'rhMonth', title: 'A2', monthly: true },
+    { name: 'ValesyMembresias Concentrado', sheet: 5, inputs: 'B6:D17', kind: 'membershipYear', title: 'A2', yearCell: 'A5' },
+    { name: 'ValesyMembresias Mes', sheet: 6, inputs: 'B6:D17', kind: 'membershipMonth', title: 'A2', monthly: true, labels: 'A12:A17' },
+    { name: 'Financiamientos Concentrado', sheet: 7, inputs: 'B6:D17', kind: 'membershipYear', title: 'A2', yearCell: 'A5' },
+    { name: 'Caja de Ahorro Voluntario', sheet: 8, inputs: 'B4:G15', kind: 'savingsYear', title: 'A1', yearCell: 'A3' }
+  ];
+  const CELL = /<c\b([^>]*?\br="([A-Z]+[1-9]\d*)"[^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+  function fail(message) { throw new Error('Reportes JC: ' + message); }
+  function library() {
+    if (root.JSZip) return root.JSZip;
+    if (typeof module !== 'undefined' && module.exports) return require('./vendor/jszip-3.10.1/jszip.min.js');
+    return fail('no está disponible el componente de exportación.');
+  }
+  function escapeXml(value) { return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;'); }
+  function unescapeXml(value) { return String(value).replace(/&#(x[0-9a-f]+|\d+);/gi, (_, n) => String.fromCodePoint(n[0].toLowerCase() === 'x' ? parseInt(n.slice(1), 16) : Number(n))).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&'); }
+  function coords(range) {
+    const match = /^([A-Z])(\d+):([A-Z])(\d+)$/.exec(range);
+    if (!match) fail('rango de plantilla inválido.');
+    const result = [];
+    for (let row = Number(match[2]); row <= Number(match[4]); row++) for (let col = match[1].charCodeAt(0); col <= match[3].charCodeAt(0); col++) result.push(String.fromCharCode(col) + row);
+    return result;
+  }
+  function rawValue(entry) { return entry && typeof entry === 'object' && Object.prototype.hasOwnProperty.call(entry, 'value') ? entry.value : entry; }
+  function count(value, name, coord) {
+    if (!Number.isSafeInteger(value) || value < 0) fail('conteo ausente o inválido en ' + name + '!' + coord + '.');
+    return value;
+  }
+  function derived(schema) {
+    const out = {};
+    const rows = (col, first, last, left, right) => { for (let r = first; r <= last; r++) out[col + r] = left + r + ':' + right + r; };
+    const totals = (firstCol, lastCol, row, first, last) => { for (let c = firstCol.charCodeAt(0); c <= lastCol.charCodeAt(0); c++) { const col = String.fromCharCode(c); out[col + row] = col + first + ':' + col + last; } };
+    if (schema.kind === 'loanYear') { rows('E', 6, 17, 'B', 'D'); totals('B', 'D', 18, 6, 17); out.E18 = 'B18:D18'; }
+    if (schema.kind === 'loanMonth') { rows('E', 6, 10, 'B', 'D'); totals('B', 'D', 11, 6, 10); out.E11 = 'B11:D11'; }
+    if (schema.kind === 'membershipYear') { rows('E', 6, 17, 'B', 'C'); totals('B', 'D', 18, 6, 17); out.E18 = 'B18:C18'; }
+    if (schema.kind === 'membershipMonth') { rows('E', 6, 17, 'B', 'C'); totals('B', 'D', 18, 6, 17); out.E18 = 'B18:C18'; }
+    if (schema.kind === 'rhMonth') { rows('E', 6, 20, 'C', 'D'); totals('C', 'E', 21, 6, 20); }
+    if (schema.kind === 'savingsYear') { rows('H', 4, 15, 'B', 'G'); totals('B', 'H', 16, 4, 15); }
+    return out;
+  }
+  function readCells(xml) {
+    const cells = Object.create(null);
+    for (const match of xml.matchAll(CELL)) cells[match[2]] = { attrs: match[1], inner: match[3] || '', full: match[0] };
+    return cells;
+  }
+  function issueBlocks(issue, schema, month) {
+    if (!issue || issue.severity !== 'error') return false;
+    const sheets = Array.isArray(issue.sheets) ? issue.sheets : [];
+    if (sheets.length && !sheets.includes(schema.name)) return false;
+    return !schema.monthly || !Array.isArray(issue.months) || !issue.months.length || issue.months.map(Number).includes(month);
+  }
+  function preparedCells(report, schema, month) {
+    const sheet = report.sheets && report.sheets[schema.name];
+    const selected = schema.monthly ? sheet && sheet.months && sheet.months[month] : sheet;
+    if (!selected || !selected.cells || typeof selected.cells !== 'object') fail('faltan datos para ' + schema.name + '.');
+    const issues = [].concat(report.issues || [], sheet.issues || [], selected.issues || []);
+    if (issues.some(issue => issueBlocks(issue, schema, month))) fail('hay incidencias pendientes en ' + schema.name + '.');
+    const cells = selected.cells;
+    const values = Object.create(null);
+    const formulas = derived(schema);
+    const inputCoords = coords(schema.inputs);
+    for (const coord of inputCoords) values[coord] = count(rawValue(cells[coord]), schema.name, coord);
+    // The legacy external row remains in the exact template, without duplicating Sutiexpress.
+    if (schema.kind === 'loanMonth' && ['B10', 'C10', 'D10'].some(coord => values[coord] !== 0)) fail('Sutiexpress debe contarse una sola vez en la fila 9.');
+    const calculate = (coord, active) => {
+      if (Object.prototype.hasOwnProperty.call(values, coord)) return values[coord];
+      if (!formulas[coord] || active.has(coord)) fail('dependencia inválida en ' + schema.name + '!' + coord + '.');
+      active.add(coord);
+      values[coord] = count(coords(formulas[coord]).reduce((sum, child) => sum + calculate(child, active), 0), schema.name, coord);
+      active.delete(coord);
+      return values[coord];
+    };
+    for (const coord of Object.keys(formulas)) calculate(coord, new Set());
+    const labelCoords = schema.labels ? coords(schema.labels) : [];
+    const labels = Object.create(null);
+    for (const coord of labelCoords) {
+      const label = rawValue(cells[coord]);
+      if (label == null || label === '') {
+        const row = coord.slice(1);
+        if (['B', 'C', 'D'].some(col => values[col + row] > 0)) fail('faltan nombres de proveedores con actividad.');
+        labels[coord] = ''; continue;
+      }
+      if (typeof label !== 'string' || label.length > 120 || /[\x00-\x1f]/.test(label)) fail('nombre de proveedor inválido.');
+      labels[coord] = label;
+    }
+    for (const coord of Object.keys(cells)) {
+      if (Object.prototype.hasOwnProperty.call(values, coord)) {
+        if (Object.prototype.hasOwnProperty.call(formulas, coord) && rawValue(cells[coord]) !== values[coord]) fail('total incompatible en ' + schema.name + '!' + coord + '.');
+      } else if (!labelCoords.includes(coord)) fail('celda fuera de alcance en ' + schema.name + '!' + coord + '.');
+    }
+    return { values, formulas, labels };
+  }
+  function setCell(xml, coord, value, stringValue, originalCells) {
+    const cell = originalCells[coord];
+    let attrs = cell ? cell.attrs.replace(/\s+t="[^"]*"/g, '') : ' r="' + coord + '"';
+    // Only a value changes: retain the exact original formula, style and other attributes.
+    let body;
+    if (stringValue) body = '<is><t xml:space="preserve">' + escapeXml(value) + '</t></is>';
+    else {
+      const formula = cell && cell.inner.match(/<f\b[^>]*(?:\/>|>[\s\S]*?<\/f>)/);
+      body = (formula ? formula[0] : '') + '<v>' + value + '</v>';
+    }
+    const replacement = '<c' + attrs + (stringValue ? ' t="inlineStr"' : '') + '>' + body + '</c>';
+    if (cell) return xml.replace(cell.full, replacement);
+    const rowNumber = Number(coord.match(/\d+$/)[0]);
+    let found = false;
+    xml = xml.replace(/<row\b([^>]*\br="(\d+)"[^>]*)>([\s\S]*?)<\/row>/g, (whole, rowAttrs, number, content) => {
+      if (Number(number) !== rowNumber) return whole;
+      found = true;
+      let inserted = false;
+      const next = content.replace(CELL, (full, unused, other) => {
+        if (!inserted && other.replace(/\d+$/, '') > coord.replace(/\d+$/, '')) { inserted = true; return replacement + full; }
+        return full;
+      });
+      return '<row' + rowAttrs + '>' + next + (inserted ? '' : replacement) + '</row>';
+    });
+    if (!found) fail('falta la fila de la celda ' + coord + ' en la plantilla autorizada.');
+    return xml;
+  }
+  function titleText(cell, sharedStrings) {
+    if (!cell) fail('falta el título de una hoja.');
+    const value = cell.inner.match(/<v>([\s\S]*?)<\/v>/);
+    if (/\bt="s"/.test(cell.attrs) && value) return sharedStrings[Number(value[1])];
+    return (cell.inner.match(/<t\b[^>]*>([\s\S]*?)<\/t>/g) || []).map(t => unescapeXml(t.replace(/^<t\b[^>]*>|<\/t>$/g, ''))).join('');
+  }
+  function patchSheet(xml, sharedStrings, schema, report, year, month) {
+    const original = readCells(xml);
+    const prepared = preparedCells(report, schema, month);
+    for (const [coord, value] of Object.entries(prepared.values)) {
+      const formula = original[coord] && original[coord].inner.match(/<f\b[^>]*>([\s\S]*?)<\/f>/);
+      if (formula && unescapeXml(formula[1]) !== 'SUM(' + prepared.formulas[coord] + ')') fail('fórmula inesperada en la plantilla.');
+      xml = setCell(xml, coord, value, false, original);
+    }
+    for (const [coord, label] of Object.entries(prepared.labels)) if (label) xml = setCell(xml, coord, label, true, original);
+    const oldTitle = titleText(original[schema.title], sharedStrings);
+    const ending = schema.monthly ? /Octubre 2026$/ : /2026$/;
+    if (!ending.test(oldTitle)) fail('el título de la plantilla no coincide.');
+    xml = setCell(xml, schema.title, oldTitle.replace(ending, (schema.monthly ? MONTHS[month - 1] + ' ' : '') + year), true, original);
+    if (schema.yearCell) xml = setCell(xml, schema.yearCell, year, false, original);
+    return xml;
+  }
+  async function openTemplate(base64) {
+    if (typeof base64 !== 'string' || base64.length > 200000) fail('plantilla inválida.');
+    let bytes;
+    try { bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0)); } catch (_) { return fail('plantilla inválida.'); }
+    if (!root.crypto || !root.crypto.subtle) fail('el navegador no permite verificar la plantilla.');
+    const hash = Array.from(new Uint8Array(await root.crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('');
+    if (hash !== TEMPLATE_SHA256) fail('la plantilla no coincide con el original autorizado.');
+    const Zip = library();
+    const zip = await Zip.loadAsync(bytes, { checkCRC32: true });
+    const stringsXml = await zip.file('xl/sharedStrings.xml').async('string');
+    const sharedStrings = Array.from(stringsXml.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g), match => Array.from(match[1].matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g), t => unescapeXml(t[1])).join(''));
+    return { zip, sharedStrings };
+  }
+  function period(options) {
+    const year = Number(options.year), month = Number(options.month);
+    if (!Number.isInteger(year) || year < 2000 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12) fail('período inválido.');
+    if (!options.report || Number(options.report.year) !== year) fail('el año del reporte no coincide.');
+    return { year, month };
+  }
+  async function buildWorkbook(options) {
+    const { year, month } = period(options);
+    const { zip, sharedStrings } = await openTemplate(options.templateBase64);
+    for (const schema of SCHEMA) {
+      const path = 'xl/worksheets/sheet' + schema.sheet + '.xml';
+      const entry = zip.file(path);
+      const xml = await entry.async('string');
+      zip.file(path, patchSheet(xml, sharedStrings, schema, options.report, year, month), { date: entry.date, createFolders: false, unixPermissions: entry.unixPermissions, dosPermissions: entry.dosPermissions });
+    }
+    return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  }
+  async function buildYearZip(options) {
+    const Zip = library(), output = new Zip();
+    for (let month = 1; month <= 12; month++) {
+      const bytes = await buildWorkbook({ ...options, month });
+      output.file('Reporte_JC_' + options.year + '-' + String(month).padStart(2, '0') + '.xlsx', bytes);
+    }
+    return output.generateAsync({ type: 'uint8array', compression: 'STORE' });
+  }
+  function download(bytes, filename, mime) {
+    const url = URL.createObjectURL(new Blob([bytes], { type: mime || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    const anchor = document.createElement('a');
+    anchor.href = url; anchor.download = filename; anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  const api = Object.freeze({ buildWorkbook, buildYearZip, download, TEMPLATE_SHA256, SCHEMA });
+  root.SutiReportsJcExport = api;
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+})(typeof globalThis !== 'undefined' ? globalThis : window);
+})();
+/* @@file reports-jc-admin.jsx */
+(function(){
+/* Eight owner-defined count reports; the supplied workbook remains the export contract. */
+(function(){
+ 'use strict';
+ const h=React.createElement,{useState,useEffect,useRef}=React;
+ const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+ const names=['Préstamos Concentrado','Préstamos Mes','DtosViaNomina Concentrado','DtosViaNomina Mes','ValesyMembresias Concentrado','ValesyMembresias Mes','Financiamientos Concentrado','Caja de Ahorro Voluntario'];
+ const loanRows=['Préstamo de caja de Ahorro','Préstamo de caja chica','Adelantos de nómina','Sutiexpress',''];
+ const rhRows=['Descuento SUTISSSTESON · 446','Ahorro voluntario · 573','Caja chica · 574','Préstamo de ahorro · 575','Sutiexpress y adelantos · 576','Vales y membresías · 577','Ahorro jubilados · 580','Préstamo de ahorro jubilados · 581','Caja chica jubilados · 609','Sutiexpress jubilados · 610','Vales jubilados · 611','Seguro colectivo · 644','Proyectos · 645','Viajes · 646','Compras · 647'];
+ const providers=['Rivera Gas','Arco Gasolina','Casa Ley','Costco','Sams Club','CineStar TV'];
+ const css='.rjc{color:var(--ink);min-width:0}.rjc-body{padding:20px;max-width:1250px;margin:auto}.rjc-bar,.rjc-actions{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.rjc-bar{padding:18px;background:var(--surface);border:1px solid var(--hairline);border-radius:18px}.rjc label{display:grid;gap:6px;font-size:12px;font-weight:800}.rjc input,.rjc select{padding:10px 12px;border:1px solid var(--hairline-strong);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;min-height:42px}.rjc button{cursor:pointer;font:inherit}.rjc-btn{padding:11px 16px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);color:var(--ink);font-weight:800}.rjc-btn.primary{background:var(--guinda,#861e45);color:white}.rjc button:disabled{opacity:.55;cursor:default}.rjc-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.rjc-tabs button[aria-selected=true]{background:var(--guinda,#861e45);color:white}.rjc-note{font-size:13px;line-height:1.6;color:var(--ink-2);margin:12px 0}.rjc-error{padding:14px;border-radius:12px;background:#fff0ed;color:#9b241b}.rjc-table-wrap{overflow:auto;border:1px solid var(--hairline);border-radius:14px}.rjc table{border-collapse:collapse;width:100%;font-size:13px;background:var(--surface)}.rjc th,.rjc td{padding:12px 14px;border-bottom:1px solid var(--hairline);text-align:left;vertical-align:top}.rjc thead th{background:var(--surface-2);font-size:12px}.rjc tbody tr[data-selected=true]{background:rgba(133,31,68,.06)}.rjc-cell{background:none;border:0;color:var(--guinda,#861e45);text-decoration:underline;text-underline-offset:4px;font-weight:800;padding:4px;min-width:35px}.rjc-modal{position:fixed;inset:0;z-index:1800;background:#0006;display:grid;place-items:center;padding:20px}.rjc-dialog{background:var(--surface);border-radius:20px;padding:22px;width:min(950px,100%);max-height:85vh;overflow:auto}.rjc-dialog h2{margin:0;font-size:19px}.rjc-top{display:flex;justify-content:space-between;align-items:center;gap:15px}.rjc-issue{border:1px solid #dfb26a;padding:12px;border-radius:12px;margin:10px 0;font-size:13px;line-height:1.5}.rjc a{color:var(--guinda,#861e45)}@media(max-width:600px){.rjc-body{padding:12px}.rjc-bar>*{flex:1 1 40%}.rjc-dialog{padding:14px}.rjc th,.rjc td{padding:10px}}';
+ function explain(e){return ({AUTH_REQUIRED:'Vuelve a iniciar sesión.',ADMIN_DENIED:'Tu cuenta no tiene acceso a Reportes JC.',CONTEXT_CHANGED:'La sesión o sus permisos cambiaron. Consulta nuevamente.',SOURCE_UNAVAILABLE:'No fue posible consultar las fuentes. Reintenta sin cambiar los filtros.',GOOGLE_NOT_CONFIGURED:'La conexión de lectura de Google no está disponible.',EXPORT_BLOCKED:'Hay registros pendientes de resolver en este reporte. Revisa las observaciones antes de exportar.'})[e?.message]||'No se completó la operación. '+String(e?.message||'Intenta nuevamente.');}
+ function grid(name,cells){
+  if(name==='Caja de Ahorro Voluntario')return {columns:['B','C','D','E','F','G','H'],headers:['Ingresos','Solicitudes de retiro','Depósitos','Reembolsos','Cambios de monto','Bajas','Atenciones'],rows:months.map((label,i)=>({row:i+4,label,month:i+1})).concat({row:16,label:'Total anual'})};
+  if(name==='DtosViaNomina Mes')return {columns:['C','D','E'],headers:['Descuentos','Reembolsos','Atenciones'],rows:rhRows.map((label,i)=>({row:i+6,label})).concat({row:21,label:'Total del mes'})};
+  if(name==='Préstamos Mes')return {columns:['B','C','D','E'],headers:['Aprobadas','Rechazadas','Depósitos','Atenciones'],rows:loanRows.map((label,i)=>({row:i+6,label})).filter(r=>r.label).concat({row:11,label:'Total del mes'})};
+  if(name==='ValesyMembresias Mes')return {columns:['B','C','D','E'],headers:['Aprobadas','Rechazadas','Depósitos','Atenciones'],rows:Array.from({length:12},(_,i)=>({row:i+6,label:providers[i]||value(cells['A'+(i+6)])||''})).filter(r=>r.label).concat({row:18,label:'Total del mes'})};
+  return {columns:['B','C','D','E'],headers:name==='DtosViaNomina Concentrado'?['Descuentos','Jubilados y pensionados','Reembolsos','Atenciones']:['Aprobadas','Rechazadas','Depósitos','Atenciones'],rows:months.map((label,i)=>({row:i+6,label,month:i+1})).concat({row:18,label:'Total anual'})};
+ }
+ const value=c=>c&&typeof c==='object'?c.value:c;
+ function Detail({detail,report,onClose}){
+  const ref=useRef(null),[page,setPage]=useState(0),ids=detail.cell?.sourceIds||[],byId=new Map((report.records||[]).map(r=>[r.id,r])),records=ids.map(id=>byId.get(id)).filter(Boolean);
+  useEffect(()=>{const previous=document.activeElement;ref.current?.focus();const key=e=>{if(e.key==='Escape')onClose();if(e.key==='Tab'){const list=ref.current?.querySelectorAll('button:not(:disabled),a[href],input,select,[tabindex="0"]');if(!list?.length)return;const first=list[0],last=list[list.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};document.addEventListener('keydown',key);return()=>{document.removeEventListener('keydown',key);previous?.focus();};},[]);
+  return h('div',{className:'rjc-modal',onMouseDown:e=>{if(e.target===e.currentTarget)onClose();}},h('section',{className:'rjc-dialog',role:'dialog','aria-modal':true,'aria-labelledby':'rjc-detail-title',tabIndex:-1,ref},
+   h('div',{className:'rjc-top'},h('h2',{id:'rjc-detail-title'},detail.label+' · '+detail.address),h('button',{className:'rjc-btn',onClick:onClose,'aria-label':'Cerrar detalle'},'Cerrar')),
+   h('p',{className:'rjc-note'},detail.sheet+' · '+report.year+' · Total: '+(value(detail.cell)??'Sin determinar')),
+   h('p',{className:'rjc-note'},detail.cell?.rule||'Consulta de registros de origen.'),
+   h('div',{className:'rjc-table-wrap'},h('table',null,h('thead',null,h('tr',null,['Fuente','Registro','Fecha','Fondo / tipo','Estado'].map(label=>h('th',{key:label},label)))),h('tbody',null,records.slice(page*50,page*50+50).map((r,i)=>h('tr',{key:r.id+':'+i},h('td',null,r.sheet||r.source||r.source_table||'Supabase'),h('td',null,r.row?'Fila '+r.row:r.source_id||r.requestId||r.id),h('td',null,r.date||r.occurred_on||'—'),h('td',null,r.fund||r.kind||'—'),h('td',null,r.status||r.temporalStatus||'—')))))),
+   !records.length&&h('p',{className:'rjc-note'},'No hay registros asociados a este total.'),
+   records.length>50&&h('div',{className:'rjc-actions'},h('button',{className:'rjc-btn',disabled:page===0,onClick:()=>setPage(p=>p-1)},'Anteriores'),h('span',null,(page*50+1)+'–'+Math.min(records.length,(page+1)*50)+' de '+records.length),h('button',{className:'rjc-btn',disabled:(page+1)*50>=records.length,onClick:()=>setPage(p=>p+1)},'Siguientes'))));
+ }
+ function ReportsJcAdmin({app,onBack,header}){
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),nowYear=Number(today.slice(0,4)),nowMonth=Number(today.slice(5,7));
+  const [year,setYear]=useState(nowYear),[draftYear,setDraftYear]=useState(String(nowYear)),[month,setMonth]=useState(nowMonth),[mode,setMode]=useState('month'),[tab,setTab]=useState(names[0]),[revision,setRevision]=useState(0);
+  const [state,setState]=useState({loading:true,data:null,error:null}),[detail,setDetail]=useState(null),[exporting,setExporting]=useState(false),[notice,setNotice]=useState(''),[regularization,setRegularization]=useState(null);
+  const regularizationDirty=useRef(false),regularizationChanged=useRef(false);
+  const sequence=useRef(0),exportSequence=useRef(0);
+  let subject;try{subject=window.ReportsJcRepository.contextKey();}catch(_){subject='denied';}
+  useEffect(()=>{setRegularization(null);regularizationDirty.current=false;regularizationChanged.current=false;},[subject]);
+  useEffect(()=>{const id=++sequence.current;exportSequence.current++;setDetail(null);setNotice('');setState({loading:true,data:null,error:null});window.ReportsJcRepository.load(year).then(data=>{if(id===sequence.current)setState({loading:false,data,error:null});}).catch(error=>{if(id===sequence.current)setState({loading:false,data:null,error});});return()=>{sequence.current++;exportSequence.current++;};},[year,revision,subject]);
+  async function exportFile(){if(exporting||!state.data)return;const report=state.data,id=++exportSequence.current,selectedMonth=month,selectedMode=mode;setExporting(true);setNotice('');try{const key=window.ReportsJcRepository.contextKey(),template=await window.ReportsJcRepository.template();const exporter=window.SutiReportsJcExport;if(!exporter)throw Error('EXPORT_UNAVAILABLE');const options={templateBase64:template.base64,report,year:report.year,month:selectedMonth};const bytes=selectedMode==='year'?await exporter.buildYearZip(options):await exporter.buildWorkbook(options);if(id!==exportSequence.current||window.ReportsJcRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');const file='Reporte_JC_'+report.year+(selectedMode==='year'?'':'-'+String(selectedMonth).padStart(2,'0'))+(selectedMode==='year'?'.zip':'.xlsx');exporter.download(bytes,file,selectedMode==='year'?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');setNotice('Archivo generado: '+file);}catch(error){setNotice(explain(error));}finally{setExporting(false);}}
+  const report=state.data,sheet=report?.sheets?.[tab],isMonth=/ Mes$/.test(tab),cells=(isMonth?sheet?.months?.[month]?.cells:sheet?.cells)||{},layout=grid(tab,cells);
+  const annualIssues=[...new Map((report?.issues||[]).filter(item=>item.severity==='error').map(item=>[JSON.stringify([item.code,item.sourceIds,item.months]),item])).values()];
+  function closeRegularization(){if(regularizationDirty.current&&!window.confirm('Hay una captura sin guardar. ¿Quieres descartarla?'))return;setRegularization(null);regularizationDirty.current=false;if(regularizationChanged.current)setRevision(n=>n+1);regularizationChanged.current=false;}
+  const issues=[...new Map([...(report?.issues||[]),...(sheet?.issues||[]),...(isMonth?sheet?.months?.[month]?.issues||[]:[])].filter(item=>(!item.sheets?.length||item.sheets.includes(tab))&&(!isMonth||!item.months?.length||item.months.includes(month))).map(item=>[JSON.stringify([item.code,item.sourceIds,item.months,item.message]),item])).values()];
+  const head=header?header({title:'Reportes JC',sub:'Secretaría de Finanzas · cantidades de casos y operaciones',onBack}):h('header',{className:'rjc-top'},h('h1',null,'Reportes JC'),h('button',{className:'rjc-btn',onClick:onBack},'Volver'));
+  if(regularization)return h('div',{className:'rjc','data-reports-jc-regularization':true},h('style',null,css),h('div',{className:'rjc-body'},h('div',{className:'rjc-top'},h('h2',null,'Caja de Ahorro · Regularización de '+year),h('button',{className:'rjc-btn',onClick:closeRegularization},'Volver a Reportes JC')),h('p',{className:'rjc-note'},'Estás utilizando la misma captura de Caja de Ahorro. Al volver se actualizarán los reportes si guardaste cambios.'),window.SavingsRefundsAdmin?h(window.SavingsRefundsAdmin,{app,initialYear:year,focusSourceIds:regularization.sourceIds||[],onDirty:value=>{regularizationDirty.current=value;},onSaved:()=>{regularizationChanged.current=true;}}):h('p',{role:'alert',className:'rjc-error'},'No se pudo cargar Caja de Ahorro. Actualiza la aplicación.')));
+  return h('div',{className:'rjc','data-reports-jc':true},h('style',null,css),head,h('div',{className:'rjc-body'},
+   h('form',{className:'rjc-bar',onSubmit:e=>{e.preventDefault();const next=Number(draftYear);if(!Number.isInteger(next)||next<2000||next>2100)return;setYear(next);setRevision(r=>r+1);}},
+    h('label',null,'Año',h('input',{type:'number',min:2000,max:2100,required:true,disabled:exporting,value:draftYear,onChange:e=>setDraftYear(e.target.value),'aria-label':'Año del reporte'})),
+    h('label',null,'Exportación',h('select',{value:mode,disabled:exporting,onChange:e=>{exportSequence.current++;setNotice('');setMode(e.target.value);}},h('option',{value:'month'},'Un mes · Excel'),h('option',{value:'year'},'Todo el año · 12 archivos'))),
+    h('label',null,'Mes de consulta',h('select',{value:month,disabled:exporting,onChange:e=>{exportSequence.current++;setNotice('');setMonth(Number(e.target.value));setDetail(null);}},months.map((label,i)=>h('option',{key:label,value:i+1},label)))),
+    h('button',{className:'rjc-btn',type:'submit',disabled:state.loading||exporting},state.loading?'Consultando…':'Actualizar'),
+    h('button',{className:'rjc-btn primary',type:'button',onClick:exportFile,disabled:!report||state.loading||exporting},exporting?'Generando…':mode==='year'?'Exportar año':'Exportar mes')),
+   h('p',{className:'rjc-note'},'Los concentrados muestran los doce meses del año. Las hojas «Mes» usan el mes elegido. La descarga conserva las 17 pestañas de la plantilla y actualiza las ocho incluidas.'),
+   report&&h('div',{className:annualIssues.length?'rjc-issue':'rjc-note','data-report-readiness':true},h('strong',null,annualIssues.length?'Pendientes para exportar el libro completo':'Sin incidencias bloqueantes en las fuentes consultadas'),annualIssues.length>0&&h('p',null,'También deben resolverse los pendientes de los concentrados anuales, aunque correspondan a otro mes.'),annualIssues.map((issue,i)=>h('div',{key:i},h('p',null,issue.message||issue.code,' · Periodo: ',issue.months?.length?issue.months.map(m=>months[m-1]).join(', ')+' de '+year:'Año '+year,' · Hojas: ',(issue.sheets||[]).join(', '),issue.count?' · '+issue.count+' caso(s)':''),Array.isArray(issue.sourceIds)&&issue.sourceIds.length>0&&h('details',null,h('summary',null,'Identificadores de los registros pendientes'),h('p',null,issue.sourceIds.join(', '))),/^(REFUND_|HISTORICAL_TERMINATION_)/.test(issue.code)&&h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:issue.sourceIds||[]})},'Resolver en Caja de Ahorro'))),h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:[]})},'Revisar históricos de Caja de Ahorro')),
+   notice&&h('p',{role:'status',className:'rjc-note'},notice),state.error&&h('p',{role:'alert',className:'rjc-error'},explain(state.error)),
+   state.loading&&h('p',{role:'status',className:'rjc-note'},'Consultando solicitudes, descuentos y movimientos de Ahorro…'),
+   report&&h(React.Fragment,null,h('p',{className:'rjc-note'},'Consulta de '+report.year+' · Actualizada: '+new Date(report.consultedAt).toLocaleString('es-MX',{timeZone:'America/Hermosillo'})+' · Selecciona una cifra para ver de dónde se obtiene.'),
+    report.summary&&h('div',{className:'rjc-bar','aria-label':'Solicitudes recibidas'},Object.entries({received:'Recibidas',approved:'Aprobadas',rejected:'Rechazadas o canceladas',pending:'Pendientes',unknown:'Sin estado definido'}).map(([key,label])=>h('div',{key},h('strong',null,(mode==='year'?report.summary:report.summary.months?.[month])?.[key]??'—'),h('div',{className:'rjc-note'},label))),h('p',{className:'rjc-note'},mode==='year'?'Todas las solicitudes recibidas en el año.':'Todas las solicitudes recibidas en '+months[month-1]+', incluyendo las pendientes.')),
+    h('nav',{className:'rjc-tabs',role:'tablist','aria-label':'Hojas del reporte'},names.map(name=>h('button',{key:name,role:'tab','aria-selected':tab===name,className:'rjc-btn',onClick:()=>{setTab(name);setDetail(null);}},name))),
+    issues.length>0&&h('details',{className:'rjc-issue'},h('summary',null,issues.length+' observación(es) de los registros de origen'),issues.map((issue,i)=>h('p',{key:i},issue.message||issue.detail||issue.code||String(issue)))),
+    h('div',{className:'rjc-table-wrap'},h('table',{'aria-label':tab},h('thead',null,h('tr',null,h('th',null,isMonth?'Concepto':'Mes'),layout.headers.map(label=>h('th',{key:label},label)))),h('tbody',null,layout.rows.map(row=>h('tr',{key:row.row,'data-selected':row.month===month},h('th',{scope:'row'},row.label),layout.columns.map(column=>{const address=column+row.row,cell=cells[address],n=value(cell);return h('td',{key:column},typeof n==='number'?h('button',{className:'rjc-cell','aria-label':row.label+', '+layout.headers[layout.columns.indexOf(column)]+': '+n+'. Ver detalle',onClick:()=>setDetail({sheet:tab,address,cell,label:row.label})},n):h('span',null,n===null?'Por determinar':'—'));})))))),
+    h('p',{className:'rjc-note'},'Las atenciones suman operaciones; una persona puede aparecer en más de un trámite. Los descuentos futuros son programados. Los reembolsos cuentan una vez al quedar completamente pagados.'),
+    detail&&h(Detail,{key:tab+detail.address,detail,report,onClose:()=>setDetail(null)}))));
+ }
+ window.ReportsJcAdminModule=ReportsJcAdmin;
+})();
+})();
+/* @@file savings-refunds-repository.js */
+(function(){
+/* Canonical refund cases, with context-bound reads and idempotent commands. */
+(function(){
+ 'use strict';
+ function context(){
+  const auth=window.AffiliateAuth?.getState(),admin=window.AdminRepository?.getState();
+  if(auth?.phase!=='authenticated'||!auth.session?.user?.id)throw Error('AUTH_REQUIRED');
+  let session=auth.session.session_id||'';
+  if(!session&&auth.session.access_token){try{session=JSON.parse(atob(auth.session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).session_id||'';}catch(_){}}
+  return JSON.stringify([auth.session.user.id,session,auth.affiliate?.id,auth.impersonation,admin?.phase,admin?.subjectKey,admin?.assignment]);
+ }
+ async function rpc(name,args){const key=context(),{data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(context()!==key)throw Error('CONTEXT_CHANGED');if(error)throw error;return data;}
+ window.SavingsRefundsRepository=Object.freeze({
+  contextKey:context,
+  list:values=>rpc('get_admin_savings_refunds',{p_case_id:values?.case_id||null,p_folio:values?.folio||null}),
+  people:values=>rpc('get_admin_savings_refund_people',{p_search:values?.search||''}),
+  regularization:values=>rpc('get_admin_savings_regularization',{p_year:values?.year,p_folio:values?.folio||null}),
+  save:(command,key)=>{if(!key)throw Error('IDEMPOTENCY_KEY_REQUIRED');return rpc('save_admin_savings_refund',{p_command:command,p_client_action_id:key});},
+  saveTermination:(command,key)=>{if(!key)throw Error('IDEMPOTENCY_KEY_REQUIRED');return rpc('save_admin_savings_termination',{p_command:command,p_client_action_id:key});}
+ });
+})();
+})();
+/* @@file savings-refunds-admin.jsx */
+(function(){
+/* Refund records belong to Caja de Ahorro. Recording a payment never executes a bank transfer. */
+(function(){
+ 'use strict';
+ const h=React.createElement,{useState,useEffect,useRef}=React;
+ const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(n||0));
+ const labels={DRAFT:'En captura',SUBMITTED:'Por autorizar',APPROVED:'Autorizado',PARTIAL:'Pago parcial',PAID:'Reembolsado',REJECTED:'Rechazado',CANCELLED:'Cancelado'};
+ const causes={POST_TERMINATION:'Descuento posterior a la baja · nómina enviada previamente',DUPLICATE_DISCOUNT:'Descuento duplicado',OTHER:'Otro motivo documentado'};
+ const treatments={NOT_CREDITED:'El exceso no se acreditó al ahorro',ALREADY_EXCLUDED:'El exceso ya está excluido del ahorro',EXISTING_ADJUSTMENT:'Existe una corrección vinculada'};
+ const css='.srf{color:var(--ink);min-width:0}.srf-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:12px 0}.srf button{font:inherit;cursor:pointer}.srf-btn{border:1px solid var(--hairline);border-radius:10px;padding:10px 14px;background:var(--surface);color:var(--ink);font-weight:800}.srf-btn.primary{background:var(--guinda,#861e45);color:white}.srf button:disabled{opacity:.5;cursor:default}.srf label{display:grid;gap:6px;font-size:12px;font-weight:800}.srf input,.srf select,.srf textarea{min-width:0;width:100%;box-sizing:border-box;border:1px solid var(--hairline-strong);border-radius:9px;padding:10px;background:var(--surface);color:var(--ink);font:inherit}.srf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.srf-card{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin:12px 0}.srf-note{font-size:13px;line-height:1.6;color:var(--ink-2)}.srf-error{background:#fff0ed;color:#9b241b;border-radius:10px;padding:12px}.srf-state{border-radius:30px;padding:5px 10px;background:var(--surface-2);font-size:12px;font-weight:800}.srf-table{overflow:auto}.srf table{border-collapse:collapse;width:100%;font-size:13px}.srf th,.srf td{text-align:left;padding:10px;border-bottom:1px solid var(--hairline);vertical-align:top}.srf-wide{grid-column:1/-1}.srf details{margin-top:12px}.srf fieldset{border:1px solid var(--hairline);border-radius:12px;margin:15px 0;padding:14px}.srf legend{font-weight:800}.srf h3{margin:4px 0 12px}';
+ const blank=()=>({source_reference:'',deduction_on:'',sent_to_rh_on:'',sent_to_rh_unknown_reason:'',rh_unknown:false,historical_payroll_code:'',historical_payroll_reference:'',expected_amount:'0',actual_amount:'',confirmed_on:'',confirmation_reference:'',balance_treatment:'',balance_note:'',adjustment_id:''});
+ const blankPayment=()=>({amount:'',paid_on:'',bank_reference:'',reason:''});
+ const cents=value=>Math.round(Number(value||0)*100);
+ const effectivePayments=entry=>(entry.payments||[]).filter(p=>!p.is_superseded);
+ const captured=value=>value?new Date(value).toLocaleString('es-MX',{timeZone:'America/Hermosillo'}):'Sin fecha de captura disponible';
+ function explainHistorical(error){const messages={SAVINGS_REFUND_PAYROLL_EVIDENCE_REQUIRED:'Falta documentar el tipo de nómina que correspondía a esa quincena histórica.',SAVINGS_REFUND_PAYROLL_EVIDENCE_INVALID:'Selecciona el tipo de nómina de la quincena y su referencia documental.',SAVINGS_REFUND_PAYROLL_EVIDENCE_CONFLICT:'El tipo de nómina indicado no coincide con la inscripción vigente en esa quincena. Revisa el antecedente.',SAVINGS_REFUND_RH_DATE_REQUIRED:'Registra la fecha de envío a RH o explica por qué no se conserva en este antecedente histórico.',SAVINGS_REFUND_HISTORICAL_PAYMENTS_REQUIRED:'Registra los pagos que acreditan la devolución histórica completa.',SAVINGS_REFUND_EFFECTIVE_PAYMENT_REQUIRED:'Este pago ya tiene una corrección. Actualiza el expediente y revisa el registro vigente.',SAVINGS_REFUND_DISCOUNT_HISTORY_REQUIRED:'Documenta el descuento real, su fecha y el respaldo del antecedente.'};return messages[error?.message]||explain(error);}
+ function explain(error){const code=String(error?.message||'');const meanings={CONTEXT_CHANGED:'La sesión cambió. Consulta nuevamente.',AUTH_REQUIRED:'Vuelve a iniciar sesión.',SAVINGS_REFUND_VERSION_CONFLICT:'Otra persona actualizó el expediente. Actualiza la consulta antes de continuar.',SAVINGS_REFUND_DISCOUNT_ALREADY_CLAIMED:'Ese descuento ya está vinculado a otro expediente.',SAVINGS_REFUND_DUPLICATE_DISCOUNT:'La referencia del descuento está repetida.',SAVINGS_REFUND_PAYMENT_ALREADY_RECORDED:'Este comprobante ya tiene un pago registrado en el expediente.',SAVINGS_REFUND_PAYMENT_EXCEEDED:'El importe supera el saldo pendiente de devolución.',SAVINGS_REFUND_FULL_EXCESS_REQUIRED:'La autorizaci\u00f3n debe cubrir todo el exceso confirmado.',SAVINGS_REFUND_EXCESS_EXCEEDED:'El importe autorizado supera el exceso confirmado.',SAVINGS_REFUND_CONFIRM_DISCOUNTS_FIRST:'Confirma los descuentos efectivamente realizados antes de autorizar.',SAVINGS_REFUND_DENIED:'Tu cuenta no tiene permiso para esta acción.',SAVINGS_REFUND_AMOUNT_INVALID:'Revisa los importes; utiliza como máximo dos decimales.',SAVINGS_REFUND_PAYMENT_DATE_INVALID:'Revisa la fecha real de la devolución y las fechas de sus descuentos.',SAVINGS_REFUND_DISCOUNT_DATE_INVALID:'Revisa las fechas del descuento, envío a RH y confirmación.',SAVINGS_REFUND_EXACT_IDENTITY_REQUIRED:'Selecciona una cuenta de ahorro identificada por su número de control.',SAVINGS_REFUND_ADJUSTMENT_INVALID:'La corrección vinculada no corresponde a este ahorro o ya fue utilizada.',SAVINGS_REFUND_STATE_INVALID:'El estado actual del expediente no permite esta acción. Actualiza la consulta.',SAVINGS_REFUND_PERIOD_INVALID:'Selecciona un mes anterior para confirmar su histórico.'};return meanings[code]||'No se pudo completar la operación. '+code;}
+ function Field({label,value,onChange,type='text',required=false,...rest}){return h('label',null,label,h('input',{type,value:value??'',onChange:e=>onChange(e.target.value),required,...rest}));}
+ function RefundEditor({entry,historical=false,today,onSave,onCancel,busy,onDirty}){
+  const [reason,setReason]=useState(entry?.reason||''),[cause,setCause]=useState(entry?.cause||'POST_TERMINATION'),[deductions,setDeductions]=useState(()=>entry?.deductions?.length?entry.deductions.map(d=>({...d,actual_amount:d.actual_amount??'',adjustment_id:d.adjustment_id||'',confirmed_on:d.confirmed_on||'',confirmation_reference:d.confirmation_reference||''})):[blank()]);
+  const [search,setSearch]=useState(''),[people,setPeople]=useState([]),[person,setPerson]=useState(entry?{participant_id:entry.participant_id,folio:entry.numero_control}:null),[searchBusy,setSearchBusy]=useState(false),[error,setError]=useState(''),[payments,setPayments]=useState(()=>[blankPayment()]);const sequence=useRef(0);
+  useEffect(()=>()=>{sequence.current++;},[]);
+  const change=(setter,val)=>{onDirty?.(true);setter(val);};
+  const edit=(i,key,val)=>{onDirty?.(true);setDeductions(ds=>ds.map((d,j)=>i===j?{...d,[key]:val}:d));};
+  async function find(){if(searchBusy||!search.trim())return;const seq=++sequence.current;setSearchBusy(true);setError('');try{const result=await window.SavingsRefundsRepository.people({search:search.trim()});if(seq===sequence.current)setPeople((result.rows||[]).filter(p=>p.participant_id&&!p.identity_conflict&&(historical||!p.is_archived)));}catch(e){if(seq===sequence.current)setError(explain(e));}finally{if(seq===sequence.current)setSearchBusy(false);}}
+  function submit(e){e.preventDefault();setError('');if(!person?.participant_id){setError('Selecciona a la persona de su cuenta de ahorro.');return;}
+   const items=deductions.map(d=>({source_reference:d.source_reference.trim(),deduction_on:d.deduction_on,sent_to_rh_on:historical&&d.rh_unknown?null:d.sent_to_rh_on,...(historical&&d.rh_unknown?{sent_to_rh_unknown_reason:d.sent_to_rh_unknown_reason}:{}),...(historical?{historical_payroll_code:Number(d.historical_payroll_code),historical_payroll_reference:d.historical_payroll_reference}:{}),expected_amount:Number(d.expected_amount),actual_amount:d.actual_amount===''?null:Number(d.actual_amount),confirmed_on:d.actual_amount===''?null:d.confirmed_on,confirmation_reference:d.actual_amount===''?null:d.confirmation_reference,balance_treatment:d.balance_treatment,balance_note:d.balance_note,adjustment_id:d.adjustment_id||null}));
+   const paid=payments.map(p=>({...p,amount:Number(p.amount),bank_reference:p.bank_reference.trim()}));
+   if(historical&&(items.some(d=>d.actual_amount===null)||paid.reduce((n,p)=>n+cents(p.amount),0)!==items.reduce((n,d)=>n+Math.max(0,cents(d.actual_amount)-cents(d.expected_amount)),0))){setError('Las devoluciones registradas deben cubrir exactamente el exceso confirmado de todas las quincenas.');return;}
+   onSave({kind:historical?'REGISTER_HISTORICAL':entry?'SAVE':'CREATE',...(entry?{case_id:entry.id,expected_version:entry.version}:{}),participant_id:person.participant_id,reason,cause,deductions:items,...(historical?{payments:paid}:{})});
+  }
+  return h('form',{className:'srf-card',onSubmit:submit},h('h3',null,historical?'Registrar reembolso histórico ya pagado':entry?'Editar expediente':'Nuevo expediente de reembolso'),
+   historical&&h('p',{className:'srf-note'},'Captura devoluciones que ya se realizaron, aunque sean de años anteriores. Las fechas reales se conservan; la validación y la captura se registran hoy. Esta acción no realiza una transferencia ni altera el saldo.'),
+   !entry&&h('div',{className:'srf-card'},h('div',{className:'srf-bar'},h(Field,{label:'Buscar por número de control o nombre',value:search,onChange:v=>change(setSearch,v)}),h('button',{className:'srf-btn',type:'button',disabled:searchBusy,onClick:find},searchBusy?'Buscando…':'Buscar ahorrador')),
+    people.map(p=>h('button',{type:'button',className:'srf-btn',key:p.participant_id,onClick:()=>{change(setPerson,p);setPeople([]);}},(p.nombre||p.name||'Ahorrador')+' · '+p.folio+(p.is_archived?' · Afiliado archivado':'')))),
+   person&&h('p',{className:'srf-note'},'Número de control: '+(person.folio||person.numero_control)),
+   person?.is_archived&&h('p',{className:'srf-note'},'El vínculo se usa para documentar su antecedente. No reactiva su afiliación ni su ahorro.'),
+   h('div',{className:'srf-grid'},h('label',null,'Motivo del caso',h('select',{value:cause,onChange:e=>change(setCause,e.target.value)},Object.entries(causes).map(([v,l])=>h('option',{key:v,value:v},l)))),h('label',null,'Justificación',h('textarea',{required:true,minLength:8,maxLength:1000,rows:3,value:reason,onChange:e=>change(setReason,e.target.value)}))),
+   deductions.map((d,i)=>h('fieldset',{key:i},h('legend',null,'Descuento / quincena '+(i+1)),h('div',{className:'srf-grid'},
+    h(Field,{label:'Referencia única del descuento o recibo',value:d.source_reference,onChange:v=>edit(i,'source_reference',v),required:true,maxLength:180,readOnly:Boolean(entry)}),
+    h(Field,{label:'Fecha del descuento / quincena',type:'date',value:d.deduction_on,onChange:v=>edit(i,'deduction_on',v),required:true,...(historical?{max:today}:{})}),
+    !d.rh_unknown&&h(Field,{label:'Fecha en que se envió a RH',type:'date',value:d.sent_to_rh_on,onChange:v=>edit(i,'sent_to_rh_on',v),required:true}),
+    historical&&h('label',{className:'srf-note',style:{display:'flex',alignItems:'center',gap:10}},h('input',{type:'checkbox',checked:Boolean(d.rh_unknown),onChange:e=>edit(i,'rh_unknown',e.target.checked),style:{width:'auto'}}),'No se conserva la fecha del envío histórico a RH'),
+    historical&&d.rh_unknown&&h(Field,{label:'Explicación de la fecha de envío a RH desconocida',value:d.sent_to_rh_unknown_reason,onChange:v=>edit(i,'sent_to_rh_unknown_reason',v),required:true,minLength:3,maxLength:1000}),
+    historical&&h('label',null,'Tipo de nómina de esta quincena',h('select',{required:true,value:d.historical_payroll_code,onChange:e=>edit(i,'historical_payroll_code',e.target.value)},h('option',{value:''},'Selecciona el tipo documentado'),h('option',{value:'573'},'Personal activo · 573'),h('option',{value:'580'},'Jubilados y pensionados · 580'))),
+    historical&&h(Field,{label:'Referencia que acredita el tipo de nómina',value:d.historical_payroll_reference,onChange:v=>edit(i,'historical_payroll_reference',v),required:true,minLength:3,maxLength:180}),
+    h(Field,{label:'Importe que correspondía descontar',type:'number',step:'.01',min:'0',value:d.expected_amount,onChange:v=>edit(i,'expected_amount',v),required:true}),
+    h(Field,{label:historical?'Importe realmente descontado':'Importe realmente descontado (vacío si es futuro)',type:'number',step:'.01',min:'0',value:d.actual_amount,onChange:v=>edit(i,'actual_amount',v),required:historical}),
+    d.actual_amount!==''&&h(Field,{label:'Fecha de confirmación del descuento',type:'date',value:d.confirmed_on,onChange:v=>edit(i,'confirmed_on',v),required:true}),
+    d.actual_amount!==''&&h(Field,{label:'Referencia que acredita el descuento',value:d.confirmation_reference,onChange:v=>edit(i,'confirmation_reference',v),required:true,maxLength:180}),
+    h('label',null,'Tratamiento del importe en el ahorro',h('select',{required:true,value:d.balance_treatment,onChange:e=>edit(i,'balance_treatment',e.target.value)},h('option',{value:''},'Selecciona el tratamiento'),Object.entries(treatments).map(([v,l])=>h('option',{key:v,value:v},l)))),
+    d.balance_treatment==='EXISTING_ADJUSTMENT'&&h(Field,{label:'Identificador de la corrección existente',value:d.adjustment_id,onChange:v=>edit(i,'adjustment_id',v),required:true}),
+    h(Field,{label:'Explicación del tratamiento del saldo',value:d.balance_note,onChange:v=>edit(i,'balance_note',v),required:true,maxLength:1000})),
+    !entry&&deductions.length>1&&h('button',{type:'button',className:'srf-btn',onClick:()=>change(setDeductions,deductions.filter((_,j)=>j!==i))},'Quitar esta quincena'))),
+   h('p',{className:'srf-note'},'Este expediente conserva el descuento y su devolución. Registrar un reembolso no vuelve a descontar el dinero del saldo de ahorro.'),
+   !entry&&h('button',{type:'button',className:'srf-btn',onClick:()=>change(setDeductions,[...deductions,blank()])},'Agregar otra quincena'),
+   historical&&h(React.Fragment,null,h('h4',null,'Devoluciones ya realizadas'),payments.map((p,i)=>h('fieldset',{key:i,'data-refund-payment-editor':true},h('legend',null,'Pago histórico '+(i+1)),h('div',{className:'srf-grid'},
+    h(Field,{label:'Importe devuelto',type:'number',step:'.01',min:'.01',value:p.amount,onChange:v=>change(setPayments,payments.map((x,j)=>i===j?{...x,amount:v}:x)),required:true}),
+    h(Field,{label:'Fecha real de la devolución',type:'date',max:today,value:p.paid_on,onChange:v=>change(setPayments,payments.map((x,j)=>i===j?{...x,paid_on:v}:x)),required:true}),
+    h(Field,{label:'Referencia bancaria o comprobante del pago',value:p.bank_reference,onChange:v=>change(setPayments,payments.map((x,j)=>i===j?{...x,bank_reference:v}:x)),required:true,maxLength:180}),
+    h(Field,{label:'Justificación del pago histórico',value:p.reason,onChange:v=>change(setPayments,payments.map((x,j)=>i===j?{...x,reason:v}:x)),required:true,minLength:8,maxLength:1000})),payments.length>1&&h('button',{className:'srf-btn',type:'button',onClick:()=>change(setPayments,payments.filter((_,j)=>j!==i))},'Quitar este pago'))),
+    h('button',{className:'srf-btn',type:'button',onClick:()=>change(setPayments,[...payments,blankPayment()])},'Agregar otro pago histórico'),
+    h('p',{className:'srf-note','aria-live':'polite'},'Exceso confirmado: '+money(deductions.reduce((n,d)=>n+Math.max(0,cents(d.actual_amount)-cents(d.expected_amount)),0)/100)+' · Devoluciones registradas: '+money(payments.reduce((n,p)=>n+cents(p.amount),0)/100)+'. El reporte contará un caso en el mes del último pago que lo completó.')),
+   error&&h('p',{role:'alert',className:'srf-error'},error),h('div',{className:'srf-bar'},h('button',{type:'button',className:'srf-btn',disabled:busy,onClick:onCancel},'Cancelar captura'),h('button',{type:'submit',className:'srf-btn primary',disabled:busy},busy?'Guardando…':historical?'Guardar histórico ya pagado':'Guardar expediente')));
+ }
+ function ActionForm({entry,kind,payment,today,onSave,onCancel,busy,onDirty}){
+  const isPayment=['PAY','CORRECT_PAYMENT'].includes(kind);
+  const [reason,setReason]=useState(''),[amount,setAmount]=useState(payment?String(payment.amount):kind==='APPROVE'?((entry.deductions||[]).reduce((n,d)=>n+Math.max(0,Math.round(Number(d.actual_amount||0)*100)-Math.round(Number(d.expected_amount||0)*100)),0)/100).toFixed(2):String(entry.pending_amount||'')),[date,setDate]=useState(payment?.paid_on||''),[reference,setReference]=useState(payment?.bank_reference||'');
+  const title={APPROVE:'Autorizar reembolso',PAY:'Registrar devolución realizada',CORRECT_PAYMENT:'Guardar corrección del pago',SUBMIT:'Enviar a revisión',REJECT:'Rechazar expediente',CANCEL:'Cancelar expediente'}[kind];
+  const change=(setter,value)=>{onDirty?.(true);setter(value);};
+  return h('form',{className:'srf-card',onSubmit:e=>{e.preventDefault();onSave({kind,case_id:entry.id,expected_version:entry.version,reason,...(kind==='APPROVE'?{authorized_amount:Number(amount)}:{}),...(isPayment?{amount:Number(amount),paid_on:date,bank_reference:reference}:{}),...(kind==='CORRECT_PAYMENT'?{payment_id:payment.id}:{})});}},h('h3',null,title),
+   h('div',{className:'srf-grid'},(isPayment||kind==='APPROVE')&&h(Field,{label:isPayment?'Importe devuelto':'Importe autorizado',value:amount,onChange:v=>change(setAmount,v),readOnly:kind==='APPROVE',type:'number',min:'.01',step:'.01',required:true}),
+    isPayment&&h(Field,{label:'Fecha real de la devolución',value:date,onChange:v=>change(setDate,v),type:'date',max:today,required:true}),isPayment&&h(Field,{label:'Referencia bancaria o comprobante del pago',value:reference,onChange:v=>change(setReference,v),required:true,maxLength:180}),
+    h('label',null,kind==='CORRECT_PAYMENT'?'Motivo de la corrección':'Justificación'+(kind==='PAY'?' y explicación si es una devolución anterior':''),h('textarea',{required:true,minLength:8,maxLength:1000,rows:3,value:reason,onChange:e=>change(setReason,e.target.value)}))),
+   kind==='APPROVE'&&h('p',{className:'srf-note'},'Se autoriza el exceso confirmado completo. Puedes registrar la devolución en varios pagos; el caso se concluye cuando se devuelve todo el importe.'),
+   kind==='PAY'&&h('p',{className:'srf-note'},'Registra únicamente dinero que ya se devolvió. La fecha del pago se conserva separada de la fecha de captura.'),
+   kind==='CORRECT_PAYMENT'&&h('p',{className:'srf-note'},'Se conserva el pago anterior y se agrega una corrección con tu motivo y la fecha actual. Se revisarán nuevamente los meses afectados. Corregir el registro no realiza ni revierte una transferencia.'),
+   h('div',{className:'srf-bar'},h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:onCancel},'Volver'),h('button',{className:'srf-btn primary',type:'submit',disabled:busy},busy?'Guardando…':title)));
+ }
+ function PayrollCorrectionForm({entry,deduction,onSave,onCancel,busy,onDirty}){
+  const [code,setCode]=useState(String(deduction.effective_historical_payroll_code??deduction.historical_payroll_code??'')),[reference,setReference]=useState(deduction.effective_historical_payroll_reference??deduction.historical_payroll_reference??''),[reason,setReason]=useState('');
+  const change=(setter,value)=>{onDirty?.(true);setter(value);};
+  return h('form',{className:'srf-card','data-refund-payroll-correction':true,onSubmit:e=>{e.preventDefault();onSave({kind:'CORRECT_PAYROLL_EVIDENCE',case_id:entry.id,expected_version:entry.version,deduction_id:deduction.id,historical_payroll_code:Number(code),historical_payroll_reference:reference,reason});}},h('h3',null,'Corregir tipo de nómina'),
+   h('p',{className:'srf-note'},'Quincena '+deduction.deduction_on+' · '+deduction.source_reference+' · Descontado: '+money(deduction.actual_amount)),
+   deduction.payroll_resolution?.conflict&&h('p',{className:'srf-error',role:'alert'},'La inscripción de esta quincena identifica la nómina '+deduction.payroll_resolution.canonical_code+'. Revisa el comprobante y corrige la clasificación documentada.'),
+   h('div',{className:'srf-grid'},h('label',null,'Tipo de nómina de esta quincena',h('select',{required:true,value:code,onChange:e=>change(setCode,e.target.value)},h('option',{value:''},'Selecciona el tipo documentado'),h('option',{value:'573'},'Personal activo · 573'),h('option',{value:'580'},'Jubilados y pensionados · 580'))),
+    h(Field,{label:'Referencia que acredita el tipo de nómina',value:reference,onChange:v=>change(setReference,v),required:true,minLength:3,maxLength:180}),
+    h('label',null,'Motivo de la corrección de nómina',h('textarea',{required:true,minLength:8,maxLength:1000,rows:3,value:reason,onChange:e=>change(setReason,e.target.value)}))),
+   h('p',{className:'srf-note'},'Se conserva la clasificación anterior y se registra esta corrección con su motivo. El tipo documentado debe coincidir con la inscripción que correspondía a esa quincena. Los importes, fechas de descuento y pagos permanecen intactos; el mes del caso concluido requerirá revisión.'),
+   h('div',{className:'srf-bar'},h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:onCancel},'Volver'),h('button',{className:'srf-btn primary',type:'submit',disabled:busy},busy?'Guardando…':'Guardar corrección de nómina')));
+ }
+ function PayrollEvidence({deduction,canCorrect,onCorrect}){
+  const code=deduction.effective_historical_payroll_code??deduction.historical_payroll_code,reference=deduction.effective_historical_payroll_reference??deduction.historical_payroll_reference;
+  return h('div',{className:'srf-card','data-refund-payroll-evidence':true},h('strong',null,'Nómina de la quincena '+deduction.deduction_on),h('p',{className:'srf-note'},deduction.source_reference),
+   h('p',{className:'srf-note'},code?'Clasificación vigente: '+code+' · '+reference:'Sin clasificación histórica documentada.'),
+   deduction.payroll_resolution?.conflict&&h('p',{className:'srf-error',role:'alert'},'La clasificación documentada no coincide con la inscripción de esta quincena, que identifica la nómina '+deduction.payroll_resolution.canonical_code+'. Este caso requiere corregir su tipo de nómina para el reporte.'),
+   canCorrect&&h('button',{className:'srf-btn',onClick:onCorrect},'Corregir tipo de nómina'),
+   h('details',null,h('summary',null,'Historial del tipo de nómina'),h('p',{className:'srf-note'},'Original: '+(deduction.historical_payroll_code??'Sin dato')+' · '+(deduction.historical_payroll_reference||'Sin referencia original')),
+    (deduction.payroll_history||[]).map((version,i)=>h('p',{className:'srf-note',key:version.id||version.version||i},'Versión '+version.version+': '+version.historical_payroll_code+' · '+version.historical_payroll_reference+' · Capturada el '+captured(version.captured_at)+' · '+version.reason))));
+ }
+ function RefundCoverage({periods,onSave,busy,canConfirm,onDirty}){
+  const [period,setPeriod]=useState(''),[reason,setReason]=useState(''),[confirmed,setConfirmed]=useState(false);
+  return h('details',{className:'srf-card'},h('summary',null,'Histórico mensual de reembolsos'),
+   h('p',{className:'srf-note'},'Para informar los meses anteriores, registra primero sus devoluciones. Después confirma que están incluidos todos los casos concluidos de cada mes. Esta confirmación no cambia aportaciones ni saldos.'),
+   (periods||[]).map(p=>h('p',{key:p.period,className:'srf-note'},p.period.slice(0,7)+' · '+(p.invalidated_at||!p.confirmed_at?'Requiere actualización':'Histórico registrado')+' · '+p.confirmed_case_count+' caso(s)')),
+   canConfirm&&h('form',{onSubmit:e=>{e.preventDefault();if(confirmed&&period)onSave({kind:'CONFIRM_PERIOD',period:period+'-01',reason});}},h('div',{className:'srf-grid'},
+    h(Field,{label:'Mes del histórico',type:'month',value:period,onChange:v=>{onDirty?.(true);setPeriod(v);setConfirmed(false);},required:true}),
+    h('label',null,'Referencia o explicación de la revisión',h('textarea',{required:true,minLength:8,maxLength:1000,value:reason,onChange:e=>{onDirty?.(true);setReason(e.target.value);}}))),
+    h('label',{className:'srf-note',style:{display:'flex',alignItems:'center',gap:10}},h('input',{type:'checkbox',required:true,checked:confirmed,onChange:e=>{onDirty?.(true);setConfirmed(e.target.checked);},style:{width:'auto'}}),'Todos los casos de reembolso concluidos de este mes están registrados.'),
+    h('button',{className:'srf-btn',type:'submit',disabled:busy||!confirmed},busy?'Guardando…':'Confirmar histórico del mes')));
+ }
+ function SavingsRefundsAdmin({folio,initialYear,focusSourceIds,onSaved,onDirty}){
+  const [state,setState]=useState({loading:true,data:null,error:null}),[revision,setRevision]=useState(0),[selected,setSelected]=useState(null),[editor,setEditor]=useState(null),[action,setAction]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[filter,setFilter]=useState('ALL'),[query,setQuery]=useState('');
+  const [year,setYear]=useState(initialYear?String(initialYear):''),[month,setMonth]=useState('');
+  const [detail,setDetail]=useState({loading:false,entry:null,error:null});
+  const sequence=useRef(0),detailSequence=useRef(0),pending=useRef(null),dirty=useRef(false),subjectRef=useRef(null);let subject;try{subject=window.SavingsRefundsRepository.contextKey();}catch(_){subject='denied';}subjectRef.current=subject;
+  const markDirty=value=>{dirty.current=value;onDirty?.(value);};
+  const mayLeave=()=>!dirty.current||window.confirm('Hay cambios sin guardar. ¿Deseas descartarlos?');
+  useEffect(()=>{const warn=e=>{if(dirty.current){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[]);
+  useEffect(()=>{const seq=++sequence.current;setState({loading:true,data:null,error:null});window.SavingsRefundsRepository.list({folio}).then(data=>{if(seq===sequence.current)setState({loading:false,data,error:null});}).catch(e=>{if(seq===sequence.current)setState({loading:false,data:null,error:e});});return()=>{sequence.current++;};},[revision,folio,subject]);
+  useEffect(()=>{setEditor(null);setAction(null);setSelected(null);setBusy(false);setError('');pending.current=null;markDirty(false);},[subject,folio]);
+  useEffect(()=>{const seq=++detailSequence.current;setDetail({loading:Boolean(selected),entry:null,error:null});if(selected)window.SavingsRefundsRepository.list({case_id:selected,folio}).then(data=>{if(seq===detailSequence.current)setDetail({loading:false,entry:(data.cases||[]).find(c=>c.id===selected)||null,error:null});}).catch(e=>{if(seq===detailSequence.current)setDetail({loading:false,entry:null,error:e});});return()=>{detailSequence.current++;};},[selected,revision,folio,subject]);
+  async function refresh(){setRevision(r=>r+1);if(onSaved)await onSaved();}
+  async function save(command){if(busy)return;const requestSubject=subject,signature=JSON.stringify(command);if(!pending.current||pending.current.signature!==signature)pending.current={signature,key:crypto.randomUUID()};setBusy(true);setError('');try{const result=await window.SavingsRefundsRepository.save(command,pending.current.key);if(subjectRef.current!==requestSubject)return;pending.current=null;setEditor(null);setAction(null);setSelected(result.case_id||result.id||null);markDirty(false);await refresh();}catch(e){if(subjectRef.current===requestSubject)setError(explainHistorical(e));}finally{if(subjectRef.current===requestSubject)setBusy(false);}}
+  function cancel(){if(busy||!mayLeave())return;setEditor(null);setAction(null);setError('');markDirty(false);}
+  function openEditor(value){if(!mayLeave())return;markDirty(false);setEditor(value);setAction(null);if(!value.id)setSelected(null);}
+  function openAction(value){if(!mayLeave())return;markDirty(false);setAction(value);}
+  function openRefund({period,case_id}={}){if(!mayLeave())return;markDirty(false);if(period){setYear(String(period).slice(0,4));setMonth(String(period).slice(5,7));}setQuery('');setFilter('ALL');setSelected(case_id||null);}
+  const data=state.data,permissions=data?.permissions||{},cases=(data?.cases||[]).map(c=>c.id===selected&&detail.entry?.id===c.id?detail.entry:c),entry=cases.find(c=>c.id===selected),shown=cases.filter(c=>{
+   const dates=[c.paid_at,...effectivePayments(c).map(p=>p.paid_on)].filter(Boolean).map(String),inPeriod=c.status!=='PAID'||!year||dates.some(d=>d.slice(0,4)===year&&(!month||d.slice(5,7)===month));
+   return inPeriod&&(filter==='ALL'||c.status===filter)&&(!query||[c.folio,c.numero_control,c.reason].some(v=>String(v||'').toLowerCase().includes(query.toLowerCase())));
+  }),actionKind=typeof action==='string'?action:action?.kind;
+  return h('section',{className:'srf','data-savings-refunds':true},h('style',null,css),h('div',{className:'srf-bar'},h('div',null,h('h3',null,'Reembolsos'),h('p',{className:'srf-note'},'Descuentos enviados previamente a RH, importes por devolver y casos concluidos.')),permissions.can_write&&h('button',{className:'srf-btn primary',disabled:busy||Boolean(editor)||Boolean(action),onClick:()=>openEditor({})},'Nuevo expediente'),permissions.can_write&&permissions.can_approve&&h('button',{className:'srf-btn',disabled:busy||Boolean(editor)||Boolean(action),onClick:()=>openEditor({historical:true})},'Registrar reembolso histórico ya pagado')),
+   state.loading&&h('p',{role:'status'},'Consultando expedientes…'),state.error&&h('div',{role:'alert',className:'srf-error'},explain(state.error),h('button',{className:'srf-btn',onClick:()=>setRevision(r=>r+1)},'Reintentar')),error&&h('p',{role:'alert',className:'srf-error'},error),
+   editor&&h(RefundEditor,{key:editor.id||(editor.historical?'historical':'new'),entry:editor.id?editor:null,historical:!!editor.historical,today:data?.today,busy,onSave:save,onCancel:cancel,onDirty:markDirty}),
+   action&&entry&&(actionKind==='CORRECT_PAYROLL_EVIDENCE'?h(PayrollCorrectionForm,{key:entry.id+actionKind+action.deduction.id,entry,deduction:action.deduction,busy,onSave:save,onCancel:cancel,onDirty:markDirty}):h(ActionForm,{key:entry.id+actionKind+(action?.payment?.id||''),entry,kind:actionKind,payment:action?.payment,today:data?.today,busy,onSave:save,onCancel:cancel,onDirty:markDirty})),
+   data&&!editor&&!action&&h(React.Fragment,null,
+    window.SavingsRegularizationAdmin?h(window.SavingsRegularizationAdmin,{key:revision,initialYear:/^\d{4}$/.test(year)&&Number(year)>=2000&&Number(year)<=2100?Number(year):initialYear,folio,onSaved:refresh,onDirty:markDirty,onOpenRefund:openRefund,focusSourceIds}):h(RefundCoverage,{key:revision,periods:data.coveragePeriods,onSave:save,busy,canConfirm:permissions.can_write&&permissions.can_approve,onDirty:markDirty}),
+    h('div',{className:'srf-bar'},h(Field,{label:'Buscar expediente o número de control',value:query,onChange:setQuery}),h('label',null,'Estado',h('select',{value:filter,onChange:e=>setFilter(e.target.value)},h('option',{value:'ALL'},'Todos'),Object.entries(labels).map(([v,l])=>h('option',{key:v,value:v},l)))),h(Field,{label:'Año de las devoluciones (vacío: todos)',type:'number',min:'2000',max:'2100',value:year,onChange:value=>{if(mayLeave()){markDirty(false);setYear(value);setMonth('');}}}),h('label',null,'Mes de las devoluciones',h('select',{value:month,disabled:!year,onChange:e=>setMonth(e.target.value)},h('option',{value:''},'Todos'),Array.from({length:12},(_,i)=>h('option',{key:i,value:String(i+1).padStart(2,'0')},String(i+1).padStart(2,'0'))))),h('button',{className:'srf-btn',disabled:busy,onClick:()=>{if(mayLeave()){markDirty(false);setRevision(r=>r+1);}}},'Actualizar')),
+    h('p',{className:'srf-note'},'El periodo usa las fechas reales de devolución y conclusión, no la fecha de captura. Los expedientes pendientes permanecen visibles.'),
+    !shown.length&&h('p',{className:'srf-note'},'No hay expedientes registrados para esta consulta. Un cero en el historial de ahorro no acredita por sí solo una devolución.'),
+    shown.map(c=>h('article',{className:'srf-card',key:c.id},h('div',{className:'srf-bar'},h('strong',null,c.folio+' · Control '+c.numero_control),h('span',{className:'srf-state'},labels[c.status]||c.status)),h('p',{className:'srf-note'},c.reason),h('div',{className:'srf-bar'},h('span',null,'Autorizado: '+money(c.authorized_amount)),h('span',null,'Devuelto: '+money(c.paid_amount)),h('span',null,'Pendiente: '+money(c.pending_amount)),h('button',{className:'srf-btn','aria-expanded':selected===c.id,onClick:()=>setSelected(selected===c.id?null:c.id)},selected===c.id?'Cerrar detalle':'Ver expediente')),
+     selected===c.id&&h(React.Fragment,null,
+      detail.loading&&h('p',{role:'status',className:'srf-note'},'Consultando historial del expediente…'),detail.error&&h('p',{role:'alert',className:'srf-error'},explain(detail.error)),
+      c.origin==='HISTORICAL'&&h('p',{className:'srf-note'},'Antecedente histórico · Validado el '+captured(c.approved_at)+' · Capturado el '+captured(c.created_at)),
+      h('div',{className:'srf-table'},h('table',null,h('thead',null,h('tr',null,['Quincena','Enviado a RH','Esperado','Descontado','Tratamiento'].map(l=>h('th',{key:l},l)))),h('tbody',null,(c.deductions||[]).map(d=>h('tr',{key:d.id||d.source_reference},h('td',null,d.deduction_on,h('div',{className:'srf-note'},d.source_reference),d.historical_payroll_code&&h('div',{className:'srf-note'},'Nómina documentada vigente '+(d.effective_historical_payroll_code??d.historical_payroll_code)+' · '+(d.effective_historical_payroll_reference??d.historical_payroll_reference))),h('td',null,d.sent_to_rh_on||'Fecha histórica desconocida',!d.sent_to_rh_on&&h('div',{className:'srf-note'},d.sent_to_rh_unknown_reason)),h('td',null,money(d.expected_amount)),h('td',null,d.actual_amount==null?'Por confirmar':money(d.actual_amount)),h('td',null,treatments[d.balance_treatment],h('div',{className:'srf-note'},d.balance_note))))))),
+      c.origin==='HISTORICAL'&&(c.deductions||[]).map(d=>h(PayrollEvidence,{key:d.id||d.source_reference,deduction:d,canCorrect:permissions.can_write&&permissions.can_approve,onCorrect:()=>openAction({kind:'CORRECT_PAYROLL_EVIDENCE',deduction:d})})),
+      h('h4',null,'Devoluciones registradas'),effectivePayments(c).map(p=>h('div',{key:p.id,className:'srf-card'},h('p',{className:'srf-note'},p.paid_on+' · '+money(p.amount)+' · '+p.bank_reference),h('p',{className:'srf-note'},'Capturado el '+captured(p.captured_at)+(p.supersedes_payment_id?' · Corrección de un registro anterior':'')),h('p',{className:'srf-note'},p.reason),permissions.can_write&&permissions.can_approve&&h('button',{className:'srf-btn',onClick:()=>openAction({kind:'CORRECT_PAYMENT',payment:p})},'Corregir registro del pago'))),!effectivePayments(c).length&&h('p',{className:'srf-note'},'Todavía no hay pagos registrados.'),
+      (c.payments||[]).some(p=>p.is_superseded)&&h('details',null,h('summary',null,'Versiones anteriores de los pagos'),(c.payments||[]).filter(p=>p.is_superseded).map(p=>h('p',{key:p.id,className:'srf-note'},p.paid_on+' · '+money(p.amount)+' · '+p.bank_reference+' · Sustituido por corrección · Capturado el '+captured(p.captured_at)+' · '+(p.reason||'')))),
+      h('div',{className:'srf-bar'},permissions.can_write&&['DRAFT','SUBMITTED','REJECTED'].includes(c.status)&&h('button',{className:'srf-btn',onClick:()=>openEditor(c)},'Editar captura'),permissions.can_write&&c.status==='DRAFT'&&h('button',{className:'srf-btn',onClick:()=>openAction('SUBMIT')},'Enviar a revisión'),permissions.can_approve&&c.status==='SUBMITTED'&&h('button',{className:'srf-btn primary',onClick:()=>openAction('APPROVE')},'Autorizar'),permissions.can_approve&&c.status==='SUBMITTED'&&h('button',{className:'srf-btn',onClick:()=>openAction('REJECT')},'Rechazar'),permissions.can_approve&&['APPROVED','PARTIAL'].includes(c.status)&&h('button',{className:'srf-btn primary',onClick:()=>openAction('PAY')},'Registrar devolución'),permissions.can_approve&&['DRAFT','SUBMITTED','APPROVED'].includes(c.status)&&h('button',{className:'srf-btn',onClick:()=>openAction('CANCEL')},'Cancelar expediente')),
+      h('details',null,h('summary',null,'Historial del expediente'),(c.events||[]).map(event=>h('p',{key:event.id,className:'srf-note'},new Date(event.created_at).toLocaleString('es-MX')+' · '+(event.action||event.kind||'Registro')+' · '+(event.reason||'')))))))));
+ }
+ window.SavingsRefundsAdmin=SavingsRefundsAdmin;
+})();
+})();
 /* @@file sicof-repository.js */
 (function(){
 /* Private authenticated SICOF boundary. Calculations and exports run on the
@@ -69130,7 +69603,7 @@ Object.assign(window, {
       sub: 'Actúa sobre una operación o una fecha pendiente; conserva el resto del programa en su curso normal.'
     }, 'Qué necesita atención'), h('div', {
       className: 'svp-context-nav'
-    }, [['incidencias', 'Pendientes y excepciones'], ['cambios', 'Cambios y retiros']].map(([value, label]) => h(Btn, {
+    }, [['incidencias', 'Pendientes y excepciones'], ['cambios', 'Cambios y retiros'], ['reembolsos', 'Reembolsos']].map(([value, label]) => h(Btn, {
       key: value,
       tone: attention === value ? 'primary' : '',
       onClick: () => {
@@ -69175,7 +69648,7 @@ Object.assign(window, {
       onOpenPerson: row => revealFolio(row.folio, row.id),
       initialNavigation: requestNavigation,
       onNavigationChange: setRequestNavigation
-    }), requestOnly && h(RecordSection, {
+    }), attention === 'reembolsos' && h(window.SavingsRefundsAdmin, {app, onSaved: refresh, onDirty: setDirty}), requestOnly && h(RecordSection, {
       title: 'Solicitud del Folio ' + requestOnly.folio,
       initialOpen: true
     }, h(window.SavingsRequestsAdmin, {
@@ -77793,7 +78266,9 @@ Object.assign(window, {
   // Menú de módulos
   // ─────────────────────────────────────────────────────────────
   // H-SICOF-001 integration: existing session and backend module boundary.
-  const MODULES = [{
+  const MODULES = [
+    {id:'reportes_jc',label:'Reportes JC',icon:'receipt',desc:'Informes mensuales y anuales de la Secretaría de Finanzas',ready:true,registration:{version:'20261027000300',totalOnly:false,boundary:'Read-only Google loan/request and canonical savings case counts; authenticated template export',readPermissions:['program_requests.read','savings.read','savings.reports'],writePermissions:[],sections:[],backendEvidence:'supabase/migrations/20261027000300_reports_jc_screen.sql',isolatedTest:'scripts/test-reports-jc-rules.mjs'}},
+  {
     id: 'sutifinanzas',
     label: 'SUTIFINANZAS',
     icon: 'finance',
@@ -78070,6 +78545,7 @@ Object.assign(window, {
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    reportes_jc:'savings.reports',
     finance_blocks: 'program_requests.read',
     sutifinanzas: 'program_requests.read',
     sicof: 'savings.read',
@@ -78127,7 +78603,9 @@ Object.assign(window, {
     programs_admin: 'programs',
     marketplace: 'marketplace'
   });
-  const ADMIN_DESKTOP_GROUPS = Object.freeze([{
+  const ADMIN_DESKTOP_GROUPS = Object.freeze([
+    {id:'reportes_jc',label:'Reportes JC',icon:'receipt',modules:['reportes_jc']},
+  {
     id: 'sutifinanzas',
     label: 'SUTIFINANZAS',
     icon: 'finance',
@@ -80225,7 +80703,9 @@ Object.assign(window, {
       onBack: backFromAffiliateLink,
       header: headerFn,
       initialAffiliateId: affiliateContext && affiliateContext.affiliateId
-    });else if (view === 'sutifinanzas') body = React.createElement(window.SutifinanzasAdminModule, {
+    });
+    else if(view==='reportes_jc')body=React.createElement(window.ReportsJcAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
+    else if (view === 'sutifinanzas') body = React.createElement(window.SutifinanzasAdminModule, {
       app,
       onBack: () => setView('menu'),
       header: headerFn
@@ -95598,5 +96078,71 @@ Object.assign(window, {
     });
   }
   ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Root));
+})();
+})();
+/* @@file savings-regularization-admin.jsx */
+(function(){
+/* Historical event documentation; never a withdrawal or a balance writer. */
+(function(){
+ 'use strict';
+ const h=React.createElement,{useState,useEffect,useRef}=React;
+ const monthNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+ const states={PENDING:'Pendiente de completar',REVIEWED:'Revisado',REVIEWED_ZERO:'Revisado sin reembolsos',REOPENED:'Requiere nueva revisión',CURRENT:'Mes en curso · al corte',FUTURE:'Mes futuro'};
+ const terminationStates={PENDING:'Fecha por documentar',RESOLVED:'Fecha documentada',CONFLICT:'Requiere resolver una diferencia',VOIDED:'Constancia retirada'};
+ function errorText(error){const code=String(error?.message||'');const known={CONTEXT_CHANGED:'La sesión cambió. Consulta de nuevo.',AUTH_REQUIRED:'Vuelve a iniciar sesión.',SAVINGS_TERMINATION_DENIED:'Tu cuenta no tiene permiso para validar bajas históricas.',SAVINGS_TERMINATION_VERSION_CONFLICT:'El antecedente fue actualizado. Consulta de nuevo antes de guardar.',SAVINGS_TERMINATION_SOURCE_CHANGED:'Cambió el antecedente de origen. Consulta de nuevo y revisa su información.',SAVINGS_TERMINATION_DATE_INVALID:'Revisa la fecha efectiva: debe corresponder al antecedente y no puede ser futura.',SAVINGS_TERMINATION_CANONICAL_CONFLICT:'La baja existente tiene información diferente. Revisa el vínculo antes de continuar.',SAVINGS_REFUND_PERIOD_INVALID:'Sólo se puede confirmar un mes ya terminado.',SAVINGS_REFUND_DENIED:'Tu cuenta no tiene permiso para confirmar este periodo.'};return known[code]||'No se pudo completar la operación. '+code;}
+ function Field({label,value,onChange,...props}){return h('label',null,label,h('input',{...props,value:value??'',onChange:e=>onChange(e.target.value)}));}
+ function TerminationForm({entry,today,busy,onSave,onCancel,onDirty,voiding=false}){
+  const [mode,setMode]=useState(voiding?'VOID':entry.mode==='LINK'?'LINK':'ATTESTED'),[date,setDate]=useState(entry.effective_on||''),[enrollment,setEnrollment]=useState(entry.enrollment_id||''),[reason,setReason]=useState(''),[evidence,setEvidence]=useState(entry.evidence_reference||'');
+  const change=(setter,value)=>{onDirty?.(true);setter(value);};
+  const candidates=entry.candidates||[];
+  const possibleCandidates=candidates.filter(c=>c.linked||!c.started_on||!date||c.started_on<=date);
+  function selectEnrollment(id){change(setEnrollment,id);const selected=candidates.find(c=>c.id===id);if(mode==='LINK')setDate(selected?.terminated_on||'');}
+  return h('form',{className:'srf-card',onSubmit:e=>{e.preventDefault();onSave({kind:'SAVE_TERMINATION',source_record_id:entry.source_record_id,source_fingerprint:entry.source_fingerprint,expected_version:Number(entry.version||0),mode,enrollment_id:enrollment||null,effective_on:date,reason,evidence_reference:evidence});}},
+   h('h4',null,voiding?'Retirar una constancia que ya no acredita la baja':entry.version?'Corregir constancia de baja histórica':'Completar baja histórica'),
+   h('p',{className:'srf-note'},'Control '+entry.numero_control+' · '+(entry.source_sheet||'Solicitud de Ahorro')+' · fila '+entry.source_row),
+   h('div',{className:'srf-grid'},!voiding&&h('label',null,'Cómo se acredita la baja',h('select',{value:mode,onChange:e=>{change(setMode,e.target.value);if(e.target.value==='LINK')setDate(candidates.find(c=>c.id===enrollment)?.terminated_on||'');}},h('option',{value:'ATTESTED'},'Documentar una baja histórica'),h('option',{value:'LINK',disabled:!candidates.some(c=>c.terminated_on)},'Vincular una baja existente'))),
+    !voiding&&h('label',null,'Inscripción correspondiente',h('select',{value:enrollment,required:mode==='LINK'||possibleCandidates.length>0,onChange:e=>selectEnrollment(e.target.value)},h('option',{value:''},possibleCandidates.length?'Selecciona la inscripción correspondiente':'Antecedente sin inscripción vinculada'),candidates.filter(c=>mode!=='LINK'||c.terminated_on).map(c=>h('option',{key:c.id,value:c.id,disabled:mode==='ATTESTED'&&date&&c.started_on>date&&!c.linked},(c.started_on||'Inicio sin fecha')+' · '+(c.terminated_on?'Baja '+c.terminated_on:c.status||'Inscripción'))))),
+    h(Field,{label:voiding?'Fecha conservada en el antecedente':'Fecha efectiva de la baja',type:'date',required:!voiding,max:today,value:date,readOnly:mode==='LINK'||voiding,onChange:v=>{change(setDate,v);const selected=candidates.find(c=>c.id===enrollment);if(mode==='ATTESTED'&&selected?.started_on>v&&!selected.linked)setEnrollment('');}}),
+    h(Field,{label:'Referencia que acredita la baja',required:true,minLength:3,maxLength:180,value:evidence,onChange:v=>change(setEvidence,v)}),
+    h('label',{className:'srf-wide'},'Justificación de la constancia o corrección',h('textarea',{required:true,minLength:8,maxLength:1000,rows:3,value:reason,onChange:e=>change(setReason,e.target.value)}))),
+   h('p',{className:'srf-note'},voiding?'El retiro de esta constancia conserva todas sus versiones. Documenta por qué la fuente corregida ya no acredita la baja; no cambia la cuenta de ahorro.':'La validación y su responsable se registran con la fecha actual. Esta constancia documenta el antecedente; no ejecuta una baja, un retiro ni un cambio de saldo.'),
+   h('div',{className:'srf-bar'},h('button',{type:'button',className:'srf-btn',disabled:busy,onClick:onCancel},'Cancelar constancia'),h('button',{type:'submit',className:'srf-btn primary',disabled:busy},busy?'Guardando…':voiding?'Confirmar retiro de constancia':'Validar baja histórica')));
+ }
+ function SavingsRegularizationAdmin({initialYear,folio,onSaved,onDirty,onOpenRefund,focusSourceIds}){
+  const currentYear=Number(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric'}).format(new Date()));
+  const [year,setYear]=useState(Number(initialYear)||currentYear),[draftYear,setDraftYear]=useState(String(Number(initialYear)||currentYear)),[revision,setRevision]=useState(0),[state,setState]=useState({loading:true,data:null,error:null});
+  const [selected,setSelected]=useState(null),[voiding,setVoiding]=useState(false),[period,setPeriod]=useState(null),[reason,setReason]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+  const sequence=useRef(0),pending=useRef(null),dirty=useRef(false);let subject;try{subject=window.SavingsRefundsRepository.contextKey();}catch(_){subject='denied';}
+  const markDirty=value=>{dirty.current=value;onDirty?.(value);};
+  function mayLeave(){return !dirty.current||window.confirm('Hay una captura sin guardar. ¿Quieres descartarla?');}
+  function clear(){setSelected(null);setVoiding(false);setPeriod(null);setReason('');setConfirmed(false);setError('');pending.current=null;markDirty(false);}
+  useEffect(()=>{clear();setNotice('');},[subject,folio]);
+  useEffect(()=>{const incoming=Number(initialYear);if(Number.isInteger(incoming)&&incoming>=2000&&incoming<=2100&&incoming!==year&&!dirty.current){setYear(incoming);setDraftYear(String(incoming));}},[initialYear]);
+  useEffect(()=>{const seq=++sequence.current;setState({loading:true,data:null,error:null});window.SavingsRefundsRepository.regularization({year,folio}).then(data=>{if(seq===sequence.current)setState({loading:false,data,error:null});}).catch(error=>{if(seq===sequence.current)setState({loading:false,data:null,error});});return()=>{sequence.current++;};},[year,folio,subject,revision]);
+  async function save(command){if(busy)return;const signature=JSON.stringify(command);if(!pending.current||pending.current.signature!==signature)pending.current={signature,key:crypto.randomUUID()};const key=subject;setBusy(true);setError('');try{if(command.kind==='CONFIRM_PERIOD')await window.SavingsRefundsRepository.save(command,pending.current.key);else await window.SavingsRefundsRepository.saveTermination(command,pending.current.key);if(window.SavingsRefundsRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');clear();setNotice(command.kind==='CONFIRM_PERIOD'?'Revisión mensual guardada.':'Constancia guardada. Se actualizaron los periodos afectados.');setRevision(n=>n+1);if(onSaved)await onSaved();}catch(e){setError(errorText(e));}finally{setBusy(false);}}
+  const data=state.data,canValidate=data?.permissions?.can_write&&data?.permissions?.can_approve;
+  const entries=data?.terminations||[],focus=new Set(focusSourceIds||[]),ordered=[...entries].sort((a,b)=>(focus.has(b.source_record_id)?1:0)-(focus.has(a.source_record_id)?1:0));
+  return h('details',{className:'srf-card','data-savings-regularization':true,open:Boolean(initialYear||focus.size)||undefined},h('summary',null,'Bajas históricas y revisión mensual'),
+   h('p',{className:'srf-note'},'Completa los antecedentes del año que necesitas reportar. Los libros mensuales también contienen concentrados anuales.'),
+   h('form',{className:'srf-bar',onSubmit:e=>{e.preventDefault();const next=Number(draftYear);if(next>=2000&&next<=2100){if(mayLeave()){clear();setYear(next);setRevision(n=>n+1);}else setDraftYear(String(year));}}},h(Field,{label:'Año de regularización',type:'number',min:2000,max:2100,required:true,value:draftYear,disabled:busy,onChange:setDraftYear}),h('button',{className:'srf-btn',disabled:busy||state.loading,type:'submit'},'Consultar año')),
+   state.loading&&h('p',{role:'status',className:'srf-note'},'Consultando periodos y bajas históricas…'),state.error&&h('p',{role:'alert',className:'srf-error'},errorText(state.error)),error&&h('p',{role:'alert',className:'srf-error'},error),notice&&h('p',{role:'status',className:'srf-note'},notice),
+   data&&h(React.Fragment,null,
+    h('div',{className:'srf-table'},h('table',{'aria-label':'Revisión mensual del histórico'},h('thead',null,h('tr',null,['Mes','Reembolsos concluidos','Estado del periodo','Bajas por resolver','Acciones'].map(text=>h('th',{key:text},text)))),h('tbody',null,(data.months||[]).map(m=>h('tr',{key:m.period},
+     h('th',{scope:'row'},monthNames[Number(m.period.slice(5,7))-1]),h('td',null,m.refund_count??'Por determinar'),h('td',null,states[m.status]||m.status),h('td',null,m.pending_termination_count??'Por determinar'),
+     h('td',null,h('div',{className:'srf-bar'},onOpenRefund&&h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:()=>{if(mayLeave()){clear();onOpenRefund({period:m.period});}}},'Ver reembolsos de '+monthNames[Number(m.period.slice(5,7))-1]),canValidate&&!['CURRENT','FUTURE'].includes(m.status)&&h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:()=>{if(mayLeave()){clear();setPeriod(m.period);}}},'Revisar '+monthNames[Number(m.period.slice(5,7))-1]))))))),
+    period&&h('form',{className:'srf-card',onSubmit:e=>{e.preventDefault();if(confirmed)save({kind:'CONFIRM_PERIOD',period,reason});}},h('h4',null,'Confirmar reembolsos de '+period.slice(0,7)),h('p',{className:'srf-note'},'Confirma que todos los casos concluidos de este mes están registrados, incluidos los capturados después. Un mes sin devoluciones también requiere esta revisión.'),h('label',null,'Referencia o explicación de la revisión',h('textarea',{required:true,minLength:8,maxLength:1000,value:reason,onChange:e=>{markDirty(true);setReason(e.target.value);}})),
+     h('label',{className:'srf-note',style:{display:'flex',alignItems:'center',gap:8}},h('input',{type:'checkbox',checked:confirmed,required:true,style:{width:'auto'},onChange:e=>{markDirty(true);setConfirmed(e.target.checked);}}),'Todos los reembolsos concluidos de este mes están registrados.'),h('div',{className:'srf-bar'},h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:clear},'Cancelar revisión'),h('button',{className:'srf-btn primary',type:'submit',disabled:busy||!confirmed},'Confirmar histórico del mes'))),
+    h('h4',null,'Bajas históricas'),h('p',{className:'srf-note'},'Una baja sin fecha comprobada puede afectar varios años. No se sustituye la fecha efectiva con una fecha programada o con el último descuento.'),
+    !ordered.length&&h('p',{className:'srf-note'},'No hay antecedentes de bajas para esta consulta.'),
+    ordered.map(entry=>h('article',{key:entry.source_record_id,className:'srf-card','data-termination-source':entry.source_record_id},h('div',{className:'srf-bar'},h('strong',null,(entry.name||'Antecedente de ahorro')+' · Control '+entry.numero_control),h('span',{className:'srf-state'},terminationStates[entry.status]||entry.status)),
+     h('p',{className:'srf-note'},(entry.source_sheet||'Solicitud de Ahorro')+' · fila '+entry.source_row+' · Fecha efectiva: '+(entry.effective_on||'Por determinar')),
+     entry.reason&&h('p',{className:'srf-note'},entry.reason),entry.evidence_reference&&h('p',{className:'srf-note'},'Respaldo: '+entry.evidence_reference),
+     entry.source_state&&h('p',{className:'srf-note'},'Estado del antecedente de origen: '+entry.source_state),
+     canValidate&&!entry.can_void&&entry.status!=='VOIDED'&&selected!==entry.source_record_id&&h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:()=>{if(mayLeave()){clear();setSelected(entry.source_record_id);}}},entry.version?'Revisar o corregir constancia':'Completar fecha de baja'),
+     canValidate&&entry.can_void&&selected!==entry.source_record_id&&h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:()=>{if(mayLeave()){clear();setVoiding(true);setSelected(entry.source_record_id);}}},'Retirar constancia histórica'),
+     selected===entry.source_record_id&&h(TerminationForm,{key:entry.source_record_id+':'+entry.version+':'+voiding,entry,today:data.today,busy,onSave:save,onCancel:clear,onDirty:markDirty,voiding}),
+     entry.history?.length>0&&h('details',null,h('summary',null,'Historial de constancias'),entry.history.map((event,i)=>h('p',{key:event.id||i,className:'srf-note'},'Versión '+event.version+' · '+(event.mode==='VOID'?'Constancia retirada; fecha del antecedente ':'Baja ')+event.effective_on+' · Capturada '+(event.created_at||event.captured_at||'')+' · '+(event.reason||'')))))))));
+ }
+ window.SavingsRegularizationAdmin=SavingsRegularizationAdmin;
 })();
 })();

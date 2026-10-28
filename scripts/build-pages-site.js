@@ -38,6 +38,8 @@ const publicFiles = [
   'app/sicof-simulation-worker.js',
   'app/vendor/exceljs-4.4.0/exceljs.min.js',
   'app/vendor/exceljs-4.4.0/LICENSE',
+  'app/vendor/jszip-3.10.1/jszip.min.js',
+  'app/vendor/jszip-3.10.1/LICENSE',
   'app/vendor/pdfjs-5.4.149/pdf.min.mjs',
   'app/vendor/pdfjs-5.4.149/pdf.worker.min.mjs',
   'app/vendor/pdfjs-5.4.149/LICENSE',

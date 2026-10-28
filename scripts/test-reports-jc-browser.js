@@ -1,0 +1,151 @@
+'use strict';
+// Isolated browser integration. No live credentials, RPCs or downloaded workbooks.
+const assert = require('assert/strict');
+const fs = require('fs');
+const path = require('path');
+const { pathToFileURL } = require('url');
+const { chromium } = require(process.env.SUTIAPP_PLAYWRIGHT_PATH || 'C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
+const root = path.resolve(__dirname, '..');
+const output = path.join(root, '.tmp/reports-jc/export-tests');
+const html = '<!doctype html><html lang="es"><meta charset="utf-8"><style>:root{--surface:#fff;--surface-2:#f7f7fa;--ink:#17233b;--ink-2:#526078;--hairline:#dfe3ea;--hairline-strong:#c4cad5;--guinda:#861e45}*{box-sizing:border-box}body{margin:0;font:14px Arial;background:#f7f7fa}button,input,select{font:inherit}#root{padding:16px}</style><body><div id="root"></div></body></html>';
+
+async function main() {
+  const template = await import(pathToFileURL(path.join(root, 'supabase/functions/reports-jc/template.mjs')).href);
+  const { buildReport } = await import(pathToFileURL(path.join(root, 'supabase/functions/reports-jc/report.mjs')).href);
+  const requestHeader = Array(26).fill('');
+  Object.assign(requestHeader, { 0: 'ID', 1: 'Número de control', 4: 'Fondo', 9: 'Fecha solicitud', 24: 'Estado', 25: 'Observaciones' });
+  const requests = [requestHeader], loans = [['Fecha', 'Cuotas', 'ID', 'Folio', '', 'Proceso', 'Fondo']];
+  let serial = 0;
+  const request = (month, fund, status, provider = '') => {
+    const row = Array(26).fill('');
+    Object.assign(row, { 0: 'isolated-request-' + (++serial), 1: 'TEST-001', 4: fund, 9: `2028-${String(month).padStart(2, '0')}-01`, 24: status, 25: provider });
+    requests.push(row);
+  };
+  for (let month = 1; month <= 12; month++) {
+    request(month, 'Caja Chica', 'Iniciado');
+    request(month, '2028-12-15 Adelanto', 'Cancelado');
+    request(month, 'Vales y membresias', 'Aprobado', 'Costco');
+    request(month, 'Vales y membresias', 'Liquidado', 'Bud TV Ultra');
+    for (let i = 0; i < month; i++) request(month, 'Sutiexpress', 'Pendiente');
+    loans.push([`2028-${String(month).padStart(2, '0')}-15`, 100, 'isolated-loan-' + month, 'TEST-001', '', '1', 'Caja Chica']);
+  }
+  const fixture = buildReport({ year: 2028, requests, loans, savings: { year: 2028, events: [], issues: [], coverage: { status: 'complete', synthetic: true } }, consultedAt: '2028-10-27T18:00:00Z' });
+  assert(!fixture.issues.some(issue => issue.severity === 'error'));
+  fs.mkdirSync(output, { recursive: true });
+  const browser = await chromium.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: true });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 920 } });
+  const errors = [], external = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.route('**/*', route => {
+    if (route.request().url() === 'http://127.0.0.1/reports-jc-isolated') return route.fulfill({ status: 200, contentType: 'text/html', body: html });
+    external.push(route.request().url()); return route.abort();
+  });
+  try {
+    await page.goto('http://127.0.0.1/reports-jc-isolated');
+    for (const file of ['app/vendor/react-18.3.1/react.production.min.js', 'app/vendor/react-dom-18.3.1/react-dom.production.min.js', 'app/vendor/jszip-3.10.1/jszip.min.js', 'app/reports-jc-export.js']) await page.addScriptTag({ path: path.join(root, file) });
+    await page.evaluate(({ fixture, base64 }) => {
+      window.__fixture = fixture;
+      window.__template = base64;
+      window.__phase = 'authenticated'; window.__session = 'isolated-session'; window.__loadError = null;
+      window.__holdTemplate = false; window.__wrongContext = false; window.__downloads = []; window.__calls = [];
+      window.AffiliateAuth = { getState: () => ({ phase: window.__phase, session: { user: { id: 'isolated-actor' }, session_id: window.__session }, affiliate: { id: 'isolated-affiliate' } }) };
+      window.AdminRepository = { getState: () => ({ phase: 'ready', subjectKey: 'isolated-admin', assignment: { role: 'fixture-only' } }) };
+      const context = () => ({ actor: window.__wrongContext ? 'different-actor' : 'isolated-actor', effective_affiliate: 'isolated-affiliate', session: window.__session });
+      window.SutiSupabase = { getClient: () => ({ functions: { invoke: async (name, options) => {
+        const { action, year } = options.body;
+        window.__calls.push({ name, action, year });
+        if (action === 'TEMPLATE' && window.__holdTemplate) await new Promise(resolve => { window.__resolveTemplate = resolve; });
+        if (window.__loadError) return { data: { error: window.__loadError, context: context() }, error: null };
+        const report = structuredClone(window.__fixture);
+        report.year = year; report.consultedAt = '2026-10-27T18:00:00Z';
+        return { data: { context: context(), data: action === 'TEMPLATE' ? { base64: window.__template } : report }, error: null };
+      } } }) };
+      const actual = window.SutiReportsJcExport;
+      window.SutiReportsJcExport = { ...actual, download: (bytes, filename, mime) => { window.__lastBytes = bytes; window.__downloads.push({ filename, mime, length: bytes.length }); } };
+    }, { fixture, base64: template.TEMPLATE_BASE64 });
+    for (const file of ['app/reports-jc-repository.js', 'app/reports-jc-admin.jsx']) await page.addScriptTag({ path: path.join(root, file) });
+    await page.evaluate(() => {
+      window.__root = ReactDOM.createRoot(document.getElementById('root'));
+      window.__mount = key => window.__root.render(React.createElement(window.ReportsJcAdminModule, { key, app: {}, onBack: () => {} }));
+      window.__mount('first');
+    });
+    await page.getByRole('tab', { name: 'Préstamos Concentrado', exact: true }).waitFor();
+    assert.equal(await page.getByRole('tab').count(), 8);
+    await page.getByRole('spinbutton', { name: 'Año del reporte' }).fill('2028');
+    await page.getByRole('button', { name: 'Actualizar', exact: true }).click();
+    await page.waitForFunction(() => document.body.innerText.includes('Consulta de 2028'));
+    await page.getByRole('tab', { name: 'Préstamos Mes', exact: true }).click();
+    await page.getByLabel('Mes de consulta').selectOption('10');
+    assert.equal(await page.getByRole('table', { name: 'Préstamos Mes' }).getByRole('row').count(), 6);
+    assert.match(await page.locator('[aria-label="Solicitudes recibidas"]').innerText(), /14\s+Recibidas/);
+    await page.getByLabel('Exportación').selectOption('year');
+    assert.match(await page.locator('[aria-label="Solicitudes recibidas"]').innerText(), /126\s+Recibidas/);
+    await page.getByLabel('Exportación').selectOption('month');
+    await page.screenshot({ path: path.join(output, 'isolated-reports-jc-desktop.png'), fullPage: true });
+    await page.getByRole('button', { name: /Préstamo de caja chica, Aprobadas: 1/ }).click();
+    await page.getByRole('dialog').waitFor();
+    assert.match(await page.getByRole('dialog').innerText(), /Historial de solicitudes/);
+    await page.keyboard.press('Escape');
+    assert.equal(await page.getByRole('dialog').count(), 0);
+    await page.getByRole('button', { name: 'Exportar mes', exact: true }).click();
+    await page.waitForFunction(() => window.__downloads.length === 1);
+    assert.equal((await page.evaluate(() => window.__downloads[0])).filename, 'Reporte_JC_2028-10.xlsx');
+    assert.equal(await page.evaluate(async () => Object.keys((await JSZip.loadAsync(window.__lastBytes)).files).filter(n => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).length), 17);
+    await page.getByLabel('Exportación').selectOption('year');
+    await page.getByRole('button', { name: 'Exportar año', exact: true }).click();
+    await page.waitForFunction(() => window.__downloads.length === 2);
+    assert.equal((await page.evaluate(() => window.__downloads[1])).filename, 'Reporte_JC_2028.zip');
+    assert.equal(await page.evaluate(async () => Object.keys((await JSZip.loadAsync(window.__lastBytes)).files).length), 12);
+    await page.getByLabel('Exportación').selectOption('month');
+    const beforeFilterChange = await page.evaluate(() => window.__downloads.length);
+    await page.evaluate(() => { window.__holdTemplate = true; window.__resolveTemplate = null; });
+    await page.getByRole('button', { name: 'Exportar mes', exact: true }).click();
+    await page.waitForFunction(() => typeof window.__resolveTemplate === 'function');
+    const monthSelector = page.getByLabel('Mes de consulta');
+    const disabledDuringExport = await monthSelector.isDisabled();
+    if (!disabledDuringExport) await monthSelector.selectOption('11');
+    await page.evaluate(() => { window.__holdTemplate = false; window.__resolveTemplate(); });
+    await page.waitForFunction(() => !document.body.innerText.includes('Generando…'));
+    assert.equal(await page.evaluate(() => window.__downloads.length), beforeFilterChange + (disabledDuringExport ? 1 : 0), 'Changing an active export filter must cancel the obsolete download, or the filter must stay disabled.');
+    const beforeContextChange = await page.evaluate(() => window.__downloads.length);
+    await page.evaluate(() => { window.__holdTemplate = true; window.__resolveTemplate = null; });
+    await page.getByRole('button', { name: 'Exportar mes', exact: true }).click();
+    await page.waitForFunction(() => typeof window.__resolveTemplate === 'function');
+    await page.evaluate(() => { window.__session = 'changed-session'; window.__holdTemplate = false; window.__resolveTemplate(); });
+    await page.waitForFunction(() => !document.body.innerText.includes('Generando…'));
+    assert.equal(await page.evaluate(() => window.__downloads.length), beforeContextChange, 'Context changed: no downloaded private template.');
+    await page.evaluate(() => { window.__wrongContext = true; });
+    const rejected = await page.evaluate(async () => { try { await ReportsJcRepository.load(2028); return false; } catch (e) { return e.message; } });
+    assert.equal(rejected, 'CONTEXT_CHANGED');
+    await page.evaluate(() => { window.__wrongContext = false; window.__phase = 'unauthenticated'; });
+    // Simulate auth revocation between the last render and the click, without an app re-render.
+    await page.locator('button').filter({ hasText: /^Exportar mes$/ }).click();
+    await page.waitForFunction(() => document.body.innerText.includes('Vuelve a iniciar sesión.'));
+    assert.equal(await page.evaluate(() => window.__downloads.length), beforeContextChange);
+    await page.evaluate(() => { window.__phase = 'authenticated'; window.__loadError = 'SOURCE_UNAVAILABLE'; window.__mount('source-failure'); });
+    await page.getByRole('alert').waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Exportar mes', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByRole('tab').count(), 0, 'Failed source must not leave old report values visible.');
+    await page.evaluate(() => {
+      window.__loadError = null;
+      window.__fixture.sheets['Préstamos Concentrado'].cells.B6 = { value: null, sourceIds: [], rule: 'Unresolved synthetic record' };
+      window.__fixture.issues = [{ severity: 'error', code: 'SYNTHETIC_UNRESOLVED', sheets: ['Préstamos Concentrado'], months: [1], message: 'Registro sintético pendiente de resolver' }];
+      window.__mount('unresolved');
+    });
+    await page.getByText('Por determinar', { exact: true }).waitFor();
+    const beforeBlocked = await page.evaluate(() => window.__downloads.length);
+    await page.getByRole('button', { name: 'Exportar mes', exact: true }).click();
+    await page.waitForFunction(() => document.body.innerText.includes('incidencias pendientes'));
+    assert.equal(await page.evaluate(() => window.__downloads.length), beforeBlocked);
+    await page.setViewportSize({ width: 430, height: 920 });
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), true);
+    await page.screenshot({ path: path.join(output, 'isolated-reports-jc-mobile.png'), fullPage: true });
+    await page.evaluate(() => { window.__lastBytes = null; window.__template = null; });
+    assert.deepEqual(errors, []);
+    assert.deepEqual(external, []);
+    const result = { status: 'PASS', browser: 'Chrome', syntheticServiceOnly: true, externalRequests: 0, persistedDownloadedWorkbooks: 0, tabs: 8, monthlyExportSheets: 17, annualExportBooks: 12, receivedIncludingPendingRespectsPeriod: true, staleFilterExportProtected: true, changedContextRejected: true, nullValuesVisible: true, unresolvedExportBlocked: true, sourceFailureClearsReport: true, mobileNoPageOverflow: true };
+    fs.writeFileSync(path.join(output, 'browser-result.json'), JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(result));
+  } finally { await browser.close(); }
+}
+main().catch(error => { console.error(error.stack); process.exitCode = 1; });

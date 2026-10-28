@@ -18,6 +18,7 @@ if (babelPath) {
 const files = [
   'finance-blocks-repository.js', 'finance-blocks.jsx', 'loan-availability-admin.js',
   'sutifinanzas-repository.js', 'sutifinanzas-admin.jsx',
+  'reports-jc-repository.js', 'reports-jc-export.js', 'reports-jc-admin.jsx', 'savings-refunds-repository.js', 'savings-refunds-admin.jsx', 'savings-regularization-admin.jsx',
   'sicof-repository.js', 'sicof-payment-behavior.jsx', 'sicof-simulation-client.js', 'sicof-file-repository.js', 'sicof-file-flow.jsx', 'sicof-admin.jsx', 'savings-period-breakdown.jsx',
   'document-generation-design.js','document-generation-repository.js','document-layout-repository.js','document-layout-designer.jsx','screens-admin-document-generation.jsx', 'farma-repository.js', 'screens-farma.jsx',
   'login-history-repository.js', 'screens-admin-login-history.jsx',

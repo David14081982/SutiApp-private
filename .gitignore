@@ -79,3 +79,7 @@ Usuarios SUTIAPP.xlsx
 
 # Contains row-level affiliate PII; keep only in protected local storage
 docs/H003_AFFILIATE_RECONCILIATION.md
+
+.tmp/
+
+supabase/functions/reports-jc/template.mjs

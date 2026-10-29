@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "changedPreexistingFiles": [
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-code.json",
+    "scripts/build-bundle.js",
+    "app/bundle.js",
+    "docs/architecture/registry-edges.json",
+    "docs/AGENT_CHANGELOG.md",
+    "docs/architecture/registry-search.json",
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/SOURCE_OF_TRUTH.md",
+    "app/screens-admin.jsx",
+    "docs/architecture/architecture-overrides.json"
+  ],
+  "unexpectedFiles": [],
+  "existingAdminModulesPreserved": 43,
+  "existingSidebarGroupsPreserved": 10,
+  "placement": "immediately below Reportes JC",
+  "access": "existing Finanzas boundary; no role or permission mutations",
+  "preexistingLocalMetadataErrors": [
+    "MISSING_BACKEND_REGISTRATION:reportes_jc",
+    "MISSING_ASSISTED_VISIBILITY:reportes_jc"
+  ],
+  "globalTestsRun": false
+}

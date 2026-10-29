@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "mode": "candidate",
+  "counts": {
+    "investors": 52,
+    "contracts": 88,
+    "active": 35,
+    "obligations": 214,
+    "reviews": 70,
+    "movements": 0,
+    "canWrite": true,
+    "sourceSha": "28b35c451ec8892c0c3b1b9b5d300f8af457177448daf7dbe6fa3b610d90ef20",
+    "sourceKey": true
+  },
+  "sidebarPlacement": "after Reportes JC",
+  "views": 7,
+  "privateSourceRead": true,
+  "mobileOverflow": false,
+  "refresh": true,
+  "anonymousRpcStatus": 401,
+  "productiveBusinessWrites": 0,
+  "pageErrors": [],
+  "bundleSha256": "8a7338187393ff17f87e53e130e8fa236089d51728248483570703b6607981b4"
+}

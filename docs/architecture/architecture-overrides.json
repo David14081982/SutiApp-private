@@ -46,7 +46,10 @@
         "reportes_jc",
         "reembolsos",
         "bajas historicas",
-        "regularizacion de ahorro"
+        "regularizacion de ahorro",
+        "investors",
+        "inversores",
+        "inversionistas"
       ]
     },
     {
@@ -1382,6 +1385,51 @@
         "status": "IMPLEMENTED",
         "authority": "Immutable historical payroll classification corrections; dated canonical enrollment remains authoritative"
       }
+    },
+    {
+      "type": "route",
+      "name": "inversores",
+      "file": "app/screens-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Inversores",
+        "Inversionistas"
+      ],
+      "properties": {
+        "status": "IMPLEMENTED",
+        "entry": "Admin / below Reportes JC",
+        "access": "existing finanzas module boundary"
+      }
+    },
+    {
+      "type": "admin_screen",
+      "name": "InvestorsAdminModule",
+      "file": "app/investors-admin.jsx",
+      "domain": "finance",
+      "aliases": [
+        "Inversores",
+        "Inversionistas",
+        "JC Inversiones"
+      ],
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "route": "Admin / inversores",
+        "evidence": "docs/audits/H-ADMIN-INVERSIONISTAS-001.md",
+        "permissions": "program_requests.read/write and admin_module_boundary(finanzas,read/write); existing grants unchanged"
+      }
+    },
+    {
+      "type": "repository",
+      "name": "InvestorsRepository",
+      "file": "app/investors-repository.js",
+      "domain": "finance",
+      "source_of_truth": "SUPABASE",
+      "properties": {
+        "status": "IMPLEMENTED",
+        "cache": "none",
+        "identity": "real actor, session, effective affiliate validated before/after"
+      }
     }
   ],
   "relationships": [
@@ -2028,6 +2076,48 @@
       "to_type": "table",
       "to": "savings_refunds_private.payroll_evidence_versions",
       "type": "READS"
+    },
+    {
+      "from_type": "route",
+      "from": "inversores",
+      "to_type": "admin_screen",
+      "to": "InvestorsAdminModule",
+      "type": "RENDERS"
+    },
+    {
+      "from_type": "admin_screen",
+      "from": "InvestorsAdminModule",
+      "to_type": "repository",
+      "to": "InvestorsRepository",
+      "type": "USES"
+    },
+    {
+      "from_type": "repository",
+      "from": "InvestorsRepository",
+      "to_type": "rpc",
+      "to": "public.get_admin_investors",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "repository",
+      "from": "InvestorsRepository",
+      "to_type": "rpc",
+      "to": "public.save_admin_investors",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "repository",
+      "from": "InvestorsRepository",
+      "to_type": "rpc",
+      "to": "public.investors_document",
+      "type": "CALLS"
+    },
+    {
+      "from_type": "repository",
+      "from": "InvestorsRepository",
+      "to_type": "rpc",
+      "to": "public.get_admin_investors_source",
+      "type": "CALLS"
     }
   ]
 }

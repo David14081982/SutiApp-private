@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "engine": "PGlite PostgreSQL",
+  "checks": [
+    "anon/ordinary/wrong-module/read-only/direct-table-denials",
+    "investor-edit/version/idempotency/contract/schedule/partial-payments/corrections",
+    "nonretroactive-rate/capital/negative-balance/renewal-without-new-cash",
+    "private-document/read/retry/mime/owner-contract-isolation",
+    "forced-RLS/audit/non-destructive-recovery"
+  ],
+  "synthetic": true,
+  "productionWrites": 0
+}

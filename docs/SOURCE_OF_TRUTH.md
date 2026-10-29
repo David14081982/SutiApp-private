@@ -1042,3 +1042,27 @@ Existing canonical program request/financial criterion/fund relationships take p
 ## H-LOAN-AMBIGUOUS-MANUAL-REVIEW-GUARD-001
 
 Pending historical-credit review is an operational Supabase authority in `loan_historical_review_cases` plus immutable `loan_historical_review_events`. Identity remains `affiliates.id` with nullable `numero_control`; Google history and financial rules remain unchanged. Case evidence is provenance, never a fund mapping or financial fallback. Own status comes from `get_self_loan_historical_review`; Finance reads details through `list_admin_loan_historical_reviews` with program_requests.read plus Finance module boundary. This release registers the twelve owner-authorized pending cases, blocks loan calculation/creation/approval, and exposes no resolution writer. Future resolution must atomically preserve actor, timestamp, reason, documentary evidence, prior value and decision before clearing the guard.
+
+## Inversores — H-ADMIN-INVERSIONISTAS-001
+
+Por instrucción expresa del propietario, el nuevo dominio administrativo de inversionistas,
+contratos, movimientos, obligaciones y documentos tiene autoridad única en `investors_private`
+(Supabase). `InvestorsRepository` consume cuatro RPCs autenticadas, con los permisos y el límite
+existentes de Finanzas. No modifica roles, solicitudes, Ahorro, Préstamos ni Suti Inversión.
+
+`JC Inversiones.xlsx` es evidencia histórica inmutable: workbook original, SHA256, hoja/fila,
+valor, fórmula y valor guardado se conservan privados. Cartera Inicial aporta contratos y montos
+ingresados; Pagos programa y mezcla conceptos; Retiro y comisión son referencias solapadas.
+No son cuatro ledgers ni cuatro autoridades. Contratos coincidentes se enlazan; adendas y
+contradicciones no se convierten en contratos o pagos duplicados. Los saldos vigentes sin
+contradicción se observan en la fecha de importación, explícitamente distinta de una fecha de
+caja. Sólo sus obligaciones aún no vencidas se proyectan; ningún pago realizado se infiere.
+
+Escritores: importador de una sola incorporación idempotente y RPCs manuales de Admin.
+Movimientos corregidos conservan la versión anterior; tasas futuras y obligaciones congelan
+su período, base e importe. Las renovaciones transfieren capital sin nueva aportación.
+Los documentos nuevos de este dominio permanecen privados en Supabase, versionados, con
+límite de 5 MB y lectura autenticada; no reutilizan identidades de afiliado ni cambian Storage,
+AssetRepository o DocumentWorkflowRepository. No hay fallback, caché persistente o lectura Excel
+en runtime. Recuperación: revocar las nuevas RPCs y restaurar frontend, conservando toda historia.
+Estado y evidencia de despliegue: [auditoría de la H](audits/H-ADMIN-INVERSIONISTAS-001.md).

@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "sourceSha256": "c5ec08d238f64161517666e473f051986467245daa706af227d2d9f157126759",
+  "receipt": [
+    {
+      "status": "PASS",
+      "anon_denied": true,
+      "ordinary_denied": true,
+      "real_admin_helper": true,
+      "recovery_compiled": true,
+      "direct_table_denied": true,
+      "synthetic_rows_persisted": 0
+    }
+  ],
+  "existingAuthorizationUnchanged": true
+}

@@ -4446,3 +4446,14 @@ Closure: backend66 and Pages2026102801 published; production12087 has2visible/po
 Added controlled pending-state protection for the twelve documented historical cases, with a private operational review register and Finance panel. No guessed mappings, historical edits, debt exclusions or balance changes. Focused PostgreSQL, Edge and Chrome checks PASS; the normal profile and 12087 retain exact prior projection outputs. No mass replay or global suite. Production receipt and final status: docs/audits/H-LOAN-AMBIGUOUS-MANUAL-REVIEW-GUARD-001.md.
 
 Closure: runtime 5251e66 pushed; Pages 40645190974 success, frontend 2026102803, financial-legacy v67 ACTIVE. Final live normal/12087/ambiguous/Admin checks PASS; 12 pending registrations, zero resolutions, no balance/history changes. Immediate Admin subscription reload loop fixed and covered by a focal regression. Three final assisted sessions closed. No full cohort replay.
+
+## H-ADMIN-INVERSIONISTAS-001 — 2026-10-29
+
+New isolated Inversores module below Reportes JC. Existing Finanzas access, unchanged roles and
+Admin modules. Additive Supabase private schema, manual/versioned movements, prospective rates,
+contract renewals, private documents and payment calendar. Owner-authorized Excel migration retains
+52 investment identities, 88 contract-period records, 35 nonconflicting active snapshots, 214 future
+obligations, 274 source rows and 70 review items; zero inferred payments. Real helper tests in
+ROLLBACK, focal PostgreSQL/browser/permissions/idempotency tests and authenticated candidate passed.
+169 unrelated published bundle modules preserved. See audits/H-ADMIN-INVERSIONISTAS-001.md and
+qa/evidence/investors. No existing financial data, protected repositories or Storage policies changed.

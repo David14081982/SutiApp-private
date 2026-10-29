@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "migration": "20261029000100",
+  "privateTables": 11,
+  "forcedRls": true,
+  "directAccessDenied": true,
+  "existingAuthorizationUnchanged": true
+}

@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "sourceSha256": "28b35c451ec8892c0c3b1b9b5d300f8af457177448daf7dbe6fa3b610d90ef20",
+  "sheets": {
+    "Cartera Inicial": {
+      "max_rows": 496,
+      "max_columns": 103,
+      "populated_rows": 111,
+      "business_rows": 107
+    },
+    "Pagos": {
+      "max_rows": 464,
+      "max_columns": 16,
+      "populated_rows": 67,
+      "business_rows": 52
+    },
+    "Retiro": {
+      "max_rows": 437,
+      "max_columns": 99,
+      "populated_rows": 48,
+      "business_rows": 44
+    },
+    "comisión": {
+      "max_rows": 435,
+      "max_columns": 102,
+      "populated_rows": 48,
+      "business_rows": 44
+    }
+  },
+  "investors": 52,
+  "contracts": 88,
+  "activeSnapshots": 35,
+  "sourceRows": 274,
+  "reviews": 70,
+  "retainedContractReferences": 205,
+  "duplicateRerun": "identical hashes and counts",
+  "originalWorkbookRecovery": "byte-identical",
+  "realizedPaymentsInferred": 0,
+  "futureMonthlyObligations": 214,
+  "historicalObligationsInferred": 0,
+  "existingBusinessWrites": 0
+}

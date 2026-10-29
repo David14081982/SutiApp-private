@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "scope": "isolated UI + actual PostgreSQL RPC",
+  "checks": [
+    "empty state",
+    "7 views",
+    "investor create/edit",
+    "default editable 2.5%",
+    "contract and schedule",
+    "partial payment",
+    "immutable correction",
+    "document upload/download",
+    "individual history",
+    "mobile no overflow",
+    "Escape/focus",
+    "source failure clears data",
+    "read-only actions hidden",
+    "logout clears data",
+    "no localStorage",
+    "existing Admin shell navigation",
+    "sidebar immediately after Reportes JC",
+    "unauthorized direct route denied"
+  ],
+  "rpcCalls": 18,
+  "pageErrors": [],
+  "productionWrites": 0
+}

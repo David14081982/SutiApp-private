@@ -30,6 +30,7 @@
   // H-SICOF-001 integration: existing session and backend module boundary.
   const MODULES = [
     {id:'reportes_jc',label:'Reportes JC',icon:'receipt',desc:'Informes mensuales y anuales de la Secretaría de Finanzas',ready:true,registration:{version:'20261027000300',totalOnly:false,boundary:'Read-only Google loan/request and canonical savings case counts; authenticated template export',readPermissions:['program_requests.read','savings.read','savings.reports'],writePermissions:[],sections:[],backendEvidence:'supabase/migrations/20261027000300_reports_jc_screen.sql',isolatedTest:'scripts/test-reports-jc-rules.mjs'}},
+    {id:'inversores',accessModule:'finanzas',label:'Inversores',icon:'trending',desc:'Inversionistas, contratos, movimientos y obligaciones',ready:true},
     {id:'sutifinanzas',label:'SUTIFINANZAS',icon:'finance',desc:'Gasto por Secretaría · consulta de Google Sheets',ready:true,registration:{version:'20261004000200',totalOnly:false,boundary:'Google Sheets direct read-only Gasto por secretaría; no financial persistence',readPermissions:['program_requests.read'],writePermissions:[],sections:[],backendEvidence:'supabase/functions/sutifinanzas/report.mjs',isolatedTest:'scripts/test-sutifinanzas.js'}},
     { id:'document_generation',label:'Documentos y Firmas',icon:'doc',desc:'Plantillas, firmantes y documentos autorizados',ready:true },
     { id: 'login_history', label: 'Historial de accesos', icon: 'clock', desc: 'Inicios de sesión y teléfonos', ready: true },
@@ -77,6 +78,7 @@
   const ADMIN_DESKTOP_BREAKPOINT = 1024;
   const ADMIN_DESKTOP_QUERY = '(min-width: ' + ADMIN_DESKTOP_BREAKPOINT + 'px)';
   const MODULE_PERMISSION = Object.freeze({
+    inversores:'program_requests.read',
     reportes_jc:'savings.reports',
     finance_blocks:'program_requests.read',
     sutifinanzas:'program_requests.read',
@@ -89,6 +91,7 @@
   const SECTION_MODULE = Object.freeze({votaciones:['votaciones','votaciones_results'],votaciones_nominal:'votaciones_identified',noticias:'news',education:['education','tutorials'],convenios:'agreements',companies_admin:'companies',banners:'banners',popups:'popups',documents_admin:'documents',minutes_admin:'minutes',programs_admin:'programs',marketplace:'marketplace'});
   const ADMIN_DESKTOP_GROUPS = Object.freeze([
     {id:'reportes_jc',label:'Reportes JC',icon:'receipt',modules:['reportes_jc']},
+    {id:'inversores',label:'Inversores',icon:'trending',modules:['inversores']},
     {id:'sutifinanzas',label:'SUTIFINANZAS',icon:'finance',modules:['sutifinanzas']},
     { id:'access_control', label:'Acceso y control', icon:'shield', modules:['administrators','screen_permissions','impersonation','login_history'] },
     { id:'people', label:'Personas y operación', icon:'users', modules:['affiliates','requests','documents_admin','document_generation'] },
@@ -546,6 +549,7 @@
     else if(view==='finanzas')body=React.createElement(window.FinanzasModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='savings')body=React.createElement(window.SavingsAdminModule,{app,onBack:backFromAffiliateLink,header:headerFn,initialAffiliateId:affiliateContext&&affiliateContext.affiliateId});
     else if(view==='reportes_jc')body=React.createElement(window.ReportsJcAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
+    else if(view==='inversores')body=React.createElement(window.InvestorsAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='sutifinanzas')body=React.createElement(window.SutifinanzasAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='finance_blocks')body=React.createElement(window.FinanceBlocksModule,{app,onBack:()=>setView('menu'),header:headerFn});
     else if(view==='sicof')body=React.createElement(window.SicofAdminModule,{app,onBack:()=>setView('menu'),header:headerFn});

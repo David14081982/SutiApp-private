@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "newModules": [
+    "investors-model.js",
+    "investors-repository.js",
+    "investors-admin.jsx"
+  ],
+  "preservedModules": 162,
+  "adminDelta": "four additive lines",
+  "bundleSha256": "cfb89189e18e50517017b7b88aa3d88caabc198ff2ad9c0f0f4c6836dc3168fb",
+  "globalTestsRun": false
+}

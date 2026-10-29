@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "baseCommit": "72f48a67939deb11351e3a934a9c17a85dd79232",
+  "bundleSha256": "8a7338187393ff17f87e53e130e8fa236089d51728248483570703b6607981b4",
+  "preservedPublishedModules": 169,
+  "newModules": [
+    "investors-model.js",
+    "investors-repository.js",
+    "investors-admin.jsx"
+  ],
+  "adminInsertions": 4,
+  "cachebusterOnly": true,
+  "structuralPermissions": "PASS",
+  "version": "2026102901"
+}

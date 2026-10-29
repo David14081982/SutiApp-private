@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "result": [
+    {
+      "pg_advisory_xact_lock": ""
+    },
+    {
+      "receipt": {
+        "batch": "28b35c451ec8892c0c3b1b9b5d300f8af457177448daf7dbe6fa3b610d90ef20",
+        "contracts": 88,
+        "investors": 52,
+        "sourceRows": 274,
+        "paymentsInferred": 0
+      }
+    }
+  ]
+}

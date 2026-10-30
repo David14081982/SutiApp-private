@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "directDependenciesUnchanged": 5,
+  "newRpcSecurity": {
+    "provolatile": "s",
+    "prosecdef": true,
+    "proconfig": [
+      "search_path=\"\""
+    ],
+    "anon": false,
+    "authenticated": true,
+    "service_role": false
+  },
+  "edgeBodySha256": "907fbcfd81ef638923627f43105c16d8908838d721909ee6dc0b00b8d4cd3d4d",
+  "preservedActions": [
+    "LOAD",
+    "TEMPLATE"
+  ],
+  "newAction": "CASH_FLOW",
+  "financialWrites": 0
+}

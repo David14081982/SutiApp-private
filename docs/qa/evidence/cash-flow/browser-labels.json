@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "pendingLabel": true,
+  "recordKindsTranslated": true,
+  "unassignedKindsTranslated": true,
+  "overdueDateDistinguished": true,
+  "adjustmentNotCashNote": true,
+  "externalRequests": 0
+}

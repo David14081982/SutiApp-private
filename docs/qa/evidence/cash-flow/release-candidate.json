@@ -1,0 +1,716 @@
+{
+  "status": "PASS",
+  "baseCommit": "71404ef7fb3c3d1a8da2f825dc7b1a5bf7766b6d",
+  "bundleSha256": "2e20294dbafa3ab16cc74183ac6a7dd71df6e67462e81e52097297a290bccf7b",
+  "candidateHashes": {
+    "app/cash-flow-report.jsx": "a4b628da6fca265b11f454cd4525275db36e47576feae3157a28444d953f78bb",
+    "app/reports-jc-admin.jsx": "f54ffd7de1f2da0a01d412694ba29fbd0d75340de68ad3808f092983fb4abd32",
+    "app/reports-jc-repository.js": "4685aff9b898ccb6777ebf5ab6bba7d900a8dd1f32109ada15792cacd7b63593",
+    "app/bundle.js": "2e20294dbafa3ab16cc74183ac6a7dd71df6e67462e81e52097297a290bccf7b",
+    "scripts/build-bundle.js": "2348399f335921bfe99942abb21469e7120877f9b4eb9da6c39a214c7cb12c4f",
+    "SutiApp.html": "7f39e2f452c46d9ac7fdda9f8aaa31bab3f690a8d2d73c88aa7b25f0069239df",
+    "sw.js": "db07df5696650dba2729f9d1f0085c30cb5464acaa4e5cd24872baac15d7ff39"
+  },
+  "preservedPublishedModules": 171,
+  "preservedModules": [
+    {
+      "name": "finance-blocks-repository.js",
+      "sha256": "4e712f94873f8002320ec7868729f7f8c87c7df2c7b02aa3848c7f703667e444"
+    },
+    {
+      "name": "finance-blocks.jsx",
+      "sha256": "c81ae5ade33188f284132d9071fe7ea444d5d79e5e7edac6c54ba49beb5f5ad0"
+    },
+    {
+      "name": "loan-availability-admin.js",
+      "sha256": "0f30b4449201821fc3132583a4559a7aa936cb55dd19d210a79544eb3373c228"
+    },
+    {
+      "name": "sutifinanzas-repository.js",
+      "sha256": "54b38c79053fb2f1cf512603dba021e129d45ac06da8a8ccd487e6d6c6d7b90c"
+    },
+    {
+      "name": "sutifinanzas-admin.jsx",
+      "sha256": "fd068680d8dadbbef2cd8f1522aa1a0bbbc8060ee9b996afcdfc8488a2ab1b3b"
+    },
+    {
+      "name": "reports-jc-export.js",
+      "sha256": "ede9c2e7c94eb675db1ffc50721e94977da9aa0e549cd37c7fac5c29c1931566"
+    },
+    {
+      "name": "investors-model.js",
+      "sha256": "60c1964728a72799c5d126ef9e829d7f080c6f992dc9dd51d3d407e6aff160c9"
+    },
+    {
+      "name": "investors-repository.js",
+      "sha256": "43c245f8c18536cdf212a598a5384c8769aa0beaa1dbfc8a1edb84b8714dfa39"
+    },
+    {
+      "name": "investors-admin.jsx",
+      "sha256": "e50d4bac7986d004676e8fb88ed1b6bb98ad020d26c56ed449f77a4f6d295e76"
+    },
+    {
+      "name": "savings-refunds-repository.js",
+      "sha256": "232197c866e8649d66772f058993777a3e1161b8072fed56fe6786d8a68e736c"
+    },
+    {
+      "name": "savings-refunds-admin.jsx",
+      "sha256": "4813a057cf44210bbdb9c85ebed5da402fe96fcd3ea53eb8da75e0face76d3f8"
+    },
+    {
+      "name": "sicof-repository.js",
+      "sha256": "9cbb29635b3e71dfccb2e466dd958983e5dcdbbdacbf34d22f93a112900502d1"
+    },
+    {
+      "name": "sicof-payment-behavior.jsx",
+      "sha256": "23ef6b49a5229b8126c09e05563bfdaee6046fc19f145b3f0367de8bf4ad3a07"
+    },
+    {
+      "name": "sicof-simulation-client.js",
+      "sha256": "cd52c0add8314d04b3a4b937441ccc0e14f96652c3afcd610b3453350f669b6d"
+    },
+    {
+      "name": "sicof-file-repository.js",
+      "sha256": "4146d422387471425d4f78c4656dafcbc501334ab3efd20d310163261f310e55"
+    },
+    {
+      "name": "sicof-file-flow.jsx",
+      "sha256": "8ba93b462d50845d692917980ef2451f26243905d905eeb5b0eec3ddd2557d74"
+    },
+    {
+      "name": "sicof-admin.jsx",
+      "sha256": "8795f3b61c2a4b7d05e9029b252bccd70d6747fb72ffb20eb0da54db07b33492"
+    },
+    {
+      "name": "savings-period-breakdown.jsx",
+      "sha256": "ed9bb7dadacd0d99081ddfba266d5374d680ff6a8d8b585639ce191faa3c2dfd"
+    },
+    {
+      "name": "document-generation-design.js",
+      "sha256": "cceef7b65692997fea14db89de8bd1820bdfbdc417cab9c914082676666ae5e8"
+    },
+    {
+      "name": "document-generation-repository.js",
+      "sha256": "57a1dd06a1a6030f0392f21866b1459325c9cdda7b6328c144202a09b341cb85"
+    },
+    {
+      "name": "document-layout-repository.js",
+      "sha256": "1c64623ef441de9ef496295c0f3724d5e260d6603e93ae9576afd150dac231f8"
+    },
+    {
+      "name": "document-layout-designer.jsx",
+      "sha256": "2f63f90d56bdcfc32ed45bdc744287bf17ed94f35f8d021e3ba702df34eb4116"
+    },
+    {
+      "name": "screens-admin-document-generation.jsx",
+      "sha256": "0c59891b3f5523e59fa6cf09edcd5ba876b4c737f54c9a2fafeb35af025234e0"
+    },
+    {
+      "name": "farma-repository.js",
+      "sha256": "d9812013097c754302dd2fdf2f73e4140152381171c0a428948b4bee3c008794"
+    },
+    {
+      "name": "screens-farma.jsx",
+      "sha256": "e7abfc27d0206128caf12957af4da5f8dc0724fa9b5f8f7f15ddf0a330406447"
+    },
+    {
+      "name": "login-history-repository.js",
+      "sha256": "13f7665e39253e93023710d74f8d22721015a48f156c126ff1057c7f2b446192"
+    },
+    {
+      "name": "screens-admin-login-history.jsx",
+      "sha256": "cfc912ae2109446eec91c72b72b823e15b84e8513d38e0dd2b38b8402af04897"
+    },
+    {
+      "name": "voting-design.js",
+      "sha256": "72b61136af20f1ec5e427bde220229cffd43f3698aa2a37bc3d130b32e96d309"
+    },
+    {
+      "name": "voting-repository.js",
+      "sha256": "00094b87f452b21976487883e63b3623c6f97e53c0349c1fc72729ca0c270fd8"
+    },
+    {
+      "name": "screens-voting.jsx",
+      "sha256": "63855c5e84642c15d9bc0344f9ed5de46e43912f2d5acb0d3f8d3b1aef2d0796"
+    },
+    {
+      "name": "vendor-qrcode-generator.js",
+      "sha256": "64428b7bb3cd401176e603305d42f5b65c13498ac3353d15640b83a76853b930"
+    },
+    {
+      "name": "assets-registry.jsx",
+      "sha256": "f7be378f2387e6257a47a25621630c854a9a36bb7bd8aeffc704c74ab06e30e7"
+    },
+    {
+      "name": "assets-store.jsx",
+      "sha256": "e95ae23df6de21b99fd54986c4287eb965bcb7b434fbb04175b11fe095b4d62e"
+    },
+    {
+      "name": "assets-resolver.jsx",
+      "sha256": "76a56ba8dbfcbe4431677059f193b194a6776498d444b672d91f4cd0286bceff"
+    },
+    {
+      "name": "motion.jsx",
+      "sha256": "db6f3f7f5620519c58bcc483626129a1f725c0cd23609a5d5831e71a7e7f8f7a"
+    },
+    {
+      "name": "icons.jsx",
+      "sha256": "b8cbe8433b4200219051f0339b1b97d577828a32f56d57ca0446512f14a366bc"
+    },
+    {
+      "name": "brand.jsx",
+      "sha256": "fab71982302e282fe365cb74b6b1863fbcf498f57cdcd52f2b5316632fe5cfcf"
+    },
+    {
+      "name": "ui.jsx",
+      "sha256": "2f503ee24792b998ad62e43b045c30a46a4c4bf5bae1f907ccf15d99d3b61beb"
+    },
+    {
+      "name": "request-submission-success.jsx",
+      "sha256": "edbc51cec3f6f97db07580ada48413db9cf19e1d13787b30400717459f2b0a64"
+    },
+    {
+      "name": "image-viewer.jsx",
+      "sha256": "c6a6e61090fa21b61e129b48ceb2543ddcbf33a479d1a117350addfb19225d48"
+    },
+    {
+      "name": "rich-text.jsx",
+      "sha256": "092beed546dfbea53ece7ee0ddb13221450281fefd7345ee9564c19bd8637e8b"
+    },
+    {
+      "name": "press.jsx",
+      "sha256": "014c26c923dbd7805001219786cadfa9529ad4b1c1ddbbb92456ba581af4a6ec"
+    },
+    {
+      "name": "reveal-cards.jsx",
+      "sha256": "ae37adeca8bee76dbba44709b844799db321b8598733291d429cef8044d3d607"
+    },
+    {
+      "name": "union-screen-registry.js",
+      "sha256": "e20374f37155f3702aaf1beeb0f9a754330719cbbfb422945dcbcd15c4448181"
+    },
+    {
+      "name": "data.jsx",
+      "sha256": "3d24c9969fd8e7c0e54da1c9a5511a14a0473e9f577dcef9e032b9954f4c01d2"
+    },
+    {
+      "name": "visual-repositories.js",
+      "sha256": "f226ca429a0a4bc5fc451d7d6c4073cfd74b9f108c5cef70bf065b0f755d699e"
+    },
+    {
+      "name": "visual-content.js",
+      "sha256": "4791343ec2aa7b08e8b4738fb30c60bb3356c5a6ce8d4a7ad4bb3e2e8c85037f"
+    },
+    {
+      "name": "content-repositories.js",
+      "sha256": "791063ec74048457a10863ff757ff4a0b62e50f9b7c3f010cb70346951f83676"
+    },
+    {
+      "name": "content-state.js",
+      "sha256": "a9f5c90af187aecc1a50e51fd97823678248b1570ad233a694f01f526ac5933e"
+    },
+    {
+      "name": "admin-repository.js",
+      "sha256": "863d4d5f1412061628504bae4b736886c7399540d40182ee89b676d34fea0ce6"
+    },
+    {
+      "name": "admin-cutover-repository.js",
+      "sha256": "b9125bc6c03388579ed1b6220091ca1f4d338c251812d2677093ae8257923bf9"
+    },
+    {
+      "name": "data-export-repository.js",
+      "sha256": "5bce57310c802880a870e2c25052474adaba528d1f83bd618e3cad74cbc9b9c5"
+    },
+    {
+      "name": "admin-affiliates-repository.js",
+      "sha256": "fb197026d236c22440256df93e9d8bede82f110d0cfc47f1e1e0ba3324c3820e"
+    },
+    {
+      "name": "program-request-repository.js",
+      "sha256": "e8e66cc07c4a671b2eae6e4939a80bef48d3e8d55bbe9c9fc926d543de21e195"
+    },
+    {
+      "name": "admin-finance-queue-repository.js",
+      "sha256": "5b51a5ffe44d49b427e45264fef30f7365bd08e86bf38ad95f32c179483c5adb"
+    },
+    {
+      "name": "private-resource-demand.js",
+      "sha256": "81a3556ea47d732630dab1ebc27576538c23305f08665e362085cccf1a6b7d1b"
+    },
+    {
+      "name": "document-workflow-repository.js",
+      "sha256": "29c580301462e042216d3f7c6c750907a2d4c81e1786f343d76bb6544af569d1"
+    },
+    {
+      "name": "bank-account-repository.js",
+      "sha256": "352c5c69f39fa8c979802cdd54c4416d23a04f8eceb977a544ddf7fb812e4041"
+    },
+    {
+      "name": "program-terms-repository.js",
+      "sha256": "a1d8bbd9fba6f3515388f43e43a24a5d1cf5b1b70d7fabcb3b89a034c15cbf26"
+    },
+    {
+      "name": "credential-qr-repository.js",
+      "sha256": "ffcae80b2eda87b5c9cf3a78f9e5b7b6b35948659ee6854bf658da12b940b805"
+    },
+    {
+      "name": "marketplace-repository.js",
+      "sha256": "9dca21c242cadf54ebdb8d21d0eff7a5af828460000c4f4b5e0a5d94f99c52eb"
+    },
+    {
+      "name": "program-catalog-repository.js",
+      "sha256": "001211150c03dc4a6ff4580314525e4ad7b1f0b6ddf68dcf20944230fb277d19"
+    },
+    {
+      "name": "popup-proposal-repository.js",
+      "sha256": "7d5969b70fd24eeca01d706e25259dad71984dc9cf0f565c183ac801cb234490"
+    },
+    {
+      "name": "payroll-declaration-repository.js",
+      "sha256": "c8ddea633b36815b102b8710eb491a786e51e35e5c70749fb2ad7a8bbe9dda44"
+    },
+    {
+      "name": "savings-repository.js",
+      "sha256": "6faa2b0428c7ec19df67a81f5ae9ebeb097f259165e7afaf752af02b0c13e115"
+    },
+    {
+      "name": "investment-copy-repository.js",
+      "sha256": "d55363a7d7e602314baef7863d97ea023d305721add049865e3e5d31fc1a2911"
+    },
+    {
+      "name": "admin-request-deletion-repository.js",
+      "sha256": "30bd726e5a515d4ce333d282522d4d027f38f3cbc19e96d13a43c29178384360"
+    },
+    {
+      "name": "institutional-repositories.js",
+      "sha256": "f59b16a4f1a84fc68f25cab7235227009e741ad2084bf246fde3034f0507528b"
+    },
+    {
+      "name": "institutional-content.js",
+      "sha256": "a90f0ae08928ad4885eae06b3ead45c8e49d443dbc0ff5a12744f7e366d9d817"
+    },
+    {
+      "name": "tweaks-panel.jsx",
+      "sha256": "815f461681cecf5554941d9d4046d28d12b9d89a4553c2bf22fc48ae13fc316a"
+    },
+    {
+      "name": "signature.jsx",
+      "sha256": "2e468bfefa6dc94d46fb474358e1e8ed2e0dc9484b0c8444a9e5805a9187fc11"
+    },
+    {
+      "name": "screens-home-r2.jsx",
+      "sha256": "0e33dd7e30922407d048a659d7e1ffa9b558dda9d3f825fc04686c177519f5df"
+    },
+    {
+      "name": "screens-financiera.jsx",
+      "sha256": "df5a2a8c5bb4ba9bb934b2552f37e71ac66dc68b904bb9e7a294fad7fbe6b706"
+    },
+    {
+      "name": "savings-request-form.jsx",
+      "sha256": "a02b3a2fdaad319c4f824fea7497cc1b03f11f0e7037ee35218ca8618b395831"
+    },
+    {
+      "name": "screens-savings.jsx",
+      "sha256": "c9aade8bc9b9d6132197d115222c7ecb1a7c85cf0890185a70e4276aa1767b34"
+    },
+    {
+      "name": "investment-copy-store.jsx",
+      "sha256": "72167e5e7c68dd812a9ac1a2e59cca21b898b82a765febea2a7d72386409f781"
+    },
+    {
+      "name": "screens-inversion.jsx",
+      "sha256": "21d46d567facfb635abfb583cd27d1e228a6aab9e4b1e8d3be0f258179217be4"
+    },
+    {
+      "name": "screens-loan.jsx",
+      "sha256": "94dd3c4839fa2e936d0441ce8c377f51338435dfc5e3985e7162499f9cc902b5"
+    },
+    {
+      "name": "screens-marketplace.jsx",
+      "sha256": "5e9016abc7f03e969a34e270de7a32ec6c0ad2f8919c3d719b38ceb4a633ec2e"
+    },
+    {
+      "name": "screens-terreno.jsx",
+      "sha256": "a67b667664e03901c76d546d950170abae9ddd923df642717c2372faca67f56a"
+    },
+    {
+      "name": "convenios-repository.js",
+      "sha256": "3e6ca10e53b19f5c129eefa0a38ff9acbdf6573e3d15508b4413c4cf4055eb0a"
+    },
+    {
+      "name": "screens-convenios.jsx",
+      "sha256": "7bd91c0a27f329fe1f73cebf4d84153971754fab9a123c0efb3a894eeb8202ad"
+    },
+    {
+      "name": "request-notifications.js",
+      "sha256": "fcba02a6a45492a0307ade3083cbf5488c24f2d257487bdd0eca33806a2ebc66"
+    },
+    {
+      "name": "history-loans-repository.js",
+      "sha256": "6849bbc80cdd4c2cccad9566b11bbcb508b36cee6eae717c2a3515fd71fa2f5f"
+    },
+    {
+      "name": "history-statement.js",
+      "sha256": "f2b5aad20b99cfe0dee3f2a2ccfc9706a4f4aa71bd5d69620113887c2da3fddf"
+    },
+    {
+      "name": "history-loans.jsx",
+      "sha256": "ebae8ec08f210af8d226291d7c2ccb595cf5305ce84fa7e26b6fc63348f4e2c7"
+    },
+    {
+      "name": "screens-historial.jsx",
+      "sha256": "55a99266106a4155c3558f884df776fb5506c5fcc790d4c09a87bb9be0e8a986"
+    },
+    {
+      "name": "screens-credencial.jsx",
+      "sha256": "875ff3f1ac0a432782567d07938d734388b704691ef53ee61daa19f47817a553"
+    },
+    {
+      "name": "image-slot.js",
+      "sha256": "0b80fa1f54620ce52a5f4e8730d94d8786a5074a4f9b045c69d056c2bf323c5c"
+    },
+    {
+      "name": "screens-documentos.jsx",
+      "sha256": "21e58e233a4071b1f01d47dcb089c34c969033c1a65ddd4f15c3525db8386968"
+    },
+    {
+      "name": "admin-store.jsx",
+      "sha256": "d3e188dec87132b326938818bce71cbe2341cbe4f2a95c9807723a0068f8256e"
+    },
+    {
+      "name": "admin-cutover-store.jsx",
+      "sha256": "4978cb5a5d9f28232ac8a18935757f16794ed99ccecf86d630687be6efe48001"
+    },
+    {
+      "name": "editorial-repository.js",
+      "sha256": "e767f0e7a5fbe19b2204fc3f96aca06c34fce02289667d6cd88f9f610fc4532c"
+    },
+    {
+      "name": "editorial-content.jsx",
+      "sha256": "c11defcf6b7df6a8d7a552cec88ea9c100df734b519812aa36c422cc0fb61798"
+    },
+    {
+      "name": "custom-screen.jsx",
+      "sha256": "fe16b45bdb682ac7320ce51962db726d6ad0bdc9200b6f3d82fc19657209f50f"
+    },
+    {
+      "name": "sindicato-store.jsx",
+      "sha256": "6c230dc6f04c952c2c5b23b94eeaea0f870d333ea3d86516d3aff877e383f0b6"
+    },
+    {
+      "name": "finance-store.jsx",
+      "sha256": "d43d67ba7bfc8b342db172a324a0d1e243919dfa9e9581355b1ddd49eb5f9481"
+    },
+    {
+      "name": "savings-store.jsx",
+      "sha256": "6b33889fc82eb72e1e7016b376bd24f5060422186d6385d0705fac22cf960f92"
+    },
+    {
+      "name": "quotes-store.jsx",
+      "sha256": "a1888788e1eee6cc96e04646334968f427f5c3bb7e440b024953d16d987ca4a8"
+    },
+    {
+      "name": "operations-store.jsx",
+      "sha256": "6af07e1a07e8a6ef479e2d2f81af0f3456e65ed96845562c0f4479882ab2ceb5"
+    },
+    {
+      "name": "flow-store.jsx",
+      "sha256": "1903bae7d52e0886ead9e3f16db065136c573d4ea14f6937d05f3f6471802973"
+    },
+    {
+      "name": "funds-store.jsx",
+      "sha256": "0d485756e5c708de4455b4f3fd8ea2dbfe8808465d19144645377c15585833b4"
+    },
+    {
+      "name": "savings-loan-eligibility.js",
+      "sha256": "0297c739b4483bd933ef8634496cd719b9edc7d7c434ba1a48cb4dc589d6a62a"
+    },
+    {
+      "name": "admin-popup-editor.jsx",
+      "sha256": "ce9aa9aa28433cca3fdf88ecf4cdd529c123c984eac7002a8d25d5d38f22e100"
+    },
+    {
+      "name": "savings-review-repository.js",
+      "sha256": "81fe725d837ed7fea1c5793a245dcee539644d87efe0de621ce699a928646993"
+    },
+    {
+      "name": "savings-access-admin.jsx",
+      "sha256": "b098aeabcffc4bade65403c83822f361189ef7c13d04c2dfe17c0e0f34f10d9d"
+    },
+    {
+      "name": "savings-recorded-history.jsx",
+      "sha256": "ac794274a9793b3246ccc74da8a191cd6ad7aaa3c3ec9bec7f2c9d6506fa84ea"
+    },
+    {
+      "name": "savings-withdrawal-list.jsx",
+      "sha256": "e42ad6ecf8ce44ff59a5b041adef95676bcce1d0c0b7bf49d5780c75db0dedc7"
+    },
+    {
+      "name": "savings-review-admin.jsx",
+      "sha256": "ac0ac660541537fbb2a5646480641f4dbbe9b881d184dc9c385e8bd29810c21f"
+    },
+    {
+      "name": "savings-operations-admin.jsx",
+      "sha256": "2c9444921e8c3f016b5277dd9325234550a2f0a15f7bdd33a1a21670d0748310"
+    },
+    {
+      "name": "savings-retirement-admin.jsx",
+      "sha256": "547dff4d859d74342dc798102aa746239caa5b8ab954e51f59b4dba8a8ebd037"
+    },
+    {
+      "name": "savings-yield-admin.jsx",
+      "sha256": "beaff9611dd253fe2f626e72a35632564a3d54f5d0ff8b15dc9f9d9055fa8ab8"
+    },
+    {
+      "name": "section-responsibility.jsx",
+      "sha256": "4d6eaa2eee39ec1fcca60a26667b91ba73af8dbd34836b46c921d079c5878e15"
+    },
+    {
+      "name": "screens-admin-roles.jsx",
+      "sha256": "858dd9f732b9d544ec2f38fb82236c3ad06b811e4cdaacf07e1bc1ca8f69171f"
+    },
+    {
+      "name": "screens-admin-content.jsx",
+      "sha256": "4f348b4537c04a747fb83c95a441086e5c3d9c3bb474d00eaf3129d45e213477"
+    },
+    {
+      "name": "screens-admin-news.jsx",
+      "sha256": "64dbbe463e407853ae35074c5ee479533a5968afe26a15a53be44f20648097ff"
+    },
+    {
+      "name": "screens-admin-convenios.jsx",
+      "sha256": "52b7513ad98e1d63f8974e313499637579070060d6d6bbae957927dc7432c053"
+    },
+    {
+      "name": "screens-admin-sindicato.jsx",
+      "sha256": "ed25ca552f517a3fcf2d5704d9e9c1a343e6ea2cc8f8e8cd1d642fe02fdb650e"
+    },
+    {
+      "name": "history-sync-admin.js",
+      "sha256": "ccbf87377e086e55fe0e948115ba2e43fdf51a7d2190a429045c35074f380adc"
+    },
+    {
+      "name": "screens-admin-finanzas.jsx",
+      "sha256": "7d86827fe849c642cab93e0e3ee3f1fb5608aae33d7f651181f9eafc2df3d6a9"
+    },
+    {
+      "name": "screens-admin-fondos.jsx",
+      "sha256": "bd9ba2469cebab0ff2f768d09db55d9afb921c45cd21b38d57dda847ac3cf2fd"
+    },
+    {
+      "name": "screens-admin-fincat.jsx",
+      "sha256": "0931990f678b0a7319a486871df2f5b909fb66db6c48c8f4a3594fe222a09047"
+    },
+    {
+      "name": "screens-admin-flujos.jsx",
+      "sha256": "4c7abfbe6c0baedae5c97cfe09334767364b47883ac86c440d540dc2c64a0a22"
+    },
+    {
+      "name": "screens-admin-inversion.jsx",
+      "sha256": "f0a26508ccb9b9c6275e7d76f541fc65c0df63d3af9aac6252acd897b588e6e9"
+    },
+    {
+      "name": "screens-admin-documents.jsx",
+      "sha256": "64b2515ec943156378b957d56168bab7cfd93166fa8da6e57f2d53d85759a736"
+    },
+    {
+      "name": "fincat-store.jsx",
+      "sha256": "8da11616e29c8482fb3aebc16d26bdb442cb026c88f07c1d57589360cd3ed6cd"
+    },
+    {
+      "name": "program-general-info.jsx",
+      "sha256": "aa2df47112e79654be262e730fd8024d76703cd5565325c3ceacc8e80f6c11f7"
+    },
+    {
+      "name": "savings-panel-repository.js",
+      "sha256": "5b6aa70c6bf5823401bfe58cfcefe4b59aad357ae2a2cfecc29572445df66e67"
+    },
+    {
+      "name": "savings-withdrawal-history-repository.js",
+      "sha256": "90b24d96bd373382acd6c36e3d8b72dca78527667201b68d91ad6e4bfc00a6b4"
+    },
+    {
+      "name": "savings-individual-withdrawal-repository.js",
+      "sha256": "a436f5b32b23bc8e8bf04cc87ec53458f1337894188c43a51a0be632390b29de"
+    },
+    {
+      "name": "savings-individual-withdrawal.jsx",
+      "sha256": "b50c79febae42566bb845c24b4e03f268d3b193c1b760d5ca94461c9a2aa46d6"
+    },
+    {
+      "name": "savings-panel-reference.jsx",
+      "sha256": "f65f518fe6d14850fb6c5898f37afecf8055b8925acbcac2e28ed6c6eeaabe0a"
+    },
+    {
+      "name": "savings-certification-admin.jsx",
+      "sha256": "49279a15ad67b336e86c0816868b4549afd05804c1dac5a5710a4882de4f2877"
+    },
+    {
+      "name": "savings-bulk-admin.jsx",
+      "sha256": "744ec48633f899d00548d9266d325aea71e295fa2ccbbc47c2b4b6fd5e75f824"
+    },
+    {
+      "name": "savings-runtime-admin.jsx",
+      "sha256": "92ef121b17e37ab8aa56aa5bc80deb9529925fce78b3d0d325aa2faaf8862ad5"
+    },
+    {
+      "name": "savings-rh-repository.js",
+      "sha256": "3c2f7d890016e5996add0d2008e05e00497e9636f5708d0a485e4f43a92dcc7a"
+    },
+    {
+      "name": "savings-rh-report.jsx",
+      "sha256": "18dfc115376a24927da5adbf53c7f3843de10b7f69d65cde832c0c2869b9896c"
+    },
+    {
+      "name": "savings-panel-admin.jsx",
+      "sha256": "19023a7d96712250062fa05ed06f1e3eb0c2d5ed970fbc2b67812352fa2a17b6"
+    },
+    {
+      "name": "screens-admin-branding.jsx",
+      "sha256": "d1ff958793f8c90be06c6004f33446874bd5962fbb2bb4b416cfc07ebc6fd803"
+    },
+    {
+      "name": "screens-admin-visual-crud.jsx",
+      "sha256": "2ab506095cdedf746c4d2bb4f721a974c04ec209c317045aad919cc75c90d652"
+    },
+    {
+      "name": "screens-admin-identity.jsx",
+      "sha256": "124daf14414d5615908d6eb76e284101662dc5e7bea3897878bb905ee5762aa8"
+    },
+    {
+      "name": "screens-admin-pantallas.jsx",
+      "sha256": "cf52b903505cd80f970827ee3e23c5b7592cfa402620902dd6a8977abb34a99d"
+    },
+    {
+      "name": "screens-admin-requests.jsx",
+      "sha256": "01f175bd0dfbb903e2a46bc13f094df1522b63c94566eaf266473e4cb3d1dfd4"
+    },
+    {
+      "name": "screens-admin-data-exports.jsx",
+      "sha256": "07a6a020852c878bc2e2d23f9873543ee48c558f4cdc618982ab46963f5f68df"
+    },
+    {
+      "name": "screens-admin-affiliates.jsx",
+      "sha256": "90d5218bc79d44a4504cf2d18a9b1b4b89dbfbe41f5a5438afc9afb0128fe8a1"
+    },
+    {
+      "name": "screens-admin-savings.jsx",
+      "sha256": "b87e552f50c937d42f6d1bde390326acf3b95d69739dd906ca5de82bc66dfe8a"
+    },
+    {
+      "name": "screens-admin-access.jsx",
+      "sha256": "2d04fd8fa94ce1ffaba0633bf23df856b0f9e7a5fb7a0425f25eda933bad9ea3"
+    },
+    {
+      "name": "screens-admin.jsx",
+      "sha256": "476aede688503d23ccd67daac2e36e00865c80f2f1666da0f4f7ebfcc47a950f"
+    },
+    {
+      "name": "company-store.jsx",
+      "sha256": "c6b743e2bfed81b1031ef68e3ca423c3f6b27d87f36c10dbfa5120803f1657d7"
+    },
+    {
+      "name": "catalog-store.jsx",
+      "sha256": "dbe20fe15e54f384948d791661a1f17a3b1cd565942954727bff94401333237c"
+    },
+    {
+      "name": "screens-program-product-payment.jsx",
+      "sha256": "2c8c072ef0c2acc03311ae03fa1811c2fd33a5539a6225a8c1fbc08634c0728f"
+    },
+    {
+      "name": "renta-car.jsx",
+      "sha256": "8473837b2623d506be5a9d6eb5cdc41fd39049c8b3ed8b4d874c863c95269311"
+    },
+    {
+      "name": "renta-car-catalog.jsx",
+      "sha256": "76cdfa708a73e7f72b439d889b650f0198e26d530052405a2508007b2ac6afdc"
+    },
+    {
+      "name": "screens-catalogo.jsx",
+      "sha256": "e37c5aee562f2a0e4f24f5f66a47bfd7077b6b487a36728dafb35d36af40dfd0"
+    },
+    {
+      "name": "program-catalog-admin-store.jsx",
+      "sha256": "b45b2ff670a3b099a88a6c7f88850676384ab521b12a6bdc68f6cd301d8a87f0"
+    },
+    {
+      "name": "screens-admin-program-products.jsx",
+      "sha256": "e78428e1efb6f2a486d1f07236d0dc271842b014de8809751db67e695a1ac371"
+    },
+    {
+      "name": "screens-admin-catalogo.jsx",
+      "sha256": "7a0060b2b25ec0ed5dfec5b3a1739fa5e4e9fb694d9ad271d3883b50ea8ef301"
+    },
+    {
+      "name": "screens-admin-planes.jsx",
+      "sha256": "36a9ca4b392c3d31af91146d3dd32a8c0e9787b2fe37337f9a927d1975727af3"
+    },
+    {
+      "name": "membership-repository.js",
+      "sha256": "dfb549929204280fa2777a217f630cbd45315fecb4465b301b90ead0de2ee7ce"
+    },
+    {
+      "name": "membership-store.jsx",
+      "sha256": "11e323ce0a5501116e47342c7fd789ccca9476e1f0c1d13183546f6345ecb627"
+    },
+    {
+      "name": "screens-membresias.jsx",
+      "sha256": "6cfa9d62d41ba403a32fedeec50882fa14e566ea95a487f3fdb974bcb013836b"
+    },
+    {
+      "name": "screens-membership-application.jsx",
+      "sha256": "2f5566664d21f53b25bc0d3cdd961d6b29a4b9409a9f5f45adc85380baf07d3e"
+    },
+    {
+      "name": "screens-admin-membresias.jsx",
+      "sha256": "5e33abd1abff064f98ca08dc6b18ac89238f7c53c85ee511eeaa2d195e56fdf2"
+    },
+    {
+      "name": "screens-company-modules.jsx",
+      "sha256": "46c0fca65748387f31bd7b2e86e134419a5b695e58f22ad8480038d1b04fc5dd"
+    },
+    {
+      "name": "screens-company.jsx",
+      "sha256": "d4051b6ae48dee7d86bcd9b7140e462faf5bfb578eca8460915065e59245a7d0"
+    },
+    {
+      "name": "text-size-preferences.js",
+      "sha256": "362915d0787736ba0612462eed9f5d9c5ebda32843617fd81485ed77caccbf30"
+    },
+    {
+      "name": "affiliate-view-model.js",
+      "sha256": "4c3860552618384a98f6b7c4db01433af15ebb2101f2ba4583fdab1a31198c74"
+    },
+    {
+      "name": "affiliate-auth.js",
+      "sha256": "4d97945c7dd159a64732c6f27679bbd1e361944cbc72c5f48e1992d20b72d9a9"
+    },
+    {
+      "name": "request-push.js",
+      "sha256": "cc9a05ab5ffa159ef0439cbb2337a2f8dbd416f983f6c818f030a3cd7c8f86d8"
+    },
+    {
+      "name": "app.jsx",
+      "sha256": "874af3d96fdb7d70f5a70e43eeeb12a1c9bfc3de7820c1bf0b726604a9494347"
+    },
+    {
+      "name": "savings-regularization-admin.jsx",
+      "sha256": "74a40840bc0cecf5e2a19566807d18a7fbd7a5bf2d6ecb14a2f110981bf9b11c"
+    }
+  ],
+  "newModules": [
+    "cash-flow-report.jsx"
+  ],
+  "modifiedModules": [
+    "reports-jc-repository.js",
+    "reports-jc-admin.jsx"
+  ],
+  "adminInsertions": 3,
+  "repositoryAction": "CASH_FLOW",
+  "cachebusterOnly": true,
+  "version": "2026103001",
+  "structuralPermissions": "PASS",
+  "buildPages": "PASS",
+  "financialWrites": 0,
+  "deployed": false
+}

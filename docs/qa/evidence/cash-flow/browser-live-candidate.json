@@ -1,0 +1,45 @@
+{
+  "status": "PASS",
+  "mode": "candidate",
+  "checkedAt": "2026-10-30T14:47:50.591Z",
+  "bundleSha256": "2e20294dbafa3ab16cc74183ac6a7dd71df6e67462e81e52097297a290bccf7b",
+  "candidateStaticOverlay": true,
+  "financialApiMocks": 0,
+  "originalReports": 8,
+  "months": 12,
+  "concepts": 17,
+  "realAuthenticatedQuery": true,
+  "uiMatchesActualSource": true,
+  "sourceDetail": true,
+  "stateCounts": {
+    "RECORDED": 59,
+    "PARTIAL": 17,
+    "NOT_APPLICABLE": 44,
+    "UNAVAILABLE": 69,
+    "SCHEDULED": 3,
+    "PENDING": 12
+  },
+  "issueCount": 22,
+  "unassignedCount": 370,
+  "reportRequests": [
+    {
+      "action": "LOAD",
+      "status": 200
+    },
+    {
+      "action": "CASH_FLOW",
+      "status": 200
+    },
+    {
+      "action": "CASH_FLOW",
+      "status": 200
+    }
+  ],
+  "mobileNoPageOverflow": true,
+  "financialWrites": 0,
+  "blockedWriteAttempts": 0,
+  "pageErrors": 0,
+  "persistedTokens": 0,
+  "persistedPersonalRecords": 0,
+  "screenshots": 0
+}

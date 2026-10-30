@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-30T14:05:28.529Z",
+  "command": "SUTIAPP_CASH_FLOW_SQL_CHECK='current balance|source SELECT' node scripts/test-cash-flow-savings-sql.js",
+  "checks": [
+    "current balance accepts 35 future empty accounts without invalidating canonical amounts",
+    "source SELECT is equivalent to the RPC for both report horizons"
+  ],
+  "migrationSha256": "ed4ac5d61c3f9da08357e487d597430331b25e10509c4dd5d3f604655eca9a04",
+  "liveCauseCounts": {
+    "canonicalAccounts": 384,
+    "certifiedAccounts": 384,
+    "missingSupportDate": 0,
+    "futureSupportDate": 35,
+    "futureEmptyZeroBalanceCount": 35,
+    "noncanonicalMovements": 0,
+    "futureMovements": 0,
+    "currentSummaryAccounts": 384,
+    "currentSummaryTotalKnown": true,
+    "canonicalTotalMatchesProductiveSummary": true
+  },
+  "financialWrites": 0,
+  "triggerChanges": 0,
+  "sourceRowsPersisted": 0
+}

@@ -1,0 +1,159 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-30T14:39:40.760Z",
+  "scope": "PRODUCTION_AUTHENTICATED_READ_ONLY_HTTP",
+  "financialWrites": 0,
+  "googleWrites": 0,
+  "triggerChanges": 0,
+  "persistedSourceRows": 0,
+  "credentialsPersisted": false,
+  "checks": [
+    {
+      "name": "existing_controlled_admin_login",
+      "status": "PASS"
+    },
+    {
+      "name": "edge_missing_authorization_denied",
+      "status": "PASS",
+      "http": 401
+    },
+    {
+      "name": "rpc_anonymous_denied",
+      "status": "PASS",
+      "http": 401
+    },
+    {
+      "name": "edge_invalid_session_denied",
+      "status": "PASS",
+      "http": 401
+    },
+    {
+      "name": "authenticated_admin_rpc",
+      "status": "PASS",
+      "http": 200,
+      "durationMs": 7939,
+      "events": 8499,
+      "months": 12,
+      "currentBalanceMatchesEdge": true
+    },
+    {
+      "name": "existing_reports_jc_LOAD",
+      "status": "PASS",
+      "http": 200,
+      "durationMs": 8168,
+      "sheets": 8,
+      "sourceRecords": 20946
+    },
+    {
+      "name": "existing_reports_jc_TEMPLATE",
+      "status": "PASS",
+      "http": 200,
+      "templateBytes": 60978,
+      "sha256Matches": true
+    },
+    {
+      "name": "CASH_FLOW_strict_schema",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "name": "existing_LOAD_strict_schema",
+      "status": "PASS",
+      "http": 400
+    },
+    {
+      "name": "existing_ordinary_user_denial",
+      "status": "NOT TESTED",
+      "reason": "NO_EXPLICIT_EXISTING_ORDINARY_CREDENTIALS"
+    }
+  ],
+  "reports": [
+    {
+      "from": "2026-01",
+      "status": "PASS",
+      "http": 200,
+      "durationMs": 7460,
+      "months": [
+        "2026-01",
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09",
+        "2026-10",
+        "2026-11",
+        "2026-12"
+      ],
+      "rows": 17,
+      "loanCount": 499,
+      "sourceRecords": 10886,
+      "unassigned": 370,
+      "cellsByStatus": {
+        "RECORDED": 59,
+        "PARTIAL": 17,
+        "NOT_APPLICABLE": 44,
+        "UNAVAILABLE": 69,
+        "SCHEDULED": 3,
+        "PENDING": 12
+      },
+      "issueCodes": [
+        "SAVINGS_WITHDRAWAL_KIND_MISSING",
+        "SAVINGS_MIXED_HISTORY",
+        "SAVINGS_HISTORICAL_BALANCE_UNAVAILABLE",
+        "SAVINGS_MIXED_CONTRIBUTION_YIELD",
+        "SAVINGS_WITHDRAWAL_KIND_UNKNOWN",
+        "LOAN_TRANSFER_DATE_UNRESOLVED",
+        "LOAN_BREAKDOWN_NOT_CERTIFIED",
+        "LOAN_INSTALLMENT_AMBIGUOUS",
+        "LOAN_PRINCIPAL_PENDING_UNAVAILABLE"
+      ],
+      "currentBalanceKnown": true,
+      "uncertifiedLoanBreakdownProtected": true,
+      "actorMatches": true
+    },
+    {
+      "from": "2026-10",
+      "status": "PASS",
+      "http": 200,
+      "durationMs": 8919,
+      "months": [
+        "2026-10",
+        "2026-11",
+        "2026-12",
+        "2027-01",
+        "2027-02",
+        "2027-03",
+        "2027-04",
+        "2027-05",
+        "2027-06",
+        "2027-07",
+        "2027-08",
+        "2027-09"
+      ],
+      "rows": 17,
+      "loanCount": 499,
+      "sourceRecords": 10786,
+      "unassigned": 370,
+      "cellsByStatus": {
+        "RECORDED": 8,
+        "NOT_APPLICABLE": 143,
+        "SCHEDULED": 12,
+        "PENDING": 12,
+        "UNAVAILABLE": 17,
+        "PARTIAL": 12
+      },
+      "issueCodes": [
+        "LOAN_TRANSFER_DATE_UNRESOLVED",
+        "LOAN_INSTALLMENT_AMBIGUOUS",
+        "LOAN_BREAKDOWN_NOT_CERTIFIED",
+        "LOAN_PRINCIPAL_PENDING_UNAVAILABLE"
+      ],
+      "currentBalanceKnown": true,
+      "uncertifiedLoanBreakdownProtected": true,
+      "actorMatches": true
+    }
+  ]
+}

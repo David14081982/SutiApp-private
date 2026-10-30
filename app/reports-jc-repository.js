@@ -17,5 +17,5 @@
   if(!envelope.data||envelope.error)throw Error(envelope.error||'RESPONSE_INVALID');
   return envelope.data;
  }
- window.ReportsJcRepository=Object.freeze({contextKey:()=>context().key,load:year=>invoke('LOAD',{year}),template:()=>invoke('TEMPLATE',{})});
+ window.ReportsJcRepository=Object.freeze({contextKey:()=>context().key,load:year=>invoke('LOAD',{year}),template:()=>invoke('TEMPLATE',{}),cashFlow:from=>invoke('CASH_FLOW',{from})});
 })();

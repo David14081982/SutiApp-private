@@ -1,0 +1,19 @@
+{
+  "status": "BLOCKED",
+  "reason": "SUPABASE_MANAGEMENT_HTTP_401_INVALID_ACCESS_TOKEN",
+  "deploymentAttempted": false,
+  "migrationApplied": false,
+  "frontendPublished": false,
+  "financialWrites": 0,
+  "triggerChanges": 0,
+  "requiredPermission": "Project-scoped Edge Functions Read-write",
+  "credentialOutput": false,
+  "resolved": true,
+  "resolutionEvidence": [
+    "backend-access.json",
+    "database-deployed.json",
+    "edge-deployed.json",
+    "production-http.json"
+  ],
+  "historicalRecord": true
+}

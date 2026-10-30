@@ -1406,7 +1406,7 @@
   if(!envelope.data||envelope.error)throw Error(envelope.error||'RESPONSE_INVALID');
   return envelope.data;
  }
- window.ReportsJcRepository=Object.freeze({contextKey:()=>context().key,load:year=>invoke('LOAD',{year}),template:()=>invoke('TEMPLATE',{})});
+ window.ReportsJcRepository=Object.freeze({contextKey:()=>context().key,load:year=>invoke('LOAD',{year}),template:()=>invoke('TEMPLATE',{}),cashFlow:from=>invoke('CASH_FLOW',{from})});
 })();
 })();
 /* @@file reports-jc-export.js */
@@ -1733,100 +1733,872 @@
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof globalThis !== 'undefined' ? globalThis : window);
 })();
+/* @@file cash-flow-report.jsx */
+(function(){
+/* Read-only monthly savings / Caja de Ahorro projection. Authority stays on the server. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React;
+  const money = new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2
+  });
+  const statuses = {
+    RECORDED: 'Registrado',
+    SCHEDULED: 'Programado',
+    PENDING: 'Pendiente autorizado',
+    PARTIAL: 'Información parcial',
+    UNAVAILABLE: 'Por determinar',
+    NOT_APPLICABLE: 'No aplica'
+  };
+  const groupNames = {
+    savings: 'Ahorro Voluntario',
+    SAVINGS: 'Ahorro Voluntario',
+    loans: 'Préstamos de Caja de Ahorro',
+    LOANS: 'Préstamos de Caja de Ahorro',
+    caja: 'Préstamos de Caja de Ahorro'
+  };
+  const css = `.cfr{color:var(--ink);min-width:0;max-width:100%}.cfr *{box-sizing:border-box}.cfr-body{max-width:1440px;margin:auto;padding:20px;min-width:0}.cfr-top{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.cfr h1{font-size:26px;margin:0}.cfr h2{font-size:19px}.cfr-sub,.cfr-note{color:var(--ink-2);font-size:13px;line-height:1.6}.cfr-sub{margin:5px 0 18px}.cfr-controls{display:flex;gap:10px;align-items:end;flex-wrap:wrap;background:var(--surface);padding:16px;border:1px solid var(--hairline);border-radius:16px}.cfr label{display:grid;gap:6px;font-weight:700;font-size:12px}.cfr input{background:var(--surface);color:var(--ink);border:1px solid var(--hairline-strong);border-radius:10px;padding:10px 12px;min-height:42px;font:inherit}.cfr button{font:inherit;cursor:pointer}.cfr-btn{border:1px solid var(--hairline);background:var(--surface);color:var(--ink);border-radius:10px;padding:11px 14px;min-height:42px;font-weight:700!important}.cfr-btn.primary{background:var(--guinda,#861e45);color:#fff}.cfr button:disabled{opacity:.55;cursor:default}.cfr button:focus-visible,.cfr summary:focus-visible,.cfr-scroll:focus-visible{outline:3px solid var(--guinda,#861e45);outline-offset:3px}.cfr-summary{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:16px 0}.cfr-badge{padding:5px 9px;border-radius:7px;background:var(--surface-2);font-size:12px;border:1px solid var(--hairline)}.cfr-badge.scheduled{background:#edf3ff;color:#255395}.cfr-badge.partial{background:#fff5dc;color:#805511}.cfr-scroll{width:100%;max-width:100%;overflow:auto;border:1px solid var(--hairline);border-radius:14px;background:var(--surface);isolation:isolate}.cfr-table{border-collapse:separate;border-spacing:0;min-width:1940px;width:100%;font-size:13px}.cfr-table th,.cfr-table td{border-bottom:1px solid var(--hairline);border-right:1px solid var(--hairline);padding:12px;vertical-align:top}.cfr-table thead th{background:var(--surface-2);text-align:right;white-space:nowrap;font-size:12px}.cfr-table th:first-child{position:sticky;left:0;z-index:2;width:245px;min-width:245px;max-width:245px;text-align:left;background:var(--surface);box-shadow:2px 0 4px #00000008}.cfr-table thead th:first-child{z-index:3;background:var(--surface-2)}.cfr-table .cfr-group th{position:static;background:var(--surface-2);color:var(--guinda,#861e45);font-size:13px;padding:14px 12px}.cfr-table .cfr-group th span{position:sticky;left:12px}.cfr-table tbody th small{display:block;font-weight:400;margin-top:5px;color:var(--ink-2);line-height:1.4}.cfr-cell{border:0;background:none;text-align:right;width:100%;min-width:110px;padding:0;color:var(--ink);font-variant-numeric:tabular-nums}.cfr-cell strong{display:block;text-decoration:underline;text-decoration-color:var(--hairline-strong);text-underline-offset:4px;font-size:13px}.cfr-cell small{display:block;margin-top:5px;color:var(--ink-2);font-size:11px;line-height:1.4}.cfr-cell[data-status=PARTIAL]{color:#805511}.cfr-cell[data-status=SCHEDULED]{color:#255395}.cfr-cell[data-status=UNAVAILABLE]{color:var(--ink-2)}.cfr-error{padding:14px;border-radius:12px;background:#fff0ed;color:#9b241b;margin:16px 0;line-height:1.6}.cfr-issues{margin:16px 0;padding:14px;border:1px solid #dfb26a;border-radius:12px;background:var(--surface);font-size:13px;line-height:1.6}.cfr-issues summary{font-weight:700;cursor:pointer}.cfr-issues li+li{margin-top:10px}.cfr-origin{overflow-wrap:anywhere;font-size:12px;color:var(--ink-2)}.cfr-modal{position:fixed;inset:0;z-index:1800;background:#0006;display:grid;place-items:center;padding:20px}.cfr-dialog{background:var(--surface);border-radius:20px;padding:22px;width:min(950px,100%);max-height:85vh;overflow:auto;min-width:0}.cfr-dialog h2{margin:0}.cfr-details-table{border-collapse:collapse;width:100%;font-size:12px}.cfr-details-table th,.cfr-details-table td{padding:10px;border-bottom:1px solid var(--hairline);text-align:left;vertical-align:top;overflow-wrap:anywhere}.cfr-details-table th{background:var(--surface-2)}.cfr-details-scroll{overflow:auto;max-width:100%}.cfr-details-table{min-width:650px}.cfr-empty{padding:24px;border:1px solid var(--hairline);border-radius:14px;background:var(--surface)}@media(max-width:600px){.cfr-body{padding:12px}.cfr h1{font-size:22px}.cfr-controls{padding:12px}.cfr-controls>*{flex:1 1 45%;min-width:0}.cfr input{width:100%;min-width:0}.cfr-table th:first-child{width:170px;min-width:170px;max-width:170px}.cfr-modal{padding:10px}.cfr-dialog{padding:14px}.cfr-table th,.cfr-table td{padding:10px}.cfr-top{align-items:flex-start}}`;
+  function today() {
+    const p = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Hermosillo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).formatToParts(new Date());
+    return Object.fromEntries(p.map(x => [x.type, x.value]));
+  }
+  function nextMonth(date) {
+    const month = Number(date.month);
+    return Number(date.year) + (month === 12 ? 1 : 0) + '-' + String(month === 12 ? 1 : month + 1).padStart(2, '0');
+  }
+  function explain(error) {
+    return {
+      AUTH_REQUIRED: 'Vuelve a iniciar sesión para consultar el reporte.',
+      ADMIN_DENIED: 'Tu cuenta no tiene acceso a Reportes JC.',
+      CONTEXT_CHANGED: 'La sesión o sus permisos cambiaron. Consulta nuevamente.',
+      SOURCE_UNAVAILABLE: 'No fue posible consultar las fuentes. Puedes reintentar.',
+      GOOGLE_NOT_CONFIGURED: 'La conexión de consulta de Google no está disponible.',
+      INVALID_FROM: 'Selecciona un mes inicial válido.',
+      RESPONSE_INVALID: 'La fuente no devolvió un reporte válido.'
+    }[error?.message] || 'No se completó la consulta. ' + String(error?.message || 'Intenta nuevamente.');
+  }
+  function cellText(cell) {
+    if (cell.status === 'NOT_APPLICABLE') return 'No aplica';
+    if (cell.status === 'PARTIAL') return typeof cell.knownAmount === 'number' ? money.format(cell.knownAmount) : 'Por determinar';
+    return typeof cell.amount === 'number' ? money.format(cell.amount) : 'Por determinar';
+  }
+  function kindLabel(kind, report) {
+    return (report.rows || []).find(row => row.id === kind)?.label || 'Concepto sin clasificación disponible';
+  }
+  function safeReport(data) {
+    if (!data || !/^\d{4}-\d{2}$/.test(data.from || '') || !Array.isArray(data.months) || data.months.length !== 12 || !Array.isArray(data.rows) || data.rows.some(row => !Array.isArray(row.cells) || row.cells.length !== 12)) throw Error('RESPONSE_INVALID');
+    return data;
+  }
+  function Detail({
+    detail,
+    report,
+    onClose
+  }) {
+    const ref = useRef(null),
+      [page, setPage] = useState(0),
+      cell = detail.cell,
+      ids = cell.sourceIds || [],
+      byId = new Map((report.records || []).map(r => [r.id, r])),
+      records = ids.map(id => byId.get(id)).filter(Boolean),
+      missing = ids.filter(id => !byId.has(id));
+    useEffect(() => {
+      const previous = document.activeElement;
+      ref.current?.focus();
+      const key = e => {
+        if (e.key === 'Escape') onClose();
+        if (e.key === 'Tab') {
+          const list = ref.current?.querySelectorAll('button:not(:disabled),a[href],input,select,summary,[tabindex="0"]');
+          if (!list?.length) return;
+          const first = list[0],
+            last = list[list.length - 1];
+          if (e.shiftKey && (document.activeElement === first || document.activeElement === ref.current)) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      };
+      document.addEventListener('keydown', key);
+      return () => {
+        document.removeEventListener('keydown', key);
+        previous?.focus();
+      };
+    }, []);
+    return h('div', {
+      className: 'cfr-modal',
+      onMouseDown: e => {
+        if (e.target === e.currentTarget) onClose();
+      }
+    }, h('section', {
+      className: 'cfr-dialog',
+      role: 'dialog',
+      'aria-modal': true,
+      'aria-labelledby': 'cfr-detail-title',
+      tabIndex: -1,
+      ref
+    }, h('div', {
+      className: 'cfr-top'
+    }, h('h2', {
+      id: 'cfr-detail-title'
+    }, detail.row.label + ' · ' + detail.month.label), h('button', {
+      className: 'cfr-btn',
+      onClick: onClose
+    }, 'Cerrar detalle')), h('p', null, h('strong', null, cellText(cell)), ' · ', statuses[cell.status] || cell.status, cell.status === 'PARTIAL' ? ' · Subtotal identificado; no representa el total del mes.' : ''), (cell.notes || []).map((note, i) => h('p', {
+      key: i,
+      className: 'cfr-note'
+    }, typeof note === 'string' ? note : note.message || note.code)), h('div', {
+      className: 'cfr-details-scroll'
+    }, h('table', {
+      className: 'cfr-details-table',
+      'aria-label': 'Registros de origen'
+    }, h('thead', null, h('tr', null, ['Fuente', 'Registro', 'Fecha', 'Importe', 'Concepto / estado'].map(label => h('th', {
+      key: label,
+      scope: 'col'
+    }, label)))), h('tbody', null, records.slice(page * 50, page * 50 + 50).map(r => h('tr', {
+      key: r.id
+    }, h('td', null, r.source), h('td', null, r.sourceId || r.id, r.loanId && h('div', null, 'Préstamo: ' + r.loanId), r.folio && h('div', null, 'Folio: ' + r.folio)), h('td', null, r.date || 'Sin fecha'), h('td', null, typeof r.amount === 'number' ? money.format(r.amount) : 'Por determinar'), h('td', null, kindLabel(r.kind, report), ' · ', statuses[r.status] || r.status)))))), !records.length && h('p', {
+      className: 'cfr-note'
+    }, 'Esta celda no tiene movimientos individualizados disponibles. Revisa su estado y las notas de la fuente.'), missing.length > 0 && h('p', {
+      className: 'cfr-origin'
+    }, 'Referencias de origen: ' + missing.join(', ')), records.length > 50 && h('div', {
+      className: 'cfr-top'
+    }, h('button', {
+      className: 'cfr-btn',
+      disabled: page === 0,
+      onClick: () => setPage(p => p - 1)
+    }, 'Anteriores'), h('span', null, page * 50 + 1 + '–' + Math.min(records.length, (page + 1) * 50) + ' de ' + records.length), h('button', {
+      className: 'cfr-btn',
+      disabled: (page + 1) * 50 >= records.length,
+      onClick: () => setPage(p => p + 1)
+    }, 'Siguientes'))));
+  }
+  function CashFlowReport({
+    onBack,
+    header
+  }) {
+    const local = today(),
+      annual = local.year + '-01';
+    const [from, setFrom] = useState(annual),
+      [draft, setDraft] = useState(annual),
+      [revision, setRevision] = useState(0),
+      [state, setState] = useState({
+        loading: true,
+        data: null,
+        error: null
+      }),
+      [detail, setDetail] = useState(null);
+    const sequence = useRef(0);
+    let subject;
+    try {
+      subject = window.ReportsJcRepository.contextKey();
+    } catch (_) {
+      subject = 'denied';
+    }
+    useEffect(() => {
+      const id = ++sequence.current;
+      setDetail(null);
+      setState({
+        loading: true,
+        data: null,
+        error: null
+      });
+      window.ReportsJcRepository.cashFlow(from).then(safeReport).then(data => {
+        if (id === sequence.current) setState({
+          loading: false,
+          data,
+          error: null
+        });
+      }).catch(error => {
+        if (id === sequence.current) setState({
+          loading: false,
+          data: null,
+          error
+        });
+      });
+      return () => {
+        sequence.current++;
+      };
+    }, [from, revision, subject]);
+    function changePeriod(value) {
+      setDraft(value);
+      setFrom(value);
+      setRevision(n => n + 1);
+    }
+    const report = state.data,
+      groups = [...new Set((report?.rows || []).map(row => row.group))];
+    const head = header ? header({
+      title: 'Reporte Flujo de efectivo',
+      sub: 'Ahorro Voluntario y Caja de Ahorro · consulta mensual',
+      onBack
+    }) : h('header', {
+      className: 'cfr-top'
+    }, h('h1', null, 'Reporte Flujo de efectivo'), h('button', {
+      className: 'cfr-btn',
+      onClick: onBack
+    }, 'Volver a Reportes JC'));
+    return h('div', {
+      className: 'cfr',
+      'data-cash-flow-report': true
+    }, h('style', null, css), head, h('div', {
+      className: 'cfr-body'
+    }, h('p', {
+      className: 'cfr-sub'
+    }, 'Aportaciones de ahorradores, colocación y recuperación de Caja de Ahorro. Importes en pesos mexicanos; consulta de doce meses.'), h('form', {
+      className: 'cfr-controls',
+      onSubmit: e => {
+        e.preventDefault();
+        if (/^\d{4}-(0[1-9]|1[0-2])$/.test(draft)) changePeriod(draft);
+      }
+    }, h('label', {
+      style: {
+        flexBasis: 210
+      }
+    }, 'Mes inicial', h('input', {
+      type: 'month',
+      value: draft,
+      min: '2000-01',
+      max: '2100-12',
+      required: true,
+      'aria-label': 'Mes inicial del flujo',
+      onChange: e => setDraft(e.target.value)
+    })), h('button', {
+      type: 'submit',
+      className: 'cfr-btn primary',
+      disabled: state.loading
+    }, state.loading ? 'Consultando…' : 'Consultar'), h('button', {
+      type: 'button',
+      className: 'cfr-btn',
+      onClick: () => changePeriod(annual)
+    }, 'Año actual'), h('button', {
+      type: 'button',
+      className: 'cfr-btn',
+      onClick: () => changePeriod(nextMonth(local))
+    }, 'Próximos 12 meses')), h('div', {
+      className: 'cfr-summary',
+      'aria-label': 'Cómo leer el reporte'
+    }, h('span', {
+      className: 'cfr-badge'
+    }, 'Registrado'), h('span', {
+      className: 'cfr-badge scheduled'
+    }, 'Programado: aún no recuperado'), h('span', {
+      className: 'cfr-badge partial'
+    }, 'Parcial: subtotal identificado'), h('span', {
+      className: 'cfr-note'
+    }, 'Por determinar: información insuficiente')), state.loading && h('p', {
+      role: 'status',
+      className: 'cfr-note'
+    }, 'Consultando Ahorro Voluntario y préstamos de Caja de Ahorro…'), state.error && h('p', {
+      role: 'alert',
+      className: 'cfr-error'
+    }, explain(state.error)), report && h(React.Fragment, null, h('p', {
+      className: 'cfr-note'
+    }, 'Corte: ' + report.asOf + ' · Consulta: ' + new Date(report.consultedAt).toLocaleString('es-MX', {
+      timeZone: 'America/Hermosillo'
+    }) + ' · Selecciona un importe o estado para ver sus fuentes. Desplaza la tabla horizontalmente para consultar los doce meses.'), report.rows.length ? h('div', {
+      className: 'cfr-scroll',
+      role: 'region',
+      'aria-label': 'Flujo mensual de doce meses',
+      tabIndex: 0
+    }, h('table', {
+      className: 'cfr-table',
+      'aria-label': 'Flujo de efectivo de Ahorro y Caja de Ahorro'
+    }, h('thead', null, h('tr', null, h('th', {
+      scope: 'col'
+    }, 'Concepto financiero'), report.months.map(month => h('th', {
+      key: month.key,
+      scope: 'col'
+    }, month.label)))), groups.map(group => h('tbody', {
+      key: group
+    }, h('tr', {
+      className: 'cfr-group'
+    }, h('th', {
+      colSpan: 13,
+      scope: 'rowgroup'
+    }, h('span', null, groupNames[group] || group))), report.rows.filter(row => row.group === group).map(row => h('tr', {
+      key: row.id,
+      'data-cash-flow-row': row.id
+    }, h('th', {
+      scope: 'row'
+    }, row.label), row.cells.map((cell, index) => h('td', {
+      key: report.months[index].key
+    }, h('button', {
+      className: 'cfr-cell',
+      'data-status': cell.status,
+      'aria-label': row.label + ', ' + report.months[index].label + ': ' + cellText(cell) + '. ' + (statuses[cell.status] || cell.status) + '. Ver origen',
+      onClick: () => setDetail({
+        row,
+        cell,
+        month: report.months[index]
+      })
+    }, h('strong', null, cellText(cell)), h('small', null, cell.status === 'PARTIAL' ? 'Subtotal identificado' : statuses[cell.status] || cell.status)))))))))) : h('p', {
+      className: 'cfr-empty'
+    }, 'La fuente no devolvió conceptos para este período.'), h('p', {
+      className: 'cfr-note'
+    }, 'Los saldos representan posiciones al cierre o al corte indicado; no son entradas de efectivo. Los rendimientos acreditados son obligaciones con los ahorradores. Los ajustes son correcciones contables, no entradas ni salidas de efectivo. No se calcula un flujo neto con conceptos pendientes de determinar.'), (report.issues || []).length > 0 && h('details', {
+      className: 'cfr-issues',
+      'data-cash-flow-issues': true
+    }, h('summary', null, report.issues.length + ' observación(es) de las fuentes'), h('ul', null, report.issues.map((issue, index) => h('li', {
+      key: index
+    }, issue.message || issue.code, issue.months?.length > 0 && h('div', {
+      className: 'cfr-note'
+    }, 'Meses: ' + issue.months.join(', ')), issue.sourceIds?.length > 0 && h('details', null, h('summary', null, 'Ver referencias'), h('p', {
+      className: 'cfr-origin'
+    }, issue.sourceIds.join(', '))))))), (report.unassigned || []).length > 0 && h('details', {
+      className: 'cfr-issues',
+      'data-cash-flow-unassigned': true
+    }, h('summary', null, report.unassigned.length + ' registro(s) fuera de la distribución mensual'), h('p', null, 'Se conservan fuera de los totales mensuales. Se distingue la información sin fecha suficiente de las obligaciones vencidas aún pendientes de pago.'), h('ul', null, report.unassigned.map((r, index) => h('li', {
+      key: r.id || index
+    }, kindLabel(r.kind, report) + ' · ' + (typeof r.amount === 'number' ? money.format(r.amount) : 'Importe por determinar'), h('div', {
+      className: 'cfr-note'
+    }, r.overdue ? 'Pendiente vencido · ' + (r.date || 'Fecha por determinar') : r.date ? 'Fecha: ' + r.date : 'Sin fecha suficiente'), h('div', {
+      className: 'cfr-origin'
+    }, r.source + ' · ' + (r.sourceId || r.id)))))), detail && h(Detail, {
+      key: detail.row.id + detail.month.key,
+      detail,
+      report,
+      onClose: () => setDetail(null)
+    }))));
+  }
+  window.CashFlowReportModule = CashFlowReport;
+})();
+})();
 /* @@file reports-jc-admin.jsx */
 (function(){
 /* Eight owner-defined count reports; the supplied workbook remains the export contract. */
-(function(){
- 'use strict';
- const h=React.createElement,{useState,useEffect,useRef}=React;
- const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
- const names=['Préstamos Concentrado','Préstamos Mes','DtosViaNomina Concentrado','DtosViaNomina Mes','ValesyMembresias Concentrado','ValesyMembresias Mes','Financiamientos Concentrado','Caja de Ahorro Voluntario'];
- const loanRows=['Préstamo de caja de Ahorro','Préstamo de caja chica','Adelantos de nómina','Sutiexpress',''];
- const rhRows=['Descuento SUTISSSTESON · 446','Ahorro voluntario · 573','Caja chica · 574','Préstamo de ahorro · 575','Sutiexpress y adelantos · 576','Vales y membresías · 577','Ahorro jubilados · 580','Préstamo de ahorro jubilados · 581','Caja chica jubilados · 609','Sutiexpress jubilados · 610','Vales jubilados · 611','Seguro colectivo · 644','Proyectos · 645','Viajes · 646','Compras · 647'];
- const providers=['Rivera Gas','Arco Gasolina','Casa Ley','Costco','Sams Club','CineStar TV'];
- const css='.rjc{color:var(--ink);min-width:0}.rjc-body{padding:20px;max-width:1250px;margin:auto}.rjc-bar,.rjc-actions{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.rjc-bar{padding:18px;background:var(--surface);border:1px solid var(--hairline);border-radius:18px}.rjc label{display:grid;gap:6px;font-size:12px;font-weight:800}.rjc input,.rjc select{padding:10px 12px;border:1px solid var(--hairline-strong);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;min-height:42px}.rjc button{cursor:pointer;font:inherit}.rjc-btn{padding:11px 16px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);color:var(--ink);font-weight:800}.rjc-btn.primary{background:var(--guinda,#861e45);color:white}.rjc button:disabled{opacity:.55;cursor:default}.rjc-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.rjc-tabs button[aria-selected=true]{background:var(--guinda,#861e45);color:white}.rjc-note{font-size:13px;line-height:1.6;color:var(--ink-2);margin:12px 0}.rjc-error{padding:14px;border-radius:12px;background:#fff0ed;color:#9b241b}.rjc-table-wrap{overflow:auto;border:1px solid var(--hairline);border-radius:14px}.rjc table{border-collapse:collapse;width:100%;font-size:13px;background:var(--surface)}.rjc th,.rjc td{padding:12px 14px;border-bottom:1px solid var(--hairline);text-align:left;vertical-align:top}.rjc thead th{background:var(--surface-2);font-size:12px}.rjc tbody tr[data-selected=true]{background:rgba(133,31,68,.06)}.rjc-cell{background:none;border:0;color:var(--guinda,#861e45);text-decoration:underline;text-underline-offset:4px;font-weight:800;padding:4px;min-width:35px}.rjc-modal{position:fixed;inset:0;z-index:1800;background:#0006;display:grid;place-items:center;padding:20px}.rjc-dialog{background:var(--surface);border-radius:20px;padding:22px;width:min(950px,100%);max-height:85vh;overflow:auto}.rjc-dialog h2{margin:0;font-size:19px}.rjc-top{display:flex;justify-content:space-between;align-items:center;gap:15px}.rjc-issue{border:1px solid #dfb26a;padding:12px;border-radius:12px;margin:10px 0;font-size:13px;line-height:1.5}.rjc a{color:var(--guinda,#861e45)}@media(max-width:600px){.rjc-body{padding:12px}.rjc-bar>*{flex:1 1 40%}.rjc-dialog{padding:14px}.rjc th,.rjc td{padding:10px}}';
- function explain(e){return ({AUTH_REQUIRED:'Vuelve a iniciar sesión.',ADMIN_DENIED:'Tu cuenta no tiene acceso a Reportes JC.',CONTEXT_CHANGED:'La sesión o sus permisos cambiaron. Consulta nuevamente.',SOURCE_UNAVAILABLE:'No fue posible consultar las fuentes. Reintenta sin cambiar los filtros.',GOOGLE_NOT_CONFIGURED:'La conexión de lectura de Google no está disponible.',EXPORT_BLOCKED:'Hay registros pendientes de resolver en este reporte. Revisa las observaciones antes de exportar.'})[e?.message]||'No se completó la operación. '+String(e?.message||'Intenta nuevamente.');}
- function grid(name,cells){
-  if(name==='Caja de Ahorro Voluntario')return {columns:['B','C','D','E','F','G','H'],headers:['Ingresos','Solicitudes de retiro','Depósitos','Reembolsos','Cambios de monto','Bajas','Atenciones'],rows:months.map((label,i)=>({row:i+4,label,month:i+1})).concat({row:16,label:'Total anual'})};
-  if(name==='DtosViaNomina Mes')return {columns:['C','D','E'],headers:['Descuentos','Reembolsos','Atenciones'],rows:rhRows.map((label,i)=>({row:i+6,label})).concat({row:21,label:'Total del mes'})};
-  if(name==='Préstamos Mes')return {columns:['B','C','D','E'],headers:['Aprobadas','Rechazadas','Depósitos','Atenciones'],rows:loanRows.map((label,i)=>({row:i+6,label})).filter(r=>r.label).concat({row:11,label:'Total del mes'})};
-  if(name==='ValesyMembresias Mes')return {columns:['B','C','D','E'],headers:['Aprobadas','Rechazadas','Depósitos','Atenciones'],rows:Array.from({length:12},(_,i)=>({row:i+6,label:providers[i]||value(cells['A'+(i+6)])||''})).filter(r=>r.label).concat({row:18,label:'Total del mes'})};
-  return {columns:['B','C','D','E'],headers:name==='DtosViaNomina Concentrado'?['Descuentos','Jubilados y pensionados','Reembolsos','Atenciones']:['Aprobadas','Rechazadas','Depósitos','Atenciones'],rows:months.map((label,i)=>({row:i+6,label,month:i+1})).concat({row:18,label:'Total anual'})};
- }
- const value=c=>c&&typeof c==='object'?c.value:c;
- function Detail({detail,report,onClose}){
-  const ref=useRef(null),[page,setPage]=useState(0),ids=detail.cell?.sourceIds||[],byId=new Map((report.records||[]).map(r=>[r.id,r])),records=ids.map(id=>byId.get(id)).filter(Boolean);
-  useEffect(()=>{const previous=document.activeElement;ref.current?.focus();const key=e=>{if(e.key==='Escape')onClose();if(e.key==='Tab'){const list=ref.current?.querySelectorAll('button:not(:disabled),a[href],input,select,[tabindex="0"]');if(!list?.length)return;const first=list[0],last=list[list.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}}};document.addEventListener('keydown',key);return()=>{document.removeEventListener('keydown',key);previous?.focus();};},[]);
-  return h('div',{className:'rjc-modal',onMouseDown:e=>{if(e.target===e.currentTarget)onClose();}},h('section',{className:'rjc-dialog',role:'dialog','aria-modal':true,'aria-labelledby':'rjc-detail-title',tabIndex:-1,ref},
-   h('div',{className:'rjc-top'},h('h2',{id:'rjc-detail-title'},detail.label+' · '+detail.address),h('button',{className:'rjc-btn',onClick:onClose,'aria-label':'Cerrar detalle'},'Cerrar')),
-   h('p',{className:'rjc-note'},detail.sheet+' · '+report.year+' · Total: '+(value(detail.cell)??'Sin determinar')),
-   h('p',{className:'rjc-note'},detail.cell?.rule||'Consulta de registros de origen.'),
-   h('div',{className:'rjc-table-wrap'},h('table',null,h('thead',null,h('tr',null,['Fuente','Registro','Fecha','Fondo / tipo','Estado'].map(label=>h('th',{key:label},label)))),h('tbody',null,records.slice(page*50,page*50+50).map((r,i)=>h('tr',{key:r.id+':'+i},h('td',null,r.sheet||r.source||r.source_table||'Supabase'),h('td',null,r.row?'Fila '+r.row:r.source_id||r.requestId||r.id),h('td',null,r.date||r.occurred_on||'—'),h('td',null,r.fund||r.kind||'—'),h('td',null,r.status||r.temporalStatus||'—')))))),
-   !records.length&&h('p',{className:'rjc-note'},'No hay registros asociados a este total.'),
-   records.length>50&&h('div',{className:'rjc-actions'},h('button',{className:'rjc-btn',disabled:page===0,onClick:()=>setPage(p=>p-1)},'Anteriores'),h('span',null,(page*50+1)+'–'+Math.min(records.length,(page+1)*50)+' de '+records.length),h('button',{className:'rjc-btn',disabled:(page+1)*50>=records.length,onClick:()=>setPage(p=>p+1)},'Siguientes'))));
- }
- function ReportsJcAdmin({app,onBack,header}){
-  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),nowYear=Number(today.slice(0,4)),nowMonth=Number(today.slice(5,7));
-  const [year,setYear]=useState(nowYear),[draftYear,setDraftYear]=useState(String(nowYear)),[month,setMonth]=useState(nowMonth),[mode,setMode]=useState('month'),[tab,setTab]=useState(names[0]),[revision,setRevision]=useState(0);
-  const [state,setState]=useState({loading:true,data:null,error:null}),[detail,setDetail]=useState(null),[exporting,setExporting]=useState(false),[notice,setNotice]=useState(''),[regularization,setRegularization]=useState(null);
-  const regularizationDirty=useRef(false),regularizationChanged=useRef(false);
-  const sequence=useRef(0),exportSequence=useRef(0);
-  let subject;try{subject=window.ReportsJcRepository.contextKey();}catch(_){subject='denied';}
-  useEffect(()=>{setRegularization(null);regularizationDirty.current=false;regularizationChanged.current=false;},[subject]);
-  useEffect(()=>{const id=++sequence.current;exportSequence.current++;setDetail(null);setNotice('');setState({loading:true,data:null,error:null});window.ReportsJcRepository.load(year).then(data=>{if(id===sequence.current)setState({loading:false,data,error:null});}).catch(error=>{if(id===sequence.current)setState({loading:false,data:null,error});});return()=>{sequence.current++;exportSequence.current++;};},[year,revision,subject]);
-  async function exportFile(){
-   if(exporting||!state.data)return;
-   const report=state.data,id=++exportSequence.current,selectedMonth=month,selectedMode=mode;
-   setExporting(true);setNotice('');
-   try{
-    const key=window.ReportsJcRepository.contextKey(),template=await window.ReportsJcRepository.template(),exporter=window.SutiReportsJcExport;
-    if(!exporter)throw Error('EXPORT_UNAVAILABLE');
-    const provisional=exporter.exportStatus(report,selectedMonth,selectedMode).provisionalNeeded;
-    const options={templateBase64:template.base64,report,year:report.year,month:selectedMonth,provisional};
-    const bytes=selectedMode==='year'?await exporter.buildYearZip(options):await exporter.buildWorkbook(options);
-    if(id!==exportSequence.current||window.ReportsJcRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');
-    const file='Reporte_JC_'+report.year+(selectedMode==='year'?'':'-'+String(selectedMonth).padStart(2,'0'))+(provisional?'_PROVISIONAL':'')+(selectedMode==='year'?'.zip':'.xlsx');
-    exporter.download(bytes,file,selectedMode==='year'?'application/zip':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    setNotice('Archivo generado: '+file+(provisional?' · Provisional: conserva las cantidades registradas y explica sus pendientes en las notas de Excel. #N/A indica únicamente una cantidad aún no determinada.':''));
-   }catch(error){setNotice(explain(error));}finally{setExporting(false);}
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React;
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const names = ['Préstamos Concentrado', 'Préstamos Mes', 'DtosViaNomina Concentrado', 'DtosViaNomina Mes', 'ValesyMembresias Concentrado', 'ValesyMembresias Mes', 'Financiamientos Concentrado', 'Caja de Ahorro Voluntario'];
+  const loanRows = ['Préstamo de caja de Ahorro', 'Préstamo de caja chica', 'Adelantos de nómina', 'Sutiexpress', ''];
+  const rhRows = ['Descuento SUTISSSTESON · 446', 'Ahorro voluntario · 573', 'Caja chica · 574', 'Préstamo de ahorro · 575', 'Sutiexpress y adelantos · 576', 'Vales y membresías · 577', 'Ahorro jubilados · 580', 'Préstamo de ahorro jubilados · 581', 'Caja chica jubilados · 609', 'Sutiexpress jubilados · 610', 'Vales jubilados · 611', 'Seguro colectivo · 644', 'Proyectos · 645', 'Viajes · 646', 'Compras · 647'];
+  const providers = ['Rivera Gas', 'Arco Gasolina', 'Casa Ley', 'Costco', 'Sams Club', 'CineStar TV'];
+  const css = '.rjc{color:var(--ink);min-width:0}.rjc-body{padding:20px;max-width:1250px;margin:auto}.rjc-bar,.rjc-actions{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.rjc-bar{padding:18px;background:var(--surface);border:1px solid var(--hairline);border-radius:18px}.rjc label{display:grid;gap:6px;font-size:12px;font-weight:800}.rjc input,.rjc select{padding:10px 12px;border:1px solid var(--hairline-strong);border-radius:10px;background:var(--surface);color:var(--ink);font:inherit;min-height:42px}.rjc button{cursor:pointer;font:inherit}.rjc-btn{padding:11px 16px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);color:var(--ink);font-weight:800}.rjc-btn.primary{background:var(--guinda,#861e45);color:white}.rjc button:disabled{opacity:.55;cursor:default}.rjc-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}.rjc-tabs button[aria-selected=true]{background:var(--guinda,#861e45);color:white}.rjc-note{font-size:13px;line-height:1.6;color:var(--ink-2);margin:12px 0}.rjc-error{padding:14px;border-radius:12px;background:#fff0ed;color:#9b241b}.rjc-table-wrap{overflow:auto;border:1px solid var(--hairline);border-radius:14px}.rjc table{border-collapse:collapse;width:100%;font-size:13px;background:var(--surface)}.rjc th,.rjc td{padding:12px 14px;border-bottom:1px solid var(--hairline);text-align:left;vertical-align:top}.rjc thead th{background:var(--surface-2);font-size:12px}.rjc tbody tr[data-selected=true]{background:rgba(133,31,68,.06)}.rjc-cell{background:none;border:0;color:var(--guinda,#861e45);text-decoration:underline;text-underline-offset:4px;font-weight:800;padding:4px;min-width:35px}.rjc-modal{position:fixed;inset:0;z-index:1800;background:#0006;display:grid;place-items:center;padding:20px}.rjc-dialog{background:var(--surface);border-radius:20px;padding:22px;width:min(950px,100%);max-height:85vh;overflow:auto}.rjc-dialog h2{margin:0;font-size:19px}.rjc-top{display:flex;justify-content:space-between;align-items:center;gap:15px}.rjc-issue{border:1px solid #dfb26a;padding:12px;border-radius:12px;margin:10px 0;font-size:13px;line-height:1.5}.rjc a{color:var(--guinda,#861e45)}@media(max-width:600px){.rjc-body{padding:12px}.rjc-bar>*{flex:1 1 40%}.rjc-dialog{padding:14px}.rjc th,.rjc td{padding:10px}}';
+  function explain(e) {
+    return {
+      AUTH_REQUIRED: 'Vuelve a iniciar sesión.',
+      ADMIN_DENIED: 'Tu cuenta no tiene acceso a Reportes JC.',
+      CONTEXT_CHANGED: 'La sesión o sus permisos cambiaron. Consulta nuevamente.',
+      SOURCE_UNAVAILABLE: 'No fue posible consultar las fuentes. Reintenta sin cambiar los filtros.',
+      GOOGLE_NOT_CONFIGURED: 'La conexión de lectura de Google no está disponible.',
+      EXPORT_BLOCKED: 'Hay registros pendientes de resolver en este reporte. Revisa las observaciones antes de exportar.'
+    }[e?.message] || 'No se completó la operación. ' + String(e?.message || 'Intenta nuevamente.');
   }
-  const report=state.data,sheet=report?.sheets?.[tab],isMonth=/ Mes$/.test(tab),cells=(isMonth?sheet?.months?.[month]?.cells:sheet?.cells)||{},layout=grid(tab,cells);
-  const exportPlan=(()=>{if(!report)return {provisionalNeeded:false};try{return window.SutiReportsJcExport.exportStatus(report,month,mode);}catch(error){return {error};}})();
-  const annualIssues=[...new Map((report?.issues||[]).filter(item=>item.severity==='error').map(item=>[JSON.stringify([item.code,item.sourceIds,item.months]),item])).values()];
-  function closeRegularization(){if(regularizationDirty.current&&!window.confirm('Hay una captura sin guardar. ¿Quieres descartarla?'))return;setRegularization(null);regularizationDirty.current=false;if(regularizationChanged.current)setRevision(n=>n+1);regularizationChanged.current=false;}
-  const issues=[...new Map([...(report?.issues||[]),...(sheet?.issues||[]),...(isMonth?sheet?.months?.[month]?.issues||[]:[])].filter(item=>(!item.sheets?.length||item.sheets.includes(tab))&&(!isMonth||!item.months?.length||item.months.includes(month))).map(item=>[JSON.stringify([item.code,item.sourceIds,item.months,item.message]),item])).values()];
-  const head=header?header({title:'Reportes JC',sub:'Secretaría de Finanzas · cantidades de casos y operaciones',onBack}):h('header',{className:'rjc-top'},h('h1',null,'Reportes JC'),h('button',{className:'rjc-btn',onClick:onBack},'Volver'));
-  if(regularization)return h('div',{className:'rjc','data-reports-jc-regularization':true},h('style',null,css),h('div',{className:'rjc-body'},h('div',{className:'rjc-top'},h('h2',null,'Caja de Ahorro · Regularización de '+year),h('button',{className:'rjc-btn',onClick:closeRegularization},'Volver a Reportes JC')),h('p',{className:'rjc-note'},'Estás utilizando la misma captura de Caja de Ahorro. Al volver se actualizarán los reportes si guardaste cambios.'),window.SavingsRefundsAdmin?h(window.SavingsRefundsAdmin,{app,initialYear:year,focusSourceIds:regularization.sourceIds||[],onDirty:value=>{regularizationDirty.current=value;},onSaved:()=>{regularizationChanged.current=true;}}):h('p',{role:'alert',className:'rjc-error'},'No se pudo cargar Caja de Ahorro. Actualiza la aplicación.')));
-  return h('div',{className:'rjc','data-reports-jc':true},h('style',null,css),head,h('div',{className:'rjc-body'},
-   h('form',{className:'rjc-bar',onSubmit:e=>{e.preventDefault();const next=Number(draftYear);if(!Number.isInteger(next)||next<2000||next>2100)return;setYear(next);setRevision(r=>r+1);}},
-    h('label',null,'Año',h('input',{type:'number',min:2000,max:2100,required:true,disabled:exporting,value:draftYear,onChange:e=>setDraftYear(e.target.value),'aria-label':'Año del reporte'})),
-    h('label',null,'Exportación',h('select',{value:mode,disabled:exporting,onChange:e=>{exportSequence.current++;setNotice('');setMode(e.target.value);}},h('option',{value:'month'},'Un mes · Excel'),h('option',{value:'year'},'Todo el año · 12 archivos'))),
-    h('label',null,'Mes de consulta',h('select',{value:month,disabled:exporting,onChange:e=>{exportSequence.current++;setNotice('');setMonth(Number(e.target.value));setDetail(null);}},months.map((label,i)=>h('option',{key:label,value:i+1},label)))),
-    h('button',{className:'rjc-btn',type:'submit',disabled:state.loading||exporting},state.loading?'Consultando…':'Actualizar'),
-    h('button',{className:'rjc-btn primary',type:'button',onClick:exportFile,disabled:!report||state.loading||exporting||!!exportPlan.error},exporting?'Generando…':(mode==='year'?'Exportar año':'Exportar mes')+(exportPlan.provisionalNeeded?' provisional':''))),
-   h('p',{className:'rjc-note'},'Los concentrados muestran los doce meses del año. Las hojas «Mes» usan el mes elegido. La descarga conserva las 17 pestañas de la plantilla y actualiza las ocho incluidas.'),
-   exportPlan.provisionalNeeded&&h('p',{className:'rjc-note','data-provisional-export':true},'Puedes descargar un archivo PROVISIONAL con las cantidades registradas. Las notas de cada cifra explican los registros pendientes que pueden afectar el conteo. Sólo las cantidades que la fuente aún no determina y sus totales aparecen como #N/A. Al resolver los pendientes podrás generar el libro validado.'),
-   notice&&h('p',{role:'status',className:'rjc-note','data-export-notice':true},notice),
-   exportPlan.error&&h('p',{role:'alert',className:'rjc-error'},explain(exportPlan.error)),
-   report&&h('div',{className:annualIssues.length?'rjc-issue':'rjc-note','data-report-readiness':true},
-    h('strong',null,annualIssues.length?'Pendientes identificados en las fuentes':'Sin incidencias bloqueantes en las fuentes consultadas'),
-    annualIssues.length>0&&h('p',null,'Los pendientes de los concentrados anuales también se identifican en cada libro mensual.'),
-    annualIssues.length>0&&h('details',{'data-report-pending-details':true},h('summary',null,'Ver '+annualIssues.length+' pendiente(s) y sus registros de origen'),
-     annualIssues.map((issue,i)=>h('div',{key:i},h('p',null,issue.message||issue.code,' · Periodo: ',issue.months?.length?issue.months.map(m=>months[m-1]).join(', ')+' de '+year:'Año '+year,' · Hojas: ',(issue.sheets||[]).join(', '),issue.count?' · '+issue.count+' caso(s)':''),
-      Array.isArray(issue.sourceIds)&&issue.sourceIds.length>0&&h('details',null,h('summary',null,'Identificadores de los registros pendientes'),h('p',null,issue.sourceIds.join(', '))),
-      /^(REFUND_|HISTORICAL_TERMINATION_)/.test(issue.code)&&h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:issue.sourceIds||[]})},'Resolver en Caja de Ahorro')))),
-    h('button',{className:'rjc-btn',type:'button',onClick:()=>setRegularization({sourceIds:[]})},'Revisar históricos de Caja de Ahorro')),
-   state.error&&h('p',{role:'alert',className:'rjc-error'},explain(state.error)),
-   state.loading&&h('p',{role:'status',className:'rjc-note'},'Consultando solicitudes, descuentos y movimientos de Ahorro…'),
-   report&&h(React.Fragment,null,h('p',{className:'rjc-note'},'Consulta de '+report.year+' · Actualizada: '+new Date(report.consultedAt).toLocaleString('es-MX',{timeZone:'America/Hermosillo'})+' · Selecciona una cifra para ver de dónde se obtiene.'),
-    report.summary&&h('div',{className:'rjc-bar','aria-label':'Solicitudes recibidas'},Object.entries({received:'Recibidas',approved:'Aprobadas',rejected:'Rechazadas o canceladas',pending:'Pendientes',unknown:'Sin estado definido'}).map(([key,label])=>h('div',{key},h('strong',null,(mode==='year'?report.summary:report.summary.months?.[month])?.[key]??'—'),h('div',{className:'rjc-note'},label))),h('p',{className:'rjc-note'},mode==='year'?'Todas las solicitudes recibidas en el año.':'Todas las solicitudes recibidas en '+months[month-1]+', incluyendo las pendientes.')),
-    h('nav',{className:'rjc-tabs',role:'tablist','aria-label':'Hojas del reporte'},names.map(name=>h('button',{key:name,role:'tab','aria-selected':tab===name,className:'rjc-btn',onClick:()=>{setTab(name);setDetail(null);}},name))),
-    issues.length>0&&h('details',{className:'rjc-issue'},h('summary',null,issues.length+' observación(es) de los registros de origen'),issues.map((issue,i)=>h('p',{key:i},issue.message||issue.detail||issue.code||String(issue)))),
-    h('div',{className:'rjc-table-wrap'},h('table',{'aria-label':tab},h('thead',null,h('tr',null,h('th',null,isMonth?'Concepto':'Mes'),layout.headers.map(label=>h('th',{key:label},label)))),h('tbody',null,layout.rows.map(row=>h('tr',{key:row.row,'data-selected':row.month===month},h('th',{scope:'row'},row.label),layout.columns.map(column=>{const address=column+row.row,cell=cells[address],n=value(cell);return h('td',{key:column},typeof n==='number'?h('button',{className:'rjc-cell','aria-label':row.label+', '+layout.headers[layout.columns.indexOf(column)]+': '+n+'. Ver detalle',onClick:()=>setDetail({sheet:tab,address,cell,label:row.label})},n):h('span',null,n===null?'Por determinar':'—'));})))))),
-    h('p',{className:'rjc-note'},'Las atenciones suman operaciones; una persona puede aparecer en más de un trámite. Los descuentos futuros son programados. Los reembolsos cuentan una vez al quedar completamente pagados.'),
-    detail&&h(Detail,{key:tab+detail.address,detail,report,onClose:()=>setDetail(null)}))));
- }
- window.ReportsJcAdminModule=ReportsJcAdmin;
+  function grid(name, cells) {
+    if (name === 'Caja de Ahorro Voluntario') return {
+      columns: ['B', 'C', 'D', 'E', 'F', 'G', 'H'],
+      headers: ['Ingresos', 'Solicitudes de retiro', 'Depósitos', 'Reembolsos', 'Cambios de monto', 'Bajas', 'Atenciones'],
+      rows: months.map((label, i) => ({
+        row: i + 4,
+        label,
+        month: i + 1
+      })).concat({
+        row: 16,
+        label: 'Total anual'
+      })
+    };
+    if (name === 'DtosViaNomina Mes') return {
+      columns: ['C', 'D', 'E'],
+      headers: ['Descuentos', 'Reembolsos', 'Atenciones'],
+      rows: rhRows.map((label, i) => ({
+        row: i + 6,
+        label
+      })).concat({
+        row: 21,
+        label: 'Total del mes'
+      })
+    };
+    if (name === 'Préstamos Mes') return {
+      columns: ['B', 'C', 'D', 'E'],
+      headers: ['Aprobadas', 'Rechazadas', 'Depósitos', 'Atenciones'],
+      rows: loanRows.map((label, i) => ({
+        row: i + 6,
+        label
+      })).filter(r => r.label).concat({
+        row: 11,
+        label: 'Total del mes'
+      })
+    };
+    if (name === 'ValesyMembresias Mes') return {
+      columns: ['B', 'C', 'D', 'E'],
+      headers: ['Aprobadas', 'Rechazadas', 'Depósitos', 'Atenciones'],
+      rows: Array.from({
+        length: 12
+      }, (_, i) => ({
+        row: i + 6,
+        label: providers[i] || value(cells['A' + (i + 6)]) || ''
+      })).filter(r => r.label).concat({
+        row: 18,
+        label: 'Total del mes'
+      })
+    };
+    return {
+      columns: ['B', 'C', 'D', 'E'],
+      headers: name === 'DtosViaNomina Concentrado' ? ['Descuentos', 'Jubilados y pensionados', 'Reembolsos', 'Atenciones'] : ['Aprobadas', 'Rechazadas', 'Depósitos', 'Atenciones'],
+      rows: months.map((label, i) => ({
+        row: i + 6,
+        label,
+        month: i + 1
+      })).concat({
+        row: 18,
+        label: 'Total anual'
+      })
+    };
+  }
+  const value = c => c && typeof c === 'object' ? c.value : c;
+  function Detail({
+    detail,
+    report,
+    onClose
+  }) {
+    const ref = useRef(null),
+      [page, setPage] = useState(0),
+      ids = detail.cell?.sourceIds || [],
+      byId = new Map((report.records || []).map(r => [r.id, r])),
+      records = ids.map(id => byId.get(id)).filter(Boolean);
+    useEffect(() => {
+      const previous = document.activeElement;
+      ref.current?.focus();
+      const key = e => {
+        if (e.key === 'Escape') onClose();
+        if (e.key === 'Tab') {
+          const list = ref.current?.querySelectorAll('button:not(:disabled),a[href],input,select,[tabindex="0"]');
+          if (!list?.length) return;
+          const first = list[0],
+            last = list[list.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      };
+      document.addEventListener('keydown', key);
+      return () => {
+        document.removeEventListener('keydown', key);
+        previous?.focus();
+      };
+    }, []);
+    return h('div', {
+      className: 'rjc-modal',
+      onMouseDown: e => {
+        if (e.target === e.currentTarget) onClose();
+      }
+    }, h('section', {
+      className: 'rjc-dialog',
+      role: 'dialog',
+      'aria-modal': true,
+      'aria-labelledby': 'rjc-detail-title',
+      tabIndex: -1,
+      ref
+    }, h('div', {
+      className: 'rjc-top'
+    }, h('h2', {
+      id: 'rjc-detail-title'
+    }, detail.label + ' · ' + detail.address), h('button', {
+      className: 'rjc-btn',
+      onClick: onClose,
+      'aria-label': 'Cerrar detalle'
+    }, 'Cerrar')), h('p', {
+      className: 'rjc-note'
+    }, detail.sheet + ' · ' + report.year + ' · Total: ' + (value(detail.cell) ?? 'Sin determinar')), h('p', {
+      className: 'rjc-note'
+    }, detail.cell?.rule || 'Consulta de registros de origen.'), h('div', {
+      className: 'rjc-table-wrap'
+    }, h('table', null, h('thead', null, h('tr', null, ['Fuente', 'Registro', 'Fecha', 'Fondo / tipo', 'Estado'].map(label => h('th', {
+      key: label
+    }, label)))), h('tbody', null, records.slice(page * 50, page * 50 + 50).map((r, i) => h('tr', {
+      key: r.id + ':' + i
+    }, h('td', null, r.sheet || r.source || r.source_table || 'Supabase'), h('td', null, r.row ? 'Fila ' + r.row : r.source_id || r.requestId || r.id), h('td', null, r.date || r.occurred_on || '—'), h('td', null, r.fund || r.kind || '—'), h('td', null, r.status || r.temporalStatus || '—')))))), !records.length && h('p', {
+      className: 'rjc-note'
+    }, 'No hay registros asociados a este total.'), records.length > 50 && h('div', {
+      className: 'rjc-actions'
+    }, h('button', {
+      className: 'rjc-btn',
+      disabled: page === 0,
+      onClick: () => setPage(p => p - 1)
+    }, 'Anteriores'), h('span', null, page * 50 + 1 + '–' + Math.min(records.length, (page + 1) * 50) + ' de ' + records.length), h('button', {
+      className: 'rjc-btn',
+      disabled: (page + 1) * 50 >= records.length,
+      onClick: () => setPage(p => p + 1)
+    }, 'Siguientes'))));
+  }
+  function ReportsJcAdmin({
+    app,
+    onBack,
+    header
+  }) {
+    const [cashFlowOpen, setCashFlowOpen] = useState(false);
+    const today = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/Hermosillo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date()),
+      nowYear = Number(today.slice(0, 4)),
+      nowMonth = Number(today.slice(5, 7));
+    const [year, setYear] = useState(nowYear),
+      [draftYear, setDraftYear] = useState(String(nowYear)),
+      [month, setMonth] = useState(nowMonth),
+      [mode, setMode] = useState('month'),
+      [tab, setTab] = useState(names[0]),
+      [revision, setRevision] = useState(0);
+    const [state, setState] = useState({
+        loading: true,
+        data: null,
+        error: null
+      }),
+      [detail, setDetail] = useState(null),
+      [exporting, setExporting] = useState(false),
+      [notice, setNotice] = useState(''),
+      [regularization, setRegularization] = useState(null);
+    const regularizationDirty = useRef(false),
+      regularizationChanged = useRef(false);
+    const sequence = useRef(0),
+      exportSequence = useRef(0);
+    let subject;
+    try {
+      subject = window.ReportsJcRepository.contextKey();
+    } catch (_) {
+      subject = 'denied';
+    }
+    useEffect(() => {
+      setRegularization(null);
+      regularizationDirty.current = false;
+      regularizationChanged.current = false;
+    }, [subject]);
+    useEffect(() => {
+      const id = ++sequence.current;
+      exportSequence.current++;
+      setDetail(null);
+      setNotice('');
+      setState({
+        loading: true,
+        data: null,
+        error: null
+      });
+      window.ReportsJcRepository.load(year).then(data => {
+        if (id === sequence.current) setState({
+          loading: false,
+          data,
+          error: null
+        });
+      }).catch(error => {
+        if (id === sequence.current) setState({
+          loading: false,
+          data: null,
+          error
+        });
+      });
+      return () => {
+        sequence.current++;
+        exportSequence.current++;
+      };
+    }, [year, revision, subject]);
+    async function exportFile() {
+      if (exporting || !state.data) return;
+      const report = state.data,
+        id = ++exportSequence.current,
+        selectedMonth = month,
+        selectedMode = mode;
+      setExporting(true);
+      setNotice('');
+      try {
+        const key = window.ReportsJcRepository.contextKey(),
+          template = await window.ReportsJcRepository.template(),
+          exporter = window.SutiReportsJcExport;
+        if (!exporter) throw Error('EXPORT_UNAVAILABLE');
+        const provisional = exporter.exportStatus(report, selectedMonth, selectedMode).provisionalNeeded;
+        const options = {
+          templateBase64: template.base64,
+          report,
+          year: report.year,
+          month: selectedMonth,
+          provisional
+        };
+        const bytes = selectedMode === 'year' ? await exporter.buildYearZip(options) : await exporter.buildWorkbook(options);
+        if (id !== exportSequence.current || window.ReportsJcRepository.contextKey() !== key) throw Error('CONTEXT_CHANGED');
+        const file = 'Reporte_JC_' + report.year + (selectedMode === 'year' ? '' : '-' + String(selectedMonth).padStart(2, '0')) + (provisional ? '_PROVISIONAL' : '') + (selectedMode === 'year' ? '.zip' : '.xlsx');
+        exporter.download(bytes, file, selectedMode === 'year' ? 'application/zip' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        setNotice('Archivo generado: ' + file + (provisional ? ' · Provisional: conserva las cantidades registradas y explica sus pendientes en las notas de Excel. #N/A indica únicamente una cantidad aún no determinada.' : ''));
+      } catch (error) {
+        setNotice(explain(error));
+      } finally {
+        setExporting(false);
+      }
+    }
+    const report = state.data,
+      sheet = report?.sheets?.[tab],
+      isMonth = / Mes$/.test(tab),
+      cells = (isMonth ? sheet?.months?.[month]?.cells : sheet?.cells) || {},
+      layout = grid(tab, cells);
+    const exportPlan = (() => {
+      if (!report) return {
+        provisionalNeeded: false
+      };
+      try {
+        return window.SutiReportsJcExport.exportStatus(report, month, mode);
+      } catch (error) {
+        return {
+          error
+        };
+      }
+    })();
+    const annualIssues = [...new Map((report?.issues || []).filter(item => item.severity === 'error').map(item => [JSON.stringify([item.code, item.sourceIds, item.months]), item])).values()];
+    function closeRegularization() {
+      if (regularizationDirty.current && !window.confirm('Hay una captura sin guardar. ¿Quieres descartarla?')) return;
+      setRegularization(null);
+      regularizationDirty.current = false;
+      if (regularizationChanged.current) setRevision(n => n + 1);
+      regularizationChanged.current = false;
+    }
+    const issues = [...new Map([...(report?.issues || []), ...(sheet?.issues || []), ...(isMonth ? sheet?.months?.[month]?.issues || [] : [])].filter(item => (!item.sheets?.length || item.sheets.includes(tab)) && (!isMonth || !item.months?.length || item.months.includes(month))).map(item => [JSON.stringify([item.code, item.sourceIds, item.months, item.message]), item])).values()];
+    const head = header ? header({
+      title: 'Reportes JC',
+      sub: 'Secretaría de Finanzas · cantidades de casos y operaciones',
+      onBack
+    }) : h('header', {
+      className: 'rjc-top'
+    }, h('h1', null, 'Reportes JC'), h('button', {
+      className: 'rjc-btn',
+      onClick: onBack
+    }, 'Volver'));
+    if (cashFlowOpen) return window.CashFlowReportModule ? h(window.CashFlowReportModule, {
+      header,
+      onBack: () => setCashFlowOpen(false)
+    }) : h('div', {
+      className: 'rjc'
+    }, h('style', null, css), h('p', {
+      role: 'alert',
+      className: 'rjc-error'
+    }, 'No se pudo cargar el reporte. Actualiza la aplicación.'), h('button', {
+      className: 'rjc-btn',
+      onClick: () => setCashFlowOpen(false)
+    }, 'Volver a Reportes JC'));
+    if (regularization) return h('div', {
+      className: 'rjc',
+      'data-reports-jc-regularization': true
+    }, h('style', null, css), h('div', {
+      className: 'rjc-body'
+    }, h('div', {
+      className: 'rjc-top'
+    }, h('h2', null, 'Caja de Ahorro · Regularización de ' + year), h('button', {
+      className: 'rjc-btn',
+      onClick: closeRegularization
+    }, 'Volver a Reportes JC')), h('p', {
+      className: 'rjc-note'
+    }, 'Estás utilizando la misma captura de Caja de Ahorro. Al volver se actualizarán los reportes si guardaste cambios.'), window.SavingsRefundsAdmin ? h(window.SavingsRefundsAdmin, {
+      app,
+      initialYear: year,
+      focusSourceIds: regularization.sourceIds || [],
+      onDirty: value => {
+        regularizationDirty.current = value;
+      },
+      onSaved: () => {
+        regularizationChanged.current = true;
+      }
+    }) : h('p', {
+      role: 'alert',
+      className: 'rjc-error'
+    }, 'No se pudo cargar Caja de Ahorro. Actualiza la aplicación.')));
+    return h('div', {
+      className: 'rjc',
+      'data-reports-jc': true
+    }, h('style', null, css), head, h('div', {
+      className: 'rjc-body'
+    }, h('div', {
+      className: 'rjc-actions',
+      style: {
+        marginBottom: 16
+      }
+    }, h('button', {
+      className: 'rjc-btn',
+      type: 'button',
+      onClick: () => setCashFlowOpen(true)
+    }, 'Reporte Flujo de efectivo')), h('form', {
+      className: 'rjc-bar',
+      onSubmit: e => {
+        e.preventDefault();
+        const next = Number(draftYear);
+        if (!Number.isInteger(next) || next < 2000 || next > 2100) return;
+        setYear(next);
+        setRevision(r => r + 1);
+      }
+    }, h('label', null, 'Año', h('input', {
+      type: 'number',
+      min: 2000,
+      max: 2100,
+      required: true,
+      disabled: exporting,
+      value: draftYear,
+      onChange: e => setDraftYear(e.target.value),
+      'aria-label': 'Año del reporte'
+    })), h('label', null, 'Exportación', h('select', {
+      value: mode,
+      disabled: exporting,
+      onChange: e => {
+        exportSequence.current++;
+        setNotice('');
+        setMode(e.target.value);
+      }
+    }, h('option', {
+      value: 'month'
+    }, 'Un mes · Excel'), h('option', {
+      value: 'year'
+    }, 'Todo el año · 12 archivos'))), h('label', null, 'Mes de consulta', h('select', {
+      value: month,
+      disabled: exporting,
+      onChange: e => {
+        exportSequence.current++;
+        setNotice('');
+        setMonth(Number(e.target.value));
+        setDetail(null);
+      }
+    }, months.map((label, i) => h('option', {
+      key: label,
+      value: i + 1
+    }, label)))), h('button', {
+      className: 'rjc-btn',
+      type: 'submit',
+      disabled: state.loading || exporting
+    }, state.loading ? 'Consultando…' : 'Actualizar'), h('button', {
+      className: 'rjc-btn primary',
+      type: 'button',
+      onClick: exportFile,
+      disabled: !report || state.loading || exporting || !!exportPlan.error
+    }, exporting ? 'Generando…' : (mode === 'year' ? 'Exportar año' : 'Exportar mes') + (exportPlan.provisionalNeeded ? ' provisional' : ''))), h('p', {
+      className: 'rjc-note'
+    }, 'Los concentrados muestran los doce meses del año. Las hojas «Mes» usan el mes elegido. La descarga conserva las 17 pestañas de la plantilla y actualiza las ocho incluidas.'), exportPlan.provisionalNeeded && h('p', {
+      className: 'rjc-note',
+      'data-provisional-export': true
+    }, 'Puedes descargar un archivo PROVISIONAL con las cantidades registradas. Las notas de cada cifra explican los registros pendientes que pueden afectar el conteo. Sólo las cantidades que la fuente aún no determina y sus totales aparecen como #N/A. Al resolver los pendientes podrás generar el libro validado.'), notice && h('p', {
+      role: 'status',
+      className: 'rjc-note',
+      'data-export-notice': true
+    }, notice), exportPlan.error && h('p', {
+      role: 'alert',
+      className: 'rjc-error'
+    }, explain(exportPlan.error)), report && h('div', {
+      className: annualIssues.length ? 'rjc-issue' : 'rjc-note',
+      'data-report-readiness': true
+    }, h('strong', null, annualIssues.length ? 'Pendientes identificados en las fuentes' : 'Sin incidencias bloqueantes en las fuentes consultadas'), annualIssues.length > 0 && h('p', null, 'Los pendientes de los concentrados anuales también se identifican en cada libro mensual.'), annualIssues.length > 0 && h('details', {
+      'data-report-pending-details': true
+    }, h('summary', null, 'Ver ' + annualIssues.length + ' pendiente(s) y sus registros de origen'), annualIssues.map((issue, i) => h('div', {
+      key: i
+    }, h('p', null, issue.message || issue.code, ' · Periodo: ', issue.months?.length ? issue.months.map(m => months[m - 1]).join(', ') + ' de ' + year : 'Año ' + year, ' · Hojas: ', (issue.sheets || []).join(', '), issue.count ? ' · ' + issue.count + ' caso(s)' : ''), Array.isArray(issue.sourceIds) && issue.sourceIds.length > 0 && h('details', null, h('summary', null, 'Identificadores de los registros pendientes'), h('p', null, issue.sourceIds.join(', '))), /^(REFUND_|HISTORICAL_TERMINATION_)/.test(issue.code) && h('button', {
+      className: 'rjc-btn',
+      type: 'button',
+      onClick: () => setRegularization({
+        sourceIds: issue.sourceIds || []
+      })
+    }, 'Resolver en Caja de Ahorro')))), h('button', {
+      className: 'rjc-btn',
+      type: 'button',
+      onClick: () => setRegularization({
+        sourceIds: []
+      })
+    }, 'Revisar históricos de Caja de Ahorro')), state.error && h('p', {
+      role: 'alert',
+      className: 'rjc-error'
+    }, explain(state.error)), state.loading && h('p', {
+      role: 'status',
+      className: 'rjc-note'
+    }, 'Consultando solicitudes, descuentos y movimientos de Ahorro…'), report && h(React.Fragment, null, h('p', {
+      className: 'rjc-note'
+    }, 'Consulta de ' + report.year + ' · Actualizada: ' + new Date(report.consultedAt).toLocaleString('es-MX', {
+      timeZone: 'America/Hermosillo'
+    }) + ' · Selecciona una cifra para ver de dónde se obtiene.'), report.summary && h('div', {
+      className: 'rjc-bar',
+      'aria-label': 'Solicitudes recibidas'
+    }, Object.entries({
+      received: 'Recibidas',
+      approved: 'Aprobadas',
+      rejected: 'Rechazadas o canceladas',
+      pending: 'Pendientes',
+      unknown: 'Sin estado definido'
+    }).map(([key, label]) => h('div', {
+      key
+    }, h('strong', null, (mode === 'year' ? report.summary : report.summary.months?.[month])?.[key] ?? '—'), h('div', {
+      className: 'rjc-note'
+    }, label))), h('p', {
+      className: 'rjc-note'
+    }, mode === 'year' ? 'Todas las solicitudes recibidas en el año.' : 'Todas las solicitudes recibidas en ' + months[month - 1] + ', incluyendo las pendientes.')), h('nav', {
+      className: 'rjc-tabs',
+      role: 'tablist',
+      'aria-label': 'Hojas del reporte'
+    }, names.map(name => h('button', {
+      key: name,
+      role: 'tab',
+      'aria-selected': tab === name,
+      className: 'rjc-btn',
+      onClick: () => {
+        setTab(name);
+        setDetail(null);
+      }
+    }, name))), issues.length > 0 && h('details', {
+      className: 'rjc-issue'
+    }, h('summary', null, issues.length + ' observación(es) de los registros de origen'), issues.map((issue, i) => h('p', {
+      key: i
+    }, issue.message || issue.detail || issue.code || String(issue)))), h('div', {
+      className: 'rjc-table-wrap'
+    }, h('table', {
+      'aria-label': tab
+    }, h('thead', null, h('tr', null, h('th', null, isMonth ? 'Concepto' : 'Mes'), layout.headers.map(label => h('th', {
+      key: label
+    }, label)))), h('tbody', null, layout.rows.map(row => h('tr', {
+      key: row.row,
+      'data-selected': row.month === month
+    }, h('th', {
+      scope: 'row'
+    }, row.label), layout.columns.map(column => {
+      const address = column + row.row,
+        cell = cells[address],
+        n = value(cell);
+      return h('td', {
+        key: column
+      }, typeof n === 'number' ? h('button', {
+        className: 'rjc-cell',
+        'aria-label': row.label + ', ' + layout.headers[layout.columns.indexOf(column)] + ': ' + n + '. Ver detalle',
+        onClick: () => setDetail({
+          sheet: tab,
+          address,
+          cell,
+          label: row.label
+        })
+      }, n) : h('span', null, n === null ? 'Por determinar' : '—'));
+    })))))), h('p', {
+      className: 'rjc-note'
+    }, 'Las atenciones suman operaciones; una persona puede aparecer en más de un trámite. Los descuentos futuros son programados. Los reembolsos cuentan una vez al quedar completamente pagados.'), detail && h(Detail, {
+      key: tab + detail.address,
+      detail,
+      report,
+      onClose: () => setDetail(null)
+    }))));
+  }
+  window.ReportsJcAdminModule = ReportsJcAdmin;
 })();
 })();
 /* @@file investors-model.js */

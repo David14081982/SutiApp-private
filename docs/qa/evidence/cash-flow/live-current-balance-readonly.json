@@ -1,0 +1,86 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-30T14:05:32.761Z",
+  "scope": "READ_ONLY_SOURCE_QUERY_AND_REPORT_ASSEMBLY",
+  "deployed": false,
+  "financialWrites": 0,
+  "googleWrites": 0,
+  "triggerChanges": 0,
+  "persistedSourceRows": 0,
+  "productionAuthorizationTested": false,
+  "froms": [
+    "2026-10"
+  ],
+  "queries": [
+    {
+      "from": "2026-10",
+      "status": "PASS",
+      "durationMs": 8255,
+      "sqlSha256": "afbfd9dac98df827325017ea96fc2ece035abf52d1b9eb25b0744897d8ac48fc",
+      "databaseReadOnly": true,
+      "events": 8499,
+      "byKind": {
+        "contribution": 627,
+        "adjustment": 2,
+        "withdrawal_total": 2,
+        "contribution_scheduled": 7868
+      },
+      "byStatus": {
+        "RECORDED": 631,
+        "SCHEDULED": 7868
+      },
+      "balanceMonths": 12,
+      "monthsWithUnknownBalance": 11,
+      "currentBalanceKnown": true,
+      "currentBalanceUnknownAccounts": 0,
+      "matchesCurrentCanonicalAuthority": true,
+      "issueCodes": []
+    }
+  ],
+  "reports": [
+    {
+      "from": "2026-10",
+      "status": "PASS",
+      "months": [
+        "2026-10",
+        "2026-11",
+        "2026-12",
+        "2027-01",
+        "2027-02",
+        "2027-03",
+        "2027-04",
+        "2027-05",
+        "2027-06",
+        "2027-07",
+        "2027-08",
+        "2027-09"
+      ],
+      "rows": 17,
+      "sourceRecords": 10786,
+      "unassigned": 370,
+      "loanCount": 499,
+      "cellsByStatus": {
+        "RECORDED": 8,
+        "NOT_APPLICABLE": 143,
+        "SCHEDULED": 12,
+        "PENDING": 12,
+        "UNAVAILABLE": 17,
+        "PARTIAL": 12
+      },
+      "issueCodes": [
+        "LOAN_TRANSFER_DATE_UNRESOLVED",
+        "LOAN_INSTALLMENT_AMBIGUOUS",
+        "LOAN_BREAKDOWN_NOT_CERTIFIED",
+        "LOAN_PRINCIPAL_PENDING_UNAVAILABLE"
+      ],
+      "financialWrites": 0,
+      "amortizationEngineActive": false
+    }
+  ],
+  "google": {
+    "status": "PASS",
+    "durationMs": 1767,
+    "rows": 20106,
+    "persistedRows": 0
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "status": "PREPARED_NOT_PUBLISHED",
+  "baseCommit": "71404ef7fb3c3d1a8da2f825dc7b1a5bf7766b6d",
+  "files": [
+    {
+      "file": "SutiApp.html",
+      "sha256": "7f39e2f452c46d9ac7fdda9f8aaa31bab3f690a8d2d73c88aa7b25f0069239df"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "db07df5696650dba2729f9d1f0085c30cb5464acaa4e5cd24872baac15d7ff39"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "2e20294dbafa3ab16cc74183ac6a7dd71df6e67462e81e52097297a290bccf7b"
+    },
+    {
+      "file": "app/cash-flow-report.jsx",
+      "sha256": "a4b628da6fca265b11f454cd4525275db36e47576feae3157a28444d953f78bb"
+    },
+    {
+      "file": "app/reports-jc-admin.jsx",
+      "sha256": "f54ffd7de1f2da0a01d412694ba29fbd0d75340de68ad3808f092983fb4abd32"
+    },
+    {
+      "file": "app/reports-jc-repository.js",
+      "sha256": "4685aff9b898ccb6777ebf5ab6bba7d900a8dd1f32109ada15792cacd7b63593"
+    },
+    {
+      "file": "scripts/build-bundle.js",
+      "sha256": "2348399f335921bfe99942abb21469e7120877f9b4eb9da6c39a214c7cb12c4f"
+    },
+    {
+      "file": "supabase/functions/reports-jc/index.ts",
+      "sha256": "a19a65ad0c401b667a0df205426d476641134a3e0c131f2e31988a981a046e7f"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow.mjs",
+      "sha256": "948d91603518e26ce25698671bb72abee2d423743bc17438a070b6342b843ba1"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-google.mjs",
+      "sha256": "8e6dd43726079618843754e3d573747d23ff8c41169c5b79d616a0e012f47195"
+    },
+    {
+      "file": "supabase/migrations/20261030000100_reports_jc_cash_flow.sql",
+      "sha256": "ed4ac5d61c3f9da08357e487d597430331b25e10509c4dd5d3f604655eca9a04"
+    },
+    {
+      "file": "supabase/recovery/20261030000100_reports_jc_cash_flow.sql",
+      "sha256": "94b3b24d61b1364e7841064b05356ef89f89eb29307e4ea43938242ddc6013d8"
+    },
+    {
+      "file": "docs/audits/H-FLUJO-EFECTIVO-AHORRO-CAJA-001.md",
+      "sha256": "c87ef2a380a2fa653af4d17410405f8352bd4df15746035f0c97ed97ca9a170a"
+    },
+    {
+      "file": "scripts/prepare-cash-flow-release.js",
+      "sha256": "cdb25051867d6ac8b6d29c238fc0bae3cc3cc1044a38d030c79a042e65f3e962"
+    },
+    {
+      "file": "scripts/release-cash-flow.js",
+      "sha256": "dba563aeada6318f8af0accfb0d1618e0577e0f96c344b1c1917ffee6a7df540"
+    },
+    {
+      "file": "scripts/test-cash-flow-browser.js",
+      "sha256": "f3729023e66037c37018e7d3a35f22410bc90e43b6737714a11e4f07d8089047"
+    },
+    {
+      "file": "scripts/test-cash-flow-core.mjs",
+      "sha256": "a85df48075a143be7c00b5819d363476a81d14eaa39cf85f935c512f8297ed8d"
+    },
+    {
+      "file": "scripts/test-cash-flow-savings-sql.js",
+      "sha256": "a8ef5d671b88e1398d1cae20a440c04a3a3ecec03e86fb2e762b3b612ae0b7b5"
+    },
+    {
+      "file": "scripts/verify-cash-flow-sources.mjs",
+      "sha256": "9609756c73d0e018a4de5ac7b925f9a1842dca17ca218420624bde2d5564043c"
+    },
+    {
+      "file": "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+      "sha256": "f09e3935cea83900de812fab2e1d445c3f8b01970691889a571ed3ef80ce660f"
+    },
+    {
+      "file": "docs/architecture/registry-code.json",
+      "sha256": "604f92440de076a72f60ba1f037f49200f03ec7b29665ed1f3e6c41cadd84c16"
+    },
+    {
+      "file": "docs/architecture/registry-data.json",
+      "sha256": "88f2dbcc934e5ed107586d20132da175f9c351f28aaa00da2757b470ad5bf982"
+    },
+    {
+      "file": "docs/architecture/registry-edges.json",
+      "sha256": "cac94c1a065228d5edb7683ac0300fb3306f2b8468422c8273dbdc7c97b4be1e"
+    },
+    {
+      "file": "docs/architecture/registry-search.json",
+      "sha256": "daf5ba949da49f37f112e1a22932df5151ea34bb4fbaa001fa817939aee99b22"
+    }
+  ],
+  "registryUpdate": {
+    "scopedFiles": 7,
+    "unrelatedFactsPreserved": 3479
+  },
+  "financialWrites": 0,
+  "publicationBlock": "SUPABASE_MANAGEMENT_HTTP_401_INVALID_ACCESS_TOKEN",
+  "unexpectedFiles": []
+}

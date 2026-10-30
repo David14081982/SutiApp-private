@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "hashes": {
+    "index.ts": "a19a65ad0c401b667a0df205426d476641134a3e0c131f2e31988a981a046e7f",
+    "report.mjs": "24dd75e39a99a902fdfb484ba2b5feb723616eea12307dd80335d317340a61cc",
+    "google-auth.mjs": "2530bd316b4f7e727898f2c09f00865ced4a2646061de2f98a93cd697a0de5ed",
+    "template.mjs": "1ae9618b5051581d218c8d0ff364c16ca6f774794efc9497a5397e4adbf6f104",
+    "cash-flow.mjs": "948d91603518e26ce25698671bb72abee2d423743bc17438a070b6342b843ba1",
+    "cash-flow-google.mjs": "8e6dd43726079618843754e3d573747d23ff8c41169c5b79d616a0e012f47195"
+  }
+}

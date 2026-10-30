@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "scope": "Owner-authorized unused temporary artifacts",
+  "directories": 18,
+  "bytes": 1578271609,
+  "freeBytesAfter": 1239896064,
+  "paths": [
+    ".tmp/sicof/npm-cache",
+    ".tmp/inversores/npm-cache",
+    ".tmp/sutifinanzas/site-1791153512228",
+    ".tmp/sutifinanzas/site-1791159474984",
+    ".tmp/sutifinanzas/site-1791162114069",
+    ".tmp/sutifinanzas/site-1791162198072",
+    ".tmp/sutifinanzas/site-1791164522310",
+    ".tmp/sutifinanzas/site-1791165626645",
+    ".tmp/inversores/site-3e12160f1d3c",
+    ".tmp/inversores/site-8a7338187393",
+    ".tmp/push-reopen-release-20261002",
+    ".tmp/savings-surgical-release-20261002",
+    ".tmp/affiliate-control-change/release",
+    ".tmp/finance-request-process/release",
+    ".tmp/history-document-private/release",
+    ".tmp/history-fast-read/release",
+    ".tmp/history-loan-payments/release",
+    ".tmp/history-read-efficiency/release"
+  ],
+  "currentTaskPreserved": true,
+  "backupsPreserved": true,
+  "credentialsPreserved": true,
+  "productionChanges": 0
+}

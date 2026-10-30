@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "task": "H-FLUJO-EFECTIVO-CRITERIO-001",
+  "scope": "Report reader query performance only",
+  "unchanged005": true,
+  "definitionMd5": "5bf922aa77016e0453acc141227ed944",
+  "recoveryDefinitionMd5": "94b10b95af8b16883ace97c8f85f67ab",
+  "hashes": {
+    "supabase/migrations/20261030000600_reports_jc_cash_flow_savings_query.sql": "6d2f9bb44c91777541ad6fe37d002004c736a8249c5a056713c20571e3ab5dff",
+    "supabase/recovery/20261030000600_reports_jc_cash_flow_savings_query.sql": "2962e8a5c015fc92cfb1ed1847cced807e31f1114312279a2a60e56a091afc9c",
+    "scripts/test-cash-flow-criteria-savings-query.js": "b4dbe79d0103966cc9ef65ba721c972c88d8a02e4a5ee2e3b0b393da2c1cd176",
+    "scripts/verify-cash-flow-criteria-savings-query.mjs": "5dabe8cc05d2a519b078f913cca8a87e9f8aa1e820e4b8fcde648c5c60490bb6",
+    "scripts/verify-cash-flow-criteria-savings-source.mjs": "3d410102743a0875f619e076b3b4e0a5b4e75034f2ff49166652bdbc30afedca"
+  },
+  "financialWrites": 0,
+  "globalTimeoutChanges": 0,
+  "roleChanges": 0,
+  "helperChanges": 0
+}

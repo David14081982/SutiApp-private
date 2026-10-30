@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "commands": [
+    "node --test scripts/test-cash-flow-criteria-integration.mjs",
+    "node --test scripts/test-cash-flow-consolidated.mjs",
+    "node --test --test-name-pattern=duplicate/undated/future scripts/test-cash-flow-consolidated.mjs scripts/test-cash-flow-criteria-integration.mjs"
+  ],
+  "initialNewCases": 6,
+  "consolidatedCases": 16,
+  "changedPathRechecks": 3,
+  "registeredAmountsVisible": true,
+  "partialExcelSubtotalVisible": true,
+  "programmedNotPaid": true,
+  "financialWrites": 0,
+  "globalSuites": 0
+}

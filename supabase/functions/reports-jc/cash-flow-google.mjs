@@ -3,8 +3,8 @@ import {WORKBOOK,ReportError} from './report.mjs';
 
 export const CASH_FLOW_RANGES=Object.freeze(["'HISTORIAL P V2'!A:D","'HISTORIAL P V2'!G:K","'HISTORIAL P V2'!S:S","'HISTORIAL P V2'!AE:AE"]);
 export const CONSOLIDATED_CASH_FLOW_RANGES=Object.freeze([
- "'HISTORIAL P V2'!A:D","'HISTORIAL P V2'!F:K","'HISTORIAL P V2'!O:P","'HISTORIAL P V2'!S:S","'HISTORIAL P V2'!AE:AE","'HISTORIAL P V2'!AG:AG",
- "'Historial de solicitudes'!A:B","'Historial de solicitudes'!D:J","'Historial de solicitudes'!Y:Y","'Historial de solicitudes'!AA:AA"
+ "'HISTORIAL P V2'!A:D","'HISTORIAL P V2'!F:K","'HISTORIAL P V2'!L:P","'HISTORIAL P V2'!S:S","'HISTORIAL P V2'!AE:AE","'HISTORIAL P V2'!AG:AG",
+ "'Historial de solicitudes'!A:B","'Historial de solicitudes'!D:J"
 ]);
 // Same service account and read-only scope; no Apps Script or financial writer.
 export async function readCashFlowGoogle(env,fetcher=fetch){
@@ -38,7 +38,7 @@ export async function readConsolidatedCashFlowGoogle(env,fetcher=fetch){
   ]);
   if(!response.ok)throw new ReportError(response.status===403?'GOOGLE_ACCESS_DENIED':'GOOGLE_UNAVAILABLE');
   const data=await response.json();if(data.spreadsheetId!==WORKBOOK||data.valueRanges?.length!==CONSOLIDATED_CASH_FLOW_RANGES.length)throw new ReportError('GOOGLE_RESPONSE_INVALID');
-  const loans=[],requests=[],offsets=[0,5,14,18,30,32,0,3,24,26];
+  const loans=[],requests=[],offsets=[0,5,11,18,30,32,0,3];
   data.valueRanges.forEach((r,k)=>{if(!Array.isArray(r.values))throw new ReportError('GOOGLE_RESPONSE_INVALID');const rows=k<6?loans:requests;r.values.forEach((v,i)=>{if(!Array.isArray(v))throw new ReportError('GOOGLE_RESPONSE_INVALID');rows[i]??=[];v.forEach((x,j)=>rows[i][offsets[k]+j]=x);});});
   const requestNotes={};let notesAvailable=notesResponse.ok;
   if(notesAvailable){const notes=await notesResponse.json();notesAvailable=Array.isArray(notes.sheets);for(const sheet of notes.sheets||[])for(const block of sheet.data||[])for(const [i,row]of (block.rowData||[]).entries()){const note=row.values?.[0]?.note;if(typeof note==='string')requestNotes[(block.startRow||0)+i+1]=note;}}

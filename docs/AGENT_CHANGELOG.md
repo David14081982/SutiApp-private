@@ -4457,3 +4457,21 @@ obligations, 274 source rows and 70 review items; zero inferred payments. Real h
 ROLLBACK, focal PostgreSQL/browser/permissions/idempotency tests and authenticated candidate passed.
 169 unrelated published bundle modules preserved. See audits/H-ADMIN-INVERSIONISTAS-001.md and
 qa/evidence/investors. No existing financial data, protected repositories or Storage policies changed.
+
+## H-FLUJO-EFECTIVO-CRITERIO-001 — 2026-10-30
+
+Corrección exclusiva del Reporte Flujo de efectivo según decisión del propietario:
+los importes oficiales se muestran sin exigir certificación documental adicional.
+Las condiciones registradas respaldan los cálculos; datos realmente ausentes o
+incompatibles conservan su explicación. Los subtotales conocidos son numéricos
+en pantalla y Excel. Se distinguen importes registrados, calculados y programados.
+
+Cinco lectores/derivaciones del reporte, dos componentes propios y dos RPC de
+consulta ajustados; el motor original, 173 módulos publicados, permisos y fuentes
+financieras permanecen intactos. Las migraciones 004/005/006 y sus recoveries sólo
+afectan consultas. La 006 resuelve el límite de consulta con resultados equivalentes,
+sin aumentar límites globales. Backend reports-jc v8 verificado. Candidato real:
+103 conceptos, 12 meses, 1,236 celdas y 69,369 detalles Excel coinciden con la API.
+Pruebas focalizadas PASS, cero escrituras financieras; motor automático sin activar.
+La evidencia de publicación y comprobación final se registra en
+docs/qa/evidence/cash-flow-criteria. No se ejecutaron suites globales.

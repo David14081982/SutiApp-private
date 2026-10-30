@@ -1,10 +1,11 @@
 // Read-only contractual projection. The source engine is an exact deployment copy.
 // Neither this adapter nor the engine writes Google, Supabase, balances or payments.
 import {previewCorrection,validateContract} from './cash-flow-pv2-engine.mjs';
-import {sourceDate,fundGroup,requestStatus} from './report.mjs';
+import {sourceDate,fundGroup} from './report.mjs';
 
 export const CONTRACT_ENGINE_SHA256='3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33';
-export const CONTRACT_SOURCE='LIVE_APPROVED_CONTRACT';
+export const CONTRACT_SOURCE='LIVE_OFFICIAL_REGISTERED_TERMS';
+const GENERAL_TARIFF_START='2026-03-30';
 const text=v=>String(v??'').trim();
 const norm=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ');
 const fail=c=>{throw new Error(c);};
@@ -30,97 +31,133 @@ export function payrollAdministrativeDates(anchor,due,category){
  return result;
 }
 
-function receiptFromNote(note,C){
- const lines=text(note).split(/\r?\n/).filter(x=>x.startsWith('SUTI_LOAN_TRANSFER_V1:'));
- if(!lines.length)return null;
- if(lines.length!==1)fail('TRANSFER_IDENTITY_INVALID');
- let r;try{r=JSON.parse(lines[0].slice('SUTI_LOAN_TRANSFER_V1:'.length));}catch(_){fail('TRANSFER_IDENTITY_INVALID');}
- if(text(r.id)!==C||!/^SR-/.test(r.identity||'')||!/^[a-f\d]{64}$/i.test(r.sourceHash||''))fail('TRANSFER_IDENTITY_INVALID');
- return r;
+// The original pure engine has a closed evidence enum from its isolated stage.
+// Adapt that discriminator only at its boundary; public evidence keeps its true source.
+function engineContract(contract){
+ return contract?.evidence?.kind==='official_registered_terms'?{...contract,evidence:{...contract.evidence,kind:'explicit_approved_snapshot'}}:contract;
 }
-
-/** Match the current approval snapshot to the current request, never by amount or name. */
+function checkedContract(contract){validateContract(engineContract(contract));return contract;}
+function receiptIdentity(note,C){
+ const identities=[];
+ for(const line of text(note).split(/\r?\n/))if(line.startsWith('SUTI_LOAN_TRANSFER_V1:'))try{
+  const r=JSON.parse(line.slice('SUTI_LOAN_TRANSFER_V1:'.length));if(text(r.id)===C&&text(r.identity))identities.push(text(r.identity));
+ }catch(_){/* A note is an optional identity link, never a documentary gate. */}
+ return [...new Set(identities)];
+}
+function observed(rows,index,convert,code){
+ const values=rows.map(r=>r[index]).filter(v=>v!==undefined&&v!==null&&v!=='').map(convert);
+ if(values.some(v=>v===null)||new Set(values).size>1)fail(code);
+ return values.length?values[0]:null;
+}
+function amount(rows,index,fallback,code){const v=observed(rows,index,cents,code);return v===null?cents(fallback):v;}
+function count(v){return Number.isSafeInteger(v)&&v>0&&v<=600?v:null;}
+function rate(v){return typeof v==='number'&&Number.isFinite(v)&&v>=0?v:null;}
+function structure(rows,n){
+ if(!count(n))fail('CONTRACT_PAYMENT_COUNT_MISSING');
+ if(rows.length!==n)fail('INCOMPLETE_CDS_SCHEDULE');
+ const seen=new Set();for(const r of rows){const S=r[18];if(!Number.isInteger(S)||S<1||S>n||seen.has(S))fail('DUPLICATE_OR_INVALID_CDS');seen.add(S);}
+}
+function makeSchedule(n,total,administrationUnits,originalInstallment){
+ const installment=originalInstallment??Math.floor(total/n);
+ if(originalInstallment!==null&&Math.abs(originalInstallment*n-total)>Math.ceil(n/2)+1)fail('ORIGINAL_INSTALLMENT_MISMATCH');
+ // A rounded original installment can leave a final-cent adjustment, never alter total.
+ if(installment<=0||total-installment*(n-1)<=0)fail('ORIGINAL_INSTALLMENT_MISMATCH');
+ return Array.from({length:n},(_,i)=>({S:i+1,amount:i===n-1?total-installment*(n-1):installment,adminUnits:administrationUnits}));
+}
+function calendarFor(rows,request,snapshot=null){
+ const anchor=snapshot?.createdOn||observed(rows,32,sourceDate,'REQUEST_DATE_CONFLICT')||sourceDate(request?.[9]);
+ const due=observed(rows,15,sourceDate,'CONTRACT_DUE_DATE_CONFLICT');
+ const category=snapshot?.category||observed(rows,5,v=>text(v),'CONTRACT_CATEGORY_CONFLICT')||text(request?.[3]);
+ if(!anchor||!due)fail('ADVANCE_ADMIN_DATES_MISSING');
+ const dates=payrollAdministrativeDates(anchor,due,category);
+ if(!dates.length)fail('ADVANCE_ADMIN_PERIODS_MISSING');
+ return {anchor,due,category,dates,periods:dates.length};
+}
 function fromSnapshot(snapshot,request,rows){
- if(snapshot.status!=='approved'||snapshot.program!=='prestamo'||!snapshot.reference||!snapshot.id||!snapshot.approvedAt||!snapshot.fingerprint)fail('APPROVAL_EVIDENCE_INCOMPLETE');
  const f=snapshot.financial,C=text(rows[0][2]),D=text(rows[0][3]);
- if(!f||text(snapshot.numeroControl)!==D||text(request[1])!==D)fail('CONTRACT_IDENTITY_MISMATCH');
- if(!sameFund(f.fund,request[4])||rows.some(r=>!sameFund(r[6],f.fund)))fail('CONTRACT_FUND_MISMATCH');
- const principal=cents(f.amount),interest=cents(f.interest),administration=cents(f.administrativeFeeTotal),total=cents(f.total),tariff=cents(f.administrativeFeePerPayment),installment=cents(f.paymentPerPeriod),n=f.paymentCount;
- if([principal,interest,administration,total,tariff,installment].some(x=>x===null)||!integer(n)||n<1)fail('CONTRACT_FINANCIAL_FIELDS_MISSING');
+ if(!f||text(snapshot.numeroControl)!==D)fail('CONTRACT_IDENTITY_MISMATCH');
+ if(rows.some(r=>!sameFund(r[6],f.fund)))fail('CONTRACT_FUND_MISMATCH');
+ const principal=cents(f.amount),interest=cents(f.interest),administration=cents(f.administrativeFeeTotal),total=cents(f.total),tariff=cents(f.administrativeFeePerPayment),n=f.paymentCount;
+ if([principal,interest,administration,total,tariff].some(v=>v===null))fail('CONTRACT_FINANCIAL_FIELDS_MISSING');
  if(![0,1000,1500].includes(tariff))fail('UNSUPPORTED_TARIFF');
- if(!Number.isFinite(f.rate)||f.rate<0)fail('CONTRACT_RATE_MISSING');
- if(request[6]!==n||cents(request[7])!==principal||cents(request[8])!==total||typeof request[5]!=='number'||Math.abs(request[5]-f.rate/100)>1e-9)fail('REQUEST_TERMS_CHANGED');
- let adminUnits=1;
+ structure(rows,n);let adminUnits=1,calendar=null;
  if(fundGroup(f.fund)==='advance'){
   if(n!==1)fail('ADVANCE_PAYMENT_COUNT_INVALID');
-  const calendar=f.administrativeFeeCalendar;
-  if(!calendar||!integer(f.administrativeFeePeriodCount)||!date(snapshot.createdOn))fail('ADVANCE_ADMIN_EVIDENCE_MISSING');
-  const due=sourceDate(rows[0][15]);
-  if(calendar.anchorDate!==snapshot.createdOn||!due||calendar.dueDate!==due)fail('ADVANCE_CALENDAR_MISMATCH');
-  const dates=payrollAdministrativeDates(snapshot.createdOn,due,snapshot.category||request[3]);
-  if(JSON.stringify(dates)!==JSON.stringify(calendar.dates)||calendar.periodCount!==dates.length||f.administrativeFeePeriodCount!==dates.length)fail('ADVANCE_CALENDAR_MISMATCH');
-  adminUnits=dates.length;
+  calendar=calendarFor(rows,request,snapshot);adminUnits=calendar.periods;
  }
- const schedule=Array.from({length:n},(_,i)=>({S:i+1,amount:i===n-1?total-installment*(n-1):installment,adminUnits}));
- const contract={C,D,tariff,principal,interest,administration,total,schedule,rate:f.rate,fund:f.fund,
-  evidence:{kind:'explicit_approved_snapshot',reference:snapshot.reference,source:'program_requests.financial_approval_snapshot',fingerprint:snapshot.fingerprint,requestId:snapshot.id},
-  sourceVerified:true};
- validateContract(contract);
- validateLiveTerms(contract,rows,installment);
- return contract;
+ const warnings=[];
+ if(rows.some(r=>cents(r[9])!==principal||cents(r[10])!==total||typeof f.rate==='number'&&Math.abs((rate(r[7])??NaN)-f.rate/100)>1e-9))warnings.push('REGISTERED_TERMS_DIFFER_FROM_ORIGINAL_APPROVAL');
+ return checkedContract({C,D,tariff,principal,interest,administration,total,
+  schedule:makeSchedule(n,total,adminUnits,cents(f.paymentPerPeriod)),rate:typeof f.rate==='number'?f.rate:null,fund:f.fund,
+  evidence:{kind:'explicit_approved_snapshot',reference:snapshot.reference||snapshot.id,source:'program_requests.financial_approval_snapshot',fingerprint:snapshot.fingerprint||null,requestId:snapshot.id||null,documentRequired:false,warnings,...(calendar?{administrativeCalendar:calendar}: {})},sourceVerified:true});
+}
+function fromOfficialRows(rows,request,headers,sourceRows,warnings=[]){
+ const C=text(rows[0][2]),D=text(rows[0][3]),fund=rows[0][6];
+ if(rows.some(r=>!sameFund(r[6],fund)))fail('CONTRACT_FUND_MISMATCH');
+ const principal=amount(rows,9,request?.[7],'PRINCIPAL_CONFLICT'),total=amount(rows,10,request?.[8],'CONTRACT_TOTAL_CONFLICT');
+ const n=observed(rows,8,count,'CONTRACT_PAYMENT_COUNT_CONFLICT')??count(request?.[6]);structure(rows,n);
+ if(principal===null||principal<=0||total===null||total<principal)fail('CONTRACT_FINANCIAL_FIELDS_MISSING');
+ const r=observed(rows,7,rate,'CONTRACT_RATE_CONFLICT')??rate(request?.[5]);
+ const originalInstallment=observed(rows,14,cents,'ORIGINAL_INSTALLMENT_CONFLICT');
+ let calendar=null,calendarError=null,units=n;
+ const advance=fundGroup(fund)==='advance';
+ if(advance){if(n!==1)fail('ADVANCE_PAYMENT_COUNT_INVALID');try{calendar=calendarFor(rows,request);units=calendar.periods;}catch(e){calendarError=e.message;}}
+ const interestCandidates=[];
+ // Live M/N include administration (M=K-J, N=M/I); their labels do not
+ // make them pure interest. Use the recorded contractual rate, never that residual.
+ if(r!==null){
+  interestCandidates.push({interest:Math.round(principal*r*n),basis:'REGISTERED_RATE_H_I_J'});
+  if(advance&&calendar&&calendar.periods!==n)interestCandidates.push({interest:Math.round(principal*r*calendar.periods),basis:'REGISTERED_RATE_PAYROLL_PERIODS'});
+ }
+ const candidates=[];
+ for(const candidate of interestCandidates){
+  for(const tariff of [0,1000,1500]){
+   if(calendarError&&tariff!==0)continue;
+   const administration=tariff*units,interest=total-principal-administration;
+   if(interest>=0&&Math.abs(interest-candidate.interest)<=1)candidates.push({tariff,administration,interest,basis:candidate.basis});
+  }
+ }
+ const unique=[...new Map(candidates.map(c=>[c.tariff,c])).values()];
+ let chosen=unique.length===1?unique[0]:null;
+ if(unique.length>1)fail('CONTRACT_COMPONENTS_AMBIGUOUS');
+ if(!chosen){
+  const anchor=calendar?.anchor||observed(rows,32,sourceDate,'REQUEST_DATE_CONFLICT')||sourceDate(request?.[9]);
+  if(calendarError)fail(calendarError);
+  // The owner-confirmed dated general tariff is usable only without contradictory
+  // registered interest. Earlier contracts never inherit the current tariff.
+  if(!interestCandidates.length&&anchor&&anchor>=GENERAL_TARIFF_START&&total-principal>=1500*units)
+   chosen={tariff:1500,administration:1500*units,interest:total-principal-1500*units,basis:'OWNER_DATED_GENERAL_TARIFF'};
+  else fail(interestCandidates.length?'REGISTERED_COMPONENTS_INCONSISTENT':'TARIFF_OR_INTEREST_MISSING');
+ }
+ if(calendarError&&chosen.tariff===0)warnings.push('ZERO_TARIFF_NO_ADMINISTRATIVE_CALENDAR_REQUIRED');
+ const schedule=makeSchedule(n,total,advance?(calendar?.periods||1):1,originalInstallment);
+ return checkedContract({C,D,...chosen,total,principal,schedule,rate:r===null?null:r*100,fund,sourceVerified:true,
+  evidence:{kind:'official_registered_terms',reference:`HISTORIAL P V2!${sourceRows.map(i=>'C'+i+':S'+i).join(',')}`,source:'Google SutiApp Final / HISTORIAL P V2',documentRequired:false,basis:chosen.basis,columns:['C','D','F','G','H','I','J','K','O','P','S','AG'],warnings,...(calendar?{administrativeCalendar:calendar}: {})}});
 }
 
-function validateLiveTerms(contract,rows,originalInstallment){
- if(rows.length!==contract.schedule.length)fail('INCOMPLETE_CDS_SCHEDULE');
- const seen=new Set();
- for(const r of rows){
-  const s=r[18];
-  if(!Number.isInteger(s)||s<1||s>contract.schedule.length||seen.has(s))fail('DUPLICATE_OR_INVALID_CDS');seen.add(s);
-  if(r[8]!==contract.schedule.length||cents(r[9])!==contract.principal||cents(r[10])!==contract.total)fail('CONTRACT_TERMS_CHANGED');
-  if(typeof contract.rate==='number'&&(typeof r[7]!=='number'||Math.abs(r[7]-contract.rate/100)>1e-9))fail('CONTRACT_RATE_CHANGED');
-  const o=cents(r[14]);
-  // O is the original rounded instalment. A tail adjustment closes the original total in memory.
-  if(o===null||o!==originalInstallment)fail('ORIGINAL_INSTALLMENT_MISMATCH');
- }
-}
-
-/**
- * Current sources only. requests/loans are the existing raw Sheets arrays including headers.
- * Snapshots are read by the Admin-only RPC. No historical JSON or current tariff is a fallback.
- * documentEvidence is optional independently verified original content, never merely a URL.
- */
-export function resolveCashFlowContracts({loans,requests,requestNotes={},snapshots,documentEvidence=[]}){
+/** Current official values are valid without a PDF, transfer hash or approval certificate.
+ * Optional approval linkage selects original conditions; local research JSON is never read. */
+export function resolveCashFlowContracts({loans,requests=[],requestNotes={},snapshots=[]}){
  if(!Array.isArray(loans)||!Array.isArray(requests)||!Array.isArray(snapshots))fail('CONTRACT_SOURCE_INVALID');
  const groups=new Map(),requestMap=new Map(),snapshotMap=new Map(),contracts=[],protectedLoans=[];
- loans.forEach((r,i)=>{if(i<1||!text(r[2])||!text(r[3]))return;const k=key(r[2],r[3]);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r);});
- requests.forEach((r,i)=>{if(i<1||!text(r[0])||!text(r[1]))return;const k=key(r[0],r[1]);if(!requestMap.has(k))requestMap.set(k,[]);requestMap.get(k).push({row:r,sourceRow:i+1});});
- for(const s of snapshots)for(const id of [s.id,s.reference].filter(Boolean)){if(!snapshotMap.has(id))snapshotMap.set(id,[]);snapshotMap.get(id).push(s);}
- for(const [k,rows] of groups){
-  const C=text(rows[0][2]),D=text(rows[0][3]),fund=rows[0][6];
+ loans.forEach((row,i)=>{if(i<1||!text(row[2])||!text(row[3]))return;const k=key(row[2],row[3]);if(!groups.has(k))groups.set(k,[]);groups.get(k).push({row,sourceRow:i+1});});
+ requests.forEach((row,i)=>{if(i<1||!text(row[0])||!text(row[1]))return;const k=key(row[0],row[1]);if(!requestMap.has(k))requestMap.set(k,[]);requestMap.get(k).push({row,sourceRow:i+1});});
+ for(const snapshot of snapshots)for(const id of new Set([snapshot.id,snapshot.reference].filter(Boolean))){if(!snapshotMap.has(id))snapshotMap.set(id,[]);snapshotMap.get(id).push(snapshot);}
+ for(const [k,group]of groups){
+  const rows=group.map(r=>r.row),C=text(rows[0][2]),D=text(rows[0][3]),fund=rows[0][6];
   if(!['loanSavings','pettyCash','sutiexpress','advance'].includes(fundGroup(fund)))continue;
   try{
-   const matches=requestMap.get(k)||[];if(matches.length!==1)fail('REQUEST_IDENTITY_UNRESOLVED');
-   const {row:request,sourceRow}=matches[0];if(requestStatus(request[24])!=='approved')fail('REQUEST_NOT_APPROVED');
-   const receipt=receiptFromNote(requestNotes[sourceRow],C),original=receipt?.identity||C;
-   const candidates=snapshotMap.get(original)||[];
-   if(candidates.length===1){contracts.push(fromSnapshot(candidates[0],request,rows));continue;}
+   const matches=requestMap.get(k)||[],match=matches.length===1?matches[0]:null,request=match?.row,warnings=[];
+   if(matches.length>1)warnings.push('REQUEST_LINK_AMBIGUOUS');
+   const ids=new Set([C,...(match?receiptIdentity(requestNotes[match.sourceRow],C):[])]);
+   const candidates=[...new Set([...ids].flatMap(id=>snapshotMap.get(id)||[]))].filter(s=>text(s.numeroControl)===D);
    if(candidates.length>1)fail('APPROVAL_IDENTITY_AMBIGUOUS');
-   // A derived classification is usable only when original document bytes were independently
-   // checked at consultation and its reference, identity and live terms still match.
-   const docs=documentEvidence.filter(d=>d.contract?.C===C&&d.contract?.D===D);
-   if(docs.length===1){
-    const d=docs[0],c=d.contract;
-    if(!/^[a-f\d]{64}$/i.test(d.observedSha256||'')||d.observedSha256.toLowerCase()!==c.evidence?.sha256?.toLowerCase()||
-      c.evidence?.kind!=='original_document_reconstruction'||c.evidence.reference!==`Historial de solicitudes!AA${sourceRow}`||d.sourceUrl!==request[26])fail('DOCUMENT_EVIDENCE_NOT_VERIFIED');
-    const originalInstallment=cents(rows[0][14]);
-    if(originalInstallment===null||Math.abs(originalInstallment*c.schedule.length-c.total)>Math.ceil(c.schedule.length/2))fail('ORIGINAL_INSTALLMENT_MISMATCH');
-    validateContract(c);validateLiveTerms(c,rows,originalInstallment);
-    if(cents(request[7])!==c.principal||cents(request[8])!==c.total||request[6]!==c.schedule.length||
-     typeof request[5]!=='number'||rows.some(r=>typeof r[7]!=='number'||Math.abs(r[7]-request[5])>1e-9||!sameFund(request[4],r[6])))fail('REQUEST_TERMS_CHANGED');
-    contracts.push({...structuredClone(c),fund,sourceVerified:true});continue;
+   if(candidates.length===1){
+    try{contracts.push(fromSnapshot(candidates[0],request,rows));continue;}
+    catch(e){if(e.message!=='CONTRACT_FINANCIAL_FIELDS_MISSING')throw e;warnings.push('APPROVAL_FIELDS_INCOMPLETE_USING_REGISTERED_TERMS');}
    }
-   fail('ORIGINAL_CONTRACT_NOT_VERIFIED');
-  }catch(error){protectedLoans.push({C,D,key:k,reason:error.message});}
+   contracts.push(fromOfficialRows(rows,request,loans[0],group.map(r=>r.sourceRow),warnings));
+  }catch(error){protectedLoans.push({C,D,key:k,reason:error.message,scope:'COMPONENTS_ONLY',registeredAmountsPreserved:true});}
  }
  return {contracts,protectedLoans,coverage:{determined:contracts.length,protected:protectedLoans.length,source:CONTRACT_SOURCE}};
 }
@@ -130,18 +167,18 @@ export function computeContractCashFlow({contract,rows,asOf}){
  const result={status:'PROTECTED',reason:null,writeAllowed:false,payments:[],forecast:[],recovered:null,pending:null,unassignedPending:null,unassignedComponents:null,evidence:contract?.evidence||null};
  try{
   if(!date(asOf)||!Array.isArray(rows))fail('SOURCE_DATES_INVALID');
-  if(!contract?.sourceVerified)fail('ORIGINAL_CONTRACT_NOT_VERIFIED');
-  validateContract(contract);const selected=rows.filter(r=>r.C===contract.C&&r.D===contract.D).map(r=>({...r})).sort((a,b)=>a.S-b.S);
+  if(!contract?.sourceVerified)fail('OFFICIAL_CONTRACT_SOURCE_REQUIRED');
+  const computationContract=engineContract(contract);validateContract(computationContract);const selected=rows.filter(r=>r.C===contract.C&&r.D===contract.D).map(r=>({...r})).sort((a,b)=>a.S-b.S);
   let previous=null;
   for(const r of selected){if(!date(r.date)||previous&&r.date<previous)fail('IDENTITY_OR_DATE_ORDER');previous=r.date;}
   const engineRows=selected.map(r=>({...r,capture:r.date<=asOf?'CONFIRMED':'SCHEDULED'}));
-  const actual=previewCorrection({contract,rows:engineRows}),byS=new Map(selected.map(r=>[r.S,r]));
+  const actual=previewCorrection({contract:computationContract,rows:engineRows}),byS=new Map(selected.map(r=>[r.S,r]));
   const decorate=(p,capture,basis)=>{const r=byS.get(p.S);return {...p,date:r.date,sourceRow:r.sourceRow,capture,basis,registeredAmount:r.B,adjusted:p.B!==r.B};};
   result.payments=actual.payments.map(p=>decorate(p,'CORROBORATED','REGISTERED_B_CONTRACTUAL_ALLOCATION'));
   result.recovered=actual.recovered;result.pending=actual.pending;
   const proposals=new Map(actual.forecast.map(p=>[p.S,p.B]));
   // A second pure pass allocates the engine's forecast; it never enters recovered.
-  const projected=previewCorrection({contract,rows:engineRows.map(r=>({...r,B:r.capture==='SCHEDULED'?(proposals.get(r.S)||0):r.B,capture:'CONFIRMED'}))});
+  const projected=previewCorrection({contract:computationContract,rows:engineRows.map(r=>({...r,B:r.capture==='SCHEDULED'?(proposals.get(r.S)||0):r.B,capture:'CONFIRMED'}))});
   result.forecast=projected.payments.filter(p=>byS.get(p.S).date>asOf&&byS.get(p.S).B>0).map(p=>decorate(p,'PROGRAMMED','DERIVED_FORECAST'));
   const future=sum(result.forecast);
   result.unassignedComponents={total:actual.pending.total-future.B,principal:actual.pending.principal-future.AD,interest:actual.pending.interest-future.AB,administration:actual.pending.administration-future.Z};

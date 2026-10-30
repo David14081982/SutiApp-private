@@ -1,0 +1,46 @@
+{
+  "scope": "H-FLUJO-EFECTIVO-CRITERIO-001",
+  "status": "APPROVED",
+  "kind": "INDEPENDENT_FOCAL_SOURCE_REVIEW",
+  "files": {
+    "supabase/functions/reports-jc/cash-flow.mjs": "34f89bf6b7d129040d62665430b76499d984084c4c0d2ea1d36fd8c0e6b175d1",
+    "supabase/functions/reports-jc/cash-flow-consolidated.mjs": "adf536df75b8b38a155350c27d10c92fe2fb3afff4e58f1fce1afee92791c14e",
+    "app/cash-flow-report.jsx": "07863bb2f5b8af26c1d7104ea49647b0585b81f8394e82b17ca6c7df241966f5",
+    "app/cash-flow-export.js": "bd68d2dec08a771a8d66ea3a71ee1b55e9f7fd1a13be2dc51a27e3779b6ba6c9"
+  },
+  "checks": {
+    "officialValuesNotHiddenByCertification": "PASS",
+    "knownAmountsAndPartialSubtotalsPreserved": "PASS",
+    "ambiguousInstallmentBlocksOnlyComponents": "PASS",
+    "undatedAmountPreservedUnassigned": "PASS",
+    "futureWithdrawalProgrammedNotRecovered": "PASS",
+    "savingsYieldPaidIncludedInWithdrawalNotDoubleCounted": "PASS",
+    "cashTotalsUseGrossFlowsWithoutAddingComponents": "PASS",
+    "sourceIdentityAndParentDetailsPreserved": "PASS",
+    "uiAndExcelKnownSubtotalAndBasisVisible": "PASS",
+    "reportOnlyChanges": "PASS"
+  },
+  "resolvedFindings": [
+    {
+      "finding": "Duplicate or invalid installment had skipped recorded B",
+      "resolution": "Existing B retained by source row/date; only components are protected"
+    },
+    {
+      "finding": "Recorded B without valid date had been discarded",
+      "resolution": "Known B retained in unassigned with missing-date explanation"
+    }
+  ],
+  "evidence": [
+    "docs/qa/evidence/cash-flow-criteria/integration-focused.json",
+    "docs/qa/evidence/cash-flow-criteria/ui-excel-focused.json",
+    "docs/qa/evidence/cash-flow-criteria/release-candidate.json"
+  ],
+  "preservedPublishedOtherModules": 173,
+  "newTestsOrSourceQueriesDuringReview": 0,
+  "financialWrites": 0,
+  "productionPublicationClaimed": false,
+  "remaining": [
+    "Production backend/HTTP and frontend publication verification handled separately by parent"
+  ],
+  "candidateUiNormalizationVerified": "LF candidate text identical to reviewed root source"
+}

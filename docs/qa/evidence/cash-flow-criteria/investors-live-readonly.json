@@ -1,0 +1,213 @@
+{
+  "status": "PASS",
+  "readOnly": true,
+  "financialWrites": 0,
+  "ddlStatements": 0,
+  "elapsedMs": 1260,
+  "contracts": 88,
+  "officialBalancesCompared": 44,
+  "monthlySqlAndReaderEquivalent": true,
+  "movements": 0,
+  "storedObligations": 214,
+  "registeredInitialContributions": 40,
+  "events": 794,
+  "unassigned": 282,
+  "coverage": {
+    "authority": "SUPABASE_INVESTORS",
+    "contractCount": 88,
+    "activeContractCount": 35,
+    "historyIncompleteCount": 88,
+    "recordedMovements": 0,
+    "obligationCount": 810,
+    "calculatedPeriods": 596,
+    "unresolvedReviews": 70,
+    "costBasis": "Registered obligations and full monthly periods calculated from dated contractual capital and rates; paid cash uses only effective registered movements.",
+    "financialWrites": 0
+  },
+  "issues": [
+    {
+      "code": "INVESTOR_CONTRACT_DATES_MISSING",
+      "sourceCount": 1,
+      "months": [],
+      "affectedKinds": [
+        "investor_yield_generated",
+        "investor_yield_pending",
+        "investor_yield_scheduled"
+      ]
+    },
+    {
+      "code": "INVESTOR_PARTIAL_PERIOD_UNSPECIFIED",
+      "sourceCount": 1,
+      "months": [
+        "2026-07"
+      ],
+      "affectedKinds": [
+        "investor_yield_generated"
+      ]
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 7,
+      "months": [
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09",
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 7,
+      "months": [
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_STATUS_NOTE",
+      "sourceCount": 53,
+      "months": [],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 44,
+      "months": [
+        "2026-01",
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09",
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 6,
+      "months": [
+        "2026-08",
+        "2026-09",
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 5,
+      "months": [
+        "2026-09",
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 8,
+      "months": [
+        "2026-07",
+        "2026-08",
+        "2026-09",
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 5,
+      "months": [
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09",
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 4,
+      "months": [
+        "2026-02",
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09",
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_REGISTERED_HISTORY_NOTE",
+      "sourceCount": 2,
+      "months": [
+        "2026-03",
+        "2026-04",
+        "2026-05",
+        "2026-06",
+        "2026-07",
+        "2026-08",
+        "2026-09",
+        "2026-10"
+      ],
+      "affectedKinds": []
+    },
+    {
+      "code": "INVESTOR_PENDING_INPUT_MISSING",
+      "sourceCount": 1,
+      "months": [
+        "2026-07"
+      ],
+      "affectedKinds": [
+        "investor_yield_pending"
+      ]
+    },
+    {
+      "code": "INVESTOR_PENDING_INPUT_MISSING",
+      "sourceCount": 1,
+      "months": [
+        "2026-08"
+      ],
+      "affectedKinds": [
+        "investor_yield_pending"
+      ]
+    },
+    {
+      "code": "INVESTOR_PENDING_INPUT_MISSING",
+      "sourceCount": 1,
+      "months": [
+        "2026-09"
+      ],
+      "affectedKinds": [
+        "investor_yield_pending"
+      ]
+    },
+    {
+      "code": "INVESTOR_PENDING_INPUT_MISSING",
+      "sourceCount": 2,
+      "months": [
+        "2026-10"
+      ],
+      "affectedKinds": [
+        "investor_yield_pending"
+      ]
+    },
+    {
+      "code": "INVESTOR_UNLINKED_REVIEW_NOTE",
+      "sourceCount": 42,
+      "months": [],
+      "affectedKinds": []
+    }
+  ],
+  "storedAmountsLogged": false
+}

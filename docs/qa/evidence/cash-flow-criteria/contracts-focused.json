@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "newFocusedCases": 21,
+  "initialRun": {
+    "command": "node --test scripts/test-cash-flow-criteria-contracts.mjs",
+    "passed": 19
+  },
+  "subsequentDeltas": [
+    {
+      "command": "node --test --test-name-pattern=\"contradictory original|linked original approval|extra and early\" scripts/test-cash-flow-criteria-contracts.mjs",
+      "passed": 3
+    },
+    {
+      "command": "node --test --test-name-pattern=\"N label|official historical|single advance\" scripts/test-cash-flow-criteria-contracts.mjs",
+      "passed": 5
+    },
+    {
+      "command": "node --test --test-name-pattern=\"engine bytes unchanged\" scripts/test-cash-flow-criteria-contracts.mjs",
+      "passed": 1
+    },
+    {
+      "command": "node --test --test-name-pattern=\"read-only sparse\" scripts/test-cash-flow-criteria-contracts.mjs",
+      "passed": 1,
+      "scope": "Eight minimum ranges, L:P sparse offsets and unavailable notes service; no network"
+    }
+  ],
+  "oldAffectedCases": {
+    "command": "node scripts/test-cash-flow-contracts.mjs --match=\"unknown tariff|original approved|linked original|missing original O|receipt owner|missing or forged|advance periods derive|unverified derived\"",
+    "passed": 8
+  },
+  "engineSha256": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
+  "globalSuites": 0,
+  "productionWrites": 0
+}

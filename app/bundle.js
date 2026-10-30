@@ -1743,6 +1743,8 @@
  const statuses={RECORDED:'Registrado',SCHEDULED:'Programado',PENDING:'Pendiente autorizado',PARTIAL:'Información parcial',UNAVAILABLE:'Sin determinar',NOT_APPLICABLE:'No aplica'};
  const groups={savings:'Ahorro Voluntario',SAVINGS:'Ahorro Voluntario',loans:'Préstamos de Caja de Ahorro',LOANS:'Préstamos de Caja de Ahorro',caja:'Préstamos de Caja de Ahorro'};
  const finite=value=>typeof value==='number'&&Number.isFinite(value);
+ const stateLabel=c=>c.calculationStatus==='CALCULATED'&&c.status==='RECORDED'?'Calculado':statuses[c.status]||'Sin determinar';
+ const basisLabel=value=>({CONTRACTUAL_ALLOCATION:'Distribución contractual',DERIVED_FORECAST:'Proyección derivada de condiciones contractuales',REGISTERED_MOVEMENT:'Movimiento registrado',REGISTERED_CONTRACT:'Condiciones registradas',REGISTERED_BALANCE:'Saldo registrado',RECORDED_TRANSFER:'Transferencia registrada',RECORDED_UNALLOCATED:'Importe B registrado; desglose incompleto',CONTRACT_CAPITAL_CALCULATION:'Capital calculado conforme al contrato',CONTRACT_YIELD_CALCULATION:'Rendimiento calculado conforme al contrato',CONTRACT_OBLIGATION:'Obligación contractual',CONTRACT_PENDING_CALCULATION:'Obligaciones menos pagos registrados',CONTRACT_MATURITY_PROJECTION:'Devolución programada al vencimiento'})[value]||'Dato registrado en la fuente';
  function validSigns(c){if(!c.sourceSigns)return true;if(typeof c.sourceSigns!=='object'||Array.isArray(c.sourceSigns))return false;const ids=new Set(c.sourceIds||[]);return Object.entries(c.sourceSigns).every(([id,sign])=>finite(sign)&&ids.has(id));}
  const xml=value=>String(value??'').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
  const col=index=>{let result='';for(let n=index+1;n;n=Math.floor((n-1)/26))result=String.fromCharCode(65+(n-1)%26)+result;return result;};
@@ -1767,7 +1769,7 @@
   const line=(text,style,height=26)=>{const r=Array.from({length:13},(_,i)=>cell(i===0?text:'',style));r.height=height;rows.push(r);merges.push('A'+rows.length+':M'+rows.length);};
   line('SUTIAPP | FLUJO MENSUAL DE EFECTIVO',1,38);
   line('Consulta autorizada · Importes en MXN · Corte: '+report.asOf+' · Consulta: '+report.consultedAt,2,30);
-  line('Bolsas separadas. Los saldos y obligaciones no equivalen a efectivo disponible. Sin determinar se exporta en blanco; consulta Notas.',2,32);
+  line('Bolsas separadas. Los saldos y obligaciones no equivalen a efectivo disponible. Incluye subtotales identificados; revisa su estado en Notas. Sólo los importes sin datos se exportan en blanco.',2,40);
   rows.push([]);
   rows.push([cell('CONCEPTO FINANCIERO',3),...report.months.map(month=>cell(month.label,3))]);
   const orderedGroups=[...new Set(report.rows.map(row=>row.group))];
@@ -1779,13 +1781,14 @@
     const numStyle=row.unit==='count'?7:row.unit==='percent'?8:row.emphasis==='total'?10:row.emphasis==='subtotal'?9:6;
     const outputRow=rows.length+1;
     const values=row.cells.map((c,index)=>{
-     const isKnown=!['PARTIAL','UNAVAILABLE','NOT_APPLICABLE'].includes(c.status)&&finite(c.amount);
+     const value=c.status==='PARTIAL'?c.knownAmount:c.amount,isKnown=!['UNAVAILABLE','NOT_APPLICABLE'].includes(c.status)&&finite(value);
      const textNotes=(c.notes||[]).map(n=>typeof n==='string'?n:n.message||n.code||'').filter(Boolean);
-     if(!isKnown)textNotes.unshift(c.status==='PARTIAL'?'La celda queda en blanco: sólo existe un subtotal identificado y no representa el total mensual.':c.status==='NOT_APPLICABLE'?'No aplica a este mes.':'Importe sin determinar; no equivale a cero.');
+     if(c.status==='PARTIAL')textNotes.unshift('Se muestra el subtotal identificado; faltan datos para completar el total mensual.');
+     if(!isKnown)textNotes.unshift(c.status==='NOT_APPLICABLE'?'No aplica a este mes.':'Importe sin determinar; no equivale a cero.');
      if(finite(c.percentage))textNotes.push(c.percentage+'% del importe bruto del mismo fondo, mes y estado.');
      if(c.sourceSigns)textNotes.push('El detalle conserva importes de origen. Los factores indican cómo se suman o restan al subtotal de esta celda.');
-     addNote([cell('Celda'),cell(col(index+1)+outputRow),cell(row.label),cell(report.months[index].key),cell(statuses[c.status]||'Sin determinar'),numeric(c.status==='PARTIAL'?c.knownAmount:null,row.unit==='count'?7:6),cell(textNotes.join(' ')),cell((c.sourceIds||[]).map(id=>id+(c.sourceSigns&&finite(c.sourceSigns[id])?' · '+(c.sourceSigns[id]<0?'Resta':'Suma')+' × '+c.sourceSigns[id]:'')).join(' | '))]);
-     return isKnown?numeric(row.unit==='percent'?c.amount/100:c.amount,numStyle):cell(null,14);
+     addNote([cell('Celda'),cell(col(index+1)+outputRow),cell(row.label),cell(report.months[index].key),cell(stateLabel(c)),numeric(c.status==='PARTIAL'?c.knownAmount:null,row.unit==='count'?7:6),cell(textNotes.join(' ')),cell((c.sourceIds||[]).map(id=>id+(c.sourceSigns&&finite(c.sourceSigns[id])?' · '+(c.sourceSigns[id]<0?'Resta':'Suma')+' × '+c.sourceSigns[id]:'')).join(' | '))]);
+     return isKnown?numeric(row.unit==='percent'?value/100:value,numStyle):cell(null,14);
     });
     rows.push([cell(row.label,labelStyle),...values]);
    }
@@ -1798,8 +1801,8 @@
    const parent=item.parentRecordId&&byId.get(item.parentRecordId);if(item.parentRecordId&&(!parent||parent.id===item.id||parent.parentRecordId))throw Error('El detalle contiene referencias de origen inválidas; no se generó el archivo.');
    const r=parent?{...parent,...item}:item;
    if(seen.has(r.id))throw Error('El detalle contiene referencias duplicadas; no se generó el archivo.');seen.add(r.id);
-   const basis=({CONTRACTUAL_ALLOCATION:'Distribución contractual',DERIVED_FORECAST:'Proyección derivada de condiciones contractuales'})[r.basis]||'Sin determinar';
-   details.push([cell(r.source),cell(r.sourceId||r.id),cell(report.rows.find(row=>row.id===r.kind)?.label||'Concepto sin clasificación disponible'),cell(r.loanId),cell(r.folio),cell(r.contractId),cell(r.installment),cell(r.period),cell(r.date),numeric(r.amount),numeric(r.registeredAmount),numeric(r.principal),numeric(r.interest),numeric(r.administration),...['principal','interest','administration'].map(k=>numeric(finite(r.percentages?.[k])?r.percentages[k]/100:null,8)),cell(statuses[r.status]||'Sin determinar'),cell(basis),cell(r.id),cell(item.parentRecordId)]);
+   const basis=basisLabel(r.basis);
+   details.push([cell(r.source),cell(r.sourceId||r.id),cell(report.rows.find(row=>row.id===r.kind)?.label||'Concepto sin clasificación disponible'),cell(r.loanId),cell(r.folio),cell(r.contractId),cell(r.installment),cell(r.period),cell(r.date),numeric(r.amount),numeric(r.registeredAmount),numeric(r.principal),numeric(r.interest),numeric(r.administration),...['principal','interest','administration'].map(k=>numeric(finite(r.percentages?.[k])?r.percentages[k]/100:null,8)),cell(stateLabel(r)),cell(basis),cell(r.id),cell(item.parentRecordId)]);
   }
   return {rows,merges,notes,details};
  }
@@ -1910,8 +1913,21 @@
   function basisLabel(value) {
     return {
       CONTRACTUAL_ALLOCATION: 'Distribución contractual',
-      DERIVED_FORECAST: 'Proyección derivada de condiciones contractuales'
-    }[value] || 'Sin determinar';
+      DERIVED_FORECAST: 'Proyección derivada de condiciones contractuales',
+      REGISTERED_MOVEMENT: 'Movimiento registrado',
+      REGISTERED_CONTRACT: 'Condiciones registradas',
+      REGISTERED_BALANCE: 'Saldo registrado',
+      RECORDED_TRANSFER: 'Transferencia registrada',
+      RECORDED_UNALLOCATED: 'Importe B registrado; desglose incompleto',
+      CONTRACT_CAPITAL_CALCULATION: 'Capital calculado conforme al contrato',
+      CONTRACT_YIELD_CALCULATION: 'Rendimiento calculado conforme al contrato',
+      CONTRACT_OBLIGATION: 'Obligación contractual',
+      CONTRACT_PENDING_CALCULATION: 'Obligaciones menos pagos registrados',
+      CONTRACT_MATURITY_PROJECTION: 'Devolución programada al vencimiento'
+    }[value] || 'Dato registrado en la fuente';
+  }
+  function stateLabel(c) {
+    return c.calculationStatus === 'CALCULATED' && c.status === 'RECORDED' ? 'Calculado' : statuses[c.status] || 'Sin determinar';
   }
   function kindLabel(kind, report) {
     return (report.rows || []).find(row => row.id === kind)?.label || 'Concepto sin clasificación disponible';
@@ -1995,7 +2011,7 @@
     }, detail.row.label + ' · ' + detail.month.label), h('button', {
       className: 'cfr-btn',
       onClick: onClose
-    }, 'Cerrar detalle')), h('p', null, h('strong', null, cellText(cell, detail.row)), ' · ', statuses[cell.status] || cell.status, cell.status === 'PARTIAL' ? ' · Subtotal identificado; no representa el total del mes.' : ''), finite(cell.percentage) && h('p', {
+    }, 'Cerrar detalle')), h('p', null, h('strong', null, cellText(cell, detail.row)), ' · ', stateLabel(cell), cell.status === 'PARTIAL' ? ' · Subtotal identificado; no representa el total del mes.' : ''), finite(cell.percentage) && h('p', {
       className: 'cfr-note'
     }, percent(cell.percentage) + ' del importe bruto recuperado o programado del mismo fondo, mes y estado.'), (cell.notes || []).map((note, i) => h('p', {
       key: i,
@@ -2016,11 +2032,11 @@
       className: 'cfr-note'
     }, (r.sourceSign < 0 ? 'Resta' : 'Suma') + (Math.abs(r.sourceSign) !== 1 ? ' · factor ' + r.sourceSign : '')), r.sourceSign !== 1 && h('div', {
       className: 'cfr-note'
-    }, 'Importe de origen: ' + format(r.sourceAmount))), h('td', null, format(r.registeredAmount)), h('td', null, format(r.principal)), h('td', null, format(r.interest)), h('td', null, format(r.administration)), h('td', null, 'Capital: ' + percent(r.percentages?.principal), h('div', null, 'Interés: ' + percent(r.percentages?.interest)), h('div', null, 'Administración: ' + percent(r.percentages?.administration))), h('td', null, kindLabel(r.kind, report), h('div', null, statuses[r.status] || 'Sin determinar'), h('div', {
+    }, 'Importe de origen: ' + format(r.sourceAmount))), h('td', null, format(r.registeredAmount)), h('td', null, format(r.principal)), h('td', null, format(r.interest)), h('td', null, format(r.administration)), h('td', null, 'Capital: ' + percent(r.percentages?.principal), h('div', null, 'Interés: ' + percent(r.percentages?.interest)), h('div', null, 'Administración: ' + percent(r.percentages?.administration))), h('td', null, kindLabel(r.kind, report), h('div', null, stateLabel(r)), h('div', {
       className: 'cfr-note'
     }, basisLabel(r.basis)))))))), h('p', {
       className: 'cfr-percent-note'
-    }, 'Los porcentajes del detalle corresponden al desglose del importe B de cada cuota. Un denominador cero o un desglose no comprobado se muestra sin determinar. El importe del concepto puede ser sólo una parte de B.'), !records.length && h('p', {
+    }, 'Los porcentajes del detalle corresponden al desglose del importe B de cada cuota. Un denominador cero o datos insuficientes para el desglose se muestra sin determinar. El importe del concepto puede ser sólo una parte de B.'), !records.length && h('p', {
       className: 'cfr-note'
     }, 'Esta celda no tiene movimientos individualizados disponibles. Revisa su estado y las notas de la fuente.'), missing.length > 0 && h('p', {
       className: 'cfr-origin'
@@ -2183,6 +2199,8 @@
     }, h('span', {
       className: 'cfr-badge'
     }, 'Registrado'), h('span', {
+      className: 'cfr-badge'
+    }, 'Calculado conforme al contrato'), h('span', {
       className: 'cfr-badge scheduled'
     }, 'Programado: aún no recuperado'), h('span', {
       className: 'cfr-badge partial'
@@ -2238,13 +2256,13 @@
       }, h('button', {
         className: 'cfr-cell' + ((cell.status === 'PARTIAL' ? cell.knownAmount : cell.amount) < 0 ? ' negative' : ''),
         'data-status': cell.status,
-        'aria-label': row.label + ', ' + report.months[index].label + ': ' + cellText(cell, row) + '. ' + (statuses[cell.status] || cell.status) + '. Ver origen',
+        'aria-label': row.label + ', ' + report.months[index].label + ': ' + cellText(cell, row) + '. ' + stateLabel(cell) + '. Ver origen',
         onClick: () => setDetail({
           row,
           cell,
           month: report.months[index]
         })
-      }, h('strong', null, cellText(cell, row)), h('small', null, cell.status === 'PARTIAL' ? 'Subtotal identificado' : statuses[cell.status] || cell.status), finite(cell.percentage) && h('small', {
+      }, h('strong', null, cellText(cell, row)), h('small', null, cell.status === 'PARTIAL' ? 'Subtotal identificado' : stateLabel(cell)), finite(cell.percentage) && h('small', {
         className: 'cfr-percent'
       }, percent(cell.percentage) + ' del flujo bruto'))))))));
     }))) : h('p', {

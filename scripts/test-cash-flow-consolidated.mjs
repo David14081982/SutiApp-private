@@ -25,7 +25,7 @@ test('savings yield paid stays explicit and unknown without duplicating withdraw
  const r=report([fixture()],{savings:savings([{id:'w','kind':'withdrawal_partial',date:'2026-10-15',amount:100,status:'RECORDED'}])});
  assert.equal(cell(r,'savings_yield_paid').amount,null);assert.equal(cell(r,'savings_yield_paid').knownAmount,null);assert.equal(cell(r,'savings_yield_paid').status,'UNAVAILABLE');
  assert.equal(cell(r,'savings_yield_paid',1).status,'NOT_APPLICABLE');assert.equal(cell(r,'withdrawal_partial').amount,100);assert.equal(cell(r,'cash_out').amount,2100);
- assert.match(cell(r,'savings_yield_paid').notes[0],/no se suma nuevamente/);
+ assert(cell(r,'savings_yield_paid').notes.some(n=>/no se suma nuevamente/.test(n)));
 });
 test('loan components, percentages and pending conserve original totals without double counting',()=>{
  const r=report([fixture()]);assert.equal(cell(r,'loan_principal').amount,1000);assert.equal(cell(r,'loan_interest').amount,200);assert.equal(cell(r,'loan_admin').amount,15);assert.equal(cell(r,'loan_pending').amount,1000);
@@ -64,9 +64,9 @@ test('undated installments protect recorded and scheduled components; compact pa
  for(const record of full.records)if(record.parentRecordId){compact++;const parent=map.get(record.parentRecordId);assert(parent&&!parent.parentRecordId);assert(parent.loanId&&parent.folio&&parent.date);}
  assert(compact>0);
 });
-test('duplicate installments protect only their loan and membership is excluded',()=>{
+test('duplicate installment numbering protects components but preserves official B and excludes memberships',()=>{
  const f=fixture();f.rows[1][18]=1;const other=fixture({C:'2',fund:'Caja Chica'}),member=fixture({C:'3',fund:'Membresías'});delete member.contract;
- const r=report([f,other,member]);assert.equal(cell(r,'loan_recovered').amount,null);assert.equal(cell(r,'fund_pettyCash_recovered').amount,1215);assert.equal(r.coverage.loanCount,2);
+ const r=report([f,other,member]);assert.equal(cell(r,'loan_recovered').amount,1215);assert.equal(cell(r,'loan_principal').amount,null);assert.equal(cell(r,'fund_pettyCash_recovered').amount,1215);assert.equal(r.coverage.loanCount,2);
 });
 test('investor yields use contractual snapshots, never 2.5% of recovered cuotas; signed details reconcile',()=>{
  const source=investors({contracts:[{id:'i',code:'INV-1',starts_on:'2026-10-01',ends_on:'2026-12-01',history_complete:true,status:'active',balance_on:'2026-10-01',balance:1000,payment_mode:'Manual'}],movements:[{id:'p',contract_id:'i',concept:'yield',direction:'out',effective_on:'2026-10-20',amount:20,obligation_id:'o'}],obligations:[{id:'o',contract_id:'i',concept:'yield',period_start:'2026-09-19',period_end:'2026-10-19',due_on:'2026-10-20',amount:50,paid:20,rate_snapshot:5,principal_basis:1000}]}),r=report([fixture({fund:'Caja Chica',principal:100000,interest:20000})],{investors:source});

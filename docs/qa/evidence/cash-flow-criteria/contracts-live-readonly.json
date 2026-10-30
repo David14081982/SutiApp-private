@@ -1,0 +1,52 @@
+{
+  "status": "PASS",
+  "capturedAt": "2026-10-30T17:05:49.744Z",
+  "sourceCapture": ".tmp/cash-flow-criteria/contract-sources.json",
+  "evaluation": "Final adapter against the single current read-only capture; no second query",
+  "asOf": "2026-10-30",
+  "timezone": "America/Hermosillo",
+  "googleRows": 20107,
+  "requestRows": 2856,
+  "snapshots": 285,
+  "headers": [
+    "Inicio de Descuento Quincenal",
+    "Monto Total Interes",
+    "Interes x #Plazo",
+    "Descuento Quincenal",
+    "Fecha final de pago"
+  ],
+  "headerFinding": "M/N represent combined interest and administration; not used as pure interest",
+  "coverage": {
+    "determined": 1215,
+    "protected": 453,
+    "source": "LIVE_OFFICIAL_REGISTERED_TERMS"
+  },
+  "protectedReasons": {
+    "REGISTERED_COMPONENTS_INCONSISTENT": 193,
+    "CONTRACT_FINANCIAL_FIELDS_MISSING": 1,
+    "DUPLICATE_OR_INVALID_CDS": 166,
+    "ADMIN_CALENDAR_INVALID": 7,
+    "CONTRACT_PAYMENT_COUNT_MISSING": 2,
+    "INCOMPLETE_CDS_SCHEDULE": 78,
+    "PRINCIPAL_CONFLICT": 2,
+    "ORIGINAL_INSTALLMENT_CONFLICT": 4
+  },
+  "computed": 1077,
+  "allocationReasons": {
+    "PAYMENTS_EXCEED_CONTRACT": 135,
+    "IDENTITY_OR_DATE_ORDER": 3
+  },
+  "officialTerms": 1017,
+  "approvedTerms": 198,
+  "tariffCounts": {
+    "0": 183,
+    "10": 303,
+    "15": 729
+  },
+  "registeredAmountsPreserved": true,
+  "conservationChecks": 1077,
+  "financialWrites": 0,
+  "googleWrites": 0,
+  "triggerChanges": 0,
+  "sourceCodeHash": "ae387da652eb3085256fd07d3e4561fa3a5ea2d8ee0f6cacbb5a8bb92505027a"
+}

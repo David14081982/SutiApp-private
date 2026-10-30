@@ -1,0 +1,88 @@
+{
+  "status": "PASS",
+  "scope": "H-FLUJO-EFECTIVO-CRITERIO-001",
+  "baseCommit": "183177cdb7b46668c70090cc737fc8cb75ad569c",
+  "candidateSourceHashes": {
+    "app/cash-flow-report.jsx": "07863bb2f5b8af26c1d7104ea49647b0585b81f8394e82b17ca6c7df241966f5",
+    "app/cash-flow-export.js": "bd68d2dec08a771a8d66ea3a71ee1b55e9f7fd1a13be2dc51a27e3779b6ba6c9",
+    "supabase/functions/reports-jc/cash-flow.mjs": "34f89bf6b7d129040d62665430b76499d984084c4c0d2ea1d36fd8c0e6b175d1",
+    "supabase/functions/reports-jc/cash-flow-google.mjs": "73b7bf38b047f0122519c2b64944e71c31dbb93f1c9311e028e2b5f37e498ebd",
+    "supabase/functions/reports-jc/cash-flow-consolidated.mjs": "adf536df75b8b38a155350c27d10c92fe2fb3afff4e58f1fce1afee92791c14e",
+    "supabase/functions/reports-jc/cash-flow-contracts.mjs": "ae387da652eb3085256fd07d3e4561fa3a5ea2d8ee0f6cacbb5a8bb92505027a",
+    "supabase/functions/reports-jc/cash-flow-investors.mjs": "12484abbb6db69f8d5b2ff3dc71f4cf6305abd83729e2c423830b07ee5cf3a1c",
+    "supabase/migrations/20261030000400_reports_jc_cash_flow_investor_criteria.sql": "23ba2e35a6176225d80dd901ec049ac709f368af90b545cb12742b126f5dd280",
+    "supabase/migrations/20261030000500_reports_jc_cash_flow_criteria_savings.sql": "9aa89d8f96a769c260e251acaa7bce58bc81a65ef70af81cb099de54a21050d5",
+    "supabase/migrations/20261030000600_reports_jc_cash_flow_savings_query.sql": "6d2f9bb44c91777541ad6fe37d002004c736a8249c5a056713c20571e3ab5dff",
+    "docs/DECISIONS.md": "59a66171882967772698d471bf85c1363bbc1c6ef745afce32dc0a60d320babb",
+    "docs/architecture/architecture-overrides.json": "31299de11d586c25763a6c73f6bf313e39755917400a524d25deda4208d4e106"
+  },
+  "updatedFiles": [
+    {
+      "path": "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+      "sha256": "6ba53a68d3cb287e2b2752fedfdfb62fa8ec5a1e04a5a386f763e4a08f16d5a7"
+    },
+    {
+      "path": "docs/architecture/registry-code.json",
+      "sha256": "2c61e699d0eb034bd709c1104e3b39a9bf409cfff4e558c64c8d7cea995f1a93"
+    },
+    {
+      "path": "docs/architecture/registry-data.json",
+      "sha256": "5f597fd83daca0db338a4487b2275d26689723fffbaf68d3644790e4c6a94596"
+    },
+    {
+      "path": "docs/architecture/registry-edges.json",
+      "sha256": "b7e5decf3fea7e265e4db9d7d2ecb985cb792242aa8058172e9bf113be98de7f"
+    },
+    {
+      "path": "docs/architecture/registry-search.json",
+      "sha256": "cb1ee42f7ac374862e0e6f8bf7eb69796b3412370b73cd0c6d819409720c5a60"
+    },
+    {
+      "path": "docs/architecture/architecture-overrides.json",
+      "sha256": "31299de11d586c25763a6c73f6bf313e39755917400a524d25deda4208d4e106"
+    },
+    {
+      "path": "docs/DECISIONS.md",
+      "sha256": "59a66171882967772698d471bf85c1363bbc1c6ef745afce32dc0a60d320babb"
+    }
+  ],
+  "unrelatedFactsPreserved": 3484,
+  "changedSemanticNodes": [
+    [
+      "admin_screen",
+      "CashFlowReportModule"
+    ],
+    [
+      "service",
+      "CashFlowContractualQueryEngine"
+    ]
+  ],
+  "newRelationships": [
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.investors",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.imports",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow",
+      "from_type": "rpc",
+      "to": "public.savings_workspace_receipts",
+      "to_type": "rpc",
+      "type": "CALLS"
+    }
+  ],
+  "existingRelationshipsPreserved": true,
+  "rootRegistryTouched": false,
+  "globalRescan": false,
+  "productionWrites": 0,
+  "testsExecuted": false
+}

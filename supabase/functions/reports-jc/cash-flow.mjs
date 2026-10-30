@@ -48,13 +48,17 @@ export function buildCashFlow({from,loans,savings,consultedAt=new Date().toISOSt
   if(conflicts.has(e.id)){issue('SAVINGS_EVENT_CONFLICT','Un registro de Ahorro tiene versiones contradictorias en la consulta.',[e.id],[e.kind],e.date?[inMonth(e.date)]:[]);continue;}
   const date=sourceDate(e.date),future=date&&date>asOf;
   if(e.kind==='contribution_scheduled'&&!future)continue;
-  if(!['contribution_scheduled','withdrawal_pending'].includes(e.kind)&&future){issue('SAVINGS_FUTURE_RECORDED','Un movimiento marcado como realizado tiene fecha futura; no se suma como recibido.',[e.id],[e.kind],[inMonth(date)]);continue;}
+  if(!['contribution_scheduled','withdrawal_pending'].includes(e.kind)&&future){
+   if(['withdrawal_partial','withdrawal_total','withdrawal_unspecified'].includes(e.kind)){record({...e,sourceId:e.source_id,date,status:'SCHEDULED'},'withdrawal_pending');issue('SAVINGS_FUTURE_RECORDED','Retiro registrado con fecha futura: se muestra como obligación programada, sin sumarlo como pagado.',[e.id],[],[inMonth(date)]);}
+   else issue('SAVINGS_FUTURE_RECORDED','Un movimiento marcado como realizado tiene fecha futura; no se suma como recibido.',[e.id],[e.kind],[inMonth(date)]);
+   continue;
+  }
   if(e.kind==='withdrawal_pending'&&date&&(date<=asOf||!positions.has(inMonth(date)))){unassigned.push({...e,sourceId:e.source_id,date,overdue:date<=asOf,status:'PENDING'});continue;}
-  if(e.status==='UNKNOWN'&&e.amount!=null){issue('SAVINGS_EVENT_UNRESOLVED','El importe está registrado, pero su aplicación requiere aclaración.',[e.id],[e.kind],date?[inMonth(date)]:[]);continue;}
+  if(e.status==='UNKNOWN'&&e.amount!=null)issue('SAVINGS_EVENT_REVIEW_NOTE','Importe registrado incluido; la revisión posterior no impide su consulta.',[e.id],[],date?[inMonth(date)]:[]);
   record({...e,sourceId:e.source_id,date,status:e.kind==='contribution_scheduled'?'SCHEDULED':e.kind==='withdrawal_pending'?'PENDING':'RECORDED'},e.kind);
   if(!date&&e.kind!=='withdrawal_pending')issue('SAVINGS_DATE_MISSING','Un importe registrado de Ahorro carece de fecha verificable.',[e.id],[e.kind]);
   if(e.kind==='contribution_mixed'&&date)issue('SAVINGS_MIXED_HISTORY','El histórico conserva aportación y rendimiento juntos; no se inventa su desglose.',[e.id],['contribution','yield_credited'],[inMonth(date)]);
-  if(e.kind==='withdrawal_unspecified'&&date)issue('SAVINGS_WITHDRAWAL_KIND_MISSING','El retiro pagado no distingue parcial o total.',[e.id],['withdrawal_partial','withdrawal_total'],[inMonth(date)]);
+  if(e.kind==='withdrawal_unspecified'&&date)issue('SAVINGS_WITHDRAWAL_KIND_MISSING','El retiro pagado se incluye sin clasificación parcial o total.',[e.id],[],[inMonth(date)]);
  }
  for(const i of savings.issues||[])issue(i.code,i.message,i.sourceIds||[],i.affectedKinds||[],i.months||[]);
  for(const m of months){const b=savings.balances.find(b=>inMonth(b.month)===m.key),c=byId.get('savings_balance').cells[positions.get(m.key)];c.cents=money(b?.known_amount??b?.amount)??0;c.missing=money(b?.amount)===null||m.key>current;c.applicable=m.key<=current;c.notes.push(m.key>current?'El saldo futuro no se presenta como dinero ya acumulado.':b?.unknown_count?'No existe un corte histórico completo para todas las cuentas.':'Saldo canónico al cierre; mes vigente al día de consulta.');}

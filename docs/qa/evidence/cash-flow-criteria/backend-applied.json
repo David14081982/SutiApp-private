@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "migrations": [
+    "20261030000400",
+    "20261030000500",
+    "20261030000600"
+  ],
+  "reportReadersOnly": true,
+  "protectedFunctionsPreserved": true,
+  "financialWrites": 0
+}

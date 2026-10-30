@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "task": "H-FLUJO-EFECTIVO-CRITERIO-001",
+  "scope": "Savings report SQL reader only",
+  "checkedAt": "2026-10-30T17:19:38.979Z",
+  "checks": [
+    "reader replacement preserves OID, owner, ACL, security and every business helper",
+    "incomplete import is an observation and available withdrawals remain recorded",
+    "only explicit source-record and payment-idempotency links deduplicate withdrawals",
+    "uncertified registered contributions and current corrections retain official amounts",
+    "native correction replaces the same receipt instead of duplicating imported representation",
+    "historical balances retain dated known amounts without retroactive regularization",
+    "history beginning after account start preserves known sum and marks incomplete opening",
+    "future paid-marked withdrawals retain amount but never count as recovered cash",
+    "missing dates retain available amounts unassigned and missing amounts never become zero",
+    "unlinked official account retains registered balance and dated contributions without certification",
+    "new import batch uses unique business folio without duplicating an older certified account",
+    "withdrawal with no identifiable account remains cash and makes historic balance partial",
+    "existing authorization and direct-table denials remain enforced after replacement",
+    "single live SELECT plan is equivalent to the proposed RPC",
+    "definition drift blocks safely, recovery is exact and no financial source changed"
+  ],
+  "sourceAuthority": "Official recorded savings values; no certification gate",
+  "oldDefinitionMd5": "544ddf4e1946ff5cf5ea760bf154fc58",
+  "newDefinitionMd5": "94b10b95af8b16883ace97c8f85f67ab",
+  "sameOidOwnerAcl": true,
+  "exactRecovery": true,
+  "financialWrites": false,
+  "productionCalls": 0,
+  "testsUseSyntheticRecords": true
+}

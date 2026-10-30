@@ -1,0 +1,44 @@
+{
+  "task": "H-FLUJO-EFECTIVO-CRITERIO-001",
+  "scope": "Independent focused review of SQL006 report-query optimization and exact recovery to approved SQL005",
+  "reviewer": "cashflow_savings_sources",
+  "verdict": "APPROVED",
+  "status": "PASS",
+  "hashes": {
+    "supabase/migrations/20261030000600_reports_jc_cash_flow_savings_query.sql": "6d2f9bb44c91777541ad6fe37d002004c736a8249c5a056713c20571e3ab5dff",
+    "supabase/recovery/20261030000600_reports_jc_cash_flow_savings_query.sql": "2962e8a5c015fc92cfb1ed1847cced807e31f1114312279a2a60e56a091afc9c"
+  },
+  "definitionTransition": {
+    "approvedSql005Md5": "94b10b95af8b16883ace97c8f85f67ab",
+    "optimizedSql006Md5": "5bf922aa77016e0453acc141227ed944",
+    "recoveryRestoresSql005": true
+  },
+  "codeReview": [
+    "The native receipt branch projects the same identity, date, actual amount, source, includes_yield=false and conflict fields used from savings_workspace_history. savings_workspace_receipts(NULL) reads the existing canonical receipt authority once; the persons join preserves account scope.",
+    "The grouped balance-entry join preserves the LEDGER branch after the dated regularization and the HISTORY plus OTHER minus WITHDRAWAL branch before it. Amounts without dates stay excluded from the known dated sum and retain incompleteness.",
+    "Historical completeness, exact identity deduplication, future-versus-recorded behavior, current official balances and original recorded amounts are unchanged.",
+    "Only the report RPC definition changes. The existing Reports JC guard, function OID, owner, ACL, STABLE SECURITY DEFINER and empty search_path remain protected. Business helpers, private tables and financial writers are not changed.",
+    "The migration retains transaction-local DDL timeouts only. No global, role or productive RPC timeout setting is changed. Forward and recovery reject unexpected definition or ACL drift."
+  ],
+  "evidenceReviewed": [
+    "scripts/test-cash-flow-criteria-savings-query.js",
+    "docs/qa/evidence/cash-flow-criteria/savings-query-sql.json",
+    "scripts/verify-cash-flow-criteria-savings-query.mjs",
+    "docs/qa/evidence/cash-flow-criteria/savings-query-live.json"
+  ],
+  "existingVerification": {
+    "focusedChecksPassed": 16,
+    "approvedAndOptimizedReportsEquivalentForBothHorizons": true,
+    "liveReadOnlyDurationMs": 5485,
+    "liveConnectionLocalStatementTimeoutMs": 6000,
+    "liveRegisteredEventsUnchanged": 11057,
+    "liveKnownAmountsUnchanged": true,
+    "sourceWrites": 0
+  },
+  "reviewerProductionQueries": 0,
+  "reviewerTestRuns": 0,
+  "reviewerFinancialWrites": 0,
+  "remainingBlockers": [],
+  "ownerDecisionRequired": false,
+  "recommendedNextAction": "Proceed with the root's already authorized controlled release and direct RPC verification for this exact hash, preserving SQL006 recovery to SQL005. This review performs no deployment."
+}

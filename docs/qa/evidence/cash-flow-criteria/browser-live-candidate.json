@@ -1,0 +1,86 @@
+{
+  "status": "PASS",
+  "mode": "candidate",
+  "checkedAt": "2026-10-30T17:41:01.540Z",
+  "bundleSha256": "1838d1e8dd58d5377e6e4fd518d544d9d8c4a9d3713517c5b996875f8a897831",
+  "candidateStaticOverlay": true,
+  "financialApiMocks": 0,
+  "originalReports": 8,
+  "originalConceptsPreserved": 17,
+  "months": 12,
+  "concepts": 103,
+  "groups": 9,
+  "informativeSavingsYield": false,
+  "realAuthenticatedQuery": true,
+  "uiMatchesActualSource": true,
+  "sourceDetail": true,
+  "detailComponents": true,
+  "detailPercentages": true,
+  "excel": {
+    "download": true,
+    "sourceAmountsMatched": 1236,
+    "unknownBlankCells": 504,
+    "negativeNumericCells": 14,
+    "detailRows": 69369,
+    "componentsMatch": true,
+    "percentagesMatch": true,
+    "notesRetained": true
+  },
+  "privateExportDeleted": true,
+  "stateCounts": {
+    "RECORDED": 235,
+    "PARTIAL": 461,
+    "NOT_APPLICABLE": 379,
+    "UNAVAILABLE": 125,
+    "SCHEDULED": 24,
+    "PENDING": 12
+  },
+  "issueCount": 221,
+  "coverage": {
+    "loanCount": 1668,
+    "financialWrites": 0,
+    "amortizationEngineActive": false,
+    "savingsAuthority": "SUPABASE",
+    "loanAuthority": "GOOGLE_HISTORIAL_P_V2",
+    "determinedLoans": 1077,
+    "protectedLoans": 591,
+    "derivedForecastRows": 568,
+    "contractCoverage": {
+      "determined": 1215,
+      "protected": 453,
+      "source": "LIVE_OFFICIAL_REGISTERED_TERMS"
+    },
+    "investors": {
+      "authority": "SUPABASE_INVESTORS",
+      "contractCount": 88,
+      "activeContractCount": 35,
+      "historyIncompleteCount": 88,
+      "recordedMovements": 0,
+      "obligationCount": 810,
+      "calculatedPeriods": 596,
+      "unresolvedReviews": 70,
+      "costBasis": "Registered obligations and full monthly periods calculated from dated contractual capital and rates; paid cash uses only effective registered movements.",
+      "financialWrites": 0
+    },
+    "contractualCalculation": "READ_ONLY",
+    "fundCount": 4
+  },
+  "unassignedCount": 2292,
+  "reportRequests": [
+    {
+      "action": "LOAD",
+      "status": 200
+    },
+    {
+      "action": "CASH_FLOW",
+      "status": 200
+    }
+  ],
+  "responsiveEvidence": "ui-excel-focused.json",
+  "financialWrites": 0,
+  "blockedWriteAttempts": 0,
+  "pageErrors": 0,
+  "persistedTokens": 0,
+  "persistedPersonalRecords": 0,
+  "screenshots": 0
+}

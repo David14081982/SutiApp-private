@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "input": "Existing private source capture; no live call",
+  "sourceCapturedAt": "2026-10-30T15:33:32.317Z",
+  "coverage": {
+    "determined": 1215,
+    "protected": 453,
+    "source": "LIVE_OFFICIAL_REGISTERED_TERMS"
+  },
+  "protectedReasons": {
+    "REGISTERED_COMPONENTS_INCONSISTENT": 193,
+    "CONTRACT_FINANCIAL_FIELDS_MISSING": 1,
+    "DUPLICATE_OR_INVALID_CDS": 166,
+    "ADMIN_CALENDAR_INVALID": 7,
+    "CONTRACT_PAYMENT_COUNT_MISSING": 2,
+    "INCOMPLETE_CDS_SCHEDULE": 78,
+    "PRINCIPAL_CONFLICT": 2,
+    "ORIGINAL_INSTALLMENT_CONFLICT": 4
+  },
+  "computed": 1077,
+  "allocationReasons": {
+    "PAYMENTS_EXCEED_CONTRACT": 135,
+    "IDENTITY_OR_DATE_ORDER": 3
+  },
+  "financialWrites": 0,
+  "googleWrites": 0
+}

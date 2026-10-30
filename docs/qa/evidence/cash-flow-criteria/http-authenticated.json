@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "command": "node scripts/verify-cash-flow-criteria-http.js",
+  "checkedOn": "2026-10-30",
+  "edgeVersion": 8,
+  "http": 200,
+  "durationMs": 7013,
+  "rows": 103,
+  "records": 69369,
+  "realAuthenticatedSession": true,
+  "loanCount": 1668,
+  "determinedLoans": 1077,
+  "protectedBreakdowns": 591,
+  "contractCount": 88,
+  "financialWrites": 0,
+  "amortizationEngineActive": false
+}

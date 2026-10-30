@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "sourceHashes": {
+    "index.ts": "fa2d13fa3cab4d0a9c4fa820cdf50a85171bb4a38d7c03493fef01b8082ef526",
+    "report.mjs": "24dd75e39a99a902fdfb484ba2b5feb723616eea12307dd80335d317340a61cc",
+    "google-auth.mjs": "2530bd316b4f7e727898f2c09f00865ced4a2646061de2f98a93cd697a0de5ed",
+    "template.mjs": "1ae9618b5051581d218c8d0ff364c16ca6f774794efc9497a5397e4adbf6f104",
+    "cash-flow.mjs": "34f89bf6b7d129040d62665430b76499d984084c4c0d2ea1d36fd8c0e6b175d1",
+    "cash-flow-google.mjs": "73b7bf38b047f0122519c2b64944e71c31dbb93f1c9311e028e2b5f37e498ebd",
+    "cash-flow-consolidated.mjs": "adf536df75b8b38a155350c27d10c92fe2fb3afff4e58f1fce1afee92791c14e",
+    "cash-flow-contracts.mjs": "ae387da652eb3085256fd07d3e4561fa3a5ea2d8ee0f6cacbb5a8bb92505027a",
+    "cash-flow-pv2-engine.mjs": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
+    "cash-flow-investors.mjs": "12484abbb6db69f8d5b2ff3dc71f4cf6305abd83729e2c423830b07ee5cf3a1c"
+  },
+  "sqlHashes": {
+    "migrations/20261030000400_reports_jc_cash_flow_investor_criteria.sql": "23ba2e35a6176225d80dd901ec049ac709f368af90b545cb12742b126f5dd280",
+    "recovery/20261030000400_reports_jc_cash_flow_investor_criteria.sql": "394990b70df8723f3596a33db6973f6cd2d0560eaed1e14759fe5092be68f131",
+    "migrations/20261030000500_reports_jc_cash_flow_criteria_savings.sql": "9aa89d8f96a769c260e251acaa7bce58bc81a65ef70af81cb099de54a21050d5",
+    "recovery/20261030000500_reports_jc_cash_flow_criteria_savings.sql": "c35eb5832baef56733a9e77719472b7b494ba68c92b81a2d4588f1149f762cfd",
+    "migrations/20261030000600_reports_jc_cash_flow_savings_query.sql": "6d2f9bb44c91777541ad6fe37d002004c736a8249c5a056713c20571e3ab5dff",
+    "recovery/20261030000600_reports_jc_cash_flow_savings_query.sql": "2962e8a5c015fc92cfb1ed1847cced807e31f1114312279a2a60e56a091afc9c"
+  },
+  "verifyJwt": true,
+  "productionDeployment": false,
+  "financialWrites": 0
+}

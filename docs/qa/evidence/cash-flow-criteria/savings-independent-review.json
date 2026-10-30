@@ -1,0 +1,82 @@
+{
+  "task": "H-FLUJO-EFECTIVO-CRITERIO-001",
+  "scope": "Independent focused review of SQL005 savings report reader and cash-flow.mjs integration",
+  "reviewer": "cashflow_savings_sources",
+  "verdict": "APPROVED",
+  "status": "PASS",
+  "reviewMethod": "Read-only code, direct helper semantics, existing focused test evidence and existing live SELECT evidence. No tests or productive queries repeated by reviewer.",
+  "hashes": {
+    "supabase/migrations/20261030000500_reports_jc_cash_flow_criteria_savings.sql": "9aa89d8f96a769c260e251acaa7bce58bc81a65ef70af81cb099de54a21050d5",
+    "supabase/recovery/20261030000500_reports_jc_cash_flow_criteria_savings.sql": "c35eb5832baef56733a9e77719472b7b494ba68c92b81a2d4588f1149f762cfd",
+    "supabase/functions/reports-jc/cash-flow.mjs": "34f89bf6b7d129040d62665430b76499d984084c4c0d2ea1d36fd8c0e6b175d1"
+  },
+  "resolvedFindings": [
+    {
+      "finding": "A newer import batch could duplicate an account whose certification referenced an older record ID.",
+      "resolution": "Explicit record ID takes precedence; absent that match, the unique historical business folio links the account. The old cutoff only applies to its own import record. Native dated receipts replace the corresponding imported representation.",
+      "status": "PASS"
+    },
+    {
+      "finding": "A recorded withdrawal with no identifiable account could be omitted from historical stock completeness while still appearing as cash.",
+      "resolution": "The cash event remains recorded. Historical monthly balances preserve the known dated subtotal and remain partial from the unresolved withdrawal date. Current balances keep their official registered authority.",
+      "status": "PASS"
+    }
+  ],
+  "finalIndicatorAdjustment": {
+    "scope": "Historical completeness only, when imported history begins after the account start and no dated regularization yet supports that cut.",
+    "knownAmountsUnchanged": true,
+    "cashEventsUnchanged": true,
+    "currentOfficialBalanceUnchanged": true,
+    "postRegularizationBalanceUnchanged": true,
+    "noMissingAmountInvented": true,
+    "focusedFixtureReviewed": "scripts/test-cash-flow-criteria-savings-sql.js:142",
+    "focusedSqlChecksPassed": 15,
+    "finalFunctionMd5": "94b10b95af8b16883ace97c8f85f67ab",
+    "recoveryGuardUpdated": true,
+    "status": "PASS"
+  },
+  "finalGuardAdjustment": {
+    "scope": "Forward and recovery outer ACL guards use IS DISTINCT FROM so an unexpected NULL ACL is rejected.",
+    "functionBodyMd5Unchanged": "94b10b95af8b16883ace97c8f85f67ab",
+    "financialCalculationUnchanged": true,
+    "readOnlyDeltaReviewed": true,
+    "additionalTestsOrQueries": 0,
+    "status": "PASS"
+  },
+  "verified": {
+    "officialAmountsNotBlockedByImportOrCertification": true,
+    "nativeAndImportedReceiptsPartitionedWithoutDuplicateRepresentation": true,
+    "correctionsUseCurrentReceiptAmount": true,
+    "withdrawalsDeduplicatedByExplicitOriginAndPaymentIdentity": true,
+    "futureAmountsNotCountedAsPaid": true,
+    "undatedAmountsRetainedWithoutInventedMonth": true,
+    "mixedAmountsPreservedWithoutInventedBreakdown": true,
+    "currentBalanceAuthorityPreserved": true,
+    "futureStocksNotPresentedAsActualBalances": true,
+    "reportsJcAuthorizationAndAclPreserved": true,
+    "originalFinancialWritersUnchanged": true,
+    "recoveryVerifiedByFocusedEvidence": true
+  },
+  "evidence": [
+    "docs/qa/evidence/cash-flow-criteria/savings-sql.json",
+    "docs/qa/evidence/cash-flow-criteria/savings-source-select.json",
+    "docs/qa/evidence/cash-flow-criteria/integration-focused.json"
+  ],
+  "performance": {
+    "existingLiveSelectDurationMs": 22129,
+    "existingLiveEvents": 11057,
+    "existingRecordedEvents": 9642,
+    "existingScheduledEvents": 1415,
+    "existingEventsWithKnownAmount": 11057,
+    "withinStatementTimeout": true,
+    "measuredMigrationSha256": "c621ef4b70edcdd8393337856406752f9dfd67abc732dbaf182869d57ebf3681",
+    "measurementPrecedesFinalCompletenessIndicator": true,
+    "liveSelectNotRepeated": true
+  },
+  "remainingBlockers": [],
+  "ownerDecisionRequired": false,
+  "reviewerFinancialWrites": 0,
+  "reviewerProductionQueries": 0,
+  "reviewerTestRuns": 0,
+  "recommendedNextAction": "Use the root's already authorized release procedure and focused productive verification for the exact reviewed candidate; preserve backup and recovery. This review itself performs or authorizes no deployment."
+}

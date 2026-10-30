@@ -1556,3 +1556,25 @@ X, el formato visual de Amortización, los flujos o la sincronización existente
 El propietario ordena guardar, hacer commit, push y publicar este cierre. Se
 registra únicamente documentación y evidencia sanitizada; el código productivo
 publicado conserva sus hashes y las capturas personales permanecen privadas.
+
+### H-FLUJO-EFECTIVO-CRITERIO-001 — valores oficiales para el reporte, 2026-10-30
+
+El propietario confirma que los valores registrados en las fuentes oficiales son
+válidos para el Reporte Flujo de efectivo. No se exige una segunda certificación
+documental, PDF, hash de transferencia ni un estado de revisión aprobado para
+consultar importes existentes. La conciliación y las correcciones posteriores
+corresponden al área responsable; el reporte no modifica los datos originales.
+
+Supabase conserva la autoridad de Ahorro, Inversores y condiciones originales
+enlazadas; HISTORIAL P V2 conserva A/B y sus condiciones registradas. El reporte
+distingue importes registrados, cálculos contractuales y obligaciones futuras.
+Sólo un dato realmente ausente o un cálculo imposible queda sin determinar;
+los importes conocidos y sus subtotales permanecen visibles en pantalla y Excel.
+
+Las condiciones originales enlazadas prevalecen sobre un residual legacy
+incorrecto. Se conservan tarifas históricas 0/10/15, la regla general del
+30 de marzo de 2026, las excepciones registradas y los períodos de nómina de
+los adelantos. No se reclasifican proyecciones como cobros ni se duplica un
+retiro al mostrar su componente de rendimiento. Esta decisión sólo cambia
+el criterio de consulta del reporte: no activa el motor, no altera Apps Script,
+triggers, cuotas, saldos ni autoridades productivas.

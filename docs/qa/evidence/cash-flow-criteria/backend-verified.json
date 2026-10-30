@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "version": 8,
+  "verifyJwt": true,
+  "reportReadersAuthenticatedOnly": true,
+  "protectedFunctionsPreserved": true,
+  "financialWrites": 0
+}

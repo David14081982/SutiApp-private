@@ -33,14 +33,13 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
  for(const p of protectedLoans)protectedMap.set(p.key||loanKey(p.C,p.D),p.reason);
  const issues=result.issues,records=result.records,unassigned=result.unassigned;
  const addRow=(id,label,group,kind='recorded',extra={})=>{
-  const row={id,label,group,kind,unit:'money',...extra,cells:months.map(m=>({cents:0,missing:false,sourceIds:[],notes:[],applicable:!(['recorded','net'].includes(kind)&&m.key>current||kind==='scheduled'&&m.key<current)}))};
+  const row={id,label,group,kind,unit:'money',...extra,cells:months.map(m=>({cents:0,knownCount:0,missing:false,sourceIds:[],notes:[],applicable:!(['recorded','net'].includes(kind)&&m.key>current||kind==='scheduled'&&m.key<current)}))};
   rows.set(id,row);working.add(id);return row;
  };
  // Preserve all ten savings definitions/cells; replace only loan placeholders with contractual read-only results.
  for(const id of [...rows.keys()].filter(id=>id.startsWith('loan_')))rows.delete(id);
- // Withdrawals already contain any yield paid; the existing source response does
- // not expose the capital/yield component. This disclosure is never added to cash exits.
- rows.set('savings_yield_paid',{id:'savings_yield_paid',label:'Rendimientos de Ahorro pagados (incluidos en retiros)',group:'Ahorro Voluntario',kind:'recorded',unit:'money',cells:months.map(m=>({amount:null,knownAmount:null,status:m.key>current?'NOT_APPLICABLE':'UNAVAILABLE',sourceIds:[],notes:['La consulta actual conserva los retiros pagados sin separar capital y rendimiento. El rendimiento pagado está incluido en los retiros y no se suma nuevamente como salida.']}))});
+ // Component disclosure only; the gross withdrawals already count these cash exits.
+ addRow('savings_yield_paid','Rendimientos de Ahorro pagados (incluidos en retiros)','Ahorro Voluntario');
  const ensureFund=fund=>{
   if(funds.has(fund.id))return funds.get(fund.id);
   const prefix=fund.id==='loanSavings'?'loan':'fund_'+fund.id;
@@ -57,9 +56,14 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
   const r={...entry,kind:id},i=pos.get(r.date?.slice(0,7));
   if(i===undefined){if(!r.date)unassigned.push(r);return;}
   const c=rows.get(id)?.cells[i];if(!c)return;
-  records.push(r);c.sourceIds.push(r.id);const n=cents(r.amount);
-  if(n===null){c.missing=true;c.notes.push(r.note||'Importe sin determinar.');}else {c.cents+=n;if(!Number.isSafeInteger(c.cents))throw new ReportError('AMOUNT_OVERFLOW');}
+  records.push(r);c.sourceIds.push(r.id);if(r.calculationStatus==='CALCULATED')c.calculationStatus='CALCULATED';const n=cents(r.amount);
+  if(n===null){c.missing=true;c.notes.push(r.note||'Importe sin determinar.');}else {c.knownCount++;c.cents+=n;if(!Number.isSafeInteger(c.cents))throw new ReportError('AMOUNT_OVERFLOW');}
  };
+ for(const r of [...records].filter(r=>['withdrawal_partial','withdrawal_total','withdrawal_unspecified'].includes(r.kind))){
+  const component=r.withdrawal_component;
+  add('savings_yield_paid',{...r,id:r.id+':yield-disclosure',amount:component==='YIELD'?r.amount:component==='CAPITAL'?0:null,basis:'REGISTERED_MOVEMENT',note:'El retiro registrado no separa capital y rendimiento.'});
+ }
+ for(const c of rows.get('savings_yield_paid').cells)c.notes.push('El rendimiento pagado está incluido en los retiros y no se suma nuevamente como salida.');
  const groups=new Map();
  loans.slice(1).forEach((v,i)=>{
   if(!v.some(x=>x!==''&&x!=null))return;
@@ -72,7 +76,8 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
   const fund=g.find(r=>r.fund)?.fund;if(!fund)continue;
   loanCount++;const f=ensureFund(fund),allIds=Object.values(f.ids),sourceIds=g.map(r=>'pv2:'+r.row),first=g[0],contract=contractMap.get(key);
   if(g.some(r=>!r.fund||r.fund.id!==fund.id)){mark(allIds,'LOAN_FUND_CONFLICT','Un ID y folio tiene fondos contradictorios; no se suman sus cuotas.',sourceIds);protectedCount++;continue;}
-  const seen=new Set();if(g.some(r=>!Number.isSafeInteger(r.v[18])||r.v[18]<1||seen.has(r.v[18])||(seen.add(r.v[18]),false))){mark(allIds,'LOAN_INSTALLMENT_AMBIGUOUS','Hay cuotas repetidas o sin número verificable.',sourceIds);protectedCount++;continue;}
+  const seen=new Set(),ambiguousInstallments=g.some(r=>!Number.isSafeInteger(r.v[18])||r.v[18]<1||seen.has(r.v[18])||(seen.add(r.v[18]),false));
+  if(ambiguousInstallments)mark(['principal','interest','admin','principal_scheduled','interest_scheduled','admin_scheduled','pending','interest_pending','admin_pending'].map(k=>f.ids[k]),'LOAN_INSTALLMENT_AMBIGUOUS','Los números de cuota no permiten distribuir el contrato; se conservan los importes B registrados por fila y fecha.',sourceIds);
   g.sort((a,b)=>a.v[18]-b.v[18]);
   const terms={principal:cents(first.v[9]),total:cents(first.v[10])},uniform=terms.principal!==null&&terms.total!==null&&terms.total>=terms.principal&&g.every(r=>cents(r.v[9])===terms.principal&&cents(r.v[10])===terms.total);
   const dates=[...new Set(g.map(r=>r.v[30]).filter(v=>v!==''&&v!=null).map(sourceDate))],transfer=dates.length===1&&dates[0]?dates[0]:null;
@@ -83,12 +88,12 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
   else if(!transfer){mark([f.ids.placed,f.ids.count],'LOAN_TRANSFER_DATE_UNRESOLVED','No existe una fecha única de transferencia; no se inventa el mes de colocación.',sourceIds);unassigned.push({id:'capital:'+key,kind:f.ids.placed,amount:terms.principal/100,loanId:first.C,folio:first.D,source:'HISTORIAL P V2',sourceIds,date:null});}
   else {mark([f.ids.placed,f.ids.count],'LOAN_TRANSFER_FUTURE','La transferencia tiene fecha futura y no acredita una colocación realizada.',sourceIds,[transfer]);}
   const engineRows=g.map(r=>({C:r.C,D:r.D,S:r.v[18],date:sourceDate(r.v[0]),B:cents(r.v[1]),J:cents(r.v[9]),K:cents(r.v[10]),O:cents(r.v[14]),I:r.v[8],fund:r.v[6],sourceRow:r.row}));
-  const allocation=contract?computeContractCashFlow({contract,rows:engineRows,asOf}):{status:'PROTECTED',reason:protectedMap.get(key)||sourceErrors.contracts||'CONTRACT_EVIDENCE_INSUFFICIENT'};
+  const allocation=contract&&!ambiguousInstallments?computeContractCashFlow({contract,rows:engineRows,asOf}):{status:'PROTECTED',reason:ambiguousInstallments?'LOAN_INSTALLMENT_AMBIGUOUS':protectedMap.get(key)||sourceErrors.contracts||'CONTRACT_INPUTS_INSUFFICIENT'};
   const ok=allocation.status==='DETERMINED';if(ok)determined++;else protectedCount++;
   const payments=new Map((ok?allocation.payments:[]).map(p=>[p.S,p])),forecast=new Map((ok?allocation.forecast:[]).map(p=>[p.S,p]));
   for(const r of engineRows){
    const scheduled=r.date&&r.date>asOf,kind=scheduled?'scheduled':'recovered',breakdown=scheduled?forecast.get(r.S):payments.get(r.S),positiveIds=[f.ids[kind],...Object.keys(COMPONENTS).map(c=>f.ids[c+(scheduled?'_scheduled':'')])];
-   if(!r.date){mark([f.ids.recovered,f.ids.scheduled,...Object.keys(COMPONENTS).flatMap(c=>[f.ids[c],f.ids[c+'_scheduled']])],'LOAN_PAYMENT_DATE_MISSING','Fecha de cuota sin determinar.', ['pv2:'+r.sourceRow]);continue;}
+   if(!r.date){mark([f.ids.recovered,f.ids.scheduled,...Object.keys(COMPONENTS).flatMap(c=>[f.ids[c],f.ids[c+'_scheduled']])],'LOAN_PAYMENT_DATE_MISSING','Fecha de cuota sin determinar.', ['pv2:'+r.sourceRow]);if(r.B!==null&&r.B>=0)unassigned.push({id:'pv2:'+r.sourceRow,source:'HISTORIAL P V2',sourceId:'Fila '+r.sourceRow,kind:f.ids.recovered,loanId:r.C,folio:r.D,installment:r.S,date:null,amount:r.B/100,status:'UNAVAILABLE',note:'Importe B registrado sin fecha para determinar si es cobrado o programado.'});continue;}
    if(r.B===null||r.B<0){mark(positiveIds,'LOAN_PAYMENT_INVALID','El importe B no es monetario válido.',['pv2:'+r.sourceRow],[r.date]);continue;}
    const projected=scheduled&&breakdown?breakdown.B:r.B,basis=scheduled&&breakdown?.adjusted?'DERIVED_FORECAST':ok?'CONTRACTUAL_ALLOCATION':'RECORDED_UNALLOCATED';
    if(basis==='DERIVED_FORECAST')derivedForecastCount++;
@@ -97,7 +102,7 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
     percentages:{principal:breakdown?percent(breakdown.AD,projected):null,interest:breakdown?percent(breakdown.AB,projected):null,administration:breakdown?percent(breakdown.Z,projected):null},contractEvidence:ok?allocation.evidence:undefined};
    add(f.ids[kind],{...fields,amount:projected/100});
    for(const [component,column]of Object.entries(COMPONENTS))add(f.ids[component+(scheduled?'_scheduled':'')],{...fields,id:fields.id+':'+component,amount:breakdown?breakdown[column]/100:projected===0?0:null});
-   if(!ok&&projected>0)mark(Object.keys(COMPONENTS).map(c=>f.ids[c+(scheduled?'_scheduled':'')]),'LOAN_BREAKDOWN_UNDETERMINED','Sin determinar: condiciones contractuales no verificables ('+allocation.reason+').',[fields.id],[r.date]);
+   if(!ok&&projected>0)mark(Object.keys(COMPONENTS).map(c=>f.ids[c+(scheduled?'_scheduled':'')]),'LOAN_BREAKDOWN_UNDETERMINED','El importe B se incluye; faltan condiciones suficientes para distribuirlo ('+allocation.reason+').',[fields.id],[r.date]);
   }
   for(const [i,m]of months.entries()){
    const cut=m.key===current?asOf:endOfMonth(m.key),future=m.key>current;
@@ -127,13 +132,13 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
  }
  unassigned.push(...(investor.unassigned||[]));
  records.push(...(investor.records||[]));
- for(const b of investor.balances||[]){const i=pos.get(b.month?.slice(0,7)),r=rows.get(b.kind);if(i===undefined||!r)continue;const c=r.cells[i];c.cents=cents(b.known_amount??b.amount)??0;c.knownMissing=cents(b.known_amount??b.amount)===null;c.missing=cents(b.amount)===null;c.notes.push(...(b.notes||[]));if(b.sourceIds)c.sourceIds.push(...b.sourceIds);if(b.status==='NOT_APPLICABLE')c.applicable=false;}
+ for(const b of investor.balances||[]){const i=pos.get(b.month?.slice(0,7)),r=rows.get(b.kind);if(i===undefined||!r)continue;const c=r.cells[i];c.cents=cents(b.known_amount??b.amount)??0;c.knownMissing=cents(b.known_amount??b.amount)===null;c.missing=cents(b.amount)===null;c.notes.push(...(b.notes||[]));if(b.calculationStatus)c.calculationStatus=b.calculationStatus;if(b.sourceIds)c.sourceIds.push(...b.sourceIds);if(b.status==='NOT_APPLICABLE')c.applicable=false;}
  for(const issue of investor.issues||[])mark([...(issue.affectedKinds||[]),...((issue.affectedKinds||[]).includes('investor_other')?['cash_other_in','cash_other_out']:[])],issue.code,issue.message,issue.sourceIds||[],(issue.months||[]).map(m=>m+'-01'));
  if(sourceErrors.investors)mark(INVESTOR_DEFINITIONS.map(d=>d.id),'INVESTOR_SOURCE_UNAVAILABLE','No se pudo consultar Inversores; sus importes no se sustituyen por cero.');
  for(const id of working){const row=rows.get(id);for(const [i,c]of row.cells.entries()){
-  c.knownAmount=c.applicable&&!c.knownMissing?c.cents/100:null;c.amount=c.applicable&&!c.missing?c.cents/100:null;
-  c.status=!c.applicable?'NOT_APPLICABLE':c.missing?(c.sourceIds.length||c.cents?'PARTIAL':'UNAVAILABLE'):row.kind==='scheduled'?'SCHEDULED':row.kind==='obligation'?'PENDING':row.kind==='balance'&&months[i].key>current?'SCHEDULED':'RECORDED';
-  c.notes=[...new Set(c.notes)];delete c.cents;delete c.missing;delete c.applicable;delete c.knownMissing;
+  c.knownAmount=c.applicable&&!c.knownMissing&&(!c.missing||c.knownCount||c.cents)?c.cents/100:null;c.amount=c.applicable&&!c.missing?c.cents/100:null;
+  c.status=!c.applicable?'NOT_APPLICABLE':c.missing?(c.knownAmount!==null?'PARTIAL':'UNAVAILABLE'):row.kind==='scheduled'?'SCHEDULED':row.kind==='obligation'?'PENDING':row.kind==='balance'&&months[i].key>current?'SCHEDULED':'RECORDED';
+  c.notes=[...new Set(c.notes)];delete c.cents;delete c.missing;delete c.applicable;delete c.knownMissing;delete c.knownCount;
  }}
  for(const f of funds.values())for(const phase of ['','_scheduled'])for(const component of Object.keys(COMPONENTS)){
   const row=rows.get(f.ids[component+phase]),denominator=rows.get(f.ids[phase?'scheduled':'recovered']);

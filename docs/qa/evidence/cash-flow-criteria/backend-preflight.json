@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "previousVersion": 5,
+  "verifyJwt": true,
+  "restorableSourceFiles": 10,
+  "protectedFunctions": 11,
+  "reportReaders": 2,
+  "financialWrites": 0
+}

@@ -3,7 +3,7 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const {chromium}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
 const Zip=require('../app/vendor/jszip-3.10.1/jszip.min.js'),exporter=require('../app/cash-flow-export.js');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'.tmp/cash-flow-consolidated/ui');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'.tmp/cash-flow-criteria/ui');
 const original=[['contribution','Aportaciones recibidas'],['contribution_mixed','Importes históricos de aportación y rendimiento sin desglose'],['withdrawal_partial','Retiros parciales pagados'],['withdrawal_total','Retiros totales pagados'],['withdrawal_unspecified','Retiros pagados sin clasificación parcial / total'],['yield_credited','Rendimientos acreditados'],['adjustment','Ajustes registrados (importe neto)'],['savings_balance','Saldo acumulado al cierre / corte'],['contribution_scheduled','Aportaciones futuras programadas'],['withdrawal_pending','Retiros autorizados pendientes'],['loan_placed','Capital colocado según transferencia registrada'],['loan_recovered','Recuperación total corroborada'],['loan_principal','Capital recuperado'],['loan_interest','Intereses recuperados'],['loan_admin','Gasto administrativo recuperado'],['loan_pending','Capital pendiente de recuperar'],['loan_scheduled','Recuperación futura programada']];
 function fixture(){
  const months=Array.from({length:12},(_,i)=>{const d=new Date(Date.UTC(2026,10+i,1));return {key:d.toISOString().slice(0,7),label:d.toLocaleDateString('es-MX',{month:'short',year:'numeric',timeZone:'UTC'})};});
@@ -23,9 +23,9 @@ async function verifyXlsx(bytes){
  for(const xml of [main,detail,notes])assert.doesNotMatch(xml,/<f[\s>]/,'No formulas are invented from incomplete data');
  assert.match(notes,/test:record:1 · Resta × -1/);assert.match(detail,/Referencia del registro completo/);assert.equal((detail.match(/<row /g)||[]).length,3,'Subtotal relationships must not clone financial records');
  const rowXml=label=>[...main.matchAll(/<row\b[^>]*>[\s\S]*?<\/row>/g)].map(m=>m[0]).find(r=>r.includes(label));
- assert.equal((rowXml('Efectivo disponible').match(/<v>/g)||[]).length,0,'Unknown must remain blank');assert.equal((rowXml('Flujo neto mensual').match(/<v>/g)||[]).length,0,'Partial net cannot export known subtotal as total');
+ assert.equal((rowXml('Efectivo disponible').match(/<v>/g)||[]).length,0,'Unknown must remain blank');assert.equal((rowXml('Flujo neto mensual').match(/<v>/g)||[]).length,12,'Partial subtotal is exported with explicit state and notes');
  for(const [,label]of original)assert(main.includes(label),'Original concept retained: '+label);
- return {xlsx:true,original17Concepts:true,unknownBlankWithNote:true,partialNetBlank:true,typedNegative:true,typedPercentages:true,noInventedFormulas:true,formulaInjectionText:true};
+ return {xlsx:true,original17Concepts:true,unknownBlankWithNote:true,partialSubtotalVisible:true,typedNegative:true,typedPercentages:true,noInventedFormulas:true,formulaInjectionText:true};
 }
 async function main(){
  fs.mkdirSync(out,{recursive:true});const report=fixture(),built=await exporter.build(report);const checks=await verifyXlsx(built.bytes);fs.writeFileSync(path.join(out,'synthetic-consolidated.xlsx'),built.bytes);

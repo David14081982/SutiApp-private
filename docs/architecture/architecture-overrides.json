@@ -1441,13 +1441,13 @@
       "file": "app/cash-flow-report.jsx",
       "name": "CashFlowReportModule",
       "properties": {
-        "authority": "Read-only derivation of existing Supabase savings/investors/approved contracts and Google HISTORIAL P V2; not a financial authority",
+        "authority": "Read-only derivation of official registered Supabase savings/investors/contract terms and Google HISTORIAL P V2; owner accepts recorded values; no parallel financial authority",
         "evidence": "app/cash-flow-report.jsx; supabase/functions/reports-jc/cash-flow-consolidated.mjs",
         "financial_writes": 0,
         "route": "Admin / Reportes JC / Reporte Flujo de efectivo",
         "scope": "12 monthly columns; separate savings, Caja de Ahorro, common-pool loans, investors and union margins",
         "status": "IMPLEMENTED",
-        "unknown": "Unverifiable components remain undetermined; no bank balance inference"
+        "unknown": "Only genuinely absent data or impossible calculations remain undetermined; recorded amounts and known subtotals remain visible; no bank balance inference"
       },
       "type": "admin_screen"
     },
@@ -1479,9 +1479,9 @@
       "properties": {
         "authority": "DERIVED_QUERY_NOT_PAYMENT_WRITER",
         "capture": "America/Hermosillo A<=today corroborated B; A>today scheduled B; future B=0 not revived; no Apps Script activation",
-        "contract_source": "Current immutable approved snapshot + original transfer receipt + live original terms; unsupported historical contracts protected",
+        "contract_source": "Official live HISTORIAL P V2 / requests; original linked approval terms take priority; no PDF, hash or documentary-certification gate; local classification JSON is not a runtime authority",
         "deployment_copy": "supabase/functions/reports-jc/cash-flow-pv2-engine.mjs",
-        "evidence": "supabase/functions/reports-jc/cash-flow-contracts.mjs; scripts/test-cash-flow-contracts.mjs",
+        "evidence": "supabase/functions/reports-jc/cash-flow-contracts.mjs; scripts/test-cash-flow-criteria-contracts.mjs",
         "financial_writes": 0,
         "source_engine": "scripts/lib/historial-pv2-engine.mjs",
         "source_engine_sha256": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
@@ -2386,6 +2386,27 @@
       "to": "public.program_requests",
       "to_type": "table",
       "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.investors",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.imports",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow",
+      "from_type": "rpc",
+      "to": "public.savings_workspace_receipts",
+      "to_type": "rpc",
+      "type": "CALLS"
     }
   ]
 }

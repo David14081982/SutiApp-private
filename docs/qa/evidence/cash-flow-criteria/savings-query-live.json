@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-30T17:32:17.437Z",
+  "migrationSha256": "6d2f9bb44c91777541ad6fe37d002004c736a8249c5a056713c20571e3ab5dff",
+  "sqlSha256": "8855a5b5f503cd0d838e72b625f876863afcc2af3f76c60d96083061911ffad4",
+  "durationMs": 5485,
+  "statementTimeoutMs": 6000,
+  "databaseReadOnly": true,
+  "unchangedRegisteredEvents": true,
+  "unchangedKnownAmounts": true,
+  "events": 11057,
+  "financialWrites": 0,
+  "ddl": 0,
+  "productionCalls": 1
+}

@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "from": "2026-01",
+  "migration": "supabase/migrations/20261030000500_reports_jc_cash_flow_criteria_savings.sql",
+  "sqlSha256": "8ea2fcc3a9059b43325426d347eea59200e1dee38dc0a8edace094e546561b27",
+  "migrationSha256": "c621ef4b70edcdd8393337856406752f9dfd67abc732dbaf182869d57ebf3681",
+  "financialWrites": 0,
+  "ddl": 0,
+  "productionCalls": 1,
+  "checkedAt": "2026-10-30T17:16:13.860Z",
+  "durationMs": 22129,
+  "databaseReadOnly": true,
+  "events": 11057,
+  "byKind": {
+    "contribution": 9075,
+    "withdrawal_unspecified": 228,
+    "contribution_mixed": 328,
+    "adjustment": 9,
+    "withdrawal_total": 2,
+    "contribution_scheduled": 1415
+  },
+  "byStatus": {
+    "RECORDED": 9642,
+    "SCHEDULED": 1415
+  },
+  "byWithdrawalComponent": {
+    "NONE": 11055,
+    "YIELD": 1,
+    "CAPITAL": 1
+  },
+  "knownBalanceMonths": 3,
+  "partialBalanceMonths": 7,
+  "knownAmountEvents": 11057,
+  "undatedKnownAmountEvents": 0,
+  "issueCodes": [
+    "SAVINGS_HISTORICAL_BALANCE_UNAVAILABLE",
+    "SAVINGS_MIXED_CONTRIBUTION_YIELD",
+    "SAVINGS_WITHDRAWAL_KIND_UNKNOWN"
+  ],
+  "privateResponsePersisted": true,
+  "publicSourceRowsPersisted": 0
+}

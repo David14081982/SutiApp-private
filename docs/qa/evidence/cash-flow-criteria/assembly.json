@@ -1,0 +1,56 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-30T17:17:04.795Z",
+  "from": "2026-01",
+  "sourceMode": "EXISTING_PRIVATE_CAPTURE",
+  "networkCalls": 0,
+  "rows": 103,
+  "months": 12,
+  "records": 69369,
+  "payloadBytes": 30373433,
+  "assemblyMs": 3353,
+  "coverage": {
+    "loanCount": 1668,
+    "financialWrites": 0,
+    "amortizationEngineActive": false,
+    "savingsAuthority": "SUPABASE",
+    "loanAuthority": "GOOGLE_HISTORIAL_P_V2",
+    "determinedLoans": 1077,
+    "protectedLoans": 591,
+    "derivedForecastRows": 568,
+    "contractCoverage": {
+      "determined": 1215,
+      "protected": 453,
+      "source": "LIVE_OFFICIAL_REGISTERED_TERMS"
+    },
+    "investors": {
+      "authority": "SUPABASE_INVESTORS",
+      "contractCount": 88,
+      "activeContractCount": 35,
+      "historyIncompleteCount": 88,
+      "recordedMovements": 0,
+      "obligationCount": 810,
+      "calculatedPeriods": 596,
+      "unresolvedReviews": 70,
+      "costBasis": "Registered obligations and full monthly periods calculated from dated contractual capital and rates; paid cash uses only effective registered movements.",
+      "financialWrites": 0
+    },
+    "contractualCalculation": "READ_ONLY",
+    "fundCount": 4
+  },
+  "stateCounts": {
+    "RECORDED": 235,
+    "PARTIAL": 461,
+    "NOT_APPLICABLE": 379,
+    "UNAVAILABLE": 125,
+    "SCHEDULED": 24,
+    "PENDING": 12
+  },
+  "verifiedTotals": 226,
+  "verifiedInstallments": 7629,
+  "registeredBGrossMatchesAllDatedOfficialRows": true,
+  "importedInvestorContributionsVisible": true,
+  "calculatedInvestorYieldsVisible": true,
+  "financialWrites": 0,
+  "sourceEngineSha256": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33"
+}

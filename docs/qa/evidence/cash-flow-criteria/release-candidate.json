@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "baseCommit": "183177cdb7b46668c70090cc737fc8cb75ad569c",
+  "bundleSha256": "1838d1e8dd58d5377e6e4fd518d544d9d8c4a9d3713517c5b996875f8a897831",
+  "candidateHashes": {
+    "app/cash-flow-report.jsx": "07863bb2f5b8af26c1d7104ea49647b0585b81f8394e82b17ca6c7df241966f5",
+    "app/cash-flow-export.js": "bd68d2dec08a771a8d66ea3a71ee1b55e9f7fd1a13be2dc51a27e3779b6ba6c9",
+    "app/bundle.js": "1838d1e8dd58d5377e6e4fd518d544d9d8c4a9d3713517c5b996875f8a897831",
+    "SutiApp.html": "290f2cc420d96275aa44197424ef0653536466a171b9e07bde79abeaabd05eb8",
+    "sw.js": "932a71f70203b8b1cf8474199498f491c2be17cbeb0067de28e2554dd6e2310d"
+  },
+  "preservedPublishedModules": 173,
+  "beforeModules": 175,
+  "afterModules": 175,
+  "modifiedModules": [
+    "cash-flow-report.jsx",
+    "cash-flow-export.js"
+  ],
+  "cachebusterOnly": true,
+  "version": "2026103003",
+  "structuralPermissions": "PASS",
+  "buildPages": "PASS",
+  "financialWrites": 0
+}

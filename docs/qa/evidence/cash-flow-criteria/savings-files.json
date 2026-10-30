@@ -1,0 +1,15 @@
+{
+  "task": "H-FLUJO-EFECTIVO-CRITERIO-001",
+  "scope": "Savings report reader only",
+  "finalDefinitionMd5": "94b10b95af8b16883ace97c8f85f67ab",
+  "previousDefinitionMd5": "544ddf4e1946ff5cf5ea760bf154fc58",
+  "hashes": {
+    "supabase/migrations/20261030000500_reports_jc_cash_flow_criteria_savings.sql": "9aa89d8f96a769c260e251acaa7bce58bc81a65ef70af81cb099de54a21050d5",
+    "supabase/recovery/20261030000500_reports_jc_cash_flow_criteria_savings.sql": "c35eb5832baef56733a9e77719472b7b494ba68c92b81a2d4588f1149f762cfd",
+    "scripts/test-cash-flow-criteria-savings-sql.js": "84b9c01b721bb5cd6e3a0bc7e80f8c37096ec172f6f21c78eea2343ad25d61da",
+    "scripts/verify-cash-flow-criteria-savings-source.mjs": "f96c1af6dbcb960815d0767e4d4b09b9252b91a6ee89239a561e26ba6677fbae"
+  },
+  "sourceSelectUsedPreviousCompletenessRule": true,
+  "productionReadCount": 1,
+  "productionFinancialWrites": 0
+}

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Official historical and review contracts calculate without history certification",
+    "Explicit original contribution is counted once; observations and renewals never create cash",
+    "Stored obligations remain frozen and calculated periods use dated contractual rates",
+    "Registered payments reduce pending once; corrections and voids cannot duplicate cash",
+    "Observed balance and original contractual capital use their own dates",
+    "Missing partial-period convention and missing inputs remain explicit",
+    "Manual payment mode calculates accrual without inventing payment dates",
+    "Balance details reconcile every known cut, future stock stays inapplicable"
+  ],
+  "financialWrites": 0,
+  "sourceMutation": false
+}

@@ -1,0 +1,147 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-30T16:06:55.288Z",
+  "financialWrites": 0,
+  "googleWrites": 0,
+  "triggerChanges": 0,
+  "persistedSourceRows": 0,
+  "checks": [
+    {
+      "name": "get_admin_reports_jc_cash_flow_investors_anonymous_denied",
+      "status": "PASS"
+    },
+    {
+      "name": "get_admin_reports_jc_cash_flow_contracts_anonymous_denied",
+      "status": "PASS"
+    },
+    {
+      "name": "get_admin_reports_jc_cash_flow_investors_admin_read",
+      "status": "PASS",
+      "durationMs": 412
+    },
+    {
+      "name": "get_admin_reports_jc_cash_flow_contracts_admin_read",
+      "status": "PASS",
+      "durationMs": 332
+    },
+    {
+      "name": "existing_LOAD_preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "existing_TEMPLATE_preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "strict_payload",
+      "status": "PASS"
+    },
+    {
+      "name": "ordinary_user_live",
+      "status": "NOT TESTED",
+      "reason": "No explicit existing ordinary user credentials; SQL isolated denial covered."
+    }
+  ],
+  "reports": [
+    {
+      "status": "PASS",
+      "from": "2026-01",
+      "http": 200,
+      "durationMs": 8381,
+      "payloadBytes": 16161608,
+      "rows": 102,
+      "records": 43984,
+      "coverage": {
+        "loanCount": 1668,
+        "financialWrites": 0,
+        "amortizationEngineActive": false,
+        "savingsAuthority": "SUPABASE",
+        "loanAuthority": "GOOGLE_HISTORIAL_P_V2",
+        "determinedLoans": 196,
+        "protectedLoans": 1472,
+        "derivedForecastRows": 152,
+        "contractCoverage": {
+          "determined": 196,
+          "protected": 1472,
+          "source": "LIVE_APPROVED_CONTRACT"
+        },
+        "investors": {
+          "authority": "SUPABASE_INVESTORS",
+          "contractCount": 88,
+          "activeContractCount": 35,
+          "historyIncompleteCount": 88,
+          "recordedMovements": 0,
+          "obligationCount": 214,
+          "unresolvedReviews": 70,
+          "costBasis": "Stored contractual obligations; paid cash uses effective movement dates.",
+          "financialWrites": 0
+        },
+        "contractualCalculation": "READ_ONLY",
+        "fundCount": 4
+      },
+      "verifiedTotals": 194,
+      "verifiedCuotas": 906,
+      "groups": [
+        "Ahorro Voluntario",
+        "Caja de Ahorro",
+        "SutiExpress",
+        "Caja Chica",
+        "Adelantos de Nómina",
+        "Inversores",
+        "Flujo consolidado",
+        "Sindicato",
+        "Distribución consolidada de préstamos"
+      ]
+    },
+    {
+      "status": "PASS",
+      "from": "2026-10",
+      "http": 200,
+      "durationMs": 9681,
+      "payloadBytes": 15272971,
+      "rows": 102,
+      "records": 39643,
+      "coverage": {
+        "loanCount": 1668,
+        "financialWrites": 0,
+        "amortizationEngineActive": false,
+        "savingsAuthority": "SUPABASE",
+        "loanAuthority": "GOOGLE_HISTORIAL_P_V2",
+        "determinedLoans": 196,
+        "protectedLoans": 1472,
+        "derivedForecastRows": 152,
+        "contractCoverage": {
+          "determined": 196,
+          "protected": 1472,
+          "source": "LIVE_APPROVED_CONTRACT"
+        },
+        "investors": {
+          "authority": "SUPABASE_INVESTORS",
+          "contractCount": 88,
+          "activeContractCount": 35,
+          "historyIncompleteCount": 88,
+          "recordedMovements": 0,
+          "obligationCount": 214,
+          "unresolvedReviews": 70,
+          "costBasis": "Stored contractual obligations; paid cash uses effective movement dates.",
+          "financialWrites": 0
+        },
+        "contractualCalculation": "READ_ONLY",
+        "fundCount": 4
+      },
+      "verifiedTotals": 178,
+      "verifiedCuotas": 1924,
+      "groups": [
+        "Ahorro Voluntario",
+        "Caja de Ahorro",
+        "SutiExpress",
+        "Caja Chica",
+        "Adelantos de Nómina",
+        "Inversores",
+        "Flujo consolidado",
+        "Sindicato",
+        "Distribución consolidada de préstamos"
+      ]
+    }
+  ]
+}

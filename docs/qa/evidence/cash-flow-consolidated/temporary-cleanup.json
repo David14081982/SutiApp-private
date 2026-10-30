@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "scope": "Previously authorized completed temporary builds and clean independent release clones",
+  "removed": [
+    ".tmp/cash-flow/site-2e20294dbafa",
+    ".tmp/sutifinanzas/release",
+    ".tmp/loan-manual-review/release"
+  ],
+  "validation": ["Absolute targets inside workspace", "No reparse points", "Clones clean with no unpublished commits", "No Git alternates dependencies", "Active task, backups and unique evidence preserved"],
+  "freeMiBAfterCleanup": 503,
+  "financialDataDeleted": 0
+}

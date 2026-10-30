@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Future obligations remain projections and individual rate snapshots never change",
+    "Payments, corrections, duplicate rows, voids and adjustments cannot duplicate cash",
+    "Generated yield, outstanding yield and future cash use different dates",
+    "Capital schedules and renewals are never counted again as new contributions",
+    "Incomplete history preserves known projections and never fabricates historical cash",
+    "Missing schedules, future movements and conflicting obligations stay explicit",
+    "Maturity does not fabricate partial returns, daily proration or historical rates"
+  ],
+  "financialWrites": 0
+}

@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "mode": "candidate",
+  "checkedAt": "2026-10-30T16:14:53.438Z",
+  "bundleSha256": "76c6180e3c76821655428078128a35248df061356456a37fd8469e437713078a",
+  "candidateStaticOverlay": true,
+  "financialApiMocks": 0,
+  "originalReports": 8,
+  "originalConceptsPreserved": 17,
+  "months": 12,
+  "concepts": 102,
+  "groups": 9,
+  "realAuthenticatedQuery": true,
+  "uiMatchesActualSource": true,
+  "sourceDetail": true,
+  "detailComponents": true,
+  "detailPercentages": true,
+  "excel": {
+    "download": true,
+    "sourceAmountsMatched": 1224,
+    "unknownBlankCells": 1140,
+    "negativeNumericCells": 1,
+    "detailRows": 43984,
+    "componentsMatch": true,
+    "percentagesMatch": true,
+    "notesRetained": true
+  },
+  "privateExportDeleted": true,
+  "stateCounts": {
+    "RECORDED": 69,
+    "PARTIAL": 392,
+    "NOT_APPLICABLE": 377,
+    "UNAVAILABLE": 371,
+    "SCHEDULED": 3,
+    "PENDING": 12
+  },
+  "issueCount": 166,
+  "unassignedCount": 1234,
+  "reportRequests": [
+    {
+      "action": "LOAD",
+      "status": 200
+    },
+    {
+      "action": "CASH_FLOW",
+      "status": 200
+    },
+    {
+      "action": "LOAD",
+      "status": 200
+    },
+    {
+      "action": "CASH_FLOW",
+      "status": 200
+    }
+  ],
+  "mobileNoPageOverflow": true,
+  "financialWrites": 0,
+  "blockedWriteAttempts": 0,
+  "pageErrors": 0,
+  "persistedTokens": 0,
+  "persistedPersonalRecords": 0,
+  "screenshots": 0
+}

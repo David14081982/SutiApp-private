@@ -1,0 +1,184 @@
+{
+  "taskReviewed": "H-FLUJO-EFECTIVO-CONSOLIDADO-001",
+  "stage": "APPROVED_FOR_PUBLICATION",
+  "verdict": "APPROVED",
+  "implementationVerdict": "APPROVED",
+  "backendVerdict": "APPROVED",
+  "frontendPublicationVerified": false,
+  "independence": "Final read-only review of packaged diff, source hashes, code and recorded evidence. No new suite, historical re-audit, production call, financial mutation or publication performed by the reviewer.",
+  "whatCodexDidCorrectly": [
+    "Extended only the existing cash-flow screen and its direct report readers/exporter; preserved the original seventeen concepts and twelve monthly columns.",
+    "Kept Supabase savings/investors/approved original terms and Google HISTORIAL P V2 as their existing authorities; no historical classification JSON became a runtime source of money.",
+    "Preserved actual B and separated corroborated cash, stored scheduled B, derived forecasts, accruals and balances. Future B=0 is not revived; its remaining obligation stays without a programmed date.",
+    "Used the certified proportional engine byte-for-byte with no Apps Script activation, financial writes, trigger changes or retroactive fee assumptions.",
+    "Preserved unknown components and incomplete investor history explicitly, rather than manufacturing cash receipts, treasury balances or historical interest.",
+    "Kept Caja de Ahorro separate from the common pool, calculated percentages against corresponding gross payment/fund/month, and summed mutually exclusive gross cash categories.",
+    "Kept source IDs, signed subtotal contributions and compact child-to-parent records; UI and XLSX validate and resolve parent references before displaying/exporting detail."
+  ],
+  "importantFindings": {
+    "packageBaseCommit": "d1163880218fdf114532ce92ceb24c4bb58f93d9",
+    "packagedChangedFiles": 60,
+    "allowlistedFiles": 60,
+    "unexpectedFiles": [],
+    "preservedUnrelatedBundleBlocks": 173,
+    "packagedForwardAndRecoverySqlHashesMatchApplied": true,
+    "privateTemplateExcludedFromPublicPackage": true,
+    "engineSha256": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
+    "engineCopyMatchesOriginalBytes": true,
+    "contractTestUsesPinnedHashWithoutRequiringUnpublishedOriginalFile": true,
+    "loanCoverage": {
+      "total": 1668,
+      "determined": 196,
+      "protected": 1472
+    },
+    "verifiedAdvanceLoans": 38,
+    "investorCoverage": {
+      "contracts": 88,
+      "active": 35,
+      "obligations": 214,
+      "recordedCashMovements": 0,
+      "unresolvedReviews": 70
+    },
+    "resolvedReviewFindings": [
+      "PV2 first data row is included; only one header row is skipped.",
+      "Undated installments mark both gross states and all six past/future components as undetermined.",
+      "Missing accrued investor obligations and payment conflicts propagate uncertainty into subsequent outstanding-yield balances.",
+      "Investor balance detail reconciles to the same historical/current cut; future stock remains explicitly inapplicable."
+    ],
+    "priorPackagedBackendSourceHashesMatchedDeployedV4": true,
+    "savingsPaidYieldDisclosure": {
+      "sourceHash": "4ac8b9f3e0727f413e1c57c91561d6b2f5a1f5caf7878e4a2c68048121d16c8e",
+      "sourceReview": "APPROVED",
+      "row": "savings_yield_paid",
+      "conceptsAfterDelta": 103,
+      "financialEffect": "No new cash amount or sum; paid yield remains included in withdrawal amounts and its unknown component is explicitly null.",
+      "newQueries": 0,
+      "originalConceptsPreserved": 17,
+      "targetedChecks": "Three affected checks reported PASS by implementing agent; no rerun by reviewer.",
+      "deploymentEvidence": "backend-compile/deployed/verified.json: PASS v5 with exact source hash. Prior v4 HTTP/DOM financial-value evidence remains valid; final production browser will verify the added explicit unknown row (103 concepts)."
+    },
+    "approvedSourceHashesMatchDeployedV5": true
+  },
+  "problemsDetected": [],
+  "blockingCondition": null,
+  "architectureImplications": {
+    "status": "PASS",
+    "scope": "Cash-flow screen/export only; additive read adapters and two new RPCs. Existing LOAD/TEMPLATE paths preserved.",
+    "serviceWorker": "Only version/cachebuster literals changed; no worker logic change.",
+    "registry": "Six candidate registry files derived from the published baseline; 3481 unrelated facts and existing overrides preserved. Scoped freshness only, with no global freshness claim."
+  },
+  "sourceOfTruthImplications": {
+    "status": "PASS",
+    "sources": [
+      "Supabase canonical savings",
+      "Supabase investors_private",
+      "Current immutable program_requests.financial_approval_snapshot",
+      "Google SutiApp Final HISTORIAL P V2 and original request linkage"
+    ],
+    "reportAuthority": "DERIVED_READ_ONLY",
+    "productionMocksOrFallbackStores": false,
+    "unsupportedHistoricalContracts": "Gross identifiable source amounts remain visible; components and percentages are undetermined. Original evidence was not re-audited."
+  },
+  "securityImplications": {
+    "status": "PASS",
+    "backend": "reports-jc v5 requires JWT and existing context/actor/module guards before and after work; both new readers are STABLE SECURITY DEFINER with empty search_path and authenticated-only execute.",
+    "originalDefinitionsOwnersAndAclPreserved": 11,
+    "frontendPrivateKeyOrServiceSecretFound": false,
+    "googleScope": "spreadsheets.readonly",
+    "permissionEvidence": "Anonymous denial and Admin reads verified over production HTTP; ordinary user/wrong module/impersonation denial verified in isolated SQL.",
+    "ordinaryUserProductionLogin": "NOT TESTED: no explicit existing ordinary-user credentials; no account created or changed to test."
+  },
+  "dataImplications": {
+    "status": "PASS",
+    "sqlChanges": "Two additive SELECT-only RPCs plus migration metadata. No existing business tables, functions, ACLs, balances or contractual terms altered.",
+    "financialWrites": 0,
+    "googleWrites": 0,
+    "triggerChanges": 0,
+    "cashIdentity": "B = Z + AB + AD; AC = AB + AD for determined allocations; exact contractual conservation including forecast and unassigned remainder.",
+    "limitations": [
+      "1472 loan breakdowns remain protected",
+      "Investor history has no recorded cash movements in the observed source",
+      "Treasury/bank available balance has no authoritative source in this scope",
+      "Savings paid-yield component is not exposed by the current reader; shown explicitly undetermined and never added again to withdrawals."
+    ]
+  },
+  "verificationEvidenceReviewed": [
+    "contracts-focused.json: 34 targeted checks",
+    "contracts-live-capture.json: 196 determined allocations and conservation checks",
+    "aggregation-focused.json: 15 distinct targeted cases, affected deltas only",
+    "investors-reader.json and investors-balance-detail.json",
+    "contracts-sql.json: 3 isolated authorization/source/recovery checks",
+    "investors-sql.json: 4 isolated authorization/version/source/recovery checks",
+    "ui-isolated.json and adapter-verification.json",
+    "backend-applied.json, backend-deployed.json and backend-verified.json",
+    "production-http.json: January and October 2026, 102 by 12, HTTP 200, preserved LOAD/TEMPLATE",
+    "legacy-preservation.json, release-candidate.json, package.json and registry-manifest.json",
+    "browser-live-candidate.json: live authenticated source, 102x12 DOM/XLSX parity, 43984 exported detail rows, original 17 concepts and eight reports preserved, mobile PASS, zero financial mocks/writes",
+    "Final three-line savings paid-yield disclosure: source review and v5 exact source-hash compile/deployment/ACL preservation PASS; prior cash totals unchanged."
+  ],
+  "governance": {
+    "reviewSkill": ".agents/skills/sutiapp-architect-reviewer/SKILL.md",
+    "relatedGuardians": [
+      "sutiapp-architecture-navigator",
+      "pre-change-audit",
+      "source-of-truth-guardian",
+      "legacy-google-guardian",
+      "database-migration-guardian",
+      "supabase-security-review",
+      "claude-ui-preservation-guardian",
+      "post-change-verification"
+    ],
+    "scopeRestriction": "User expressly prohibited general audits, historical re-investigation and global suites. Existing scoped governance/source inspections were reused; final review stayed on this H and direct dependencies.",
+    "missingGovernanceFiles": [
+      "docs/WORK_QUEUE_HISTORY.md"
+    ],
+    "authorization": "Current explicit user authorization applies to publication of this H after focused verification; no unrelated continuation is authorized by this review."
+  },
+  "ownerDecisionRequired": false,
+  "recommendedNextAction": "Publish the exact approved candidate under the existing authorization, then verify the real production frontend and v5 response with 103 concepts and 12 months. Do not repeat completed historical/global/HTTP suites; stop after final evidence.",
+  "responseToCodex": "Implementaci?n y backend v5 aprobados. Publica el candidato autorizado y verifica el frontend productivo real con 103 conceptos y 12 meses, incluyendo la fila indeterminada de rendimientos de Ahorro pagados. No activar motores ni cambiar datos; registra evidencia y detente.",
+  "sutiappArchitectReview": {
+    "task": "H-FLUJO-EFECTIVO-CONSOLIDADO-001",
+    "verdict": "APPROVED",
+    "criticalFindings": "No unresolved implementation defect. Final disclosure and v5 deployment verified; real production browser verification follows the authorized publication.",
+    "sourceOfTruth": "PASS",
+    "architecture": "PASS",
+    "security": "PASS with ordinary-user live-login limitation explicitly stated",
+    "data": "PASS with protected/unknown source coverage explicitly stated",
+    "legacy": "READ ONLY; preserved; motor not activated",
+    "ownerDecision": "NO",
+    "nextAction": "Authorized exact-candidate publication and real production browser verification only.",
+    "responseGeneratedForCodex": "YES"
+  },
+  "candidateBrowserVerdict": "APPROVED",
+  "candidateBrowserEvidence": {
+    "status": "PASS",
+    "checkedAt": "2026-10-30T16:14:53.438Z",
+    "bundleSha256": "76c6180e3c76821655428078128a35248df061356456a37fd8469e437713078a",
+    "candidateStaticOverlay": true,
+    "financialApiMocks": 0,
+    "originalReports": 8,
+    "originalConceptsPreserved": 17,
+    "months": 12,
+    "concepts": 102,
+    "realAuthenticatedQuery": true,
+    "uiMatchesActualSource": true,
+    "sourceDetail": true,
+    "detailComponents": true,
+    "detailPercentages": true,
+    "excel": {
+      "download": true,
+      "sourceAmountsMatched": 1224,
+      "unknownBlankCells": 1140,
+      "negativeNumericCells": 1,
+      "detailRows": 43984,
+      "componentsMatch": true,
+      "percentagesMatch": true,
+      "notesRetained": true
+    },
+    "mobileNoPageOverflow": true,
+    "financialWrites": 0,
+    "pageErrors": 0,
+    "previousAuthenticationFailure": "Resolved by running the same controlled harness with required sandbox network access; no product/authentication change."
+  }
+}

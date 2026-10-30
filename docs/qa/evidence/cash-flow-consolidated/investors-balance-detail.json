@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Balance detail sums equal each monthly cut and future unknown remains null"
+  ],
+  "financialWrites": 0
+}

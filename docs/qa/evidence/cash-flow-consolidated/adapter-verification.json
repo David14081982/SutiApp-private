@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "parentReferencesValidated": true,
+  "noGlobalRecordExpansion": true,
+  "cycleAndChainRejected": true,
+  "signedSubtotalDisplayCoveredByBrowser": true,
+  "exportParentsAndSignsCoveredByBrowser": true,
+  "largeSourceNotesSplitWithoutTruncation": true,
+  "signValidation10000References": true
+}

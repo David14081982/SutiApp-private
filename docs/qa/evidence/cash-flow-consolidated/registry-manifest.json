@@ -1,0 +1,62 @@
+{
+  "status": "PASS",
+  "baseCommit": "d1163880218fdf114532ce92ceb24c4bb58f93d9",
+  "scope": "H-FLUJO-EFECTIVO-CONSOLIDADO-001",
+  "candidateSourceHashes": {
+    "app/cash-flow-report.jsx": "311981a5cb98436296a1cd8452f542ca8433b4d204f52d40ac50c466132f1a62",
+    "app/cash-flow-export.js": "37a6daa31329fa106e22b8a161832cce50326a49bbab4051c748c26e9a2a3028",
+    "supabase/functions/reports-jc/index.ts": "fa2d13fa3cab4d0a9c4fa820cdf50a85171bb4a38d7c03493fef01b8082ef526",
+    "supabase/functions/reports-jc/cash-flow.mjs": "d32b1f4ad7f8b21a93ae0e80ce9b281e1f7df37f0023472951c7b65572b51dff",
+    "supabase/functions/reports-jc/cash-flow-google.mjs": "ce971691890976ca9317e650331358d212472e2192e15661463b22da53d60a74",
+    "supabase/functions/reports-jc/cash-flow-consolidated.mjs": "4ac8b9f3e0727f413e1c57c91561d6b2f5a1f5caf7878e4a2c68048121d16c8e",
+    "supabase/functions/reports-jc/cash-flow-contracts.mjs": "6d7417cd68f125d2e68c3cd8161805fab5262c5275ac4ef7b1f39514b8bebf2f",
+    "supabase/functions/reports-jc/cash-flow-pv2-engine.mjs": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
+    "supabase/functions/reports-jc/cash-flow-investors.mjs": "c4d6e7e48665deaf690564e4c72dbcfe4ed8df5f68f6bbb99f20d76ea3b971e4",
+    "supabase/migrations/20261030000200_reports_jc_cash_flow_investors.sql": "943588c02881c7a604df21d06d77871bd7bb4f93aa240ea368a83dc1401d07c9",
+    "supabase/migrations/20261030000300_reports_jc_cash_flow_contracts.sql": "e4e563ff0655a758f68d6267700fafca92c128fece78588dc32680f7e73a148f"
+  },
+  "updatedFiles": [
+    {
+      "path": "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+      "sha256": "8ba9154821c608fa779fcc52f2cc0d52e304704bf209315b5c9bbf66ec2c48dd"
+    },
+    {
+      "path": "docs/architecture/registry-code.json",
+      "sha256": "ad662f41b23c3ae5b0c265ced574200110ba36da280ccdaa3a6ec27d92e64de1"
+    },
+    {
+      "path": "docs/architecture/registry-data.json",
+      "sha256": "4bea42105098dc825405ee2457b6639107e8fccc7dd2788c8ebaae3d3e6bff85"
+    },
+    {
+      "path": "docs/architecture/registry-edges.json",
+      "sha256": "241dae00cd5ea0a239ff144b997ee196bcc993207b3984185ae91bbaa17ffe27"
+    },
+    {
+      "path": "docs/architecture/registry-search.json",
+      "sha256": "ed3bb978899885445da3415f4ef7a9a448d3383a247de7a0f4fde98cbab4ce1c"
+    },
+    {
+      "path": "docs/architecture/architecture-overrides.json",
+      "sha256": "3a19578b1a19b6ed61380007c1b2665c2a8d4789897f8f58ccadbac52e2d00d7"
+    }
+  ],
+  "unrelatedFactsPreserved": 3481,
+  "existingOverridesPreserved": true,
+  "addedSemanticNodes": 3,
+  "addedReadOnlyRelations": 30,
+  "globalRescan": false,
+  "testsExecuted": false,
+  "productionWrites": false,
+  "rootRegistryTouched": false,
+  "freshness": "SCOPED_FRESH; GLOBAL_NOT_RECHECKED",
+  "overridesFormatting": "Baseline key order and two-space indentation preserved; only new scoped nodes/relationships appended. Semantics unchanged.",
+  "lastIncrementalUpdate": {
+    "source": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+    "change": "Explicit unknown savings paid-yield disclosure; no query, export/import or relationship change. Existing evidence lines after the three inserted lines adjusted.",
+    "sourceHash": "4ac8b9f3e0727f413e1c57c91561d6b2f5a1f5caf7878e4a2c68048121d16c8e",
+    "overrideUnchanged": true,
+    "globalRescan": false,
+    "testsExecuted": false
+  }
+}

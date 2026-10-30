@@ -1,0 +1,145 @@
+﻿{
+  "suite": "cash-flow-contracts",
+  "status": "PASS",
+  "tests": 34,
+  "cases": [
+    {
+      "name": "deployment engine is byte-identical to certified immutable original",
+      "status": "PASS"
+    },
+    {
+      "name": "approved snapshot, current receipt and original terms resolve exactly once",
+      "status": "PASS"
+    },
+    {
+      "name": "PV2 has one header row: installment in source row two is preserved",
+      "status": "PASS"
+    },
+    {
+      "name": "full cuota splits and preserves contractual cents with later projections separate",
+      "status": "PASS"
+    },
+    {
+      "name": "950 partial on 1850 cuota charges administration once and carries unpaid amount",
+      "status": "PASS"
+    },
+    {
+      "name": "manual B correction replaces value without movements or accumulated prior version",
+      "status": "PASS"
+    },
+    {
+      "name": "second abono on next row completes same original period without charging it twice",
+      "status": "PASS"
+    },
+    {
+      "name": "extra payment covers seven and part of eighth, administration applied once each",
+      "status": "PASS"
+    },
+    {
+      "name": "early settlement preserves full ten-period capital interest administration",
+      "status": "PASS"
+    },
+    {
+      "name": "historical explicit 0 tariff preserved without date override",
+      "status": "PASS"
+    },
+    {
+      "name": "historical explicit 10 tariff preserved without date override",
+      "status": "PASS"
+    },
+    {
+      "name": "historical explicit 15 tariff preserved without date override",
+      "status": "PASS"
+    },
+    {
+      "name": "unknown tariff is protected, never blank equals zero",
+      "status": "PASS"
+    },
+    {
+      "name": "unsupported tariff cannot become general fifteen",
+      "status": "PASS"
+    },
+    {
+      "name": "future B is not recovered even when all future values exceed remaining after extra",
+      "status": "PASS"
+    },
+    {
+      "name": "future B zero is never revived: its projected remainder becomes unassigned",
+      "status": "PASS"
+    },
+    {
+      "name": "past B zero is confirmed zero, unpaid total survives in forecast",
+      "status": "PASS"
+    },
+    {
+      "name": "no future rows leaves unpaid obligation unassigned, no fabricated due date",
+      "status": "PASS"
+    },
+    {
+      "name": "actual payments beyond contract protected rather than reduced or forgiven",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate installment blocks only corresponding loan",
+      "status": "PASS"
+    },
+    {
+      "name": "identity order and invalid dates cannot imply cash receipt",
+      "status": "PASS"
+    },
+    {
+      "name": "source terms mutation blocks formerly approved snapshot",
+      "status": "PASS"
+    },
+    {
+      "name": "source rate change does not change historical rate retroactively",
+      "status": "PASS"
+    },
+    {
+      "name": "missing original O cannot be reconstructed from mutable B",
+      "status": "PASS"
+    },
+    {
+      "name": "receipt owner mismatch cannot attach a contract by matching monetary values",
+      "status": "PASS"
+    },
+    {
+      "name": "missing or forged receipt protects numeric historical ID",
+      "status": "PASS"
+    },
+    {
+      "name": "snapshot duplication is an ambiguity, not two loans",
+      "status": "PASS"
+    },
+    {
+      "name": "other obligations and membership never receive loan allocation",
+      "status": "PASS"
+    },
+    {
+      "name": "other loan source is neither changed nor included in this contract allocation",
+      "status": "PASS"
+    },
+    {
+      "name": "payroll dates exclude request day and include maturity; February always 28",
+      "status": "PASS"
+    },
+    {
+      "name": "single advance payment carries three administrative periods and original interest",
+      "status": "PASS"
+    },
+    {
+      "name": "advance without original periods is protected instead of assuming one fee",
+      "status": "PASS"
+    },
+    {
+      "name": "unverified derived classification is never a runtime authority",
+      "status": "PASS"
+    },
+    {
+      "name": "no side effects mutate inputs across repeated queries",
+      "status": "PASS"
+    }
+  ],
+  "productionWrites": false,
+  "engineWrites": false
+}

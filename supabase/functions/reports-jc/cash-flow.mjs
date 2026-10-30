@@ -1,4 +1,6 @@
 import {sourceDate,fundGroup,ReportError} from './report.mjs';
+import {resolveCashFlowContracts} from './cash-flow-contracts.mjs';
+import {consolidateCashFlow} from './cash-flow-consolidated.mjs';
 const text=v=>String(v??'').trim();
 const key=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const money=v=>typeof v==='number'&&Number.isFinite(v)&&Number.isSafeInteger(Math.round(v*100))&&Math.abs(v*100-Math.round(v*100))<.00001?Math.round(v*100):null;
@@ -94,9 +96,18 @@ async function context(client){const auth=await client.auth.getUser();if(auth.er
 export async function loadCashFlow(body,client,readSource,now=()=>new Date().toISOString()){
  if(!body||body.action!=='CASH_FLOW'||!validFrom(body.from)||Object.keys(body).some(k=>!['action','from'].includes(k)))throw new ReportError('REQUEST_INVALID');
  const before=await context(client),consultedAt=now();
- const [loans,r]=await Promise.all([readSource(),client.rpc('get_admin_reports_jc_cash_flow',{p_from:body.from+'-01'})]);
+ const [source,r,investors,approvals]=await Promise.all([
+  readSource(),client.rpc('get_admin_reports_jc_cash_flow',{p_from:body.from+'-01'}),
+  client.rpc('get_admin_reports_jc_cash_flow_investors',{p_from:body.from+'-01'}),client.rpc('get_admin_reports_jc_cash_flow_contracts')
+ ]);
  if(r.error)throw new ReportError('SAVINGS_SOURCE_UNAVAILABLE');
- const data=buildCashFlow({from:body.from,loans,savings:r.data,consultedAt}),after=await context(client);
+ if(!source||!Array.isArray(source.loans)||!Array.isArray(source.requests))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
+ // Keep the original savings reader and its ten concepts unchanged. Loan results
+ // now come from the certified pure engine, with the same C/D/S and A/B authority.
+ const base=buildCashFlow({from:body.from,loans:[source.loans[0]],savings:r.data,consultedAt});
+ const resolved=resolveCashFlowContracts({...source,snapshots:approvals.error?[]:approvals.data?.snapshots||[]});
+ const data=consolidateCashFlow({base,loans:source.loans,...resolved,contractCoverage:resolved.coverage,
+  investorsSource:investors.error?null:investors.data,sourceErrors:{contracts:approvals.error?'CONTRACT_SOURCE_UNAVAILABLE':null,investors:investors.error?'INVESTOR_SOURCE_UNAVAILABLE':null}}),after=await context(client);
  if(JSON.stringify(before)!==JSON.stringify(after))throw new ReportError('CONTEXT_CHANGED');
  return {context:after,data};
 }

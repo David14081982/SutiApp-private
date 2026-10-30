@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Only approved loan snapshots, exact financial content and no fabricated control",
+    "Existing authorization guard denies wrong module, missing permissions, impersonation and anon",
+    "Recovery removes only the additive reader and preserves contracts and authorization"
+  ],
+  "financialWrites": 0,
+  "originalDefinitionsPreserved": true
+}

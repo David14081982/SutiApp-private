@@ -1430,6 +1430,64 @@
         "cache": "none",
         "identity": "real actor, session, effective affiliate validated before/after"
       }
+    },
+    {
+      "aliases": [
+        "Reporte Flujo de efectivo",
+        "Flujo mensual consolidado",
+        "Cash flow"
+      ],
+      "domain": "finance",
+      "file": "app/cash-flow-report.jsx",
+      "name": "CashFlowReportModule",
+      "properties": {
+        "authority": "Read-only derivation of existing Supabase savings/investors/approved contracts and Google HISTORIAL P V2; not a financial authority",
+        "evidence": "app/cash-flow-report.jsx; supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+        "financial_writes": 0,
+        "route": "Admin / Reportes JC / Reporte Flujo de efectivo",
+        "scope": "12 monthly columns; separate savings, Caja de Ahorro, common-pool loans, investors and union margins",
+        "status": "IMPLEMENTED",
+        "unknown": "Unverifiable components remain undetermined; no bank balance inference"
+      },
+      "type": "admin_screen"
+    },
+    {
+      "aliases": [
+        "Flujo efectivo Excel",
+        "Cash flow XLSX"
+      ],
+      "domain": "finance",
+      "file": "app/cash-flow-export.js",
+      "name": "SutiCashFlowExport",
+      "properties": {
+        "authority": "DERIVED_AUTHORIZED_REPORT_ONLY",
+        "evidence": "app/cash-flow-export.js",
+        "financial_writes": 0,
+        "guard": "Stable report/session before and after export; parent records and signed detail preserved",
+        "status": "IMPLEMENTED"
+      },
+      "type": "service"
+    },
+    {
+      "aliases": [
+        "Consulta proporcional contractual",
+        "Distribucion capital intereses administracion"
+      ],
+      "domain": "finance",
+      "file": "supabase/functions/reports-jc/cash-flow-contracts.mjs",
+      "name": "CashFlowContractualQueryEngine",
+      "properties": {
+        "authority": "DERIVED_QUERY_NOT_PAYMENT_WRITER",
+        "capture": "America/Hermosillo A<=today corroborated B; A>today scheduled B; future B=0 not revived; no Apps Script activation",
+        "contract_source": "Current immutable approved snapshot + original transfer receipt + live original terms; unsupported historical contracts protected",
+        "deployment_copy": "supabase/functions/reports-jc/cash-flow-pv2-engine.mjs",
+        "evidence": "supabase/functions/reports-jc/cash-flow-contracts.mjs; scripts/test-cash-flow-contracts.mjs",
+        "financial_writes": 0,
+        "source_engine": "scripts/lib/historial-pv2-engine.mjs",
+        "source_engine_sha256": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
+        "status": "IMPLEMENTED"
+      },
+      "type": "service"
     }
   ],
   "relationships": [
@@ -2118,6 +2176,216 @@
       "to_type": "rpc",
       "to": "public.get_admin_investors_source",
       "type": "CALLS"
+    },
+    {
+      "from": "ReportsJcAdminModule",
+      "from_type": "admin_screen",
+      "to": "CashFlowReportModule",
+      "to_type": "admin_screen",
+      "type": "CONTAINS"
+    },
+    {
+      "from": "CashFlowReportModule",
+      "from_type": "admin_screen",
+      "to": "ReportsJcRepository",
+      "to_type": "repository",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowReportModule",
+      "from_type": "admin_screen",
+      "to": "SutiCashFlowExport",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "app/cash-flow-report.jsx",
+      "from_type": "file",
+      "to": "SutiCashFlowExport",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+      "from_type": "file",
+      "to": "CashFlowContractualQueryEngine",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowContractualQueryEngine",
+      "from_type": "service",
+      "to": "supabase/functions/reports-jc/cash-flow-pv2-engine.mjs",
+      "to_type": "file",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/index.ts",
+      "from_type": "file",
+      "to": "supabase/functions/reports-jc/cash-flow.mjs",
+      "to_type": "file",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/index.ts",
+      "from_type": "file",
+      "to": "supabase/functions/reports-jc/cash-flow-google.mjs",
+      "to_type": "file",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow.mjs",
+      "from_type": "file",
+      "to": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+      "to_type": "file",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow.mjs",
+      "from_type": "file",
+      "to": "supabase/functions/reports-jc/cash-flow-contracts.mjs",
+      "to_type": "file",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+      "from_type": "file",
+      "to": "supabase/functions/reports-jc/cash-flow-contracts.mjs",
+      "to_type": "file",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+      "from_type": "file",
+      "to": "supabase/functions/reports-jc/cash-flow-investors.mjs",
+      "to_type": "file",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow-contracts.mjs",
+      "from_type": "file",
+      "to": "supabase/functions/reports-jc/cash-flow-pv2-engine.mjs",
+      "to_type": "file",
+      "type": "USES"
+    },
+    {
+      "from": "reports-jc",
+      "from_type": "edge_function",
+      "to": "public.get_admin_reports_jc_cash_flow",
+      "to_type": "rpc",
+      "type": "CALLS"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow.mjs",
+      "from_type": "file",
+      "to": "public.get_admin_reports_jc_cash_flow",
+      "to_type": "rpc",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow",
+      "from_type": "rpc",
+      "to": "public.get_admin_reports_jc_context",
+      "to_type": "rpc",
+      "type": "CALLS"
+    },
+    {
+      "from": "reports-jc",
+      "from_type": "edge_function",
+      "to": "public.get_admin_reports_jc_cash_flow_investors",
+      "to_type": "rpc",
+      "type": "CALLS"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow.mjs",
+      "from_type": "file",
+      "to": "public.get_admin_reports_jc_cash_flow_investors",
+      "to_type": "rpc",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "public.get_admin_reports_jc_context",
+      "to_type": "rpc",
+      "type": "CALLS"
+    },
+    {
+      "from": "reports-jc",
+      "from_type": "edge_function",
+      "to": "public.get_admin_reports_jc_cash_flow_contracts",
+      "to_type": "rpc",
+      "type": "CALLS"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow.mjs",
+      "from_type": "file",
+      "to": "public.get_admin_reports_jc_cash_flow_contracts",
+      "to_type": "rpc",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_contracts",
+      "from_type": "rpc",
+      "to": "public.get_admin_reports_jc_context",
+      "to_type": "rpc",
+      "type": "CALLS"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow-google.mjs",
+      "from_type": "file",
+      "to": "Google SutiApp Final Reportes JC",
+      "to_type": "external_legacy_source",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.contracts",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.movements",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.obligations",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.terms",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.audit",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_investors",
+      "from_type": "rpc",
+      "to": "investors_private.reviews",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "public.get_admin_reports_jc_cash_flow_contracts",
+      "from_type": "rpc",
+      "to": "public.program_requests",
+      "to_type": "table",
+      "type": "READS"
     }
   ]
 }

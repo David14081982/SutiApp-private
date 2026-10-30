@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "suite": "scripts/test-cash-flow-consolidated.mjs",
+  "initialCasesPassed": 14,
+  "subsequentAffectedChecks": [
+    {"command": "node --test --test-name-pattern=\"signed|margin|17 existing\" scripts/test-cash-flow-consolidated.mjs", "passed": 4},
+    {"command": "node --test --test-name-pattern=\"undated|components|signed\" scripts/test-cash-flow-consolidated.mjs", "passed": 4},
+    {"command": "node --test --test-name-pattern=\"savings yield paid|17 existing|summary signed\" scripts/test-cash-flow-consolidated.mjs", "passed": 3}
+  ],
+  "uniqueCasesCovered": 16,
+  "scope": "Only new aggregator, direct context boundary, source details and financial invariants",
+  "globalSuites": 0,
+  "financialWrites": 0
+}

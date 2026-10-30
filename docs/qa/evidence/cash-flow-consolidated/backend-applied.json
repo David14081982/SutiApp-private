@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "migrations": [
+    "20261030000200",
+    "20261030000300"
+  ],
+  "sqlHashes": {
+    "migrations/20261030000200_reports_jc_cash_flow_investors.sql": "943588c02881c7a604df21d06d77871bd7bb4f93aa240ea368a83dc1401d07c9",
+    "recovery/20261030000200_reports_jc_cash_flow_investors.sql": "c659c9a64f8785c4fb637f0ef38b931b44c7183ebfa486fa2329352c192bd8ed",
+    "migrations/20261030000300_reports_jc_cash_flow_contracts.sql": "e4e563ff0655a758f68d6267700fafca92c128fece78588dc32680f7e73a148f",
+    "recovery/20261030000300_reports_jc_cash_flow_contracts.sql": "594b440811e76b44629e1e50f98091cedfafd8474099383bc0b11022cd48fff1"
+  },
+  "originalFunctionsAndAclPreserved": true,
+  "financialWrites": 0,
+  "migrationMetadataWrites": 2
+}

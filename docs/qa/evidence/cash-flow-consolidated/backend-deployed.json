@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "version": 5,
+  "verifyJwt": true,
+  "sourceHashes": {
+    "index.ts": "fa2d13fa3cab4d0a9c4fa820cdf50a85171bb4a38d7c03493fef01b8082ef526",
+    "report.mjs": "24dd75e39a99a902fdfb484ba2b5feb723616eea12307dd80335d317340a61cc",
+    "google-auth.mjs": "2530bd316b4f7e727898f2c09f00865ced4a2646061de2f98a93cd697a0de5ed",
+    "template.mjs": "1ae9618b5051581d218c8d0ff364c16ca6f774794efc9497a5397e4adbf6f104",
+    "cash-flow.mjs": "d32b1f4ad7f8b21a93ae0e80ce9b281e1f7df37f0023472951c7b65572b51dff",
+    "cash-flow-google.mjs": "ce971691890976ca9317e650331358d212472e2192e15661463b22da53d60a74",
+    "cash-flow-consolidated.mjs": "4ac8b9f3e0727f413e1c57c91561d6b2f5a1f5caf7878e4a2c68048121d16c8e",
+    "cash-flow-contracts.mjs": "6d7417cd68f125d2e68c3cd8161805fab5262c5275ac4ef7b1f39514b8bebf2f",
+    "cash-flow-pv2-engine.mjs": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
+    "cash-flow-investors.mjs": "c4d6e7e48665deaf690564e4c72dbcfe4ed8df5f68f6bbb99f20d76ea3b971e4"
+  },
+  "financialWrites": 0
+}

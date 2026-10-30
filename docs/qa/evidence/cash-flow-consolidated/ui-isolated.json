@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "xlsx": true,
+  "original17Concepts": true,
+  "unknownBlankWithNote": true,
+  "partialNetBlank": true,
+  "typedNegative": true,
+  "typedPercentages": true,
+  "noInventedFormulas": true,
+  "formulaInjectionText": true,
+  "downloadThroughBrowser": true,
+  "groups": 6,
+  "months": 12,
+  "contractualDetail": true,
+  "negativeVisible": true,
+  "countNotCurrency": true,
+  "mobileNoOverflow": true,
+  "stickyConcept": true,
+  "staleExportBlocked": true,
+  "duplicateDetailRejected": true,
+  "externalRequests": 0,
+  "financialWrites": 0
+}

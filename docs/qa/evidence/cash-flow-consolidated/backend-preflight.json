@@ -1,0 +1,78 @@
+{
+  "status": "PASS",
+  "previousVersion": 3,
+  "verifyJwt": true,
+  "additiveRpcsAbsent": true,
+  "migrationIdsAbsent": true,
+  "originals": [
+    {
+      "signature": "investors_private.balance(uuid,date)",
+      "definitionHash": "7662ca021f964762d81fb1600d0ce3a8551f2ef11964c7304c84e23856138d8b",
+      "aclHash": "c027e95beca64045f15d2075c66162eeeeb192e6756be61c73f91c7ce14dd4f3",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "investors_private.guard(boolean)",
+      "definitionHash": "435fb62dad7c1167a9590e7204a9268c154aae5140fd72ac7f5f87771b858ff8",
+      "aclHash": "c027e95beca64045f15d2075c66162eeeeb192e6756be61c73f91c7ce14dd4f3",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "investors_private.log(text,uuid,text,text,jsonb,jsonb)",
+      "definitionHash": "a8c49e40ae5b136d349d199388dcc642b425d8851bcb9a5257e864bb5ce43d54",
+      "aclHash": "c027e95beca64045f15d2075c66162eeeeb192e6756be61c73f91c7ce14dd4f3",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "investors_private.schedule(uuid,date,text)",
+      "definitionHash": "9995eb75340cf32493ece194bf9d9d83ba25fe48a70b19c17278cc8b1dee8819",
+      "aclHash": "c027e95beca64045f15d2075c66162eeeeb192e6756be61c73f91c7ce14dd4f3",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "public.get_admin_investors_source(text,integer)",
+      "definitionHash": "4e863b7d949da1ecd5172f006ad43a510cf93e8b49acbb4686c01b3d7b7b9066",
+      "aclHash": "48cbe0bdca3235e1dba22f9504e61b3c8e254ede516a33fa6fe51f6537916ca9",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "public.get_admin_investors(uuid)",
+      "definitionHash": "c24502e651a5a5a5e201f63d4edb6a5da616c844e85c3bb18e6c2b01dcb63c7f",
+      "aclHash": "48cbe0bdca3235e1dba22f9504e61b3c8e254ede516a33fa6fe51f6537916ca9",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "public.get_admin_reports_jc_cash_flow(date)",
+      "definitionHash": "17e29fbe562b97bff3fd53e092a0beeb6aa15e759d8a638bde851a6788b5eeae",
+      "aclHash": "48cbe0bdca3235e1dba22f9504e61b3c8e254ede516a33fa6fe51f6537916ca9",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "public.get_admin_reports_jc_context()",
+      "definitionHash": "c14e413d3a72ca55c023958f397e3988c9ad32a68275214ad515b2e0b4be68fa",
+      "aclHash": "48cbe0bdca3235e1dba22f9504e61b3c8e254ede516a33fa6fe51f6537916ca9",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "public.investors_document(uuid,jsonb,uuid)",
+      "definitionHash": "b9fd41c1c98686a43737be6cac2488834fa994bf3633292ef78fe8460237b902",
+      "aclHash": "48cbe0bdca3235e1dba22f9504e61b3c8e254ede516a33fa6fe51f6537916ca9",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "public.save_admin_investors(text,jsonb,uuid)",
+      "definitionHash": "b576536aa05636e00a6a701cc79b12761402941141923f6d54211eb65c6381dc",
+      "aclHash": "48cbe0bdca3235e1dba22f9504e61b3c8e254ede516a33fa6fe51f6537916ca9",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    },
+    {
+      "signature": "public.savings_workspace_history(uuid)",
+      "definitionHash": "f50532089179661992376e8d9d099c9d954c7592e5922916f0bfae6342e57df5",
+      "aclHash": "c027e95beca64045f15d2075c66162eeeeb192e6756be61c73f91c7ce14dd4f3",
+      "ownerHash": "a942b37ccfaf5a813b1432caa209a43b9d144e47ad0de1549c289c253e556cd5"
+    }
+  ],
+  "backupBodyHash": "907fbcfd81ef638923627f43105c16d8908838d721909ee6dc0b00b8d4cd3d4d",
+  "restorableSources": 6,
+  "financialWrites": 0
+}

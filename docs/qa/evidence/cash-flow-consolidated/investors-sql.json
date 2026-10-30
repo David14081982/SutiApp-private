@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Reports JC authorization, impersonation and direct table isolation",
+    "Current movement version, voids, stored rates and twelve-month balance",
+    "Input bounds, stable reader and no original definition or financial changes",
+    "Recovery revokes only the additive report and preserves source rows"
+  ],
+  "financialWrites": 0,
+  "originalDefinitionsPreserved": true
+}

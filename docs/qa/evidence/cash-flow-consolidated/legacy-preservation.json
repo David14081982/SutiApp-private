@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "files": [
+    {
+      "file": "scripts/lib/historial-pv2-engine.mjs",
+      "sha256": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
+      "preserved": true
+    },
+    {
+      "file": "scripts/lib/historial-pv2-final.mjs",
+      "sha256": "8a343d2ee098b2633cc5729ab34d5d894444bc22afd15493597a3dd1f7ea2812",
+      "preserved": true
+    },
+    {
+      "file": "supabase/migrations/20261030000100_reports_jc_cash_flow.sql",
+      "sha256": "ed4ac5d61c3f9da08357e487d597430331b25e10509c4dd5d3f604655eca9a04",
+      "preserved": true
+    }
+  ],
+  "financialWrites": 0,
+  "triggerChanges": 0
+}

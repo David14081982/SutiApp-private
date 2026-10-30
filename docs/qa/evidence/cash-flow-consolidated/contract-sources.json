@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-30T15:33:32.317Z",
+  "googleRows": 20107,
+  "requestRows": 2854,
+  "notesAvailable": true,
+  "snapshots": 285,
+  "coverage": {
+    "determined": 196,
+    "protected": 1472,
+    "source": "LIVE_APPROVED_CONTRACT"
+  },
+  "determined": 196,
+  "protectedReasons": {
+    "REQUEST_IDENTITY_UNRESOLVED": 40,
+    "ORIGINAL_CONTRACT_NOT_VERIFIED": 1411,
+    "CONTRACT_TERMS_CHANGED": 1,
+    "REQUEST_TERMS_CHANGED": 3,
+    "INCOMPLETE_CDS_SCHEDULE": 2,
+    "TRANSFER_IDENTITY_INVALID": 15
+  },
+  "financialWrites": 0,
+  "googleWrites": 0,
+  "amortizationEngineActivated": false,
+  "privateCapture": true
+}

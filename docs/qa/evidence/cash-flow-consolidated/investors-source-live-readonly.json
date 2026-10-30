@@ -1,0 +1,160 @@
+{
+  "status": "PASS",
+  "readOnly": true,
+  "financialWrites": 0,
+  "elapsedMs": 2600,
+  "contracts": 88,
+  "movements": 0,
+  "obligations": 214,
+  "balances": 12,
+  "events": 249,
+  "unassigned": 0,
+  "existingInvestorSummaryEquivalent": {
+    "currentKnownCapital": true,
+    "knownYieldProjection": true,
+    "knownCapitalProjection": true
+  },
+  "coverage": {
+    "authority": "SUPABASE_INVESTORS",
+    "contractCount": 88,
+    "activeContractCount": 35,
+    "historyIncompleteCount": 88,
+    "recordedMovements": 0,
+    "obligationCount": 214,
+    "unresolvedReviews": 70,
+    "costBasis": "Stored contractual obligations; paid cash uses effective movement dates.",
+    "financialWrites": 0
+  },
+  "issues": [
+    {
+      "code": "INVESTOR_HISTORY_NOT_DATED",
+      "sourceCount": 88,
+      "months": [
+        "2026-10"
+      ],
+      "affectedKinds": [
+        "investor_contribution",
+        "investor_yield_paid",
+        "investor_capital_return",
+        "investor_other",
+        "investor_net"
+      ]
+    },
+    {
+      "code": "INVESTOR_GENERATED_HISTORY_INCOMPLETE",
+      "sourceCount": 88,
+      "months": [
+        "2026-10"
+      ],
+      "affectedKinds": [
+        "investor_yield_generated"
+      ]
+    },
+    {
+      "code": "INVESTOR_CONTRACT_REVIEW",
+      "sourceCount": 2,
+      "months": [
+        "2026-10"
+      ],
+      "affectedKinds": [
+        "investor_capital_scheduled",
+        "investor_yield_scheduled"
+      ]
+    },
+    {
+      "code": "INVESTOR_CONTRACT_REVIEW",
+      "sourceCount": 3,
+      "months": [],
+      "affectedKinds": [
+        "investor_capital_scheduled",
+        "investor_yield_scheduled"
+      ]
+    },
+    {
+      "code": "INVESTOR_CONTRACT_REVIEW",
+      "sourceCount": 2,
+      "months": [
+        "2026-10",
+        "2026-11",
+        "2026-12",
+        "2027-01",
+        "2027-02",
+        "2027-03"
+      ],
+      "affectedKinds": [
+        "investor_capital_scheduled",
+        "investor_yield_scheduled"
+      ]
+    },
+    {
+      "code": "INVESTOR_CONTRACT_REVIEW",
+      "sourceCount": 1,
+      "months": [
+        "2026-10",
+        "2026-11",
+        "2026-12",
+        "2027-01",
+        "2027-02"
+      ],
+      "affectedKinds": [
+        "investor_capital_scheduled",
+        "investor_yield_scheduled"
+      ]
+    },
+    {
+      "code": "INVESTOR_CONTRACT_REVIEW",
+      "sourceCount": 1,
+      "months": [
+        "2026-10",
+        "2026-11",
+        "2026-12",
+        "2027-01"
+      ],
+      "affectedKinds": [
+        "investor_capital_scheduled",
+        "investor_yield_scheduled"
+      ]
+    },
+    {
+      "code": "INVESTOR_CAPITAL_HISTORY_INCOMPLETE",
+      "sourceCount": 9,
+      "months": [
+        "2026-10"
+      ],
+      "affectedKinds": [
+        "investor_capital_balance"
+      ]
+    },
+    {
+      "code": "INVESTOR_PENDING_HISTORY_INCOMPLETE",
+      "sourceCount": 88,
+      "months": [
+        "2026-10"
+      ],
+      "affectedKinds": [
+        "investor_yield_pending"
+      ]
+    },
+    {
+      "code": "INVESTOR_UNLINKED_REVIEW",
+      "sourceCount": 11,
+      "months": [],
+      "affectedKinds": [
+        "investor_other",
+        "investor_net"
+      ]
+    },
+    {
+      "code": "INVESTOR_UNLINKED_REVIEW",
+      "sourceCount": 31,
+      "months": [],
+      "affectedKinds": [
+        "investor_capital_balance",
+        "investor_yield_pending",
+        "investor_capital_scheduled",
+        "investor_yield_scheduled"
+      ]
+    }
+  ],
+  "storedAmountsLogged": false
+}

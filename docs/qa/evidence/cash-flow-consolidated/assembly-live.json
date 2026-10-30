@@ -1,0 +1,64 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-30T15:58:30.373Z",
+  "from": "2026-10",
+  "rows": 102,
+  "months": 12,
+  "records": 39643,
+  "payloadBytes": 15273165,
+  "assemblyMs": 2254,
+  "coverage": {
+    "loanCount": 1668,
+    "financialWrites": 0,
+    "amortizationEngineActive": false,
+    "savingsAuthority": "SUPABASE",
+    "loanAuthority": "GOOGLE_HISTORIAL_P_V2",
+    "determinedLoans": 196,
+    "protectedLoans": 1472,
+    "derivedForecastRows": 152,
+    "contractCoverage": {
+      "determined": 196,
+      "protected": 1472,
+      "source": "LIVE_APPROVED_CONTRACT"
+    },
+    "investors": {
+      "authority": "SUPABASE_INVESTORS",
+      "contractCount": 88,
+      "activeContractCount": 35,
+      "historyIncompleteCount": 88,
+      "recordedMovements": 0,
+      "obligationCount": 214,
+      "unresolvedReviews": 70,
+      "costBasis": "Stored contractual obligations; paid cash uses effective movement dates.",
+      "financialWrites": 0
+    },
+    "contractualCalculation": "READ_ONLY",
+    "fundCount": 4
+  },
+  "groups": [
+    "Ahorro Voluntario",
+    "Caja de Ahorro",
+    "SutiExpress",
+    "Caja Chica",
+    "Adelantos de Nómina",
+    "Inversores",
+    "Flujo consolidado",
+    "Sindicato",
+    "Distribución consolidada de préstamos"
+  ],
+  "issues": [
+    "LOAN_TRANSFER_DATE_UNRESOLVED",
+    "LOAN_PENDING_UNDETERMINED",
+    "LOAN_TERMS_CONFLICT",
+    "LOAN_INSTALLMENT_AMBIGUOUS",
+    "LOAN_BREAKDOWN_UNDETERMINED",
+    "INVESTOR_HISTORY_NOT_DATED",
+    "INVESTOR_GENERATED_HISTORY_INCOMPLETE",
+    "INVESTOR_CONTRACT_REVIEW",
+    "INVESTOR_CAPITAL_HISTORY_INCOMPLETE",
+    "INVESTOR_PENDING_HISTORY_INCOMPLETE",
+    "INVESTOR_UNLINKED_REVIEW"
+  ],
+  "sourceRowsPersistedInPublicEvidence": 0,
+  "financialWrites": 0
+}

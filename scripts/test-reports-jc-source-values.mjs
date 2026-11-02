@@ -89,7 +89,7 @@ function makeReference(year) {
     if (state === 'approved') { cells['B' + row]++; cells['D' + row]++; }
     if (state === 'rejected') cells['C' + row]++;
   };
-  let missingRequestDates = 0, missingMembershipProviders = 0, resolvedProcesses = 0, positiveInstallments = 0, missingInstallmentAmounts = 0;
+  let missingRequestDates = 0, missingMembershipProviders = 0, resolvedProcesses = 0, countedInstallments = 0, missingInstallmentAmounts = 0;
   for (const row of source.requests.slice(1)) {
     if (![0, 1, 4, 9, 24, 25].some(column => present(row[column]))) continue;
     const when = period(row[9]);
@@ -105,20 +105,21 @@ function makeReference(year) {
       counted(sheets[names[1]].months[when.month].cells, loanRow, state);
     }
     if (row[4] === 'Vales y membresias') {
+      for (const name of [names[4], names[6]]) sheets[name].cells['E' + (when.month + 5)] = (sheets[name].cells['E' + (when.month + 5)] || 0) + 1;
       counted(sheets[names[4]].cells, when.month + 5, state);
       counted(sheets[names[6]].cells, when.month + 5, state);
       const provider = rawText(row[25]);
       const extraLabel = additionalProviderLabel(provider);
       const rowNumber = providerRows.get(provider) || (additionalProviders.includes(extraLabel) ? 12 + additionalProviders.indexOf(extraLabel) : null);
-      if (rowNumber) counted(sheets[names[5]].months[when.month].cells, rowNumber, state);
+      if (rowNumber) { const cells = sheets[names[5]].months[when.month].cells; counted(cells, rowNumber, state); cells['E' + rowNumber] = (cells['E' + rowNumber] || 0) + 1; }
       else missingMembershipProviders++;
     }
   }
   for (const row of source.loans.slice(1)) {
     const when = period(row[0]);
-    if (when?.year !== year || row[1] === 0) continue;
+    if (when?.year !== year) continue;
     if (row[1] === null || row[1] === undefined) { missingInstallmentAmounts++; continue; }
-    assert.equal(row[1], 1, 'Sanitized positive amounts must be 1; counts must not depend on currency.');
+    assert([0, 1].includes(row[1]), 'Sanitized quotas retain zeros; positive amounts are 1. Both count as operations.');
     let process = row[5];
     if (!present(process)) {
       const matching = source.requests.slice(1).filter(request => present(row[2]) && present(row[3]) && request[0] === row[2] && request[1] === row[3] && rawText(request[4]) === rawText(row[6]));
@@ -128,20 +129,20 @@ function makeReference(year) {
     const code = referenceCode(row[6], process);
     sheets[names[2]].cells[(rawText(process) === 'JUB' ? 'C' : 'B') + (when.month + 5)]++;
     sheets[names[3]].months[when.month].cells['C' + payrollRows.get(code)]++;
-    positiveInstallments++;
+    countedInstallments++;
   }
-  function sumRows(cells, columns, first, last, totalRow, attentionColumns) {
-    for (let row = first; row <= last; row++) cells['E' + row] = [...attentionColumns].reduce((sum, column) => sum + cells[column + row], 0);
+  function sumRows(cells, columns, first, last, totalRow, attentionColumns, received = false) {
+    for (let row = first; row <= last; row++) cells['E' + row] = received ? (cells['E' + row] || 0) : [...attentionColumns].reduce((sum, column) => sum + cells[column + row], 0);
     for (const column of columns) cells[column + totalRow] = Array.from({ length: last - first + 1 }, (_, index) => cells[column + (first + index)]).reduce((sum, value) => sum + value, 0);
-    cells['E' + totalRow] = [...attentionColumns].reduce((sum, column) => sum + cells[column + totalRow], 0);
+    cells['E' + totalRow] = received ? Array.from({length:last-first+1}, (_, i) => cells['E'+(first+i)]).reduce((a,b)=>a+b,0) : [...attentionColumns].reduce((sum, column) => sum + cells[column + totalRow], 0);
   }
-  for (const index of [0, 2, 4, 6]) sumRows(sheets[names[index]].cells, 'BCD', 6, 17, 18, index === 4 || index === 6 ? 'BC' : 'BCD');
+  for (const index of [0, 2, 4, 6]) sumRows(sheets[names[index]].cells, 'BCD', 6, 17, 18, index === 4 || index === 6 ? 'BC' : 'BCD', [4,6].includes(index));
   for (const month of monthNumbers) {
     sumRows(sheets[names[1]].months[month].cells, 'BCD', 6, 10, 11, 'BCD');
     sumRows(sheets[names[3]].months[month].cells, 'CD', 6, 20, 21, 'CD');
-    sumRows(sheets[names[5]].months[month].cells, 'BCD', 6, 17, 18, 'BC');
+    sumRows(sheets[names[5]].months[month].cells, 'BCD', 6, 17, 18, 'BC', true);
   }
-  return { year, sheets, summary, coverage: { missingRequestDates, missingMembershipProviders, resolvedProcesses, positiveInstallments, missingInstallmentAmounts } };
+  return { year, sheets, summary, coverage: { missingRequestDates, missingMembershipProviders, resolvedProcesses, countedInstallments, missingInstallmentAmounts } };
 }
 function compareEngine(report, expected) {
   assert.deepEqual(report.summary, expected.summary, 'All requests must contribute to the received/status summary.');
@@ -176,23 +177,31 @@ for item in data['books']:
  book=load_workbook(io.BytesIO(raw), data_only=False)
  values=load_workbook(io.BytesIO(raw), data_only=True)
  assert book.sheetnames==original.sheetnames and len(book.sheetnames)==17
- assert sum(cell.data_type=='f' for ws in book for row in ws for cell in row)==245
+ assert sum(cell.data_type=='f' for ws in book for row in ws for cell in row)>=245
  for index, source_sheet in enumerate(original,1):
   sheet=book[source_sheet.title]
   for row in source_sheet:
    for cell in row:
     assert sheet[cell.coordinate]._style==cell._style, ('style',source_sheet.title,cell.coordinate)
-    if cell.data_type=='f': assert sheet[cell.coordinate].value==cell.value, ('formula',source_sheet.title,cell.coordinate)
+    if cell.data_type=='f':
+     wanted=cell.value
+     if index in (5,6,7) and cell.column_letter=='E':
+      target=data['expected']['sheets'][source_sheet.title]
+      counts=target.get('cells') or target['months'][str(item['month'])]['cells']
+      extra=counts[cell.coordinate]-counts['B'+str(cell.row)]-counts['C'+str(cell.row)]
+      if extra: wanted+='+'+str(extra)
+     assert sheet[cell.coordinate].value==wanted, ('formula',source_sheet.title,cell.coordinate)
   if index>8:
    assert archive.read(f'xl/worksheets/sheet{index}.xml')==original_zip.read(f'xl/worksheets/sheet{index}.xml')
    continue
   for row in sheet:
    for cell in row:
     if cell.data_type!='f': continue
-    match=re.fullmatch(r'=SUM\(([A-Z]+\d+):([A-Z]+\d+)\)',cell.value)
+    match=re.fullmatch(r'=SUM\(([A-Z]+\d+):([A-Z]+\d+)\)(?:\+(\d+))?',cell.value)
     assert match,cell.value
     operands=[v.value for selected in values[sheet.title][f'{match[1]}:{match[2]}'] for v in selected]
-    expected='#N/A' if '#N/A' in operands else sum(v or 0 for v in operands)
+    if match[3]: assert index in (5,6,7) and cell.column_letter=='E'
+    expected='#N/A' if '#N/A' in operands else sum(v or 0 for v in operands)+int(match[3] or 0)
     assert values[sheet.title][cell.coordinate].value==expected,('cached formula',sheet.title,cell.coordinate)
     formula_caches+=1
  for name, expected_sheet in data['expected']['sheets'].items():

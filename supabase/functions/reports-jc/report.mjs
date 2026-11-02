@@ -88,7 +88,9 @@ function buildSheets(){
     for(const name of [SHEETS.loanMonth,SHEETS.discountMonth,SHEETS.membershipMonth])out[name].months[month]={cells:{},issues:[]};
     for(let row=6;row<=10;row++)for(const col of ['B','C','D'])out[SHEETS.loanMonth].months[month].cells[col+row]={value:0,sourceIds:[],rule:row===10?'sutiexpress_included_once_in_row_9':'count_requests_by_request_date'};
     for(let row=6;row<=17;row++)for(const col of ['B','C','D'])out[SHEETS.membershipMonth].months[month].cells[col+row]={value:0,sourceIds:[],rule:'count_membership_requests_by_provider'};
-    for(let row=6;row<=20;row++)for(const col of ['C','D'])out[SHEETS.discountMonth].months[month].cells[col+row]={value:0,sourceIds:[],rule:col==='C'?'count_positive_payroll_operations':'count_completed_refund_cases'};
+    for(let row=6;row<=20;row++)for(const col of ['C','D'])out[SHEETS.discountMonth].months[month].cells[col+row]={value:0,sourceIds:[],rule:col==='C'?([7,12].includes(row)?'count_positive_savings_payroll_operations':'count_google_payroll_rows_including_zero'):'count_completed_refund_cases'};
+    for(const name of [SHEETS.membership,SHEETS.financing])out[name].cells['E'+(month+5)]={value:0,sourceIds:[],pendingCount:0,unknownCount:0,rule:'count_received_membership_requests'};
+    for(let row=6;row<=17;row++)out[SHEETS.membershipMonth].months[month].cells['E'+row]={value:0,sourceIds:[],pendingCount:0,unknownCount:0,rule:'count_received_membership_requests'};
   }return out;
 }
 function calculateTotals(sheets){
@@ -99,15 +101,16 @@ function calculateTotals(sheets){
   }
   for(const name of [SHEETS.loan,SHEETS.discount,SHEETS.membership,SHEETS.financing]){
     const cells=sheets[name].cells,attention=[SHEETS.membership,SHEETS.financing].includes(name)?['B','C']:['B','C','D'];
-    for(let row=6;row<=17;row++)total(cells,'E'+row,attention.map(col=>col+row));
+    const membership=[SHEETS.membership,SHEETS.financing].includes(name);
+    if(!membership)for(let row=6;row<=17;row++)total(cells,'E'+row,attention.map(col=>col+row));
     for(const col of ['B','C','D'])total(cells,col+'18',MONTHS.map(m=>col+(m+5)));
-    total(cells,'E18',attention.map(col=>col+'18'));
+    total(cells,'E18',membership?MONTHS.map(m=>'E'+(m+5)):attention.map(col=>col+'18'));
   }
   for(const month of MONTHS)for(const [name,lastRow,columns,attention] of [[SHEETS.loanMonth,10,['B','C','D'],['B','C','D']],[SHEETS.membershipMonth,17,['B','C','D'],['B','C']],[SHEETS.discountMonth,20,['C','D'],['C','D']]]){
     const cells=sheets[name].months[month].cells,rows=Array.from({length:lastRow-5},(_,i)=>i+6);
-    for(const row of rows)total(cells,'E'+row,attention.map(col=>col+row));
+    if(name!==SHEETS.membershipMonth)for(const row of rows)total(cells,'E'+row,attention.map(col=>col+row));
     for(const col of columns)total(cells,col+(lastRow+1),rows.map(row=>col+row));
-    total(cells,'E'+(lastRow+1),attention.map(col=>col+(lastRow+1)));
+    total(cells,'E'+(lastRow+1),name===SHEETS.membershipMonth?rows.map(row=>'E'+row):attention.map(col=>col+(lastRow+1)));
   }
   const cells=sheets[SHEETS.savings].cells,columns=['B','C','D','E','F','G'];
   for(const month of MONTHS)total(cells,'H'+(month+3),columns.map(col=>col+(month+3)));
@@ -142,7 +145,15 @@ export function buildReport({year,requests,loans,savings,consultedAt=new Date().
     return item;
   }
   function add(name,cell,id,month=null,rule){const target=month===null?sheets[name].cells:sheets[name].months[month].cells;if(!target[cell])throw new ReportError('REPORT_MAPPING_INVALID');target[cell].value++;target[cell].sourceIds.push(id);if(rule)target[cell].rule=rule;}
-  function countRequest(name,row,record,month=null){if(record.status==='approved'){add(name,'B'+row,record.id,month,'approved_initiated_or_settled_by_request_date');add(name,'D'+row,record.id,month,'owner_confirmed_manual_deposit_by_request_date');}else if(record.status==='rejected')add(name,'C'+row,record.id,month,'rejected_and_cancelled_by_request_date');}
+  function countRequest(name,row,record,month=null){
+    if([SHEETS.membership,SHEETS.financing,SHEETS.membershipMonth].includes(name)){
+      add(name,'E'+row,record.id,month);
+      const attention=(month===null?sheets[name].cells:sheets[name].months[month].cells)['E'+row];
+      if(record.status==='pending')attention.pendingCount++;
+      if(record.status==='unknown')attention.unknownCount++;
+    }
+    if(record.status==='approved'){add(name,'B'+row,record.id,month,'approved_initiated_or_settled_by_request_date');add(name,'D'+row,record.id,month,'owner_confirmed_manual_deposit_by_request_date');}else if(record.status==='rejected')add(name,'C'+row,record.id,month,'rejected_and_cancelled_by_request_date');
+  }
   for(let i=1;i<requests.length;i++){
     const r=requests[i]||[];if(![0,1,4,9,24,25].some(c=>has(r[c])))continue;
     const id='requests:'+String(i+1),date=sourceDate(r[9]),fund=text(r[4]),group=fundGroup(fund),status=requestStatus(r[24]);
@@ -154,7 +165,7 @@ export function buildReport({year,requests,loans,savings,consultedAt=new Date().
     if(!record.requestId)issue('REQUEST_ID_MISSING','La solicitud se identifica por su fila original; falta el ID.',names,[month],[id],'warning');
     if(status==='unknown')issue('REQUEST_STATUS_UNMAPPED','El estado registrado no tiene una clasificación autorizada.',names,[month],[id],included||!fund?'error':'warning');
     if(!fund)issue('REQUEST_FUND_MISSING','La solicitud no tiene fondo registrado.',REQUEST_REPORTS,[month],[id]);
-    const identity=record.requestId&&[record.requestId,record.numero_control,date,key(fund)].join('|');
+    const identity=record.requestId&&[record.requestId,record.numero_control,date,key(fund),...(group==='membership'?[membershipRow(record.provider)||key(membershipProvider(record.provider))]:[])].join('|');
     if(identity){const prior=requestKeys.get(identity);if(prior)issue('REQUEST_IDENTITY_COLLISION','Dos filas comparten identidad, persona, fecha y fondo. Se conservan ambas; revisar antes de exportar.',names,[month],[prior,id],included?'error':'warning');else requestKeys.set(identity,id);}
     if(group==='membership'){
       for(const name of [SHEETS.membership,SHEETS.financing])countRequest(name,month+5,record);
@@ -171,8 +182,9 @@ export function buildReport({year,requests,loans,savings,consultedAt=new Date().
     const id='loans:'+String(i+1),date=sourceDate(r[0]);
     if(date&&!isYear(date,year))continue;
     if(typeof r[1]!=='number'||!Number.isFinite(r[1])||r[1]<0){issue('INSTALLMENT_AMOUNT_INVALID','La cuota no es un importe numérico no negativo.',DISCOUNT_REPORTS,date?[monthOf(date)]:[],[id]);continue;}
-    if(r[1]===0){zeroInstallments++;continue;}
-    if(!date){issue('INSTALLMENT_DATE_INVALID','La cuota positiva no tiene una fecha válida.',DISCOUNT_REPORTS,[],[id]);continue;}
+    // Owner confirmed 2026-11-02: each Google row counts, including a zero quota.
+    // This is an operation count only; it does not credit money or change savings.
+    if(!date){issue('INSTALLMENT_DATE_INVALID','La cuota registrada no tiene una fecha válida.',DISCOUNT_REPORTS,[],[id]);continue;}
     if(!isYear(date,year))continue;
     const originalProcess=text(r[5]),matchedRequest=!has(r[5])?requestProcesses.get(processKey(r[2],r[3],r[6])):null;
     const resolved=matchedRequest&&has(matchedRequest.value)&&payrollCode(r[6],matchedRequest.value)!==null;
@@ -185,8 +197,9 @@ export function buildReport({year,requests,loans,savings,consultedAt=new Date().
     if(phase==='paid')paidInstallments++;else scheduledInstallments++;
     if(!record.requestId)issue('INSTALLMENT_ID_MISSING','La cuota conserva su fila original, pero no tiene identificador de préstamo.',DISCOUNT_REPORTS,[month],[id],'warning');
     if(!code){issue('PAYROLL_CODE_UNMAPPED','El fondo o proceso de la cuota no tiene clave de descuento autorizada.',DISCOUNT_REPORTS,[month],[id]);continue;}
+    if(r[1]===0)zeroInstallments++;
     const isJub=['JUB','JUBILADOSYPENSIONADOS','JUBILADOSYPENS','JUBILADO','PENSIONADO'].includes(key(process));
-    add(SHEETS.discount,(isJub?'C':'B')+(month+5),id,null,'count_positive_installments_including_valid_schedule');
+    add(SHEETS.discount,(isJub?'C':'B')+(month+5),id,null,'count_payroll_operations_including_google_zero');
     add(SHEETS.discountMonth,'C'+PAYROLL_ROWS[code],id,month);
     const collision=[record.requestId,record.numero_control,date,record.amount,key(record.fund)].join('|');
     const prior=loanKeys.get(collision);if(prior)issue('INSTALLMENT_COLLISION','Hay cuotas coincidentes. Cada operación fuente se conserva; no se deduplicó por fecha/préstamo.',DISCOUNT_REPORTS,[month],[prior,id],'warning');else loanKeys.set(collision,id);
@@ -233,12 +246,13 @@ export function buildReport({year,requests,loans,savings,consultedAt=new Date().
     }
   }
   calculateTotals(sheets);
-  const ruleLabels={count_source_operations:'Cantidad de operaciones registradas en la fuente.',count_savings_cases_by_event_date:'Cantidad de casos de Ahorro según la fecha registrada del evento.',sutiexpress_included_once_in_row_9:'Sutiexpress se cuenta una sola vez en la fila principal.',count_requests_by_request_date:'Cantidad de solicitudes según J, Fecha solicitud, de Historial de solicitudes.',count_membership_requests_by_provider:'Cantidad de solicitudes de Vales y Membresías, agrupadas por proveedor de Z, Observaciones.',count_positive_payroll_operations:'Cantidad de cuotas positivas; se cuenta cada operación original y no su importe.',count_completed_refund_cases:'Cantidad de expedientes de reembolso completamente pagados.',approved_initiated_or_settled_by_request_date:'Estados Aprobado, Iniciado, Activo o Liquidado; mes de la fecha de solicitud.',owner_confirmed_manual_deposit_by_request_date:'Depósito manual confirmado por el propietario para Aprobado, Iniciado, Activo o Liquidado; mes de la solicitud.',rejected_and_cancelled_by_request_date:'Solicitudes rechazadas y canceladas; mes de la fecha de solicitud.',count_positive_installments_including_valid_schedule:'Cuotas positivas: hasta hoy pagadas/cotejadas y futuras programadas válidas; cada fila cuenta una operación.',count_refund_cases_once_in_full_payment_month:'Un expediente de reembolso se cuenta una sola vez, en el mes del pago completo.',source_provider_in_existing_spare_row:'Proveedor escrito en Observaciones; utiliza una fila libre ya existente en la plantilla.'};
+  const ruleLabels={count_source_operations:'Cantidad de operaciones registradas en la fuente.',count_savings_cases_by_event_date:'Cantidad de casos de Ahorro según la fecha registrada del evento.',sutiexpress_included_once_in_row_9:'Sutiexpress se cuenta una sola vez en la fila principal.',count_requests_by_request_date:'Cantidad de solicitudes según J, Fecha solicitud, de Historial de solicitudes.',count_membership_requests_by_provider:'Cantidad de solicitudes de Vales y Membresías, agrupadas por proveedor de Z, Observaciones.',count_google_payroll_rows_including_zero:'Cantidad de registros de HISTORIAL P V2, incluyendo cuotas en cero; cada fila cuenta una operación, no pesos ni personas únicas.',count_positive_savings_payroll_operations:'Cantidad de aportaciones positivas de ahorro voluntario registradas o programadas en Supabase.',count_completed_refund_cases:'Cantidad de expedientes de reembolso completamente pagados.',approved_initiated_or_settled_by_request_date:'Estados Aprobado, Iniciado, Activo o Liquidado; mes de la fecha de solicitud.',owner_confirmed_manual_deposit_by_request_date:'Depósito manual confirmado por el propietario para Aprobado, Iniciado, Activo o Liquidado; mes de la solicitud.',rejected_and_cancelled_by_request_date:'Solicitudes rechazadas y canceladas; mes de la fecha de solicitud.',count_payroll_operations_including_google_zero:'Operaciones por fecha de descuento: cada fila de HISTORIAL P V2 cuenta una, incluyendo cuotas en cero y fechas futuras programadas. Se agregan las aportaciones positivas de ahorro voluntario de Supabase; no se suman importes.',count_refund_cases_once_in_full_payment_month:'Un expediente de reembolso se cuenta una sola vez, en el mes del pago completo.',source_provider_in_existing_spare_row:'Proveedor escrito en Observaciones; utiliza una fila libre ya existente en la plantilla.'};
+  ruleLabels.count_received_membership_requests='Todas las solicitudes recibidas según J, incluidas pendientes y estados sin clasificar. Cada fila cuenta una vez; los depósitos no se vuelven a sumar.';
   for(const sheet of Object.values(sheets))for(const cell of [...Object.values(sheet.cells),...Object.values(sheet.months).flatMap(month=>Object.values(month.cells))])if(ruleLabels[cell.rule]){cell.ruleId=cell.rule;cell.rule=ruleLabels[cell.rule];}
   return {version:1,year,consultedAt,sources:[{id:'google_requests',authority:'Google Sheets',workbook:WORKBOOK,sheet:REQUEST_SHEET,dateColumn:'J',statusColumn:'Y'},
     {id:'google_loans',authority:'Google Sheets',workbook:WORKBOOK,sheet:LOAN_SHEET,dateColumn:'A',amountColumn:'B'},
     {id:'supabase_savings',authority:'Supabase',reader:'get_admin_reports_jc_savings'}],summary,records,issues,sheets,
-    coverage:{savings:savings.coverage,zeroInstallmentsExcluded:zeroInstallments,paidInstallments,scheduledInstallments,resolvedPayrollProcesses,sourceRows:{requests:requests.length-1,loans:loans.length-1}}};
+    coverage:{savings:savings.coverage,zeroInstallmentsExcluded:0,zeroInstallmentsIncluded:zeroInstallments,paidInstallments,scheduledInstallments,resolvedPayrollProcesses,sourceRows:{requests:requests.length-1,loans:loans.length-1}}};
 }
 
 // Fixed, minimal, unbounded column ranges. Google is never sent a write request.

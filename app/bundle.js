@@ -1508,6 +1508,20 @@
     const cells = selected.cells;
     const values = Object.create(null);
     const formulas = derived(schema);
+    const attentionExtras = Object.create(null);
+    if (['membershipYear', 'membershipMonth'].includes(schema.kind)) {
+      attentionExtras.E18 = 0;
+      for (let row = 6; row <= 17; row++) {
+        const address = 'E' + row, cell = cells[address];
+        // Old responses have neither field; new received counts explicitly
+        // separate pending/unknown cases from approved, rejected and deposits.
+        const extended = cell && (Object.hasOwn(cell, 'pendingCount') || Object.hasOwn(cell, 'unknownCount'));
+        const extra = extended ? count(cell.pendingCount, schema.name, address) + count(cell.unknownCount, schema.name, address) : 0;
+        attentionExtras[address] = count(extra, schema.name, address);
+        attentionExtras.E18 += extra;
+      }
+      count(attentionExtras.E18, schema.name, 'E18');
+    }
     const inputCoords = coords(schema.inputs);
     // Validate the source payload before applying any mask. A provisional marker
     // must never hide a negative, fractional, absent or otherwise malformed count.
@@ -1522,7 +1536,7 @@
       if (!formulas[coord] || active.has(coord)) fail('dependencia inválida en ' + schema.name + '!' + coord + '.');
       active.add(coord);
       const children = coords(formulas[coord]).map(child => calculate(child, active));
-      values[coord] = children.includes(null) ? null : count(children.reduce((sum, child) => sum + child, 0), schema.name, coord);
+      values[coord] = children.includes(null) ? null : count(children.reduce((sum, child) => sum + child, attentionExtras[coord] || 0), schema.name, coord);
       active.delete(coord);
       return values[coord];
     };
@@ -1533,7 +1547,7 @@
       const label = rawValue(cells[coord]);
       if (label == null || label === '') {
         const row = coord.slice(1);
-        if (['B', 'C', 'D'].some(col => values[col + row] > 0)) fail('faltan nombres de proveedores con actividad.');
+        if (['B', 'C', 'D', 'E'].some(col => values[col + row] > 0)) fail('faltan nombres de proveedores con actividad.');
         labels[coord] = ''; continue;
       }
       if (typeof label !== 'string' || label.length > 120 || /[\x00-\x1f]/.test(label)) fail('nombre de proveedor inválido.');
@@ -1566,9 +1580,9 @@
       };
       for (const coord of Object.keys(formulas)) propagate(coord);
     }
-    return { values, formulas, labels, pending, issues };
+    return { values, formulas, labels, pending, issues, attentionExtras };
   }
-  function setCell(xml, coord, value, stringValue, originalCells) {
+  function setCell(xml, coord, value, stringValue, originalCells, formulaOverride) {
     const cell = originalCells[coord];
     let attrs = cell ? cell.attrs.replace(/\s+t="[^"]*"/g, '') : ' r="' + coord + '"';
     // Only a value changes: retain the exact original formula, style and other attributes.
@@ -1576,7 +1590,7 @@
     if (stringValue) body = '<is><t xml:space="preserve">' + escapeXml(value) + '</t></is>';
     else {
       const formula = cell && cell.inner.match(/<f\b[^>]*(?:\/>|>[\s\S]*?<\/f>)/);
-      body = (formula ? formula[0] : '') + '<v>' + (value === null ? '#N/A' : value) + '</v>';
+      body = (formulaOverride ? '<f>' + escapeXml(formulaOverride) + '</f>' : formula ? formula[0] : '') + '<v>' + (value === null ? '#N/A' : value) + '</v>';
     }
     const replacement = '<c' + attrs + (stringValue ? ' t="inlineStr"' : value === null ? ' t="e"' : '') + '>' + body + '</c>';
     if (cell) return xml.replace(cell.full, replacement);
@@ -1607,7 +1621,8 @@
     for (const [coord, value] of Object.entries(prepared.values)) {
       const formula = original[coord] && original[coord].inner.match(/<f\b[^>]*>([\s\S]*?)<\/f>/);
       if (formula && unescapeXml(formula[1]) !== 'SUM(' + prepared.formulas[coord] + ')') fail('fórmula inesperada en la plantilla.');
-      xml = setCell(xml, coord, value, false, original);
+      const extra = prepared.attentionExtras[coord];
+      xml = setCell(xml, coord, value, false, original, extra ? 'SUM(' + prepared.formulas[coord] + ')+' + extra : undefined);
     }
     for (const [coord, label] of Object.entries(prepared.labels)) if (label) xml = setCell(xml, coord, label, true, original);
     const oldTitle = titleText(original[schema.title], sharedStrings);

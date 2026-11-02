@@ -47,15 +47,15 @@ assert.deepEqual([report.summary.received,report.summary.approved,report.summary
 assert.equal(cell(report,SHEETS.loan,'B6').value,5);assert.equal(cell(report,SHEETS.loan,'C6').value,2);assert.equal(cell(report,SHEETS.loan,'D6').value,5);
 assert.equal(cell(report,SHEETS.loan,'E6').value,12);assert.equal(cell(report,SHEETS.loan,'E18').value,12);assert.equal(cell(report,SHEETS.loan,'E18').sourceIds.length,12,'attention totals preserve each counted action');
 assert.equal(cell(report,SHEETS.loanMonth,'B9',1).value,1);assert.equal(cell(report,SHEETS.loanMonth,'B10',1).value,0);assert.equal(cell(report,SHEETS.loanMonth,'B8',1).value,1);
-assert.equal(cell(report,SHEETS.discount,'B6').value,2);assert.equal(cell(report,SHEETS.discount,'C6').value,1);assert.equal(cell(report,SHEETS.discount,'B17').value,1);
+assert.equal(cell(report,SHEETS.discount,'B6').value,3);assert.equal(cell(report,SHEETS.discount,'C6').value,1);assert.equal(cell(report,SHEETS.discount,'B17').value,1);
 assert.equal(cell(report,SHEETS.discountMonth,'C13',1).value,1);assert.equal(cell(report,SHEETS.discountMonth,'C9',1).value,0,'retiree loan belongs to 581, never voluntary savings');
-assert.equal(report.coverage.zeroInstallmentsExcluded,1);assert.equal(report.coverage.scheduledInstallments,1);assert.equal(report.coverage.paidInstallments,3);
+assert.equal(report.coverage.zeroInstallmentsExcluded,0);assert.equal(report.coverage.zeroInstallmentsIncluded,1);assert.equal(report.coverage.scheduledInstallments,1);assert.equal(report.coverage.paidInstallments,4);
 assert.equal(report.issues.filter(x=>x.code==='INSTALLMENT_COLLISION').length,1);assert(!report.issues.some(x=>x.severity==='error'));
 assert.deepEqual(cell(report,SHEETS.membership,'B7'),cell(report,SHEETS.financing,'B7'));
 assert.equal(cell(report,SHEETS.membership,'E7').value,3);assert.equal(cell(report,SHEETS.membership,'D18').value,2);assert.equal(cell(report,SHEETS.membershipMonth,'E18',2).value,3,'membership attention follows B+C, excluding deposits');
 assert.equal(cell(report,SHEETS.membershipMonth,'A12',2).value,'Bud Tv Ultra');assert.equal(cell(report,SHEETS.membershipMonth,'A13',2).value,'Diesgas');
 assert.equal(cell(report,SHEETS.membershipMonth,'B12',2).value,1);assert.equal(cell(report,SHEETS.membershipMonth,'C13',2).value,1);assert.equal(cell(report,SHEETS.membershipMonth,'B11',2).value,0,'Bud TV never becomes CineStar');
-assert.equal(cell(report,SHEETS.discount,'B6').sourceIds.length,2,'coincident original operations remain separately traceable');
+assert.equal(cell(report,SHEETS.discount,'B6').sourceIds.length,3,'coincident and zero-amount original operations remain separately traceable');
 for(const sheet of Object.values(report.sheets))for(const c of [...Object.values(sheet.cells),...Object.values(sheet.months).flatMap(m=>Object.values(m.cells))])for(const id of c.sourceIds)assert(report.records.some(r=>r.id===id));
 
 const collision=build([request('same','Caja Chica','2026-01-01','Aprobado'),request('same','Caja Chica','2026-01-01','Aprobado')]);

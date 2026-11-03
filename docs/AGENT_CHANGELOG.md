@@ -4487,3 +4487,5 @@ Production closure H-CASH-FLOW-SOURCE-PARITY-001: PASS on sutiapp.com; real Exce
 ## H-CASH-FLOW-EXCEL-CLEAN-001 ? 2026-11-02
 
 Owner requests empty cells instead of unavailable/not-applicable labels and no Excel cell notes. Exporter-only change: remove comments/VML/relationships; preserve real zeros, numeric matrix and all six source/calculation sheets exactly. Focused tests, real isolated download, independent XLSX load and public build PASS. Backend, Google and financial records unchanged. See docs/audits/H-CASH-FLOW-EXCEL-CLEAN-001.md; production verification follows publication.
+
+H-CASH-FLOW-EXCEL-CLEAN-001 publication: requested blank cells and removal of Excel comments published as e687bd0. Build, focused tests and numeric/source-sheet equivalence PASS. Final production verification BLOCKED: two CASH_FLOW HTTP 546 responses; read-only server logs confirm CPUTime shutdowns. Backend v12 unchanged, no financial writes. See docs/audits/H-CASH-FLOW-EXCEL-CLEAN-001.md and docs/qa/evidence/cash-flow-excel-clean/publication.json.

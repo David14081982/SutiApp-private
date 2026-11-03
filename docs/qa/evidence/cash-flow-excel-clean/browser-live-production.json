@@ -1,0 +1,49 @@
+{
+  "status": "FAIL",
+  "mode": "production",
+  "stage": "CASH_FLOW_QUERY",
+  "errorCode": "CASH_FLOW_HTTP_FAILED",
+  "errorType": "Error",
+  "ui": {
+    "authPhase": "authenticated",
+    "adminPhase": "authorized",
+    "emailInputs": 0,
+    "passwordInputs": 0,
+    "sidebarGroups": [
+      "reportes_jc",
+      "inversores",
+      "sutifinanzas",
+      "access_control",
+      "people",
+      "finance",
+      "savings",
+      "commerce",
+      "content",
+      "settings",
+      "data"
+    ],
+    "reportsVisible": false,
+    "cashFlowVisible": true
+  },
+  "authenticationRequests": [
+    {
+      "status": 200
+    }
+  ],
+  "reportRequests": [
+    {
+      "action": "LOAD",
+      "status": 200
+    },
+    {
+      "action": "CASH_FLOW",
+      "status": 546
+    }
+  ],
+  "blockedWriteAttempts": 0,
+  "blockedEndpoints": [],
+  "pageErrors": 0,
+  "financialWrites": 0,
+  "persistedTokens": 0,
+  "persistedPersonalRecords": 0
+}

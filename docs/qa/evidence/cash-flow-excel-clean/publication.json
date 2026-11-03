@@ -1,0 +1,31 @@
+{
+  "published": true,
+  "commit": "e687bd0a024406a44bf5098d641fdcef8076af8d",
+  "bundleSha256": "523f77325b6b863a71b588833f8e77311b1f5997d424be7fd3e53fcad0eced3f",
+  "pages": {
+    "run": 41572772507,
+    "status": "success"
+  },
+  "membershipContract": {
+    "run": 41572772464,
+    "status": "success"
+  },
+  "isolatedVerification": "PASS",
+  "productionVerification": "BLOCKED",
+  "downloadVerified": false,
+  "failedAttempts": 2,
+  "stage": "CASH_FLOW_QUERY",
+  "backendUnchanged": true,
+  "backendVersion": 12,
+  "resourceFailures": [
+    {
+      "timestamp": "2026-11-03T03:34:44.160000",
+      "reason": "CPUTime"
+    },
+    {
+      "timestamp": "2026-11-03T03:33:58.279000",
+      "reason": "CPUTime"
+    }
+  ],
+  "financialWrites": 0
+}

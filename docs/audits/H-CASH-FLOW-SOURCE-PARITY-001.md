@@ -42,3 +42,21 @@ Evidence: docs/qa/evidence/cash-flow-source-parity/browser-live-candidate.json; 
 Known limitations: existing incomplete contract inputs still protect their components, while gross original B remains visible. Past months do not represent future scheduled cash. Existing investor history/review limitations are preserved, not replaced by invented values. Source sheets are the actual authorized columns/records used by this query, not unrestricted database dumps. Google/Supabase are independent services; screen and workbook share one response, not a claimed cross-service transaction.
 
 Architect review (same agent, separate read-only pass; no independent agent claimed): APPROVED for the focal implementation and candidate. Source/financial invariants preserved; no unrelated workspace changes included. Next instruction: publish the frozen manifest, verify the resulting bundle and an actual Excel download at sutiapp.com, and record the production result before final closure. This continuation is authorized by the owner's publication request, not by an invented task orchestrator.
+
+## Production closure
+
+H-CASH-FLOW-SOURCE-PARITY-001 RESULT
+
+Status: PASS.
+Files changed: the isolated 29-file release manifest; runtime limited to three reports-jc modules, the Excel exporter and generated bundle/version strings; one additive reader migration and exact recovery; tests and audit/evidence. Final follow-up changes evidence/documentation only.
+Source-of-truth verdict: PASS. Original Google quotas retained; Supabase remains authoritative for savings/investors. Source bases and displayed matrix come from the same authorized response.
+Invariant verdict: PASS. Existing financial inputs, Google, immutable engine, count-report rules and original template unchanged.
+Build: PASS, public build and GitHub Pages deployment 41570610544 for 2456d5eba7b6b9d935b007f555a6ed5d592132f7. Membership regression workflow 41570610114 PASS.
+Tests: PASS, candidate and production real H005_TEST browser queries and actual downloads. Production 2026-11-03T03:13:12.943Z: 1,236 screen/Excel cells and 9,999 source quotas matched; all numeric values in five source bases, calculation components and percentages matched. Eight original report tabs retained. Download inspected and private copy deleted.
+Security: PASS. Authorized reader/context checks and JWT retained; zero financial writes, API mocks, blocked business-write attempts or browser errors. No tokens or personal rows persisted in evidence.
+Legacy impact: report interpretation only; no Google or business-table writes. The unchanged past allocation and original future B are distinguished from undetermined components.
+Unexpected files changed: none in the published manifest. Existing workspace modifications excluded. To restore download space, six retired generated sites and one clean, retired report checkout were removed after path/clean-state guards; the checkout commit 72f48a67939deb11351e3a934a9c17a85dd79232 was verified on GitHub and its sole ignored test artifact preserved.
+Known limitations: those listed above remain explicit in cells and traceability. Resource log query from Edge v12 activation through final verification returned no new CPU/memory-limit errors; this is observed verification, not a guarantee against future infrastructure incidents.
+Evidence: browser-live-production.json and publication.json under docs/qa/evidence/cash-flow-source-parity. Published bundle SHA256 8b212dd2bb9705e61247cdc610b9c32c3297a3d4754fa0268b60952907772395.
+
+Final architect review: APPROVED against the production evidence and isolated diff. Next instruction: close this H; no additional business change or source correction is authorized or required by this review.

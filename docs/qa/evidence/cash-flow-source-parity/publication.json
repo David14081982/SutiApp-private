@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "sourceCommit": "2456d5eba7b6b9d935b007f555a6ed5d592132f7",
+  "bundleSha256": "8b212dd2bb9705e61247cdc610b9c32c3297a3d4754fa0268b60952907772395",
+  "backendVersion": 12,
+  "backendJwt": true,
+  "pagesWorkflow": {
+    "id": 41570610544,
+    "conclusion": "success"
+  },
+  "membershipWorkflow": {
+    "id": 41570610114,
+    "conclusion": "success"
+  },
+  "resourceObservation": {
+    "version": 12,
+    "verifyJwt": true,
+    "cloudStatus": "ACTIVE",
+    "from": "2026-11-03T03:03:34.505Z",
+    "resourceErrors": 0,
+    "resourceErrorRows": []
+  },
+  "financialWrites": 0,
+  "originalTemplateUnchanged": true,
+  "unchangedCompiledModules": 174,
+  "productionEvidence": "browser-live-production.json"
+}

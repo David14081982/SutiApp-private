@@ -19,13 +19,14 @@ function fixture(){
 }
 async function verifyXlsx(bytes){
  const zip=await Zip.loadAsync(bytes),workbook=await zip.file('xl/workbook.xml').async('string'),main=await zip.file('xl/worksheets/sheet1.xml').async('string'),detail=await zip.file('xl/worksheets/sheet7.xml').async('string'),notes=await zip.file('xl/worksheets/sheet7.xml').async('string'),styles=await zip.file('xl/styles.xml').async('string');
+ assert(!Object.keys(zip.files).some(n=>/comments|\.vml$/.test(n)));assert.doesNotMatch(main,/No aplica|Sin determinar|legacyDrawing/);
  assert.match(workbook,/Flujo mensual/);assert.match(workbook,/Base PV2/);assert.match(workbook,/Base Contratos/);assert.doesNotMatch(workbook,/Detalle|Notas/);assert.match(main,/xSplit="1" ySplit="4"/);assert.match(main,/<v>-123.45<\/v>/);assert.match(detail,/<v>0.8<\/v>/);assert.match(detail,/<v>0.185<\/v>/);assert.match(detail,/<v>0.015<\/v>/);assert.match(detail,/LOAN-TEST/);assert.match(detail,/CONTRACTUAL_ALLOCATION|Distribución contractual/);assert.match(notes,/Subtotal identificado/);assert.match(notes,/Importe sin determinar; no equivale a cero/);assert.match(notes,/Pendiente vencido/);assert.match(styles,/\[Red\]/);assert.match(notes,/t="inlineStr"[^>]*><is><t[^>]*>=HYPERLINK/);
  for(const xml of [main,detail,notes])assert.doesNotMatch(xml,/<f[\s>]/,'No formulas are invented from incomplete data');
  assert.match(notes,/test:record:1 · Resta × -1/);assert.match(detail,/Referencia del registro completo/);assert.equal((detail.match(/>C\u00e1lculo</g)||[]).length,2,'Subtotal relationships must not clone financial records');
  const rowXml=label=>[...main.matchAll(/<row\b[^>]*>[\s\S]*?<\/row>/g)].map(m=>m[0]).find(r=>r.includes(label));
  assert.equal((rowXml('Efectivo disponible').match(/<v>/g)||[]).length,0,'Unknown must not become numeric zero');assert.equal((rowXml('Flujo neto mensual').match(/<v>/g)||[]).length,12,'Partial subtotal is exported with explicit state and notes');
  for(const [,label]of original)assert(main.includes(label),'Original concept retained: '+label);
- return {xlsx:true,original17Concepts:true,unknownExplicitWithComment:true,partialSubtotalVisible:true,typedNegative:true,typedPercentages:true,noInventedFormulas:true,formulaInjectionText:true};
+ return {xlsx:true,original17Concepts:true,unknownBlankWithoutComments:true,partialSubtotalVisible:true,typedNegative:true,typedPercentages:true,noInventedFormulas:true,formulaInjectionText:true};
 }
 async function main(){
  fs.mkdirSync(out,{recursive:true});const report=fixture(),built=await exporter.build(report);const checks=await verifyXlsx(built.bytes);fs.writeFileSync(path.join(out,'synthetic-consolidated.xlsx'),built.bytes);

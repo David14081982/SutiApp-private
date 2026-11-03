@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "sourceAndCalculationSheetsByteIdentical": 6,
+  "numericMatrixIdentical": true,
+  "actualZeroPreserved": true,
+  "noCellNotes": true
+}

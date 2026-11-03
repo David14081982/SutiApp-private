@@ -35,8 +35,8 @@ test('requested group order and Caja resource name are shared by UI payload and 
  assert(report.rows.some(r=>r.section==='Caja de Ahorro · Recurso de ahorradores'));
  const zip=await Zip.loadAsync((await exporter.build(report)).bytes),book=await zip.file('xl/workbook.xml').async('string'),main=await zip.file('xl/worksheets/sheet1.xml').async('string');
  assert.equal((book.match(/<sheet /g)||[]).length,7);assert.doesNotMatch(book,/name="(?:Detalle|Notas)"/);assert.doesNotMatch(main,/Bolsas separadas/);assert.match(main,/ySplit="4"/);
- assert(main.indexOf('>Inversores<')<main.indexOf('>Ahorro Voluntario<'));assert.match(main,/No aplica/);
- const comments=await zip.file('xl/comments/flow.xml').async('string');assert.equal((comments.match(/<comment /g)||[]).length,report.rows.length*12);
+ assert(main.indexOf('>Inversores<')<main.indexOf('>Ahorro Voluntario<'));assert.doesNotMatch(main,/No aplica|Sin determinar/);
+ assert(!Object.keys(zip.files).some(n=>/comments|\.vml$/.test(n)));assert.doesNotMatch(main,/legacyDrawing/);
  for(let i=1;i<=7;i++)assert.doesNotMatch(await zip.file('xl/worksheets/sheet'+i+'.xml').async('string'),/<f[\s>]/);
 });
 test('bases preserve original source references and identifiers without unrelated private fields',async()=>{

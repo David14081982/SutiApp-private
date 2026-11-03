@@ -176,10 +176,15 @@ export function computeContractCashFlow({contract,rows,asOf}){
   const decorate=(p,capture,basis)=>{const r=byS.get(p.S);return {...p,date:r.date,sourceRow:r.sourceRow,capture,basis,registeredAmount:r.B,adjusted:p.B!==r.B};};
   result.payments=actual.payments.map(p=>decorate(p,'CORROBORATED','REGISTERED_B_CONTRACTUAL_ALLOCATION'));
   result.recovered=actual.recovered;result.pending=actual.pending;
-  const proposals=new Map(actual.forecast.map(p=>[p.S,p.B]));
-  // A second pure pass allocates the engine's forecast; it never enters recovered.
-  const projected=previewCorrection({contract:computationContract,rows:engineRows.map(r=>({...r,B:r.capture==='SCHEDULED'?(proposals.get(r.S)||0):r.B,capture:'CONFIRMED'}))});
-  result.forecast=projected.payments.filter(p=>byS.get(p.S).date>asOf&&byS.get(p.S).B>0).map(p=>decorate(p,'PROGRAMMED','DERIVED_FORECAST'));
+  // Allocate the registered schedule without substituting the engine's proposed B.
+  // A contradictory future schedule must not invalidate already recorded payments.
+  try{
+   const projected=engineRows.some(r=>r.capture==='SCHEDULED')?previewCorrection({contract:computationContract,rows:engineRows.map(r=>({...r,capture:'CONFIRMED'}))}):actual;
+   result.forecast=projected.payments.filter(p=>byS.get(p.S).date>asOf).map(p=>decorate(p,'PROGRAMMED','REGISTERED_B_CONTRACTUAL_ALLOCATION'));
+  }catch(error){
+   result.forecastReason=error.message;result.programmed=selected.filter(r=>r.date>asOf).map(r=>({...r,capture:'PROGRAMMED',basis:'REGISTERED_B',...unknown()}));
+   result.status='DETERMINED';return result;
+  }
   const future=sum(result.forecast);
   result.unassignedComponents={total:actual.pending.total-future.B,principal:actual.pending.principal-future.AD,interest:actual.pending.interest-future.AB,administration:actual.pending.administration-future.Z};
   result.unassignedPending=result.unassignedComponents.total;

@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "syntheticServiceOnly": true,
+  "externalRequests": 0,
+  "readOnlyCalls": true,
+  "months": 12,
+  "originalReportTabs": 8,
+  "originalControlsPreserved": true,
+  "partialAndUnknownDistinguished": true,
+  "sourceDetail": true,
+  "dialogKeyboardAndFocus": true,
+  "currentYearAndNext12Months": true,
+  "staleResponseDiscarded": true,
+  "contextMismatchRejected": true,
+  "sourceFailureClearsAmounts": true,
+  "mobileNoPageOverflow": true,
+  "stickyConceptColumn": true
+}

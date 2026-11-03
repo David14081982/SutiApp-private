@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "mode": "validate",
+  "migrationSha256": "d205b7cd12c998c39b34ef3af11ed42fad0f9087d04f50a7bcaf044b58b623eb",
+  "beforeHash": "5bf922aa77016e0453acc141227ed944",
+  "afterHash": "6ef708686d8887b3ad982df6de5a5bc7",
+  "sameResults": true,
+  "sameSecurity": true,
+  "rollbackVerified": true,
+  "financialWrites": 0
+}

@@ -4475,3 +4475,8 @@ sin aumentar límites globales. Backend reports-jc v8 verificado. Candidato real
 Pruebas focalizadas PASS, cero escrituras financieras; motor automático sin activar.
 La evidencia de publicación y comprobación final se registra en
 docs/qa/evidence/cash-flow-criteria. No se ejecutaron suites globales.
+
+
+## H-CASH-FLOW-SOURCE-PARITY-001 — 2026-11-02
+
+Owner-authorized report correction after the read-only parity audit. Preserve registered future Google B, requested Inversores/Ahorro order and Caja resource label. Screen and Excel share the same response; export original authorized source projections and derived traceability. Savings RPC extension preserves all original results and permissions, with tested recovery. No financial row or Google writes. Candidate real download: 1,236 cells, 9,999 quotas, all five numeric bases checked; 174 compiled modules preserved. See docs/audits/H-CASH-FLOW-SOURCE-PARITY-001.md and docs/qa/evidence/cash-flow-source-parity/. Frontend production verification follows the frozen release.

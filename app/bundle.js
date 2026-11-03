@@ -1765,10 +1765,11 @@
  const col=index=>{let result='';for(let n=index+1;n;n=Math.floor((n-1)/26))result=String.fromCharCode(65+(n-1)%26)+result;return result;};
  function cell(value,style=0){return {value,style};}
  function numeric(value,style=6){return cell(finite(value)?value:null,style);}
- function cellXml(item,row,index){const c=typeof item==='object'&&item!==null?item:cell(item),attrs=' r="'+col(index)+row+'" s="'+(c.style||0)+'"';if(c.value!=null&&!finite(c.value)&&String(c.value).length>32767)throw Error('Un texto de origen supera el límite de Excel; no se truncó información.');return c.value==null?'<c'+attrs+'/>':finite(c.value)?'<c'+attrs+'><v>'+c.value+'</v></c>':'<c'+attrs+' t="inlineStr"><is><t xml:space="preserve">'+xml(c.value)+'</t></is></c>';}
- function sheetXml(rows,{widths,merges=[],freeze=1,landscape=false,filter=false}){
+ function cellXml(item,row,index,numberStyle=0){const c=typeof item==='object'&&item!==null?item:cell(item,finite(item)?numberStyle:0);if(c.value==null&&!c.style)return '';const attrs=' r="'+col(index)+row+'" s="'+(c.style||0)+'"';if(c.value!=null&&!finite(c.value)&&String(c.value).length>32767)throw Error('Un texto de origen supera el límite de Excel; no se truncó información.');return c.value==null?'<c'+attrs+'/>':finite(c.value)?'<c'+attrs+'><v>'+c.value+'</v></c>':'<c'+attrs+' t="inlineStr"><is><t xml:space="preserve">'+xml(c.value)+'</t></is></c>';}
+ function sheetXml(rows,{widths,merges=[],freeze=1,landscape=false,filter=false,numberStyle=0}){
+  if(rows.length>1048576||widths.length>16384)throw Error('La base supera el límite de Excel; no se truncó información.');
   const lastCol=col(widths.length-1),lastRow=rows.length;
-  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="'+NS+'"><dimension ref="A1:'+lastCol+lastRow+'"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane xSplit="1" ySplit="'+freeze+'" topLeftCell="B'+(freeze+1)+'" activePane="bottomRight" state="frozen"/><selection pane="bottomRight" activeCell="B'+(freeze+1)+'" sqref="B'+(freeze+1)+'"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="23"/><cols>'+widths.map((w,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>').join('')+'</cols><sheetData>'+rows.map((r,i)=>'<row r="'+(i+1)+'"'+(r.height?' ht="'+r.height+'" customHeight="1"':'')+'>'+r.map((c,j)=>cellXml(c,i+1,j)).join('')+'</row>').join('')+'</sheetData>'+(filter?'<autoFilter ref="A1:'+lastCol+lastRow+'"/>':'')+(merges.length?'<mergeCells count="'+merges.length+'">'+merges.map(range=>'<mergeCell ref="'+range+'"/>').join('')+'</mergeCells>':'')+'<pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="'+(landscape?'landscape':'portrait')+'" fitToWidth="1" fitToHeight="0"/></worksheet>';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="'+NS+'"><dimension ref="A1:'+lastCol+lastRow+'"/><sheetViews><sheetView workbookViewId="0" showGridLines="0"><pane xSplit="1" ySplit="'+freeze+'" topLeftCell="B'+(freeze+1)+'" activePane="bottomRight" state="frozen"/><selection pane="bottomRight" activeCell="B'+(freeze+1)+'" sqref="B'+(freeze+1)+'"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="23"/><cols>'+widths.map((w,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+w+'" customWidth="1"/>').join('')+'</cols><sheetData>'+rows.map((r,i)=>'<row r="'+(i+1)+'"'+(r.height?' ht="'+r.height+'" customHeight="1"':'')+'>'+r.map((c,j)=>cellXml(c,i+1,j,numberStyle)).join('')+'</row>').join('')+'</sheetData>'+(filter?'<autoFilter ref="A1:'+lastCol+lastRow+'"/>':'')+(merges.length?'<mergeCells count="'+merges.length+'">'+merges.map(range=>'<mergeCell ref="'+range+'"/>').join('')+'</mergeCells>':'')+'<pageMargins left="0.3" right="0.3" top="0.4" bottom="0.4" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="'+(landscape?'landscape':'portrait')+'" fitToWidth="1" fitToHeight="0"/></worksheet>';
  }
  function stylesXml(){
   const fills=['none','gray125','152238','8B003B','233956','E8EDF4','DCE9F0','F7E5ED','FFF3D6'];
@@ -1779,12 +1780,11 @@
  function prepare(report){
   if(!report||!/^\d{4}-\d{2}$/.test(report.from||'')||!Array.isArray(report.months)||report.months.length!==12||!Array.isArray(report.rows)||report.rows.some(row=>!Array.isArray(row.cells)||row.cells.length!==12))throw Error('El reporte no contiene doce meses válidos.');
   if(report.rows.some(row=>row.cells.some(c=>!validSigns(c))))throw Error('Las relaciones del subtotal no son válidas; no se generó el archivo.');
-  const rows=[],merges=[],notes=[['Tipo','Referencia','Concepto','Mes','Estado','Subtotal identificado (no total)','Observación','Fuentes'].map(label=>cell(label,3))];
+  const rows=[],merges=[],comments=[],notes=[['Tipo','Referencia','Concepto','Mes','Estado','Subtotal identificado (no total)','Observación','Fuentes'].map(label=>cell(label,3))];
   function addNote(values){const parts=values.map(c=>typeof c.value==='string'?Array.from({length:Math.max(1,Math.ceil(c.value.length/24000))},(_,i)=>c.value.slice(i*24000,(i+1)*24000)):[c.value]),count=Math.max(...parts.map(p=>p.length));for(let i=0;i<count;i++)notes.push(values.map((c,j)=>cell(parts[j][i]??(i&&j<5?String(c.value??'')+' (continuación)':null),c.style)));}
   const line=(text,style,height=26)=>{const r=Array.from({length:13},(_,i)=>cell(i===0?text:'',style));r.height=height;rows.push(r);merges.push('A'+rows.length+':M'+rows.length);};
   line('SUTIAPP | FLUJO MENSUAL DE EFECTIVO',1,38);
   line('Consulta autorizada · Importes en MXN · Corte: '+report.asOf+' · Consulta: '+report.consultedAt,2,30);
-  line('Bolsas separadas. Los saldos y obligaciones no equivalen a efectivo disponible. Incluye subtotales identificados; revisa su estado en Notas. Sólo los importes sin datos se exportan en blanco.',2,40);
   rows.push([]);
   rows.push([cell('CONCEPTO FINANCIERO',3),...report.months.map(month=>cell(month.label,3))]);
   const orderedGroups=[...new Set(report.rows.map(row=>row.group))];
@@ -1803,7 +1803,8 @@
      if(finite(c.percentage))textNotes.push(c.percentage+'% del importe bruto del mismo fondo, mes y estado.');
      if(c.sourceSigns)textNotes.push('El detalle conserva importes de origen. Los factores indican cómo se suman o restan al subtotal de esta celda.');
      addNote([cell('Celda'),cell(col(index+1)+outputRow),cell(row.label),cell(report.months[index].key),cell(stateLabel(c)),numeric(c.status==='PARTIAL'?c.knownAmount:null,row.unit==='count'?7:6),cell(textNotes.join(' ')),cell((c.sourceIds||[]).map(id=>id+(c.sourceSigns&&finite(c.sourceSigns[id])?' · '+(c.sourceSigns[id]<0?'Resta':'Suma')+' × '+c.sourceSigns[id]:'')).join(' | '))]);
-     return isKnown?numeric(row.unit==='percent'?value/100:value,numStyle):cell(null,14);
+     comments.push({ref:col(index+1)+outputRow,row:outputRow-1,column:index+1,text:stateLabel(c)+'. '+textNotes.join(' ')+' Origen y relaciones en Base Cálculo, referencia '+col(index+1)+outputRow+'.'});
+     return isKnown?numeric(row.unit==='percent'?value/100:value,numStyle):cell(c.status==='NOT_APPLICABLE'?'No aplica':'Sin determinar',14);
     });
     rows.push([cell(row.label,labelStyle),...values]);
    }
@@ -1819,20 +1820,43 @@
    const basis=basisLabel(r.basis);
    details.push([cell(r.source),cell(r.sourceId||r.id),cell(report.rows.find(row=>row.id===r.kind)?.label||'Concepto sin clasificación disponible'),cell(r.loanId),cell(r.folio),cell(r.contractId),cell(r.installment),cell(r.period),cell(r.date),numeric(r.amount),numeric(r.registeredAmount),numeric(r.principal),numeric(r.interest),numeric(r.administration),...['principal','interest','administration'].map(k=>numeric(finite(r.percentages?.[k])?r.percentages[k]/100:null,8)),cell(stateLabel(r)),cell(basis),cell(r.id),cell(item.parentRecordId)]);
   }
-  return {rows,merges,notes,details};
+  return {rows,merges,notes,details,comments};
+ }
+ function baseSheets(report,data){
+  const source=report.sourceBases,names=['Base PV2','Base Solicitudes','Base Ahorro','Base Inversores','Base Contratos'];
+  if(source?.version!==1||source.consultedAt!==report.consultedAt||source.savingsInputsAvailable!==true||!Array.isArray(source.tables)||source.tables.length!==names.length||names.some((n,i)=>source.tables[i]?.name!==n))throw Error('Actualiza la consulta para descargar las bases de origen completas.');
+  const bases=source.tables.map(t=>{
+   if(!Array.isArray(t.columns)||!t.columns.length||!Array.isArray(t.rows)||t.rows.some(r=>!Array.isArray(r)||r.length!==t.columns.length||r.some(v=>v!==null&&typeof v!=='string'&&!finite(v))))throw Error('La base de origen no es válida.');
+   return {name:t.name,rows:[[cell(t.authority+' · '+t.classification+' · Corte '+report.asOf+' · Consulta '+report.consultedAt,2)],t.columns.map(v=>cell(v,3)),...t.rows],options:{widths:t.columns.map((_,i)=>i<2?30:22),freeze:2,landscape:true,numberStyle:6}};
+  });
+  // Source rows stay once in their base. This separate, explicitly derived base
+  // keeps each calculation and the signs/links of its displayed subtotal.
+  const width=Math.max(data.details[0].length,data.notes[0].length)+1;
+  const calc=[[cell('DERIVADO · Cálculos y relaciones · '+report.consultedAt,2)],
+   [cell('Tipo',3),...data.details[0]],...data.details.slice(1).map(r=>[cell('Cálculo'),...r]),
+   [cell('Relaciones de celdas',3),...data.notes[0]],...data.notes.slice(1).map(r=>[cell('Relación / incidencia'),...r])];
+  bases.push({name:'Base Cálculo',rows:calc,options:{widths:Array(width).fill(26),freeze:2,landscape:true}});return bases;
+ }
+ function addComments(zip,comments){
+  const head='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  zip.file('xl/comments/flow.xml',head+'<comments xmlns="'+NS+'"><authors><author>Reportes JC</author></authors><commentList>'+comments.map(c=>'<comment ref="'+c.ref+'" authorId="0"><text><t xml:space="preserve">'+xml(c.text)+'</t></text></comment>').join('')+'</commentList></comments>');
+  const shapes=comments.map((c,i)=>'<v:shape id="_x0000_s'+(1025+i)+'" type="#_x0000_t202" style="position:absolute;width:350pt;height:110pt;visibility:hidden" fillcolor="#ffffe1" o:insetmode="auto"><v:fill color2="#ffffe1"/><v:shadow on="t" color="black" obscured="t"/><v:path o:connecttype="none"/><v:textbox style="mso-direction-alt:auto"><div style="text-align:left"/></v:textbox><x:ClientData ObjectType="Note"><x:MoveWithCells/><x:SizeWithCells/><x:AutoFill>False</x:AutoFill><x:Row>'+c.row+'</x:Row><x:Column>'+c.column+'</x:Column></x:ClientData></v:shape>').join('');
+  zip.file('xl/drawings/flow.vml','<xml xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><o:shapelayout v:ext="edit"><o:idmap v:ext="edit" data="1"/></o:shapelayout><v:shapetype id="_x0000_t202" coordsize="21600,21600" o:spt="202" path="m,l,21600r21600,l21600,xe"><v:stroke joinstyle="miter"/><v:path gradientshapeok="t" o:connecttype="rect"/></v:shapetype>'+shapes+'</xml>');
+  zip.file('xl/worksheets/_rels/sheet1.xml.rels',head+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rIdComments" Type="'+REL+'/comments" Target="../comments/flow.xml"/><Relationship Id="rIdVml" Type="'+REL+'/vmlDrawing" Target="../drawings/flow.vml"/></Relationships>');
  }
  async function build(report){
   const data=prepare(report),Zip=root.JSZip||(typeof module!=='undefined'&&module.exports?require('./vendor/jszip-3.10.1/jszip.min.js'):null);
   if(!Zip)throw Error('El componente local de Excel no está disponible.');
-  const zip=new Zip(),names=['Flujo mensual','Detalle','Notas'],xmlHead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const bases=baseSheets(report,data),zip=new Zip(),names=['Flujo mensual',...bases.map(b=>b.name)],xmlHead='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
   zip.file('[Content_Types].xml',xmlHead+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+names.map((_,i)=>'<Override PartName="/xl/worksheets/sheet'+(i+1)+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')+'</Types>');
   zip.file('_rels/.rels',xmlHead+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="'+REL+'/officeDocument" Target="xl/workbook.xml"/></Relationships>');
   zip.file('xl/workbook.xml',xmlHead+'<workbook xmlns="'+NS+'" xmlns:r="'+REL+'"><bookViews><workbookView/></bookViews><sheets>'+names.map((name,i)=>'<sheet name="'+name+'" sheetId="'+(i+1)+'" r:id="rId'+(i+1)+'"/>').join('')+'</sheets></workbook>');
-  zip.file('xl/_rels/workbook.xml.rels',xmlHead+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+names.map((_,i)=>'<Relationship Id="rId'+(i+1)+'" Type="'+REL+'/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')+'<Relationship Id="rId4" Type="'+REL+'/styles" Target="styles.xml"/></Relationships>');
+  zip.file('xl/_rels/workbook.xml.rels',xmlHead+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+names.map((_,i)=>'<Relationship Id="rId'+(i+1)+'" Type="'+REL+'/worksheet" Target="worksheets/sheet'+(i+1)+'.xml"/>').join('')+'<Relationship Id="rIdStyles" Type="'+REL+'/styles" Target="styles.xml"/></Relationships>');
   zip.file('xl/styles.xml',stylesXml());
-  zip.file('xl/worksheets/sheet1.xml',sheetXml(data.rows,{widths:[56,...Array(12).fill(18)],merges:data.merges,freeze:5,landscape:true}));
-  zip.file('xl/worksheets/sheet2.xml',sheetXml(data.details,{widths:[28,30,45,18,18,24,12,16,16,19,19,19,19,19,15,15,18,22,46,34,34],filter:true,landscape:true}));
-  zip.file('xl/worksheets/sheet3.xml',sheetXml(data.notes,{widths:[28,24,48,18,25,27,100,65],filter:true,landscape:true}));
+  zip.file('xl/worksheets/sheet1.xml',sheetXml(data.rows,{widths:[56,...Array(12).fill(18)],merges:data.merges,freeze:4,landscape:true}).replace('<worksheet xmlns="'+NS+'"','<worksheet xmlns:r="'+REL+'" xmlns="'+NS+'"').replace('</worksheet>','<legacyDrawing r:id="rIdVml"/></worksheet>'));
+  for(const [i,b]of bases.entries())zip.file('xl/worksheets/sheet'+(i+2)+'.xml',sheetXml(b.rows,b.options));
+  addComments(zip,data.comments);
+  zip.file('[Content_Types].xml',(await zip.file('[Content_Types].xml').async('string')).replace('</Types>','<Default Extension="vml" ContentType="application/vnd.openxmlformats-officedocument.vmlDrawing"/><Override PartName="/xl/comments/flow.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"/></Types>'));
   return {bytes:await zip.generateAsync({type:'uint8array',compression:'DEFLATE'}),filename:'SutiApp_Flujo_Efectivo_'+report.from+'_12_meses.xlsx'};
  }
  async function download(report,options={}){

@@ -32,7 +32,7 @@ async function main(){
   await page.evaluate(()=>{window.__root=ReactDOM.createRoot(document.getElementById('root'));window.__mount=key=>window.__root.render(React.createElement(ReportsJcAdminModule,{key,app:{},onBack:()=>{}}));window.__mount('first');});
   await page.getByRole('tab',{name:'Préstamos Concentrado',exact:true}).waitFor();assert.equal(await page.getByRole('tab').count(),8);
   await page.getByRole('button',{name:'Reporte Flujo de efectivo',exact:true}).click();
-  const table=page.getByRole('table',{name:'Flujo de efectivo de Ahorro y Caja de Ahorro'});await table.waitFor();
+  const table=page.getByRole('table',{name:'Flujo de efectivo consolidado'});await table.waitFor();
   if(process.argv.includes('--labels-only')){
    assert.match(await table.locator('[data-status=PENDING]').first().innerText(),/Pendiente autorizado/);
    await table.locator('[data-cash-flow-row=contributions] button').first().click();
@@ -47,9 +47,9 @@ async function main(){
    const result={status:'PASS',pendingLabel:true,recordKindsTranslated:true,unassignedKindsTranslated:true,overdueDateDistinguished:true,adjustmentNotCashNote:true,externalRequests:0};fs.writeFileSync(path.join(output,'labels-result.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));return;
   }
   assert.equal(await table.locator('thead th').count(),13);assert.equal(await table.locator('[data-cash-flow-row]').count(),12);
-  assert.match(await table.innerText(),/Ahorro Voluntario/);assert.match(await table.innerText(),/Préstamos de Caja de Ahorro/);
+  assert.match(await table.innerText(),/Ahorro Voluntario/i);assert.match(await table.innerText(),/Préstamos de Caja de Ahorro/i);
   assert.equal(await table.locator('[data-status=PARTIAL]').first().innerText(),'$220.00\nSubtotal identificado');
-  assert.match(await table.locator('[data-status=UNAVAILABLE]').first().innerText(),/^Por determinar/);
+  assert.match(await table.locator('[data-status=UNAVAILABLE]').first().innerText(),/^Sin determinar/);
   assert.match(await table.locator('[data-status=SCHEDULED]').first().innerText(),/Programado/);
   const firstCell=table.locator('[data-cash-flow-row=contributions] button').first();await firstCell.click();
   const dialog=page.getByRole('dialog');await dialog.waitFor();assert.match(await dialog.innerText(),/fixture-source-1/);assert.match(await dialog.innerText(),/savings_movements/);

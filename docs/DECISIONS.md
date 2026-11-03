@@ -1578,3 +1578,8 @@ los adelantos. No se reclasifican proyecciones como cobros ni se duplica un
 retiro al mostrar su componente de rendimiento. Esta decisión sólo cambia
 el criterio de consulta del reporte: no activa el motor, no altera Apps Script,
 triggers, cuotas, saldos ni autoridades productivas.
+
+
+## H-CASH-FLOW-SOURCE-PARITY-001 — 2026-11-02
+
+Owner-authorized report correction after the read-only parity audit. Preserve registered future Google B, requested Inversores/Ahorro order and Caja resource label. Screen and Excel share the same response; export original authorized source projections and derived traceability. Savings RPC extension preserves all original results and permissions, with tested recovery. No financial row or Google writes. Candidate real download: 1,236 cells, 9,999 quotas, all five numeric bases checked; 174 compiled modules preserved. See docs/audits/H-CASH-FLOW-SOURCE-PARITY-001.md and docs/qa/evidence/cash-flow-source-parity/. Frontend production verification follows the frozen release.

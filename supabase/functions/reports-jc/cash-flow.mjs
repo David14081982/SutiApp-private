@@ -97,6 +97,44 @@ export function buildCashFlow({from,loans,savings,consultedAt=new Date().toISOSt
 }
 
 async function context(client){const auth=await client.auth.getUser();if(auth.error||!auth.data?.user)throw new ReportError('AUTH_REQUIRED');const r=await client.rpc('get_admin_reports_jc_context');if(r.error||!r.data||r.data.actor!==auth.data.user.id||(r.data.session!==null&&typeof r.data.session!=='string'))throw new ReportError('ADMIN_DENIED');return r.data;}
+
+// Export the same inputs that produced this response, never a later source query.
+export function cashFlowSourceBases(source,savings,investors,approvals,resolved,consultedAt){
+ const tables=[],loanKeys=new Set();
+ const included=row=>['loanSavings','pettyCash','sutiexpress','advance'].includes(fundGroup(row[6]));
+ for(const row of source.loans.slice(1))if(included(row))loanKeys.add(JSON.stringify([text(row[2]),text(row[3])]));
+ const letter=n=>{let s='';for(n++;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s;};
+ function google(name,rows,cols,accept){
+  const ids=name==='Base PV2'?[2,3]:[0,1];
+  tables.push({name,authority:'Google · SutiApp Final',classification:'Valores originales consultados; identificadores como texto',columns:['Referencia','Fila',...cols.map(i=>letter(i)+' · '+(rows[0]?.[i]||'Columna '+letter(i)))],rows:rows.slice(1).flatMap((row,i)=>accept(row)?[[name==='Base PV2'?'pv2:'+(i+2):'requests:'+(i+2),i+2,...cols.map(c=>row[c]==null?null:ids.includes(c)?String(row[c]):row[c])]]:[])});
+ }
+ google('Base PV2',source.loans,[0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,18,30,32],r=>included(r)||loanKeys.has(JSON.stringify([text(r[2]),text(r[3])])));
+ google('Base Solicitudes',source.requests,[0,1,3,4,5,6,7,8,9],r=>loanKeys.has(JSON.stringify([text(r[0]),text(r[1])])));
+ function objectTable(name,authority,classification,collections){
+  const rows=[],fields=new Set(['tipo']);
+  const flat=(value,prefix='',out={})=>{for(const [k,v]of Object.entries(value||{})){const key=prefix+k;if(Array.isArray(v))continue;if(v&&typeof v==='object')flat(v,key+'.',out);else {out[key]=typeof v==='boolean'?(v?'true':'false'):v??null;fields.add(key);}}return out;};
+  for(const [type,items]of Object.entries(collections))for(const item of items||[])rows.push({tipo:type,...flat(item)});
+  const columns=[...fields];tables.push({name,authority,classification,columns,rows:rows.map(r=>columns.map(k=>r[k]??null))});
+ }
+ objectTable('Base Ahorro','Supabase · get_admin_reports_jc_cash_flow','Entradas oficiales de la consulta; saldos por cuenta identificados como derivados',{
+  ...savings.source_bases,evento:savings.events,saldo_mensual:savings.balances
+ });
+ const inv=investors||{};
+ objectTable('Base Inversores','Supabase · Inversores','Contratos, movimientos y obligaciones registrados; cortes derivados separados',{
+  contrato:inv.contracts,movimiento:inv.movements,obligacion:inv.obligations,saldo:inv.balances,revision:inv.reviews,
+  condicion:(inv.contracts||[]).flatMap(c=>(c.terms||[]).map(t=>({...t,contract_id:c.id}))),
+  saldo_por_contrato:(inv.balances||[]).flatMap(b=>(b.details||[]).map(d=>({...d,month:b.month,kind:b.kind})))
+ });
+ const selectedApprovals=new Set(resolved.contracts.flatMap(c=>[c.evidence?.requestId,c.evidence?.reference].filter(Boolean)));
+ const financialKeys=['amount','interest','administrativeFeeTotal','administrativeFeePerPayment','total','paymentPerPeriod','paymentCount','rate','fund'];
+ const snapshots=(approvals?.snapshots||[]).filter(s=>selectedApprovals.has(s.id)||selectedApprovals.has(s.reference)).map(s=>({id:s.id,reference:s.reference,numeroControl:s.numeroControl,createdOn:s.createdOn,category:s.category,financial:Object.fromEntries(financialKeys.filter(k=>Object.hasOwn(s.financial||{},k)).map(k=>[k,s.financial[k]]))}));
+ objectTable('Base Contratos','Google y Supabase · condiciones utilizadas','Aprobaciones registradas y contratos derivados identificados por tipo',{
+  aprobacion:snapshots,contrato_calculado:resolved.contracts,
+  calendario_calculado:resolved.contracts.flatMap(c=>c.schedule.map(s=>({...s,C:c.C,D:c.D}))),
+  contrato_sin_desglose:resolved.protectedLoans
+ });
+ return {version:1,consultedAt,savingsInputsAvailable:!!savings.source_bases,tables};
+}
 export async function loadCashFlow(body,client,readSource,now=()=>new Date().toISOString()){
  if(!body||body.action!=='CASH_FLOW'||!validFrom(body.from)||Object.keys(body).some(k=>!['action','from'].includes(k)))throw new ReportError('REQUEST_INVALID');
  const before=await context(client),consultedAt=now();
@@ -113,5 +151,6 @@ export async function loadCashFlow(body,client,readSource,now=()=>new Date().toI
  const data=consolidateCashFlow({base,loans:source.loans,...resolved,contractCoverage:resolved.coverage,
   investorsSource:investors.error?null:investors.data,sourceErrors:{contracts:approvals.error?'CONTRACT_SOURCE_UNAVAILABLE':null,investors:investors.error?'INVESTOR_SOURCE_UNAVAILABLE':null}}),after=await context(client);
  if(JSON.stringify(before)!==JSON.stringify(after))throw new ReportError('CONTEXT_CHANGED');
+ data.sourceBases=cashFlowSourceBases(source,r.data,investors.error?null:investors.data,approvals.error?null:approvals.data,resolved,consultedAt);
  return {context:after,data};
 }

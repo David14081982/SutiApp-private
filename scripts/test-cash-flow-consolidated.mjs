@@ -38,13 +38,13 @@ test('cash recovered and syndicate margins keep savings fund separate from inves
  assert.equal(cell(r,'union_interest').amount,100);assert.equal(cell(r,'union_savings_interest').amount,200);assert.equal(cell(r,'union_admin').amount,15);assert.equal(cell(r,'union_savings_admin').amount,15);
  assert.equal(cell(r,'cash_in').amount,1830);assert.equal(cell(r,'loans_interest_total').amount,300);assert.equal(cell(r,'cash_out').amount,3000);
 });
-test('950 partial and correction use same source once, forecasts are derived and not cash',()=>{
- const f=fixture({B:[950,1215]}),before=JSON.stringify(f),r=report([f]);assert.equal(JSON.stringify(f),before);assert.equal(cell(r,'loan_recovered').amount,950);assert.equal(cell(r,'loan_scheduled',1).amount,1480);
- const future=r.records.find(x=>x.kind==='loan_scheduled');assert.equal(future.registeredAmount,1215);assert.equal(future.basis,'DERIVED_FORECAST');assert.equal(future.status,'SCHEDULED');
+test('950 partial does not replace the registered future cuota with a catch-up forecast',()=>{
+ const f=fixture({B:[950,1215]}),before=JSON.stringify(f),r=report([f]);assert.equal(JSON.stringify(f),before);assert.equal(cell(r,'loan_recovered').amount,950);assert.equal(cell(r,'loan_scheduled',1).amount,1215);
+ const future=r.records.find(x=>x.kind==='loan_scheduled');assert.equal(future.registeredAmount,1215);assert.equal(future.basis,'CONTRACTUAL_ALLOCATION');assert.equal(future.status,'SCHEDULED');assert.equal(r.unassigned.find(x=>x.id.startsWith('unassigned:')).amount,265);
  f.rows[0][1]=1215;const corrected=report([f]);assert.equal(cell(corrected,'loan_recovered').amount,1215);assert.equal(corrected.records.filter(x=>x.kind==='loan_recovered').length,1);
 });
-test('full prepayment leaves future zero without reducing contractual fees or interest',()=>{
- const r=report([fixture({B:[2430,1215]})]);assert.equal(cell(r,'loan_recovered').amount,2430);assert.equal(cell(r,'loan_scheduled',1).amount,0);assert.equal(cell(r,'loan_admin').amount,30);assert.equal(cell(r,'loan_interest').amount,400);
+test('full prepayment preserves recorded future B and protects only its impossible breakdown',()=>{
+ const r=report([fixture({B:[2430,1215]})]);assert.equal(cell(r,'loan_recovered').amount,2430);assert.equal(cell(r,'loan_scheduled',1).amount,1215);assert.equal(cell(r,'loan_admin').amount,30);assert.equal(cell(r,'loan_interest').amount,400);assert.equal(cell(r,'loan_principal_scheduled',1).amount,null);
 });
 test('future recorded zero stays zero and pending without date is preserved',()=>{
  const r=report([fixture({B:[1215,0]})]);assert.equal(cell(r,'loan_scheduled',1).amount,0);assert.equal(r.unassigned.find(x=>x.id.startsWith('unassigned:')).amount,1215);assert.equal(cell(r,'loan_pending',1).amount,1000);

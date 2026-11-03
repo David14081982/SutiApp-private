@@ -9,7 +9,7 @@ const cents=v=>typeof v==='number'&&Number.isFinite(v)&&Number.isSafeInteger(Mat
 const loanKey=(C,D)=>JSON.stringify([text(C),text(D)]);
 const percent=(part,total)=>Number.isSafeInteger(part)&&Number.isSafeInteger(total)&&total>0?Math.round(part/total*10000)/100:null;
 const COMPONENTS={principal:'AD',interest:'AB',admin:'Z'};
-const LABELS={loanSavings:'Caja de Ahorro',pettyCash:'Caja Chica',sutiexpress:'SutiExpress',advance:'Adelantos de Nómina',sutiLoan:'Suti Préstamo'};
+const LABELS={loanSavings:'Caja de Ahorro',pettyCash:'Caja Chica',sutiexpress:'Sutiexpress',advance:'Adelantos de Nómina',sutiLoan:'Suti Préstamo'};
 const LOAN_ROWS=[
  ['placed','Capital colocado según transferencia registrada','recorded'],['count','Número de préstamos otorgados','recorded'],
  ['recovered','Recuperación total corroborada','recorded'],['principal','Capital recuperado','recorded'],['interest','Intereses recuperados','recorded'],['admin','Gasto administrativo recuperado','recorded'],
@@ -43,7 +43,7 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
  const ensureFund=fund=>{
   if(funds.has(fund.id))return funds.get(fund.id);
   const prefix=fund.id==='loanSavings'?'loan':'fund_'+fund.id;
-  const f={...fund,prefix,ids:Object.fromEntries(LOAN_ROWS.map(([kind,label,type])=>{const id=prefix+'_'+kind;addRow(id,label,fund.label,type,{unit:kind==='count'?'count':'money',section:fund.id==='loanSavings'?'Ahorro Voluntario y Caja de Ahorro':'Préstamos · bolsa común',emphasis:['recovered','scheduled'].includes(kind)?'subtotal':undefined});return [kind,id];}))};funds.set(fund.id,f);return f;
+  const f={...fund,prefix,ids:Object.fromEntries(LOAN_ROWS.map(([kind,label,type])=>{const id=prefix+'_'+kind;addRow(id,label,fund.label,type,{unit:kind==='count'?'count':'money',section:fund.id==='loanSavings'?'Caja de Ahorro · Recurso de ahorradores':'Préstamos · bolsa común',emphasis:['recovered','scheduled'].includes(kind)?'subtotal':undefined});return [kind,id];}))};funds.set(fund.id,f);return f;
  };
  ensureFund({id:'loanSavings',label:LABELS.loanSavings});
  const mark=(ids,code,message,sourceIds=[],dates=[])=>{
@@ -95,24 +95,25 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
    const scheduled=r.date&&r.date>asOf,kind=scheduled?'scheduled':'recovered',breakdown=scheduled?forecast.get(r.S):payments.get(r.S),positiveIds=[f.ids[kind],...Object.keys(COMPONENTS).map(c=>f.ids[c+(scheduled?'_scheduled':'')])];
    if(!r.date){mark([f.ids.recovered,f.ids.scheduled,...Object.keys(COMPONENTS).flatMap(c=>[f.ids[c],f.ids[c+'_scheduled']])],'LOAN_PAYMENT_DATE_MISSING','Fecha de cuota sin determinar.', ['pv2:'+r.sourceRow]);if(r.B!==null&&r.B>=0)unassigned.push({id:'pv2:'+r.sourceRow,source:'HISTORIAL P V2',sourceId:'Fila '+r.sourceRow,kind:f.ids.recovered,loanId:r.C,folio:r.D,installment:r.S,date:null,amount:r.B/100,status:'UNAVAILABLE',note:'Importe B registrado sin fecha para determinar si es cobrado o programado.'});continue;}
    if(r.B===null||r.B<0){mark(positiveIds,'LOAN_PAYMENT_INVALID','El importe B no es monetario válido.',['pv2:'+r.sourceRow],[r.date]);continue;}
-   const projected=scheduled&&breakdown?breakdown.B:r.B,basis=scheduled&&breakdown?.adjusted?'DERIVED_FORECAST':ok?'CONTRACTUAL_ALLOCATION':'RECORDED_UNALLOCATED';
+   const projected=r.B,basis=breakdown?'CONTRACTUAL_ALLOCATION':'RECORDED_UNALLOCATED';
+   if(breakdown&&breakdown.B!==r.B)throw new ReportError('REGISTERED_SCHEDULE_CHANGED');
    if(basis==='DERIVED_FORECAST')derivedForecastCount++;
    const fields={id:'pv2:'+r.sourceRow,source:'HISTORIAL P V2 + condiciones originales',sourceId:'Fila '+r.sourceRow,loanId:r.C,folio:r.D,installment:r.S,period:r.date.slice(0,7),date:r.date,fund:fund.label,status:scheduled?'SCHEDULED':'RECORDED',basis,registeredAmount:r.B/100,
     principal:breakdown?breakdown.AD/100:projected===0?0:null,interest:breakdown?breakdown.AB/100:projected===0?0:null,administration:breakdown?breakdown.Z/100:projected===0?0:null,
-    percentages:{principal:breakdown?percent(breakdown.AD,projected):null,interest:breakdown?percent(breakdown.AB,projected):null,administration:breakdown?percent(breakdown.Z,projected):null},contractEvidence:ok?allocation.evidence:undefined};
+    percentages:{principal:breakdown?percent(breakdown.AD,projected):null,interest:breakdown?percent(breakdown.AB,projected):null,administration:breakdown?percent(breakdown.Z,projected):null},contractSourceKey:ok?key:undefined};
    add(f.ids[kind],{...fields,amount:projected/100});
    for(const [component,column]of Object.entries(COMPONENTS))add(f.ids[component+(scheduled?'_scheduled':'')],{...fields,id:fields.id+':'+component,amount:breakdown?breakdown[column]/100:projected===0?0:null});
-   if(!ok&&projected>0)mark(Object.keys(COMPONENTS).map(c=>f.ids[c+(scheduled?'_scheduled':'')]),'LOAN_BREAKDOWN_UNDETERMINED','El importe B se incluye; faltan condiciones suficientes para distribuirlo ('+allocation.reason+').',[fields.id],[r.date]);
+   if(!breakdown&&projected>0)mark(Object.keys(COMPONENTS).map(c=>f.ids[c+(scheduled?'_scheduled':'')]),'LOAN_BREAKDOWN_UNDETERMINED','El importe B se incluye; faltan condiciones suficientes para distribuirlo ('+(scheduled&&allocation.forecastReason||allocation.reason||'CONTRACT_INPUTS_INSUFFICIENT')+').',[fields.id],[r.date]);
   }
   for(const [i,m]of months.entries()){
    const cut=m.key===current?asOf:endOfMonth(m.key),future=m.key>current;
    if(transfer&&transfer>cut)continue;
    const ids=[f.ids.pending,f.ids.interest_pending,f.ids.admin_pending];
-   if(!ok||(!transfer&&m.key<current)){mark(ids,'LOAN_PENDING_UNDETERMINED','Saldo contractual sin desglose o corte original verificable.',sourceIds,[m.key+'-01']);continue;}
+   if(!ok||(!transfer&&m.key<current)||(future&&allocation.forecastReason)){mark(ids,'LOAN_PENDING_UNDETERMINED','Saldo contractual sin desglose o corte original verificable.',sourceIds,[m.key+'-01']);continue;}
    const selected=[...allocation.payments,...(future?allocation.forecast:[])].filter(p=>p.date<=cut);
    for(const [id,column,original]of [[f.ids.pending,'AD',contract.principal],[f.ids.interest_pending,'AB',contract.interest],[f.ids.admin_pending,'Z',contract.administration]]){
     const pending=original-selected.reduce((s,p)=>s+p[column],0),row=rows.get(id);if(pending<0)throw new ReportError('CONTRACT_TOTAL_MISMATCH');
-    add(id,{id:'pending:'+key+':'+column+':'+m.key,source:'Condiciones originales y cuotas',sourceId:allocation.evidence?.reference||'Contrato '+first.C,loanId:first.C,folio:first.D,fund:fund.label,date:cut,amount:pending/100,status:future?'SCHEDULED':'RECORDED',basis:future?'DERIVED_FORECAST':'CONTRACTUAL_ALLOCATION'});
+    add(id,{id:'pending:'+key+':'+column+':'+m.key,source:'Condiciones originales y cuotas',sourceId:'Contrato '+first.C+' / '+first.D,contractSourceKey:key,loanId:first.C,folio:first.D,fund:fund.label,date:cut,amount:pending/100,status:future?'SCHEDULED':'RECORDED',basis:future?'DERIVED_FORECAST':'CONTRACTUAL_ALLOCATION'});
     row.cells[i].notes.push(future?'Saldo proyectado después de las cuotas programadas; no efectivo disponible.':'Saldo contractual; no representa dinero disponible.');
    }
   }
@@ -185,7 +186,9 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
  const treasury={id:'cash_available',label:'Efectivo disponible (requiere fuente de tesorería)',group:'Flujo consolidado',kind:'balance',unit:'money',cells:months.map(()=>({amount:null,knownAmount:null,status:'UNAVAILABLE',sourceIds:[],notes:['La cartera y las obligaciones no acreditan el saldo de bancos o caja.']}))};rows.set(treasury.id,treasury);
  // Explain stock/accrual/cash separation directly in the corresponding financial cells.
  for(const id of ['union_margin_accrual','union_margin_cash','union_margin_scheduled'])for(const c of rows.get(id).cells)c.notes.push('Excluye capital y gasto administrativo. Los rendimientos corresponden a contratos de la bolsa común, no a un porcentaje por cuota. No es utilidad neta ni saldo disponible.');
- result.rows=[...rows.values()];
+ const groupOrder=['Inversores','Caja de Ahorro','Sutiexpress','Caja Chica','Adelantos de Nómina','Ahorro Voluntario'];
+ const remaining=[...new Set([...rows.values()].map(r=>r.group))].filter(g=>!groupOrder.includes(g));
+ result.rows=[...groupOrder,...remaining].flatMap(group=>[...rows.values()].filter(r=>r.group===group));
  // Components share the immutable source identity with one full parent record.
  // Keep amounts and kinds on each component so totals remain directly verifiable.
  const recordMap=new Map(records.map(r=>[r.id,r]));

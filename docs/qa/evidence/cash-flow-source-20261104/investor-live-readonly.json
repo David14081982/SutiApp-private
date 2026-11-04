@@ -1,0 +1,443 @@
+{
+  "status": "PASS",
+  "readAt": "2026-11-04T16:33:31.536Z",
+  "readOnly": true,
+  "financialWrites": 0,
+  "sourceUnchanged": true,
+  "coverage": {
+    "authority": "SUPABASE_INVESTORS",
+    "contractCount": 88,
+    "activeContractCount": 35,
+    "historyIncompleteCount": 88,
+    "recordedMovements": 0,
+    "obligationCount": 773,
+    "calculatedPeriods": 559,
+    "derivedContinuities": 31,
+    "ambiguousContinuities": 0,
+    "unresolvedReviews": 70,
+    "costBasis": "Original contractual continuity and dated capital/rates; future balances apply scheduled obligations without recording a payment.",
+    "financialWrites": 0
+  },
+  "chains": [
+    {
+      "sourceRow": 58,
+      "code": "Contrato 2 C2 RC1 A1",
+      "principal": 650000,
+      "contribution": 0,
+      "withdrawal": null,
+      "starts": "2026-02-07",
+      "ends": "2027-02-07",
+      "originalStatus": "Ampliado"
+    },
+    {
+      "sourceRow": 57,
+      "code": "Contrato 2 C2 R C1",
+      "principal": 270000,
+      "contribution": 0,
+      "withdrawal": 35000,
+      "starts": "2026-02-05",
+      "ends": "2026-08-05",
+      "originalStatus": "Renovado"
+    },
+    {
+      "sourceRow": 35,
+      "code": "Contrato 1 C1",
+      "principal": 305000,
+      "contribution": 305000,
+      "withdrawal": null,
+      "starts": "2025-08-05",
+      "ends": "2026-02-05",
+      "originalStatus": "Renovado"
+    },
+    {
+      "sourceRow": 20,
+      "code": "Contrato 1 C1",
+      "principal": 500000,
+      "contribution": 500000,
+      "withdrawal": null,
+      "starts": "2025-02-07",
+      "ends": "2026-02-07",
+      "originalStatus": "Ampliado"
+    },
+    {
+      "sourceRow": 88,
+      "code": "Contrato 3 C3 RC1,2,",
+      "principal": 391000,
+      "contribution": 121000,
+      "withdrawal": null,
+      "starts": "2026-08-05",
+      "ends": "2027-02-05",
+      "originalStatus": "Vigente"
+    }
+  ],
+  "continuity": [
+    {
+      "parentCode": "Contrato 1 C1",
+      "contractCode": "Contrato 2 C2 R C1",
+      "date": "2026-02-05",
+      "basis": "ORIGINAL_RENEWAL_REFERENCES",
+      "previousPrincipal": 305000,
+      "principal": 270000,
+      "registeredContribution": 0,
+      "registeredWithdrawal": 35000,
+      "unattributedCapitalChange": 0,
+      "parentSourceSheet": "Cartera Inicial",
+      "parentSourceRow": 35,
+      "sourceSheet": "Cartera Inicial",
+      "sourceRow": 57
+    },
+    {
+      "parentCode": "Contrato 1 C1",
+      "contractCode": "Contrato 2 C2 RC1 A1",
+      "date": "2026-02-07",
+      "basis": "ORIGINAL_RENEWAL_REFERENCES",
+      "previousPrincipal": 500000,
+      "principal": 650000,
+      "registeredContribution": 0,
+      "registeredWithdrawal": null,
+      "unattributedCapitalChange": 150000,
+      "parentSourceSheet": "Cartera Inicial",
+      "parentSourceRow": 20,
+      "sourceSheet": "Cartera Inicial",
+      "sourceRow": 58
+    },
+    {
+      "parentCode": "Contrato 2 C2 R C1",
+      "contractCode": "Contrato 3 C3 RC1,2,",
+      "date": "2026-08-05",
+      "basis": "ORIGINAL_RENEWAL_REFERENCES",
+      "previousPrincipal": 270000,
+      "principal": 391000,
+      "registeredContribution": 121000,
+      "registeredWithdrawal": null,
+      "unattributedCapitalChange": 0,
+      "parentSourceSheet": "Cartera Inicial",
+      "parentSourceRow": 57,
+      "sourceSheet": "Cartera Inicial",
+      "sourceRow": 88
+    }
+  ],
+  "monthlyChain": [
+    {
+      "month": "2026-01",
+      "contracts": [
+        {
+          "row": 58,
+          "amount": 0
+        },
+        {
+          "row": 57,
+          "amount": 0
+        },
+        {
+          "row": 35,
+          "amount": 305000
+        },
+        {
+          "row": 20,
+          "amount": 500000
+        },
+        {
+          "row": 88,
+          "amount": 0
+        }
+      ],
+      "newCash": 0
+    },
+    {
+      "month": "2026-02",
+      "contracts": [
+        {
+          "row": 58,
+          "amount": 650000
+        },
+        {
+          "row": 57,
+          "amount": 270000
+        },
+        {
+          "row": 35,
+          "amount": 0
+        },
+        {
+          "row": 20,
+          "amount": 0
+        },
+        {
+          "row": 88,
+          "amount": 0
+        }
+      ],
+      "newCash": 0
+    },
+    {
+      "month": "2026-08",
+      "contracts": [
+        {
+          "row": 58,
+          "amount": 650000
+        },
+        {
+          "row": 57,
+          "amount": 0
+        },
+        {
+          "row": 35,
+          "amount": 0
+        },
+        {
+          "row": 20,
+          "amount": 0
+        },
+        {
+          "row": 88,
+          "amount": 391000
+        }
+      ],
+      "newCash": 121000
+    },
+    {
+      "month": "2026-11",
+      "contracts": [
+        {
+          "row": 58,
+          "amount": 650000
+        },
+        {
+          "row": 57,
+          "amount": 0
+        },
+        {
+          "row": 35,
+          "amount": 0
+        },
+        {
+          "row": 20,
+          "amount": 0
+        },
+        {
+          "row": 88,
+          "amount": 391000
+        }
+      ],
+      "newCash": 0
+    },
+    {
+      "month": "2026-12",
+      "contracts": [
+        {
+          "row": 58,
+          "amount": 650000
+        },
+        {
+          "row": 57,
+          "amount": 0
+        },
+        {
+          "row": 35,
+          "amount": 0
+        },
+        {
+          "row": 20,
+          "amount": 0
+        },
+        {
+          "row": 88,
+          "amount": 391000
+        }
+      ],
+      "newCash": 0
+    }
+  ],
+  "capital": [
+    {
+      "month": "2026-01",
+      "amount": null,
+      "known": 12445000,
+      "unknown": 7
+    },
+    {
+      "month": "2026-02",
+      "amount": null,
+      "known": 12510000,
+      "unknown": 9
+    },
+    {
+      "month": "2026-03",
+      "amount": null,
+      "known": 12660000,
+      "unknown": 9
+    },
+    {
+      "month": "2026-11",
+      "amount": 24006000,
+      "known": 24006000,
+      "unknown": 0
+    },
+    {
+      "month": "2026-12",
+      "amount": 18206000,
+      "known": 18206000,
+      "unknown": 0
+    }
+  ],
+  "unassignedWithdrawals": 3885000,
+  "later": [
+    {
+      "from": "2027-01",
+      "capital": [
+        {
+          "month": "2027-01",
+          "amount": 15446000,
+          "known": 15446000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-02",
+          "amount": 14080000,
+          "known": 14080000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-03",
+          "amount": 13200000,
+          "known": 13200000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-04",
+          "amount": 12950000,
+          "known": 12950000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-05",
+          "amount": 11720000,
+          "known": 11720000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-06",
+          "amount": 11020000,
+          "known": 11020000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-07",
+          "amount": 7260000,
+          "known": 7260000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-08",
+          "amount": 6560000,
+          "known": 6560000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-09",
+          "amount": 5910000,
+          "known": 5910000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-10",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-11",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2027-12",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        }
+      ],
+      "scheduledCapital": 15046000
+    },
+    {
+      "from": "2028-01",
+      "capital": [
+        {
+          "month": "2028-01",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-02",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-03",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-04",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-05",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-06",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-07",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-08",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-09",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-10",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-11",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        },
+        {
+          "month": "2028-12",
+          "amount": 3160000,
+          "known": 3160000,
+          "unknown": 0
+        }
+      ],
+      "scheduledCapital": 0
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "source": "Private authorized real Google/savings snapshots; investor response unavailable in this isolated comparison",
+  "productionCalls": 0,
+  "exactEntireProjectionEqual": true,
+  "googleRows": 20282,
+  "requestRows": 2888,
+  "savingsEvents": 11061,
+  "inputProjectionMs": 113,
+  "reportRecords": 84763,
+  "sourceBaseRows": [
+    {
+      "name": "Base PV2",
+      "rows": 17743
+    },
+    {
+      "name": "Base Solicitudes",
+      "rows": 1985
+    },
+    {
+      "name": "Base Ahorro",
+      "rows": 17997
+    },
+    {
+      "name": "Base Inversores",
+      "rows": 0
+    },
+    {
+      "name": "Base Contratos",
+      "rows": 1850
+    }
+  ]
+}

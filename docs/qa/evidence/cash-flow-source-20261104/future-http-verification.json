@@ -1,0 +1,223 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-11-04T17:38:49.861Z",
+  "account": "H005_TEST",
+  "sequential": true,
+  "financialWrites": 0,
+  "googleWrites": 0,
+  "persistedInvestorRows": 0,
+  "persistedSourceRows": 0,
+  "reports": [
+    {
+      "status": "PASS",
+      "from": "2027-01",
+      "cashControls": 96,
+      "quotas": 3250,
+      "annualB": {
+        "loanSavings": 2366578.87,
+        "sutiexpress": 527739.64,
+        "pettyCash": 1846189.62,
+        "advance": 221105
+      },
+      "rows": 126,
+      "records": 42845,
+      "sourceBases": [
+        {
+          "name": "Base PV2",
+          "rows": 17743,
+          "columns": 26
+        },
+        {
+          "name": "Base Solicitudes",
+          "rows": 1985,
+          "columns": 14
+        },
+        {
+          "name": "Base Ahorro",
+          "rows": 21869,
+          "columns": 17
+        },
+        {
+          "name": "Base Inversores",
+          "rows": 8011,
+          "columns": 42
+        },
+        {
+          "name": "Base Contratos",
+          "rows": 1850,
+          "columns": 14
+        }
+      ],
+      "forbiddenAE": false,
+      "sourceReferencesResolved": true,
+      "readableBases": true,
+      "changedHistoricalSnapshotControls": [
+        {
+          "key": "pettyCash:2027-01",
+          "previous": {
+            "cents": 62083702,
+            "count": 434
+          },
+          "current": {
+            "cents": 62144702,
+            "count": 434
+          }
+        },
+        {
+          "key": "pettyCash:2027-02",
+          "previous": {
+            "cents": 37197475,
+            "count": 315
+          },
+          "current": {
+            "cents": 37158475,
+            "count": 314
+          }
+        },
+        {
+          "key": "pettyCash:2027-03",
+          "previous": {
+            "cents": 30414723,
+            "count": 224
+          },
+          "current": {
+            "cents": 30675723,
+            "count": 224
+          }
+        },
+        {
+          "key": "pettyCash:2027-04",
+          "previous": {
+            "cents": 19716726,
+            "count": 168
+          },
+          "current": {
+            "cents": 19711726,
+            "count": 167
+          }
+        },
+        {
+          "key": "pettyCash:2027-05",
+          "previous": {
+            "cents": 9793491,
+            "count": 82
+          },
+          "current": {
+            "cents": 9654491,
+            "count": 80
+          }
+        }
+      ],
+      "http": 200,
+      "durationMs": 9380,
+      "payloadBytes": 17532290,
+      "workerMatchesDirect": true
+    },
+    {
+      "status": "PASS",
+      "from": "2028-01",
+      "cashControls": 96,
+      "quotas": 45,
+      "annualB": {
+        "loanSavings": 210749.83,
+        "sutiexpress": 9090,
+        "pettyCash": 113262.36,
+        "advance": 0
+      },
+      "rows": 126,
+      "records": 34618,
+      "sourceBases": [
+        {
+          "name": "Base PV2",
+          "rows": 17743,
+          "columns": 26
+        },
+        {
+          "name": "Base Solicitudes",
+          "rows": 1985,
+          "columns": 14
+        },
+        {
+          "name": "Base Ahorro",
+          "rows": 30509,
+          "columns": 17
+        },
+        {
+          "name": "Base Inversores",
+          "rows": 7513,
+          "columns": 42
+        },
+        {
+          "name": "Base Contratos",
+          "rows": 1850,
+          "columns": 14
+        }
+      ],
+      "forbiddenAE": false,
+      "sourceReferencesResolved": true,
+      "readableBases": true,
+      "changedHistoricalSnapshotControls": [
+        {
+          "key": "pettyCash:2027-01",
+          "previous": {
+            "cents": 62083702,
+            "count": 434
+          },
+          "current": {
+            "cents": 62144702,
+            "count": 434
+          }
+        },
+        {
+          "key": "pettyCash:2027-02",
+          "previous": {
+            "cents": 37197475,
+            "count": 315
+          },
+          "current": {
+            "cents": 37158475,
+            "count": 314
+          }
+        },
+        {
+          "key": "pettyCash:2027-03",
+          "previous": {
+            "cents": 30414723,
+            "count": 224
+          },
+          "current": {
+            "cents": 30675723,
+            "count": 224
+          }
+        },
+        {
+          "key": "pettyCash:2027-04",
+          "previous": {
+            "cents": 19716726,
+            "count": 168
+          },
+          "current": {
+            "cents": 19711726,
+            "count": 167
+          }
+        },
+        {
+          "key": "pettyCash:2027-05",
+          "previous": {
+            "cents": 9793491,
+            "count": 82
+          },
+          "current": {
+            "cents": 9654491,
+            "count": 80
+          }
+        }
+      ],
+      "http": 200,
+      "durationMs": 12799,
+      "payloadBytes": 22038482,
+      "workerMatchesDirect": true
+    }
+  ],
+  "googleBaselineSha256": "5cc800c07d0bbf02b9d7ab5b3759b2d9d25664519d6512f8db058990431dcc5f"
+}

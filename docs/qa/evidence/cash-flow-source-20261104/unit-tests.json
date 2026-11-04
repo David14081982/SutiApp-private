@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "financialTransportWorkerTests": 113,
+  "timeoutReaderTests": 24,
+  "workerLifecycleChecks": 6,
+  "financialWrites": 0
+}

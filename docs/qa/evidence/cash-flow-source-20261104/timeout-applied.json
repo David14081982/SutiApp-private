@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "version": "20261104000300",
+  "definitionHash": "40919970206e49e46616e5b3af842842",
+  "settings": [
+    "search_path=\"\"",
+    "statement_timeout=30s"
+  ],
+  "financialWrites": 0,
+  "bodyChanged": false,
+  "permissionsChanged": false,
+  "roleOrGlobalSettingsChanged": false
+}

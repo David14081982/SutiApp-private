@@ -1,0 +1,47 @@
+{
+  "taskReviewed": "H-CASH-FLOW-PV2-SOURCE-20261104",
+  "reviewType": "PRELIMINARY_FOCAL_LOCAL",
+  "verdict": "NEEDS_FIX",
+  "whatCodexDidCorrectly": [
+    "Loan calculations use original A/B and Z/AB/AC/AD, count principal once per C and exclude AE.",
+    "The authorized Hermosillo cutoff marks A <= cutoff as paid and later A scheduled; projections cross years without rebuilding calendars.",
+    "Investor continuity and explicit contract mergers preserve one principal without turning principal changes into new cash.",
+    "Readers preserve authority, administrative context, ACL and original values. SQL checks proved exact recovery.",
+    "Investor support rows include every predecessor of an explicit merger and readable historical labels.",
+    "The AD principal-cap guard now preserves valid AB/Z and validates AC against original components before protecting AD. Independent inspection and 28 PV2 checks pass."
+  ],
+  "importantFindings": [
+    "The existing private Google capture contains 1850 loans in the four programs, 1681 authorized, and zero current AD_ACUMULADO_SUPERA_CAPITAL_ORIGINAL cases. The guard correction prevents future artificial blanks.",
+    "Read-only investor check at 2026-11-04T16:33:31.536Z: 31 continuities; November cutoff principal 24006000 with no unresolved current capital identity. Historical records without an effective date retain their temporal limitations."
+  ],
+  "problemsDetected": [
+    "Final closure still needs frozen candidate, focal Registry, screen/Excel parity and live verification. This is not global approval."
+  ],
+  "architectureImplications": "Four derived financial helpers and two enriched existing readers require a focal Registry update from the published baseline. No new financial authority.",
+  "sourceOfTruthImplications": "Google SutiApp Final and Supabase remain authoritative. Fixtures stay isolated; this review creates no production fallback or new financial source snapshot.",
+  "securityImplications": "Four investor SQL checks pass with privileges, function identity and isolation unchanged; independent review confirmed this. Deployment is not certified by isolated tests.",
+  "dataImplications": "Original principal, rates, obligations and movements are preserved. Only report projections change. An undated withdrawal never becomes an invented monthly cash outflow.",
+  "evidence": {
+    "investorChecks": 37,
+    "independentLoanChecks": 28,
+    "commands": [
+      "node scripts/test-cash-flow-investor-continuity.mjs",
+      "node scripts/test-cash-flow-investor-criteria.mjs",
+      "node scripts/test-cash-flow-investors.mjs",
+      "node scripts/test-cash-flow-investor-criteria-sql.js",
+      "node scripts/test-cash-flow-investor-sources-sql.js",
+      "node --test scripts/test-cash-flow-pv2-source.mjs"
+    ],
+    "aggregates": "docs/qa/evidence/cash-flow-source-20261104/investor-live-readonly.json",
+    "sql": "docs/qa/evidence/cash-flow-source-20261104/investor-sources-sql.json"
+  },
+  "limits": [
+    "Loan and source-base inspection is independent; Inversores is this agent implementation and needs final integration review.",
+    "WORK_QUEUE_HISTORY.md is absent. WORK_QUEUE.md governs the legacy master plan; current explicit owner instructions and preaudit authorize this focal task.",
+    "This preliminary review does not claim exhaustive reading or closure of all historical normative documentation. Final review must inspect the frozen candidate and current evidence.",
+    "The integration agent verifies production, final build and live parity. Isolated checks do not imply those passed."
+  ],
+  "ownerDecisionRequired": false,
+  "nextAction": "Freeze candidate, verify screen/Excel parity against sources in memory, update focal Registry and review final evidence.",
+  "responseToCodex": "No cierres H-CASH-FLOW-PV2-SOURCE-20261104. Preserve original sources and privileges; finish only the remaining focal work, repeat relevant tests and verify the same candidate on screen and in Excel. Document real limitations without inventing amounts or reopening approved decisions. No avances a otra H."
+}

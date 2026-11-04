@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Actual worker equals pure projection; every displayed cell and exported report agree; worker terminates once",
+    "Period change cancels previous worker and discards its queued result",
+    "Context change cancels previous worker and discards its queued result",
+    "Navigation unmount terminates worker and late result cannot restore screen",
+    "Invalid snapshot version/model displays an error without worker, old report or fallback",
+    "Actual worker script failure is visible, terminates and never substitutes a cached report"
+  ],
+  "actualWorkerArtifact": true,
+  "syntheticIsolated": true,
+  "workers": 7,
+  "allWorkersTerminatedOnce": true,
+  "externalRequests": 0,
+  "staticWorkerRequests": 7,
+  "financialWrites": 0,
+  "productionCalls": 0
+}

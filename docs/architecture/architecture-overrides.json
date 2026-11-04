@@ -122,7 +122,11 @@
         "sources": "fixed Google SutiApp Final read + get_admin_reports_jc_savings",
         "writes": 0,
         "google_connection": "exact sutifinanzas-reader service account authorized; RS256 spreadsheets.readonly; six fixed ranges live PASS; existing server secret unchanged; Edge v1 installed; existing server secrets unchanged",
-        "google_auth_helper": "supabase/functions/reports-jc/google-auth.mjs"
+        "google_auth_helper": "supabase/functions/reports-jc/google-auth.mjs",
+        "cash_flow_execution": "CASH_FLOW branch validates context before/after original reads and returns allowlisted source snapshot; no report CPU-heavy projection in production Edge",
+        "cash_flow_inputs": "cash-flow-inputs-v1; 20261104-original-components-v1; consultedAt from backend",
+        "cash_flow_writes": 0,
+        "cash_flow_deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
       }
     },
     {
@@ -1435,7 +1439,9 @@
       "aliases": [
         "Reporte Flujo de efectivo",
         "Flujo mensual consolidado",
-        "Cash flow"
+        "Cash flow",
+        "Flujo de efectivo",
+        "Flujo mensual"
       ],
       "domain": "finance",
       "file": "app/cash-flow-report.jsx",
@@ -1447,7 +1453,12 @@
         "route": "Admin / Reportes JC / Reporte Flujo de efectivo",
         "scope": "12 monthly columns; separate savings, Caja de Ahorro, common-pool loans, investors and union margins",
         "status": "IMPLEMENTED",
-        "unknown": "Only genuinely absent data or impossible calculations remain undetermined; recorded amounts and known subtotals remain visible; no bank balance inference"
+        "unknown": "Only genuinely absent data or impossible calculations remain undetermined; recorded amounts and known subtotals remain visible; no bank balance inference",
+        "source_basis": "Original PV2 A/B/C/Z/AB/AC/AD; read-only Supabase savings and investor originals",
+        "capital": "One capital placement per authorized loan ID; request date; no transfer AE dependency",
+        "support": "Readable source sheets from one derived result shared by screen and Excel",
+        "execution": "Authorized Edge returns source snapshot; disposable local Worker executes the same pure projection",
+        "invalidation": "Context and request sequence checked before/after projection; terminate on context, period or screen change; no persisted financial cache"
       },
       "type": "admin_screen"
     },
@@ -1485,9 +1496,195 @@
         "financial_writes": 0,
         "source_engine": "scripts/lib/historial-pv2-engine.mjs",
         "source_engine_sha256": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
-        "status": "IMPLEMENTED"
+        "status": "RETAINED_NOT_USED_BY_CURRENT_CASH_FLOW",
+        "replacement": "CashFlowOriginalLoanProjection reads original Z/AB/AC/AD; old engine is not called by current flow"
       },
       "type": "service"
+    },
+    {
+      "type": "service",
+      "name": "CashFlowOriginalLoanProjection",
+      "file": "supabase/functions/reports-jc/cash-flow-loans.mjs",
+      "domain": "finance",
+      "aliases": [
+        "Proyecciones HISTORIAL P V2",
+        "Desglose original cuotas"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Google SutiApp Final original A/B/C and Z/AB/AC/AD; request authorization and placement date",
+        "rule": "A <= Hermosillo cutoff is paid; later A scheduled; one authorized capital per C; AE excluded; no inferred interest or administration",
+        "evidence": "scripts/test-cash-flow-pv2-source.mjs",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      }
+    },
+    {
+      "type": "service",
+      "name": "CashFlowSavingsSourceProjection",
+      "file": "supabase/functions/reports-jc/cash-flow-savings.mjs",
+      "domain": "finance",
+      "aliases": [
+        "Base Ahorro flujo",
+        "Puente saldo ahorro"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Official Supabase savings values; original mixed and opening amounts stay identifiable",
+        "rule": "Reconcile displayed stock to recorded flows without creating a savings transaction or cash receipt",
+        "evidence": "scripts/test-cash-flow-savings-sources-sql.js",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      }
+    },
+    {
+      "type": "service",
+      "name": "CashFlowInvestorContinuity",
+      "file": "supabase/functions/reports-jc/cash-flow-investor-continuity.mjs",
+      "domain": "finance",
+      "aliases": [
+        "Continuidad contratos inversores",
+        "Renovacion inversion"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Supabase investors original contract identity, sequence, renewal references and dated movements",
+        "rule": "Each transferred principal appears once; explicit merges retain every predecessor; new cash only from registered contributions",
+        "evidence": "scripts/test-cash-flow-investor-continuity.mjs",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      }
+    },
+    {
+      "type": "service",
+      "name": "CashFlowSourceBases",
+      "file": "supabase/functions/reports-jc/cash-flow-source-bases.mjs",
+      "domain": "finance",
+      "aliases": [
+        "Bases flujo mensual Excel",
+        "Respaldo valores flujo"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Derived readable rows from the same authorized in-memory report response",
+        "rule": "Spanish field labels, source references, originals separated from calculations; no opaque JSON as financial explanation",
+        "evidence": "scripts/test-cash-flow-source-bases.mjs",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      }
+    },
+    {
+      "type": "service",
+      "name": "CashFlowInputTransport",
+      "file": "supabase/functions/reports-jc/cash-flow-inputs.mjs",
+      "domain": "finance",
+      "aliases": [
+        "Fuentes autorizadas flujo",
+        "Cash flow source snapshot"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Allowlisted originals read by the existing authenticated Edge and RPCs",
+        "rule": "Versioned disposable snapshot; original row ordinals preserved; no AE, credentials, opaque source payload or financial writes",
+        "evidence": "scripts/test-cash-flow-inputs.mjs",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      }
+    },
+    {
+      "type": "service",
+      "name": "CashFlowSnapshotProjection",
+      "file": "supabase/functions/reports-jc/cash-flow.mjs",
+      "domain": "finance",
+      "aliases": [
+        "Proyeccion unica flujo",
+        "projectCashFlowSnapshot"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "authority": "Single pure entry point for the authorized original snapshot",
+        "rule": "The browser Worker is generated from this exact entry and original helper dependencies; screen and Excel use one result; cutoff originates in backend",
+        "evidence": "scripts/test-cash-flow-projection-worker.js",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      }
+    },
+    {
+      "type": "service",
+      "name": "CashFlowProjectionWorker",
+      "file": "app/cash-flow-projection-worker.js",
+      "domain": "finance",
+      "aliases": [
+        "Worker flujo de efectivo",
+        "Calculo local flujo"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "classification": "GENERATED_ARTIFACT",
+        "authority": "Disposable derived report from an authenticated allowlisted source snapshot",
+        "boundary": "No network, credentials, storage, dynamic imports or source writes; worker closed after each projection",
+        "implementation": "AST-selected original module declarations; no second financial implementation",
+        "evidence": "scripts/test-cash-flow-projection-worker.js",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      }
+    },
+    {
+      "type": "service",
+      "name": "CashFlowProjectionWorkerBuild",
+      "file": "scripts/build-cash-flow-projection-worker.js",
+      "domain": "finance",
+      "aliases": [
+        "Compilacion Worker flujo"
+      ],
+      "source_of_truth": "DERIVED",
+      "properties": {
+        "classification": "BUILD_TOOL",
+        "selection": "AST bindings reachable from projectCashFlowSnapshot; report.mjs restricted to sourceDate/fundGroup/requestStatus/ReportError",
+        "validation": "Deterministic output and source hashes; privileged code and unapproved globals rejected",
+        "evidence": "scripts/test-cash-flow-projection-worker.js",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      }
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_admin_reports_jc_cash_flow",
+      "domain": "finance",
+      "properties": {
+        "report_projection": "Read-only enriched savings source rows, dates, identities and balance provenance; original financial rows unchanged",
+        "authorization": "Existing get_admin_reports_jc_context; ACL and SECURITY DEFINER scope preserved",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX",
+        "statement_timeout": "30s; only this existing report reader function",
+        "timeout_configuration_file": "supabase/migrations/20261104000300_reports_jc_cash_flow_timeout.sql",
+        "timeout_boundary": "Function body, OID, owner, ACL, STABLE, SECURITY DEFINER and search_path unchanged; no role/global timeout change",
+        "timeout_recovery": "supabase/recovery/20261104000300_reports_jc_cash_flow_timeout.sql; exact prior definition; apply recovery before reader 001 recovery",
+        "timeout_evidence": "scripts/test-cash-flow-timeout-sql.js"
+      },
+      "file": "supabase/migrations/20261104000100_reports_jc_cash_flow_sources.sql"
+    },
+    {
+      "type": "rpc",
+      "name": "public.get_admin_reports_jc_cash_flow_investors",
+      "domain": "finance",
+      "properties": {
+        "report_projection": "Read-only investor name, source row, original contract, recorded withdrawal/payment fields; balances derived in report with continuity",
+        "authorization": "Existing get_admin_reports_jc_context; ACL and SECURITY DEFINER scope preserved",
+        "financial_writes": 0,
+        "status": "IMPLEMENTED",
+        "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
+      },
+      "file": "supabase/migrations/20261104000200_reports_jc_investor_sources.sql"
     }
   ],
   "relationships": [
@@ -2206,13 +2403,6 @@
       "type": "USES"
     },
     {
-      "from": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
-      "from_type": "file",
-      "to": "CashFlowContractualQueryEngine",
-      "to_type": "service",
-      "type": "USES"
-    },
-    {
       "from": "CashFlowContractualQueryEngine",
       "from_type": "service",
       "to": "supabase/functions/reports-jc/cash-flow-pv2-engine.mjs",
@@ -2311,20 +2501,6 @@
       "type": "CALLS"
     },
     {
-      "from": "reports-jc",
-      "from_type": "edge_function",
-      "to": "public.get_admin_reports_jc_cash_flow_contracts",
-      "to_type": "rpc",
-      "type": "CALLS"
-    },
-    {
-      "from": "supabase/functions/reports-jc/cash-flow.mjs",
-      "from_type": "file",
-      "to": "public.get_admin_reports_jc_cash_flow_contracts",
-      "to_type": "rpc",
-      "type": "READS_VIA_RPC"
-    },
-    {
       "from": "public.get_admin_reports_jc_cash_flow_contracts",
       "from_type": "rpc",
       "to": "public.get_admin_reports_jc_context",
@@ -2407,6 +2583,139 @@
       "to": "public.savings_workspace_receipts",
       "to_type": "rpc",
       "type": "CALLS"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow.mjs",
+      "from_type": "file",
+      "to": "CashFlowSavingsSourceProjection",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow.mjs",
+      "from_type": "file",
+      "to": "CashFlowSourceBases",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+      "from_type": "file",
+      "to": "CashFlowOriginalLoanProjection",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/reports-jc/cash-flow-investors.mjs",
+      "from_type": "file",
+      "to": "CashFlowInvestorContinuity",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowOriginalLoanProjection",
+      "from_type": "service",
+      "to": "Google SutiApp Final Reportes JC",
+      "to_type": "external_legacy_source",
+      "type": "READS"
+    },
+    {
+      "from": "CashFlowSavingsSourceProjection",
+      "from_type": "service",
+      "to": "public.get_admin_reports_jc_cash_flow",
+      "to_type": "rpc",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from": "CashFlowInvestorContinuity",
+      "from_type": "service",
+      "to": "public.get_admin_reports_jc_cash_flow_investors",
+      "to_type": "rpc",
+      "type": "READS_VIA_RPC"
+    },
+    {
+      "from": "SutiCashFlowExport",
+      "from_type": "service",
+      "to": "CashFlowSourceBases",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "reports-jc",
+      "from_type": "edge_function",
+      "to": "CashFlowInputTransport",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowReportModule",
+      "from_type": "admin_screen",
+      "to": "CashFlowProjectionWorker",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowProjectionWorker",
+      "from_type": "service",
+      "to": "CashFlowSnapshotProjection",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowProjectionWorkerBuild",
+      "from_type": "service",
+      "to": "CashFlowProjectionWorker",
+      "to_type": "service",
+      "type": "GENERATES"
+    },
+    {
+      "from": "CashFlowProjectionWorkerBuild",
+      "from_type": "service",
+      "to": "CashFlowSnapshotProjection",
+      "to_type": "service",
+      "type": "READS"
+    },
+    {
+      "from": "CashFlowSnapshotProjection",
+      "from_type": "service",
+      "to": "CashFlowOriginalLoanProjection",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowSnapshotProjection",
+      "from_type": "service",
+      "to": "CashFlowSavingsSourceProjection",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowSnapshotProjection",
+      "from_type": "service",
+      "to": "CashFlowInvestorContinuity",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "CashFlowSnapshotProjection",
+      "from_type": "service",
+      "to": "CashFlowSourceBases",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "scripts/build-pages-site.js",
+      "from_type": "file",
+      "to": "CashFlowProjectionWorker",
+      "to_type": "service",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/migrations/20261104000300_reports_jc_cash_flow_timeout.sql",
+      "from_type": "file",
+      "to": "public.get_admin_reports_jc_cash_flow",
+      "to_type": "rpc",
+      "type": "USES"
     }
   ]
 }

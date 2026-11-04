@@ -35,6 +35,7 @@ const publicFiles = [
   'assets/branding/home-header-collapsed.webp',
   'assets/branding/credencial-puno.png',
   'app/bundle.js',
+  'app/cash-flow-projection-worker.js',
   'app/sicof-simulation-worker.js',
   'app/vendor/exceljs-4.4.0/exceljs.min.js',
   'app/vendor/exceljs-4.4.0/LICENSE',

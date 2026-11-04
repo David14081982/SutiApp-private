@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Original contractual source and permitted investor identity are returned without unrelated PII",
+    "Reader authorization and private data isolation remain unchanged",
+    "Financial rows and other functions unchanged; exact recovery restores reader identity",
+    "Definition guard refuses a different reader without replacing it"
+  ],
+  "financialWrites": 0,
+  "isolated": true,
+  "sourceAndPermissionsPreserved": true,
+  "recoveryExact": true
+}

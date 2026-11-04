@@ -1,6 +1,8 @@
 import {sourceDate,fundGroup,ReportError} from './report.mjs';
-import {resolveCashFlowContracts} from './cash-flow-contracts.mjs';
+import {buildCashFlowSourceBases} from './cash-flow-source-bases.mjs';
+import {reconcileSavingsCashFlow} from './cash-flow-savings.mjs';
 import {consolidateCashFlow} from './cash-flow-consolidated.mjs';
+import {cashFlowInputSnapshot} from './cash-flow-inputs.mjs';
 const text=v=>String(v??'').trim();
 const key=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const money=v=>typeof v==='number'&&Number.isFinite(v)&&Number.isSafeInteger(Math.round(v*100))&&Math.abs(v*100-Math.round(v*100))<.00001?Math.round(v*100):null;
@@ -18,7 +20,7 @@ const DEFINITIONS=[
  ['savings_balance','Saldo acumulado al cierre / corte','Ahorro Voluntario','balance'],
  ['contribution_scheduled','Aportaciones futuras programadas','Ahorro Voluntario','scheduled'],
  ['withdrawal_pending','Retiros autorizados pendientes','Ahorro Voluntario','obligation'],
- ['loan_placed','Capital colocado según transferencia registrada','Caja de Ahorro','recorded'],
+ ['loan_placed','Capital colocado por fecha de solicitud','Caja de Ahorro','recorded'],
  ['loan_recovered','Recuperación total corroborada','Caja de Ahorro','recorded'],
  ['loan_principal','Capital recuperado','Caja de Ahorro','recorded'],
  ['loan_interest','Intereses recuperados','Caja de Ahorro','recorded'],
@@ -63,33 +65,9 @@ export function buildCashFlow({from,loans,savings,consultedAt=new Date().toISOSt
  for(const i of savings.issues||[])issue(i.code,i.message,i.sourceIds||[],i.affectedKinds||[],i.months||[]);
  for(const m of months){const b=savings.balances.find(b=>inMonth(b.month)===m.key),c=byId.get('savings_balance').cells[positions.get(m.key)];c.cents=money(b?.known_amount??b?.amount)??0;c.missing=money(b?.amount)===null||m.key>current;c.applicable=m.key<=current;c.notes.push(m.key>current?'El saldo futuro no se presenta como dinero ya acumulado.':b?.unknown_count?'No existe un corte histórico completo para todas las cuentas.':'Saldo canónico al cierre; mes vigente al día de consulta.');}
 
- const headers={0:'Fecha',1:'Cuotas',2:'ID',3:'Folio',6:'Fondo',8:'Plazo',9:'Cantidad Prestamo',10:'Total a pagar',18:'X',30:'Fecha Transferencia'};
- if(!loans[0]||Object.entries(headers).some(([c,v])=>key(loans[0][c])!==key(v)))throw new ReportError('SOURCE_HEADERS_INVALID',{sheet:'HISTORIAL P V2'});
- const groups=new Map();let loanCount=0;
- loans.slice(1).forEach((v,i)=>{if(!v.some(x=>x!==''&&x!==null&&x!==undefined))return;const C=text(v[2]),D=text(v[3]),group=fundGroup(v[6]);if(!C||!D){if(group==='loanSavings')issue('LOAN_IDENTITY_MISSING','Un préstamo de Caja de Ahorro carece de ID o folio.',['pv2:'+(i+2)],['loan_recovered','loan_scheduled','loan_placed']);return;}const id=JSON.stringify([C,D]);if(!groups.has(id))groups.set(id,[]);groups.get(id).push({v,row:i+2,C,D,group});});
- for(const group of groups.values()){
-  if(!group.some(r=>r.group==='loanSavings'))continue;loanCount++;const sourceIds=group.map(r=>'pv2:'+r.row),first=group[0];
-  const flag=(code,message,ids=['loan_recovered','loan_scheduled','loan_placed'])=>issue(code,message,sourceIds,ids);
-  if(group.some(r=>r.group!=='loanSavings')){flag('LOAN_FUND_CONFLICT','Un mismo ID y folio tiene fondos contradictorios.');continue;}
-  const installments=new Set();
-  if(group.some(r=>!Number.isSafeInteger(r.v[18])||r.v[18]<1||installments.has(r.v[18])||(installments.add(r.v[18]),false))){flag('LOAN_INSTALLMENT_AMBIGUOUS','Hay cuotas repetidas o sin número verificable; el préstamo se excluye de las sumas identificadas.');continue;}
-  for(const r of group){const date=sourceDate(r.v[0]),amount=money(r.v[1]),rowId=date&&date>asOf?'loan_scheduled':'loan_recovered';
-   if(!date){flag('LOAN_PAYMENT_DATE_MISSING','Una cuota no tiene fecha válida; no se decide si es cobrada o futura.',['loan_recovered','loan_scheduled']);continue;}
-   if(amount===null||amount<0){issue('LOAN_PAYMENT_INVALID','Una cuota no contiene un importe monetario válido.',['pv2:'+r.row],[rowId],[inMonth(date)]);continue;}
-   record({id:'pv2:'+r.row,source:'HISTORIAL P V2',sourceId:'Fila '+r.row,date,amount:amount/100,status:date<=asOf?'RECORDED':'SCHEDULED',loanId:r.C,folio:r.D},rowId);
-   if(date<=asOf&&amount>0)issue('LOAN_BREAKDOWN_NOT_CERTIFIED','La recuperación total está corroborada; su desglose efectivo de capital, intereses y administración no está acreditado en las columnas legacy.',['pv2:'+r.row],['loan_principal','loan_interest','loan_admin'],[inMonth(date)]);
-  }
-  const principal=money(first.v[9]),total=money(first.v[10]);
-  if(principal===null||principal<0||total===null||total<principal||group.some(r=>money(r.v[9])!==principal||money(r.v[10])!==total)){flag('LOAN_TERMS_CONFLICT','El capital o total contractual no es uniforme en las cuotas.',['loan_placed','loan_pending']);continue;}
-  const rawDates=group.map(r=>r.v[30]).filter(v=>v!==''&&v!==null&&v!==undefined),dates=[...new Set(rawDates.map(sourceDate))];
-  if(dates.length!==1||dates[0]===null){flag('LOAN_TRANSFER_DATE_UNRESOLVED','Capital registrado sin una fecha de transferencia única verificable. No se utiliza la fecha de aprobación.',['loan_placed']);unassigned.push({id:'loan-capital:'+first.C+':'+first.D,kind:'loan_placed',amount:principal/100,loanId:first.C,folio:first.D,source:'HISTORIAL P V2',sourceIds,date:null});}
-  else if(dates[0]<=asOf)record({id:'loan-capital:'+first.C+':'+first.D,source:'HISTORIAL P V2',sourceId:'Contrato '+first.C+' / '+first.D,date:dates[0],amount:principal/100,status:'RECORDED',loanId:first.C,folio:first.D},'loan_placed');
-  else issue('LOAN_TRANSFER_FUTURE','La fecha de transferencia registrada es futura; el capital no se cuenta como colocado.',sourceIds,['loan_placed'],[inMonth(dates[0])]);
-  // With no certified allocation, cash containing yield cannot be subtracted
-  // from contractual principal. A zero cash month does not establish a balance.
- }
- if(loanCount)issue('LOAN_PRINCIPAL_PENDING_UNAVAILABLE','No se puede obtener capital pendiente restando cobros brutos: falta el desglose efectivo acreditado.',[],['loan_pending']);
- for(const id of ['loan_recovered','loan_scheduled'])for(const [i,c]of byId.get(id).cells.entries())if(c.missing)for(const component of ['loan_principal','loan_interest','loan_admin']){const target=byId.get(component).cells[i];if(id==='loan_recovered'){target.missing=true;target.notes.push('La recuperación del mes tiene registros sin determinar.');}}
+ // Loan calculations are exclusively assembled by consolidateCashFlow.
+ // This builder owns the savings inputs and monthly grid only.
+ const loanCount=0;
  for(const row of rows)for(const c of row.cells){c.knownAmount=c.applicable?c.cents/100:null;c.amount=c.applicable&&!c.missing?c.cents/100:null;c.status=!c.applicable?'NOT_APPLICABLE':c.missing?(c.sourceIds.length||c.cents?'PARTIAL':'UNAVAILABLE'):row.kind==='scheduled'?'SCHEDULED':row.kind==='obligation'?'PENDING':'RECORDED';c.notes=[...new Set(c.notes)];delete c.cents;delete c.missing;delete c.applicable;}
  // Coalesce repeated limitations while retaining all traceable source rows.
  const grouped=new Map();for(const i of issues){const k=JSON.stringify([i.code,i.message,i.months,i.affectedKinds]);if(!grouped.has(k))grouped.set(k,{...i,sourceIds:[]});grouped.get(k).sourceIds.push(...i.sourceIds);}for(const i of grouped.values())i.sourceIds=[...new Set(i.sourceIds)];
@@ -99,58 +77,30 @@ export function buildCashFlow({from,loans,savings,consultedAt=new Date().toISOSt
 async function context(client){const auth=await client.auth.getUser();if(auth.error||!auth.data?.user)throw new ReportError('AUTH_REQUIRED');const r=await client.rpc('get_admin_reports_jc_context');if(r.error||!r.data||r.data.actor!==auth.data.user.id||(r.data.session!==null&&typeof r.data.session!=='string'))throw new ReportError('ADMIN_DENIED');return r.data;}
 
 // Export the same inputs that produced this response, never a later source query.
-export function cashFlowSourceBases(source,savings,investors,approvals,resolved,consultedAt){
- const tables=[],loanKeys=new Set();
- const included=row=>['loanSavings','pettyCash','sutiexpress','advance'].includes(fundGroup(row[6]));
- for(const row of source.loans.slice(1))if(included(row))loanKeys.add(JSON.stringify([text(row[2]),text(row[3])]));
- const letter=n=>{let s='';for(n++;n;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s;};
- function google(name,rows,cols,accept){
-  const ids=name==='Base PV2'?[2,3]:[0,1];
-  tables.push({name,authority:'Google · SutiApp Final',classification:'Valores originales consultados; identificadores como texto',columns:['Referencia','Fila',...cols.map(i=>letter(i)+' · '+(rows[0]?.[i]||'Columna '+letter(i)))],rows:rows.slice(1).flatMap((row,i)=>accept(row)?[[name==='Base PV2'?'pv2:'+(i+2):'requests:'+(i+2),i+2,...cols.map(c=>row[c]==null?null:ids.includes(c)?String(row[c]):row[c])]]:[])});
- }
- google('Base PV2',source.loans,[0,1,2,3,5,6,7,8,9,10,11,12,13,14,15,18,30,32],r=>included(r)||loanKeys.has(JSON.stringify([text(r[2]),text(r[3])])));
- google('Base Solicitudes',source.requests,[0,1,3,4,5,6,7,8,9],r=>loanKeys.has(JSON.stringify([text(r[0]),text(r[1])])));
- function objectTable(name,authority,classification,collections){
-  const rows=[],fields=new Set(['tipo']);
-  const flat=(value,prefix='',out={})=>{for(const [k,v]of Object.entries(value||{})){const key=prefix+k;if(Array.isArray(v))continue;if(v&&typeof v==='object')flat(v,key+'.',out);else {out[key]=typeof v==='boolean'?(v?'true':'false'):v??null;fields.add(key);}}return out;};
-  for(const [type,items]of Object.entries(collections))for(const item of items||[])rows.push({tipo:type,...flat(item)});
-  const columns=[...fields];tables.push({name,authority,classification,columns,rows:rows.map(r=>columns.map(k=>r[k]??null))});
- }
- objectTable('Base Ahorro','Supabase · get_admin_reports_jc_cash_flow','Entradas oficiales de la consulta; saldos por cuenta identificados como derivados',{
-  ...savings.source_bases,evento:savings.events,saldo_mensual:savings.balances
- });
- const inv=investors||{};
- objectTable('Base Inversores','Supabase · Inversores','Contratos, movimientos y obligaciones registrados; cortes derivados separados',{
-  contrato:inv.contracts,movimiento:inv.movements,obligacion:inv.obligations,saldo:inv.balances,revision:inv.reviews,
-  condicion:(inv.contracts||[]).flatMap(c=>(c.terms||[]).map(t=>({...t,contract_id:c.id}))),
-  saldo_por_contrato:(inv.balances||[]).flatMap(b=>(b.details||[]).map(d=>({...d,month:b.month,kind:b.kind})))
- });
- const selectedApprovals=new Set(resolved.contracts.flatMap(c=>[c.evidence?.requestId,c.evidence?.reference].filter(Boolean)));
- const financialKeys=['amount','interest','administrativeFeeTotal','administrativeFeePerPayment','total','paymentPerPeriod','paymentCount','rate','fund'];
- const snapshots=(approvals?.snapshots||[]).filter(s=>selectedApprovals.has(s.id)||selectedApprovals.has(s.reference)).map(s=>({id:s.id,reference:s.reference,numeroControl:s.numeroControl,createdOn:s.createdOn,category:s.category,financial:Object.fromEntries(financialKeys.filter(k=>Object.hasOwn(s.financial||{},k)).map(k=>[k,s.financial[k]]))}));
- objectTable('Base Contratos','Google y Supabase · condiciones utilizadas','Aprobaciones registradas y contratos derivados identificados por tipo',{
-  aprobacion:snapshots,contrato_calculado:resolved.contracts,
-  calendario_calculado:resolved.contracts.flatMap(c=>c.schedule.map(s=>({...s,C:c.C,D:c.D}))),
-  contrato_sin_desglose:resolved.protectedLoans
- });
- return {version:1,consultedAt,savingsInputsAvailable:!!savings.source_bases,tables};
+export function cashFlowSourceBases(source,savings,investors,approvals,resolved,consultedAt,report={}){
+ return buildCashFlowSourceBases({source,savings,investors,approvals,resolved,consultedAt,report});
 }
-export async function loadCashFlow(body,client,readSource,now=()=>new Date().toISOString()){
+export function projectCashFlowSnapshot(snapshot){
+ if(snapshot?.version!=='cash-flow-inputs-v1'||snapshot?.modelVersion!=='20261104-original-components-v1'||!validFrom(snapshot.from)||!Number.isFinite(Date.parse(snapshot.consultedAt)))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
+ const {source,savings,investors,from,consultedAt,sourceErrors}=snapshot;
+ if(!source||!Array.isArray(source.loans)||!Array.isArray(source.requests))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
+ const base=reconcileSavingsCashFlow({base:buildCashFlow({from,loans:[source.loans[0]],savings,consultedAt}),savings});
+ const data=consolidateCashFlow({base,loans:source.loans,requests:source.requests,investorsSource:investors,sourceErrors});
+ data.sourceBases=cashFlowSourceBases(source,savings,investors,null,null,consultedAt,data);
+ delete data.savingsSourceTable;delete data.savingsBridge;delete data.loanContracts;
+ return data;
+}
+export async function loadCashFlow(body,client,readSource,now=()=>new Date().toISOString(),options={}){
  if(!body||body.action!=='CASH_FLOW'||!validFrom(body.from)||Object.keys(body).some(k=>!['action','from'].includes(k)))throw new ReportError('REQUEST_INVALID');
  const before=await context(client),consultedAt=now();
- const [source,r,investors,approvals]=await Promise.all([
+ const [source,r,investors]=await Promise.all([
   readSource(),client.rpc('get_admin_reports_jc_cash_flow',{p_from:body.from+'-01'}),
-  client.rpc('get_admin_reports_jc_cash_flow_investors',{p_from:body.from+'-01'}),client.rpc('get_admin_reports_jc_cash_flow_contracts')
+  client.rpc('get_admin_reports_jc_cash_flow_investors',{p_from:body.from+'-01'})
  ]);
  if(r.error)throw new ReportError('SAVINGS_SOURCE_UNAVAILABLE');
  if(!source||!Array.isArray(source.loans)||!Array.isArray(source.requests))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
- // Keep the original savings reader and its ten concepts unchanged. Loan results
- // now come from the certified pure engine, with the same C/D/S and A/B authority.
- const base=buildCashFlow({from:body.from,loans:[source.loans[0]],savings:r.data,consultedAt});
- const resolved=resolveCashFlowContracts({...source,snapshots:approvals.error?[]:approvals.data?.snapshots||[]});
- const data=consolidateCashFlow({base,loans:source.loans,...resolved,contractCoverage:resolved.coverage,
-  investorsSource:investors.error?null:investors.data,sourceErrors:{contracts:approvals.error?'CONTRACT_SOURCE_UNAVAILABLE':null,investors:investors.error?'INVESTOR_SOURCE_UNAVAILABLE':null}}),after=await context(client);
+ const snapshot=cashFlowInputSnapshot({from:body.from,source,savings:r.data,investors:investors.error?null:investors.data,consultedAt,sourceErrors:{investors:investors.error?'INVESTOR_SOURCE_UNAVAILABLE':null}});
+ const after=await context(client);
  if(JSON.stringify(before)!==JSON.stringify(after))throw new ReportError('CONTEXT_CHANGED');
- data.sourceBases=cashFlowSourceBases(source,r.data,investors.error?null:investors.data,approvals.error?null:approvals.data,resolved,consultedAt);
- return {context:after,data};
+ return {context:after,data:options.sourceSnapshot===true?snapshot:projectCashFlowSnapshot(snapshot)};
 }

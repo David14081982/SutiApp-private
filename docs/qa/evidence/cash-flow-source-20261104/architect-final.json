@@ -1,0 +1,92 @@
+{
+  "taskReviewed": "H-CASH-FLOW-PV2-SOURCE-20261104",
+  "verdict": "APPROVED",
+  "status": "PASS",
+  "scope": "CANDIDATE_FOR_AUTHORIZED_PUBLICATION",
+  "reviewType": "FOCAL_ARCHITECTURE_SECURITY_AND_INTEGRATION",
+  "checkedAt": "2026-11-04T17:43:17.114438+00:00",
+  "baseCommit": "a4a7f8a5fc317c6bb879ff130e2287a4c3cb89ae",
+  "candidateVersion": "2026110402",
+  "bundleSha256": "885e09fb542024983e4ff958642132d462198d8e297462f1c1289c262d913121",
+  "workerSha256": "1e28653ba5a8b8d64e48158cf4423efab3182859ba9bbc42d8f4a57d744603dd",
+  "whatWasReviewed": [
+    "Original PV2 and request interpretation, unique principal per C, source component preservation and cross-year quotas",
+    "One pure report entry generated into a disposable Worker by AST dependency selection",
+    "Authenticated Edge allowlisted source transport and unchanged administrative context checks",
+    "Worker cancellation, context/sequence guards and one result shared by screen and Excel",
+    "Investor continuity and savings source bridges with no financial source writes",
+    "Migration 003 and exact recovery: only function-specific statement_timeout, no body/OID/ACL/role/global changes",
+    "Published-baseline Registry update and exact candidate/evidence hashes"
+  ],
+  "sourceOfTruth": {
+    "verdict": "SAFE",
+    "loanAuthority": "Google SutiApp Final original PV2/request fields",
+    "savingsAndInvestorAuthority": "Existing official Supabase records",
+    "financialWrites": 0,
+    "googleWrites": 0,
+    "AEExcluded": true,
+    "parallelFinancialAuthority": false,
+    "persistentFinancialCache": false
+  },
+  "security": {
+    "verdict": "PASS",
+    "backendAuthorizationPreserved": true,
+    "beforeAfterContextChecks": true,
+    "workerCredentialsNetworkStorage": false,
+    "workerModuleExports": "Only reachable pure declarations; report.mjs exports restricted to ReportError, sourceDate, fundGroup, requestStatus",
+    "originalRowOrdinalsPreserved": true,
+    "safeFailureWithoutFallback": true,
+    "quoteEligibilityApprovalWritersRemainBackend": true
+  },
+  "independentChecks": {
+    "workerAndTransport": 14,
+    "timeoutAndReader": 24,
+    "allPassed": true,
+    "commands": [
+      "node --test scripts/test-cash-flow-projection-worker.js scripts/test-cash-flow-inputs.mjs",
+      "node scripts/test-cash-flow-timeout-sql.js"
+    ]
+  },
+  "integrationEvidence": {
+    "unitFinancialTransportWorkerTests": 113,
+    "actualBrowser2026": true,
+    "liveFutureYears": [
+      "2027-01",
+      "2028-01"
+    ],
+    "controlsPerFutureYear": 96,
+    "displayedAndExcelAmountsMatched": 1512,
+    "fiveSourceBasesMatched": true,
+    "actualExcelDownload": true,
+    "cellComments": false,
+    "privateTestExportDeleted": true,
+    "allSevenTestWorkersTerminatedOnce": true,
+    "financialApiMocks": 0
+  },
+  "registry": {
+    "scopeFreshness": "FRESH",
+    "globalFreshness": "STALE",
+    "scopeFiles": 56,
+    "unrelatedFactsPreserved": 3486,
+    "rootRegistryTouched": false,
+    "evidenceSha256": "a8cee73e0258213d5330cfe309e81c00601194e7a15be903b9810e378f633451"
+  },
+  "evidence": {
+    "docs/qa/evidence/cash-flow-source-20261104/browser-live-candidate.json": "fae73b95400730ef540df47b11c699b27df960b2dfa122a1ddb73331cad7b9f0",
+    "docs/qa/evidence/cash-flow-source-20261104/future-http-verification.json": "cd8689c8f2b2f0f6885c561f86bb8d9504fe9bdd67a80da393d4db95c2028412",
+    "docs/qa/evidence/cash-flow-source-20261104/timeout-applied.json": "f023786e715478cd77adeb297a19feb27636827ab5565972a0ec24f5125a0f44",
+    "docs/qa/evidence/cash-flow-source-20261104/unit-tests.json": "ad28aa63a21f1a8e76439e1d305148cad928a789517953191f46bb5fba96d4e2",
+    "docs/qa/evidence/cash-flow-source-20261104/worker-ui-verification.json": "23b794f91375c78b7169f668fc077a9dbed3e654ad9feb4af6a6cec1d5ff468d"
+  },
+  "limitations": [
+    "Approval covers this frozen candidate and authorized publication; deployed frontend verification remains the next step, not an asserted result.",
+    "Registry global freshness remains explicitly STALE because this is a sparse checkout and unrelated published facts are preserved.",
+    "Partial or unassigned original records remain explicitly identified; no fabricated allocation or financial source repair is approved.",
+    "This is a focused integration review. This reviewer authored the investor module earlier; sibling review, source parity and integration evidence provide the separate checks for that area.",
+    "This approval does not certify unrelated legacy areas or exhaustive re-audit of all historical governance documentation."
+  ],
+  "ownerDecisionRequired": false,
+  "productionFrontendVerified": false,
+  "nextAction": "Publish only this already-authorized frozen candidate, then verify the deployed frontend, real queries, Worker artifact and Excel against production sources; preserve all financial originals.",
+  "responseToCodex": "Candidato aprobado para la publicacion ya autorizada. Publica solo el alcance congelado y verifica despues el frontend desplegado, consultas reales, Worker y Excel. No declares cierre de produccion antes de esas pruebas. No avances a otra H."
+}

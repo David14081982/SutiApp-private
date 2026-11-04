@@ -20,3 +20,9 @@ supabase/recovery/20260928000500_document_deposit_authorization.sql -text
 supabase/migrations/20261025000100_self_loan_history.sql -text
 supabase/recovery/20261025000100_self_loan_history.sql -text
 google-apps-script/financial-handoff/Code.gs -text
+supabase/migrations/20261104000100_reports_jc_cash_flow_sources.sql -text
+supabase/recovery/20261104000100_reports_jc_cash_flow_sources.sql -text
+supabase/migrations/20261104000200_reports_jc_investor_sources.sql -text
+supabase/recovery/20261104000200_reports_jc_investor_sources.sql -text
+supabase/migrations/20261104000300_reports_jc_cash_flow_timeout.sql -text
+supabase/recovery/20261104000300_reports_jc_cash_flow_timeout.sql -text

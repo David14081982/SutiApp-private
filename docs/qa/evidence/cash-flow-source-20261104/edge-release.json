@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "version": 14,
+  "candidate": {
+    "index.ts": "e018ce85e77898d022f3018557bb7858323f2ef58bba7b0902b3f32c64d0269f",
+    "report.mjs": "35f2cc373ce708acefd604bcdc67fb2db1728b42a357adeb78fd138e26b73608",
+    "google-auth.mjs": "2530bd316b4f7e727898f2c09f00865ced4a2646061de2f98a93cd697a0de5ed",
+    "template.mjs": "1ae9618b5051581d218c8d0ff364c16ca6f774794efc9497a5397e4adbf6f104",
+    "cash-flow.mjs": "6dc9b307910e93e620d993c1cb3648ef4647d85148f66e502a0b71331c63efb1",
+    "cash-flow-google.mjs": "a8f0fcb320736b153e20a7e498b694a8d3c45abab61b269b6164da703702613d",
+    "cash-flow-consolidated.mjs": "dfc02a9bdc015e2ed2b0cd4b127132bea6f5777d5fd117e4d3445e54ea36e435",
+    "cash-flow-contracts.mjs": "4224900df26fc6e2e71f42c86d9f780147ee07d85168eafa83d3eb1b283895c1",
+    "cash-flow-pv2-engine.mjs": "3854f1bc6bc988d979d5dfdd41c385009967cad0f5d3659d70d7e85d41783d33",
+    "cash-flow-investors.mjs": "e6349197c181ce56748032e8715c4fa1ff7c91e2a6de02d8adbe8e08606d6fb2",
+    "cash-flow-loans.mjs": "32e863514c007db58bb53aaab876eef1131206d6b7f480e361d301b417ff3d39",
+    "cash-flow-savings.mjs": "f178b7d326c3bbab3a939e4c20619dff43c3e9947ea8436da8bf630a5e9bf44a",
+    "cash-flow-source-bases.mjs": "87ff3e2d0a75bb0c13f8ba84d0af1c0ef0f69815b74f73424d0f97bb0b1847b3",
+    "cash-flow-investor-continuity.mjs": "776f7493328780bf71a39780260a83822d0c6a96c93e8d34b7416a375608e74a",
+    "cash-flow-inputs.mjs": "cdb41dcc33e0c4e4b5574b5f55e13880936ca620ab890a37961dbc37539e93cc"
+  },
+  "financialWrites": 0
+}

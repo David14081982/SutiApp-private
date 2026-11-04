@@ -1,0 +1,172 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-11-04T17:24:13.667Z",
+  "reports": [
+    {
+      "year": 2026,
+      "status": "PASS",
+      "cashControls": 96,
+      "quotas": 10016,
+      "totals": {
+        "loanSavings": 3944371.05,
+        "sutiexpress": 2391530.82,
+        "pettyCash": 6120280.11,
+        "advance": 1880206.67
+      },
+      "concepts": 126,
+      "records": 90992,
+      "bases": [
+        {
+          "name": "Base PV2",
+          "rows": 17743,
+          "columns": 26
+        },
+        {
+          "name": "Base Solicitudes",
+          "rows": 1985,
+          "columns": 14
+        },
+        {
+          "name": "Base Ahorro",
+          "rows": 17997,
+          "columns": 17
+        },
+        {
+          "name": "Base Inversores",
+          "rows": 7183,
+          "columns": 42
+        },
+        {
+          "name": "Base Contratos",
+          "rows": 1850,
+          "columns": 14
+        }
+      ],
+      "timingsMs": {
+        "base": 392.1368000000002,
+        "savings": 898.8553999999999,
+        "consolidated": 3230.2563,
+        "bases": 1147.9404000000004
+      },
+      "sourceMutation": false,
+      "forbiddenAE": false,
+      "aprilPettyCash": {
+        "capital": 269800,
+        "count": 29
+      },
+      "excel": {
+        "bytes": 13301317,
+        "sheets": 7,
+        "comments": false,
+        "blankUnknown": true
+      },
+      "investorNovember": {
+        "calculationStatus": "CALCULATED",
+        "knownAmount": 24006000,
+        "amount": 24006000,
+        "status": "RECORDED"
+      }
+    },
+    {
+      "year": 2027,
+      "status": "PASS",
+      "cashControls": 96,
+      "quotas": 3254,
+      "totals": {
+        "loanSavings": 2366578.87,
+        "sutiexpress": 527739.64,
+        "pettyCash": 1844799.62,
+        "advance": 221105
+      },
+      "concepts": 126,
+      "records": 42831,
+      "bases": [
+        {
+          "name": "Base PV2",
+          "rows": 17743,
+          "columns": 26
+        },
+        {
+          "name": "Base Solicitudes",
+          "rows": 1985,
+          "columns": 14
+        },
+        {
+          "name": "Base Ahorro",
+          "rows": 21868,
+          "columns": 17
+        },
+        {
+          "name": "Base Inversores",
+          "rows": 8011,
+          "columns": 42
+        },
+        {
+          "name": "Base Contratos",
+          "rows": 1850,
+          "columns": 14
+        }
+      ],
+      "timingsMs": {
+        "base": 69.18730000000505,
+        "savings": 337.15580000000045,
+        "consolidated": 1377.1705000000002,
+        "bases": 293.00709999999526
+      },
+      "sourceMutation": false,
+      "forbiddenAE": false
+    },
+    {
+      "year": 2028,
+      "status": "PASS",
+      "cashControls": 96,
+      "quotas": 45,
+      "totals": {
+        "loanSavings": 210749.83,
+        "sutiexpress": 9090,
+        "pettyCash": 113262.36,
+        "advance": 0
+      },
+      "concepts": 126,
+      "records": 34582,
+      "bases": [
+        {
+          "name": "Base PV2",
+          "rows": 17743,
+          "columns": 26
+        },
+        {
+          "name": "Base Solicitudes",
+          "rows": 1985,
+          "columns": 14
+        },
+        {
+          "name": "Base Ahorro",
+          "rows": 30508,
+          "columns": 17
+        },
+        {
+          "name": "Base Inversores",
+          "rows": 7513,
+          "columns": 42
+        },
+        {
+          "name": "Base Contratos",
+          "rows": 1850,
+          "columns": 14
+        }
+      ],
+      "timingsMs": {
+        "base": 187.37630000000354,
+        "savings": 640.803899999999,
+        "consolidated": 2900.1564,
+        "bases": 1004.8179999999993
+      },
+      "sourceMutation": false,
+      "forbiddenAE": false
+    }
+  ],
+  "financialWrites": 0,
+  "sourceMutation": false,
+  "originalDataPersistedByThisTest": false
+}

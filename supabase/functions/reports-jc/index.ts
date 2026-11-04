@@ -19,7 +19,7 @@ Deno.serve(async(request:Request)=>{
     if(reader)for(;;){const part=await reader.read();if(part.done)break;raw+=new TextDecoder().decode(part.value);if(raw.length>1024){await reader.cancel();return json(400,{error:'REQUEST_INVALID'});}}
     let body;try{body=JSON.parse(raw);}catch(_){return json(400,{error:'REQUEST_INVALID'});}
     const client=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{global:{headers:{Authorization:authorization}},auth:{persistSession:false}});
-    if(body?.action==='CASH_FLOW')return json(200,await loadCashFlow(body,client,()=>readConsolidatedCashFlowGoogle((name:string)=>Deno.env.get(name))));
+    if(body?.action==='CASH_FLOW')return json(200,await loadCashFlow(body,client,()=>readConsolidatedCashFlowGoogle((name:string)=>Deno.env.get(name)),undefined,{sourceSnapshot:true}));
     return json(200,await loadReport(body,client,()=>readGoogle((name:string)=>Deno.env.get(name)),()=>({base64:TEMPLATE_BASE64,sha256:TEMPLATE_SHA256,filename:TEMPLATE_FILENAME})));
   }catch(error){
     const safe=error instanceof ReportError?error.message:'SOURCE_UNAVAILABLE';

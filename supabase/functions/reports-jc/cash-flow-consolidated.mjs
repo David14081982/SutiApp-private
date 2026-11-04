@@ -1,42 +1,31 @@
 // Read-only monthly projection. No source writes, bank attribution or cash balance inference.
-import {sourceDate,fundGroup,ReportError} from './report.mjs';
-import {computeContractCashFlow} from './cash-flow-contracts.mjs';
+import {fundGroup,ReportError} from './report.mjs';
+import {deriveCashFlowLoans,CASH_FLOW_LOAN_FUNDS} from './cash-flow-loans.mjs';
 import {INVESTOR_DEFINITIONS,buildInvestorCashFlow} from './cash-flow-investors.mjs';
 
-const text=v=>String(v??'').trim();
-const normalized=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 const cents=v=>typeof v==='number'&&Number.isFinite(v)&&Number.isSafeInteger(Math.round(v*100))&&Math.abs(v*100-Math.round(v*100))<.00001?Math.round(v*100):null;
-const loanKey=(C,D)=>JSON.stringify([text(C),text(D)]);
 const percent=(part,total)=>Number.isSafeInteger(part)&&Number.isSafeInteger(total)&&total>0?Math.round(part/total*10000)/100:null;
 const COMPONENTS={principal:'AD',interest:'AB',admin:'Z'};
-const LABELS={loanSavings:'Caja de Ahorro',pettyCash:'Caja Chica',sutiexpress:'Sutiexpress',advance:'Adelantos de Nómina',sutiLoan:'Suti Préstamo'};
+const LABELS=CASH_FLOW_LOAN_FUNDS;
 const LOAN_ROWS=[
- ['placed','Capital colocado según transferencia registrada','recorded'],['count','Número de préstamos otorgados','recorded'],
- ['recovered','Recuperación total corroborada','recorded'],['principal','Capital recuperado','recorded'],['interest','Intereses recuperados','recorded'],['admin','Gasto administrativo recuperado','recorded'],
- ['pending','Capital pendiente de recuperar','balance'],['interest_pending','Intereses contractuales pendientes','balance'],['admin_pending','Administración contractual pendiente','balance'],
- ['scheduled','Recuperación futura programada','scheduled'],['principal_scheduled','Capital programado','scheduled'],['interest_scheduled','Intereses programados','scheduled'],['admin_scheduled','Administración programada','scheduled']
+ ['placed','Capital colocado por fecha de solicitud','recorded'],['count','Número de préstamos otorgados','recorded'],
+ ['recovered','Recuperación realizada','recorded'],['principal','Capital recuperado','recorded'],['interest','Intereses recuperados','recorded'],['admin','Gasto administrativo recuperado','recorded'],
+ ['unallocated','Recuperación sin desglose','recorded'],['rounding','Diferencia de redondeo del desglose','recorded'],
+ ['pending','Capital pendiente de recuperar','balance'],['interest_pending','Intereses pendientes según calendario','balance'],['admin_pending','Administración pendiente según calendario','balance'],
+ ['scheduled','Recuperación futura programada','scheduled'],['principal_scheduled','Capital programado','scheduled'],['interest_scheduled','Intereses programados','scheduled'],['admin_scheduled','Administración programada','scheduled'],['unallocated_scheduled','Recuperación programada sin desglose','scheduled'],['rounding_scheduled','Diferencia de redondeo programada','scheduled']
 ];
-function identifyFund(value,contract){
- const group=fundGroup(value);
- if(Object.hasOwn(LABELS,group))return {id:group,label:LABELS[group]};
- if(['SUTIPRESTAMO','SUTIPRESTAMOS','PRESTAMOSUTI'].includes(normalized(value)))return {id:'sutiLoan',label:LABELS.sutiLoan};
- if(contract&&!group&&text(value))return {id:'contract:'+normalized(value),label:text(value)};
- return null;
-}
-function endOfMonth(key){const [y,m]=key.split('-').map(Number);return new Date(Date.UTC(y,m,0)).toISOString().slice(0,10);}
-
-export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],contractCoverage={},investorsSource=null,sourceErrors={}}){
+export function consolidateCashFlow({base,loans,requests=[],investorsSource=null,sourceErrors={}}){
  if(!base?.months||!Array.isArray(loans))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
- const result=structuredClone(base),{months,asOf}=result,current=asOf.slice(0,7),pos=new Map(months.map((m,i)=>[m.key,i]));
- const rows=new Map(result.rows.map(r=>[r.id,r])),working=new Set(),funds=new Map(),contractMap=new Map(),protectedMap=new Map();
- for(const c of contracts){const k=loanKey(c.C,c.D);if(contractMap.has(k))throw new ReportError('CONTRACT_IDENTITY_CONFLICT');contractMap.set(k,c);}
- for(const p of protectedLoans)protectedMap.set(p.key||loanKey(p.C,p.D),p.reason);
+ // Records and source payloads are immutable. Clone the mutable containers instead of
+ // duplicating every original savings/history value before assembling loan rows.
+ const result={...base,rows:base.rows.map(row=>({...row,cells:row.cells.map(cell=>({...cell,sourceIds:[...(cell.sourceIds||[])],notes:[...(cell.notes||[])]}))})),records:[...base.records],issues:[...base.issues],unassigned:[...base.unassigned]}, {months,asOf}=result,current=asOf.slice(0,7),pos=new Map(months.map((m,i)=>[m.key,i]));
+ const rows=new Map(result.rows.map(r=>[r.id,r])),working=new Set(),funds=new Map();
  const issues=result.issues,records=result.records,unassigned=result.unassigned;
  const addRow=(id,label,group,kind='recorded',extra={})=>{
   const row={id,label,group,kind,unit:'money',...extra,cells:months.map(m=>({cents:0,knownCount:0,missing:false,sourceIds:[],notes:[],applicable:!(['recorded','net'].includes(kind)&&m.key>current||kind==='scheduled'&&m.key<current)}))};
   rows.set(id,row);working.add(id);return row;
  };
- // Preserve all ten savings definitions/cells; replace only loan placeholders with contractual read-only results.
+ // Preserve savings definitions/cells; replace loan placeholders with original-source results.
  for(const id of [...rows.keys()].filter(id=>id.startsWith('loan_')))rows.delete(id);
  // Component disclosure only; the gross withdrawals already count these cash exits.
  addRow('savings_yield_paid','Rendimientos de Ahorro pagados (incluidos en retiros)','Ahorro Voluntario');
@@ -64,61 +53,12 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
   add('savings_yield_paid',{...r,id:r.id+':yield-disclosure',amount:component==='YIELD'?r.amount:component==='CAPITAL'?0:null,basis:'REGISTERED_MOVEMENT',note:'El retiro registrado no separa capital y rendimiento.'});
  }
  for(const c of rows.get('savings_yield_paid').cells)c.notes.push('El rendimiento pagado está incluido en los retiros y no se suma nuevamente como salida.');
- const groups=new Map();
- loans.slice(1).forEach((v,i)=>{
-  if(!v.some(x=>x!==''&&x!=null))return;
-  const C=text(v[2]),D=text(v[3]),k=loanKey(C,D),fund=identifyFund(v[6],contractMap.get(k));
-  if(!C||!D){if(fund){const f=ensureFund(fund);mark(Object.values(f.ids),'LOAN_IDENTITY_MISSING','Préstamo sin ID o folio; no se atribuyen importes.',['pv2:'+(i+2)]);}return;}
-  if(!groups.has(k))groups.set(k,[]);groups.get(k).push({v,C,D,fund,row:i+2});
- });
- let loanCount=0,determined=0,protectedCount=0,derivedForecastCount=0;
- for(const [key,g]of groups){
-  const fund=g.find(r=>r.fund)?.fund;if(!fund)continue;
-  loanCount++;const f=ensureFund(fund),allIds=Object.values(f.ids),sourceIds=g.map(r=>'pv2:'+r.row),first=g[0],contract=contractMap.get(key);
-  if(g.some(r=>!r.fund||r.fund.id!==fund.id)){mark(allIds,'LOAN_FUND_CONFLICT','Un ID y folio tiene fondos contradictorios; no se suman sus cuotas.',sourceIds);protectedCount++;continue;}
-  const seen=new Set(),ambiguousInstallments=g.some(r=>!Number.isSafeInteger(r.v[18])||r.v[18]<1||seen.has(r.v[18])||(seen.add(r.v[18]),false));
-  if(ambiguousInstallments)mark(['principal','interest','admin','principal_scheduled','interest_scheduled','admin_scheduled','pending','interest_pending','admin_pending'].map(k=>f.ids[k]),'LOAN_INSTALLMENT_AMBIGUOUS','Los números de cuota no permiten distribuir el contrato; se conservan los importes B registrados por fila y fecha.',sourceIds);
-  g.sort((a,b)=>a.v[18]-b.v[18]);
-  const terms={principal:cents(first.v[9]),total:cents(first.v[10])},uniform=terms.principal!==null&&terms.total!==null&&terms.total>=terms.principal&&g.every(r=>cents(r.v[9])===terms.principal&&cents(r.v[10])===terms.total);
-  const dates=[...new Set(g.map(r=>r.v[30]).filter(v=>v!==''&&v!=null).map(sourceDate))],transfer=dates.length===1&&dates[0]?dates[0]:null;
-  if(uniform&&transfer&&transfer<=asOf){
-   const origin={source:'HISTORIAL P V2',sourceId:'Contrato '+first.C+' / '+first.D,loanId:first.C,folio:first.D,fund:fund.label,date:transfer,status:'RECORDED',basis:'RECORDED_TRANSFER'};
-   add(f.ids.placed,{...origin,id:'capital:'+key,amount:terms.principal/100});add(f.ids.count,{...origin,id:'count:'+key,amount:1});
-  }else if(!uniform){mark([f.ids.placed,f.ids.count,f.ids.pending],'LOAN_TERMS_CONFLICT','Capital o total contractual contradictorio.',sourceIds);}
-  else if(!transfer){mark([f.ids.placed,f.ids.count],'LOAN_TRANSFER_DATE_UNRESOLVED','No existe una fecha única de transferencia; no se inventa el mes de colocación.',sourceIds);unassigned.push({id:'capital:'+key,kind:f.ids.placed,amount:terms.principal/100,loanId:first.C,folio:first.D,source:'HISTORIAL P V2',sourceIds,date:null});}
-  else {mark([f.ids.placed,f.ids.count],'LOAN_TRANSFER_FUTURE','La transferencia tiene fecha futura y no acredita una colocación realizada.',sourceIds,[transfer]);}
-  const engineRows=g.map(r=>({C:r.C,D:r.D,S:r.v[18],date:sourceDate(r.v[0]),B:cents(r.v[1]),J:cents(r.v[9]),K:cents(r.v[10]),O:cents(r.v[14]),I:r.v[8],fund:r.v[6],sourceRow:r.row}));
-  const allocation=contract&&!ambiguousInstallments?computeContractCashFlow({contract,rows:engineRows,asOf}):{status:'PROTECTED',reason:ambiguousInstallments?'LOAN_INSTALLMENT_AMBIGUOUS':protectedMap.get(key)||sourceErrors.contracts||'CONTRACT_INPUTS_INSUFFICIENT'};
-  const ok=allocation.status==='DETERMINED';if(ok)determined++;else protectedCount++;
-  const payments=new Map((ok?allocation.payments:[]).map(p=>[p.S,p])),forecast=new Map((ok?allocation.forecast:[]).map(p=>[p.S,p]));
-  for(const r of engineRows){
-   const scheduled=r.date&&r.date>asOf,kind=scheduled?'scheduled':'recovered',breakdown=scheduled?forecast.get(r.S):payments.get(r.S),positiveIds=[f.ids[kind],...Object.keys(COMPONENTS).map(c=>f.ids[c+(scheduled?'_scheduled':'')])];
-   if(!r.date){mark([f.ids.recovered,f.ids.scheduled,...Object.keys(COMPONENTS).flatMap(c=>[f.ids[c],f.ids[c+'_scheduled']])],'LOAN_PAYMENT_DATE_MISSING','Fecha de cuota sin determinar.', ['pv2:'+r.sourceRow]);if(r.B!==null&&r.B>=0)unassigned.push({id:'pv2:'+r.sourceRow,source:'HISTORIAL P V2',sourceId:'Fila '+r.sourceRow,kind:f.ids.recovered,loanId:r.C,folio:r.D,installment:r.S,date:null,amount:r.B/100,status:'UNAVAILABLE',note:'Importe B registrado sin fecha para determinar si es cobrado o programado.'});continue;}
-   if(r.B===null||r.B<0){mark(positiveIds,'LOAN_PAYMENT_INVALID','El importe B no es monetario válido.',['pv2:'+r.sourceRow],[r.date]);continue;}
-   const projected=r.B,basis=breakdown?'CONTRACTUAL_ALLOCATION':'RECORDED_UNALLOCATED';
-   if(breakdown&&breakdown.B!==r.B)throw new ReportError('REGISTERED_SCHEDULE_CHANGED');
-   if(basis==='DERIVED_FORECAST')derivedForecastCount++;
-   const fields={id:'pv2:'+r.sourceRow,source:'HISTORIAL P V2 + condiciones originales',sourceId:'Fila '+r.sourceRow,loanId:r.C,folio:r.D,installment:r.S,period:r.date.slice(0,7),date:r.date,fund:fund.label,status:scheduled?'SCHEDULED':'RECORDED',basis,registeredAmount:r.B/100,
-    principal:breakdown?breakdown.AD/100:projected===0?0:null,interest:breakdown?breakdown.AB/100:projected===0?0:null,administration:breakdown?breakdown.Z/100:projected===0?0:null,
-    percentages:{principal:breakdown?percent(breakdown.AD,projected):null,interest:breakdown?percent(breakdown.AB,projected):null,administration:breakdown?percent(breakdown.Z,projected):null},contractSourceKey:ok?key:undefined};
-   add(f.ids[kind],{...fields,amount:projected/100});
-   for(const [component,column]of Object.entries(COMPONENTS))add(f.ids[component+(scheduled?'_scheduled':'')],{...fields,id:fields.id+':'+component,amount:breakdown?breakdown[column]/100:projected===0?0:null});
-   if(!breakdown&&projected>0)mark(Object.keys(COMPONENTS).map(c=>f.ids[c+(scheduled?'_scheduled':'')]),'LOAN_BREAKDOWN_UNDETERMINED','El importe B se incluye; faltan condiciones suficientes para distribuirlo ('+(scheduled&&allocation.forecastReason||allocation.reason||'CONTRACT_INPUTS_INSUFFICIENT')+').',[fields.id],[r.date]);
-  }
-  for(const [i,m]of months.entries()){
-   const cut=m.key===current?asOf:endOfMonth(m.key),future=m.key>current;
-   if(transfer&&transfer>cut)continue;
-   const ids=[f.ids.pending,f.ids.interest_pending,f.ids.admin_pending];
-   if(!ok||(!transfer&&m.key<current)||(future&&allocation.forecastReason)){mark(ids,'LOAN_PENDING_UNDETERMINED','Saldo contractual sin desglose o corte original verificable.',sourceIds,[m.key+'-01']);continue;}
-   const selected=[...allocation.payments,...(future?allocation.forecast:[])].filter(p=>p.date<=cut);
-   for(const [id,column,original]of [[f.ids.pending,'AD',contract.principal],[f.ids.interest_pending,'AB',contract.interest],[f.ids.admin_pending,'Z',contract.administration]]){
-    const pending=original-selected.reduce((s,p)=>s+p[column],0),row=rows.get(id);if(pending<0)throw new ReportError('CONTRACT_TOTAL_MISMATCH');
-    add(id,{id:'pending:'+key+':'+column+':'+m.key,source:'Condiciones originales y cuotas',sourceId:'Contrato '+first.C+' / '+first.D,contractSourceKey:key,loanId:first.C,folio:first.D,fund:fund.label,date:cut,amount:pending/100,status:future?'SCHEDULED':'RECORDED',basis:future?'DERIVED_FORECAST':'CONTRACTUAL_ALLOCATION'});
-    row.cells[i].notes.push(future?'Saldo proyectado después de las cuotas programadas; no efectivo disponible.':'Saldo contractual; no representa dinero disponible.');
-   }
-  }
-  if(ok&&allocation.unassignedPending>0)unassigned.push({id:'unassigned:'+key,kind:f.ids.scheduled,amount:allocation.unassignedPending/100,date:null,loanId:first.C,folio:first.D,source:'Motor contractual de consulta',status:'PENDING',basis:'CONTRACTUAL_ALLOCATION',note:'Saldo contractual pendiente sin fecha de cobro programada.'});
- }
+ const loanDerivation=deriveCashFlowLoans({loans,requests,asOf,months});
+ for(const fund of loanDerivation.funds)ensureFund(fund);
+ for(const {fund,metric,record}of loanDerivation.entries){const f=ensureFund({id:fund,label:LABELS[fund]});add(f.ids[metric],record);}
+ for(const issue of loanDerivation.issues){const f=ensureFund({id:issue.fund,label:LABELS[issue.fund]});mark(issue.metrics.map(k=>f.ids[k]),issue.code,issue.message,issue.sourceIds,issue.dates);}
+ for(const item of loanDerivation.unassigned){const group=fundGroup(item.fund),f=funds.get(group);unassigned.push({...item,kind:f?.ids[item.metric]||item.metric});}
+ result.loanContracts=loanDerivation.loanContracts;
  // Add investors as a separate authority/domain. Accruals and balances are not cash movements.
  let investor;
  try{investor=buildInvestorCashFlow({from:result.from,source:investorsSource,asOf});}
@@ -175,6 +115,7 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
   const r=total('loans_'+component+phase+'_total',label+(phase?' programados':' recuperados')+' · todos los fondos','Distribución consolidada de préstamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[component+phase]]));
   const denominator=rows.get(phase?'loans_scheduled_total':'loans_recovered_total');r.cells.forEach((c,i)=>{c.percentage=c.amount!==null&&denominator.cells[i].amount!==null?percent(cents(c.amount),cents(denominator.cells[i].amount)):null;});
  }
+ for(const [metric,label]of [['unallocated','Recuperaci\u00f3n sin desglose'],['rounding','Diferencia de redondeo del desglose']])for(const phase of ['', '_scheduled'])total('loans_'+metric+phase+'_total',label+(phase?' programada':'')+' \u00b7 todos los fondos','Distribuci\u00f3n consolidada de pr\u00e9stamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[metric+phase]]));
  total('cash_in','Total de entradas registradas','Flujo consolidado','recorded',[...recover,['contribution'],['investor_contribution'],['cash_other_in']],{emphasis:'subtotal'});
  total('cash_out','Total de salidas registradas','Flujo consolidado','recorded',[...placed,['withdrawal_partial'],['withdrawal_total'],['withdrawal_unspecified'],['investor_yield_paid'],['investor_capital_return'],['cash_other_out']],{emphasis:'subtotal'});
  total('cash_other_net','Otros movimientos de efectivo registrados · neto','Flujo consolidado','recorded',[['investor_other']]);
@@ -193,11 +134,11 @@ export function consolidateCashFlow({base,loans,contracts=[],protectedLoans=[],c
  // Keep amounts and kinds on each component so totals remain directly verifiable.
  const recordMap=new Map(records.map(r=>[r.id,r]));
  result.records=records.map(r=>{
-  const parentId=/^pv2:\d+:(principal|interest|admin)$/.test(r.id)?r.id.replace(/:(principal|interest|admin)$/,''):/^pending:.*:(AB|Z):\d{4}-\d{2}$/.test(r.id)?r.id.replace(/:(AB|Z):(\d{4}-\d{2})$/,':AD:$2'):null;
+  const parentId=/^pv2:\d+:(principal|interest|admin|unallocated|rounding)$/.test(r.id)?r.id.replace(/:(principal|interest|admin|unallocated|rounding)$/,''):/^pending:.*:(AB|Z):\d{4}-\d{2}$/.test(r.id)?r.id.replace(/:(AB|Z):(\d{4}-\d{2})$/,':AD:$2'):null;
   return parentId&&recordMap.has(parentId)?{id:r.id,kind:r.kind,amount:r.amount,parentRecordId:parentId}:r;
  });
  const groupedIssues=new Map();for(const issue of issues){const k=JSON.stringify([issue.code,issue.message,issue.months,issue.affectedKinds]);if(!groupedIssues.has(k))groupedIssues.set(k,{...issue,sourceIds:[]});groupedIssues.get(k).sourceIds.push(...(issue.sourceIds||[]));}for(const issue of groupedIssues.values())issue.sourceIds=[...new Set(issue.sourceIds)];result.issues=[...groupedIssues.values()];
- result.coverage={...result.coverage,loanCount,determinedLoans:determined,protectedLoans:protectedCount,derivedForecastRows:derivedForecastCount,contractCoverage,investors:investor.coverage,financialWrites:0,amortizationEngineActive:false,contractualCalculation:'READ_ONLY',fundCount:funds.size};
+ result.coverage={...result.coverage,...loanDerivation.coverage,investors:investor.coverage,financialWrites:0,amortizationEngineActive:false,contractualCalculation:'ORIGINAL_SOURCE_COMPONENTS_READ_ONLY',fundCount:funds.size};
  result.notes=['Registro realizado y programa futuro se presentan por separado; una proyección no es un cobro.','Los porcentajes son participación de cada componente en el total de la misma cuota o fondo, mes y estado.','Totales con información parcial no representan un flujo completo; revisar detalle y pendientes sin fecha.'];
  return result;
 }

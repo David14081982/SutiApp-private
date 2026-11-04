@@ -13,11 +13,11 @@ const check=(name,fn)=>{fn();checks.push(name);console.log('PASS '+name);};
 check('Official historical and review contracts calculate without history certification',()=>{
  for(const status of ['review','historical']){const s=source({contracts:[contract({status})],reviews:[{id:'r',kind:'contract_conflict'}]}),before=JSON.stringify(s),r=run(s);assert.equal(JSON.stringify(s),before);assert.equal(total(r,'investor_yield_generated'),50);assert.equal(total(r,'investor_yield_scheduled'),125);assert.equal(balance(r,'investor_capital_balance').amount,1000);assert.equal(balance(r,'investor_yield_pending').amount,50);assert(!r.issues.some(i=>i.affectedKinds.length));assert(r.events.filter(e=>e.kind==='investor_yield_generated').every(e=>e.calculationStatus==='CALCULATED'&&e.basis==='CONTRACT_YIELD_CALCULATION'));assert.equal(total(r,'investor_yield_paid'),0);}
 });
-check('Explicit original contribution is counted once; observations and renewals never create cash',()=>{
+check('Explicit original contribution is counted once; observed or transferred principal never creates cash',()=>{
  const c=contract({registered_contribution:1200,registered_current_capital:1000,registered_balance_on:'2026-10-29'}),r=run(source({contracts:[c]}));assert.equal(total(r,'investor_contribution'),1200);assert.equal(total(r,'investor_net'),1200);assert.equal(balance(r,'investor_capital_balance').amount,1000);
  const initial=movement('initial',{effective_on:c.starts_on,concept:'contribution',direction:'in',amount:1200,period_start:null,period_end:null});assert.equal(total(run(source({contracts:[c],movements:[initial,initial]})),'investor_contribution'),1200);
  assert.equal(total(run(source({contracts:[contract({opening_balance:1000,balance_on:'2026-10-29'})]})),'investor_contribution'),0);
- assert.equal(total(run(source({contracts:[contract({parent_id:'old',registered_contribution:1200})]})),'investor_contribution'),0);
+ assert.equal(total(run(source({contracts:[contract({parent_id:'old',registered_contribution:1200})]})),'investor_contribution'),1200);
 });
 check('Stored obligations remain frozen and calculated periods use dated contractual rates',()=>{
  const s=source({contracts:[contract({terms:[{effective_on:'2026-09-01',monthly_rate:.03},{effective_on:'2026-11-01',monthly_rate:.04}]})],obligations:[obligation({rate_snapshot:.04})]}),r=run(s);
@@ -42,7 +42,7 @@ check('Missing partial-period convention and missing inputs remain explicit',()=
 check('Manual payment mode calculates accrual without inventing payment dates',()=>{
  const r=run(source({contracts:[contract({payment_mode:'Manual'})]}));assert.equal(total(r,'investor_yield_generated'),50);assert.equal(total(r,'investor_yield_paid'),0);assert.equal(balance(r,'investor_yield_pending').amount,50);assert(r.unassigned.filter(e=>e.kind==='investor_yield_scheduled').every(e=>e.date===null&&e.status==='PENDING'));assert.equal(r.unassigned.filter(e=>e.kind==='investor_yield_scheduled').length,5);
 });
-check('Balance details reconcile every known cut, future stock stays inapplicable',()=>{
- const r=run(source({movements:[movement('paid')]})),byId=new Map(r.records.map(e=>[e.id,e]));for(const b of r.balances.filter(b=>b.known_amount!==null))assert.equal(b.sourceIds.reduce((sum,id)=>sum+byId.get(id).amount,0),b.known_amount);assert(r.balances.filter(b=>b.month>'2026-10').every(b=>b.amount===null&&b.known_amount===null&&b.status==='NOT_APPLICABLE'));assert(r.records.every(x=>!r.events.some(e=>e.id===x.id)));
+check('Balance details reconcile every known cut, future stock uses scheduled obligations',()=>{
+ const r=run(source({movements:[movement('paid')]})),byId=new Map(r.records.map(e=>[e.id,e]));for(const b of r.balances.filter(b=>b.known_amount!==null))assert.equal(b.sourceIds.reduce((sum,id)=>sum+byId.get(id).amount,0),b.known_amount);assert(r.balances.filter(b=>b.month>'2026-10').every(b=>b.status==='SCHEDULED'));assert.equal(balance(r,'investor_capital_balance','2027-01').amount,0);assert(r.records.every(x=>!r.events.some(e=>e.id===x.id)));
 });
 const out=path.join(root,'docs/qa/evidence/cash-flow-criteria');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'investors-reader.json'),JSON.stringify({status:'PASS',checks,financialWrites:0,sourceMutation:false},null,2)+'\n');

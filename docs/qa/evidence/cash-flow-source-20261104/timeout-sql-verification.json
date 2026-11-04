@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": 5,
+  "isolated": true,
+  "productionCalls": 0,
+  "financialWrites": 0,
+  "bodyAndOidAndAclUnchanged": true,
+  "exactRecovery": true,
+  "beforeDefinitionMd5": "e488e949179fc8d780aa2cacdaf28f14",
+  "afterDefinitionMd5": "40919970206e49e46616e5b3af842842"
+}

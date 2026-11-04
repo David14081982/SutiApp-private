@@ -56,3 +56,27 @@ Data/legacy: rows and historical relationships retained; original hash retained 
 Limitations: historical links not represented by replaces_document_id are not guessed into a deletion; shared legitimate references block removal. Pre-existing offline copies are not revocable. Production destructive tests were deliberately not run.
 Owner decision: NO; current owner task explicitly authorizes implementation, publication, focused verification and stop. No next H or inferred task-orchestrator authorization.
 Response generated for Codex: YES — Publish only this isolated candidate, verify exact production bundle, authenticated Afiliados confirmation/cancel/preview and refresh, record evidence, then stop.
+
+## H-AFILIADOS-ELIMINACION-INDIVIDUAL-DOCUMENTOS-001 RESULT
+
+Status: PASS.
+Files changed: 47 files in isolated implementation commit 0cf97a8aa63e60d45fabb3231a817ef90700f1bc; only the two declared frontend modules, generated bundle/cachebusters, focal SQL/Edge/scripts/tests/evidence, appended governance and derived architecture index. Final receipt adds documentation/evidence only.
+Source-of-truth verdict: PASS; canonical Supabase documents/assets remain authoritative, private retirement journal is lifecycle/audit metadata, no fallback or alternate operational store.
+Invariant verdict: PASS; exact selected ancestry, shared-reference protection, preserved history, unchanged global roles/permissions and financial data.
+Build: PASS; local 34-file public artifact and GitHub Pages build/deployment.
+Tests: PASS; ten isolated SQL/Edge groups, focal browser scenarios, existing upload/edit/preview responsive tests, authenticated live candidate and production reads. Collaborator/no-access matrix tested in isolation; no second controlled live account configured.
+Security: PASS; server effective Afiliados visibility, RLS filters, reference guards, atomic actor/affiliate/time/reason audit, no anonymous writer or browser Storage-worker grant. Anonymous live RPC and Edge return 401.
+Legacy impact: NONE; Google and financial business rows untouched. Existing protected references prevent withdrawal; they are not rewritten.
+Unexpected files changed: NONE in isolated release; unrelated original workspace work preserved.
+Known limitations: production deletion and physical move were not executed as tests; these paths passed isolated tests. Shared references block removal. Unlinked historical versions are not inferred. Previously cached/downloaded bytes cannot be recalled; pending moves are explicitly reported and retryable.
+Evidence: docs/qa/evidence/affiliate-document-retirement/{database-edge,browser,assembly,build,backend-applied,backend-verified,edge-verified,live-candidate,live-production,deployment}.json and existing-upload/.
+
+Production: https://sutiapp.com/; deployed commit 0cf97a8aa63e60d45fabb3231a817ef90700f1bc; version 2026110403; exact bundle SHA-256 3a2c20c4eefcdc553e6ff6fe9d8ea3b923e88e08ebcd84001fc6445190fa8ce9. GitHub Pages run 41903713895 completed successfully, including existing authentication/request compatibility checks. Real authenticated verification preserved 8 document cards, confirmed selected scope of 2 versions, canceled without writing, opened a legitimate document with HTTP 200 and refreshed successfully. Zero browser errors, zero document deletions, zero production fixture writes. Architecture index was FRESH for the implementation commit and is refreshed for this final receipt.
+
+## SUTIAPP ARCHITECT REVIEW - final
+
+Verdict: APPROVED.
+Evidence reviewed: exact isolated commit and byte comparison, installed migration/Edge readback, actual SQL/RLS authorization and reference protection, isolated failure/retry/permission tests, preserved UI screenshots, successful Pages workflow and authenticated live-production receipt. This review did not rely on an implementation summary alone.
+Requested versus delivered: individual document action, effective screen access without global-role expansion, mandatory confirmation/reason, linked predecessors, shared-reference protection, audit, removal from current readers/signing, retryable private Storage withdrawal, preserved UI and focused production verification all delivered within the stated test limitations.
+Authority/security/legacy/UI verdicts: PASS. New owner decision required: NO. No next implementation or task-orchestrator authorization inferred.
+Exact next instruction to Codex: Stop. Report the published result and evidence; do not begin another H, modify additional data, or perform real document deletions as tests.

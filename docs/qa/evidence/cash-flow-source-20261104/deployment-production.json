@@ -1,0 +1,111 @@
+{
+  "conclusion": "success",
+  "headSha": "f1b13587efee3bc137686c3481d75eda694a329c",
+  "jobs": [
+    {
+      "completedAt": "0001-01-01T00:00:00Z",
+      "conclusion": "",
+      "databaseId": 126749880159,
+      "name": "deploy",
+      "startedAt": "2026-11-04T17:47:22Z",
+      "status": "in_progress",
+      "steps": [
+        {
+          "completedAt": "2026-11-04T17:47:25Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-11-04T17:47:23Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:47:29Z",
+          "conclusion": "success",
+          "name": "Checkout",
+          "number": 2,
+          "startedAt": "2026-11-04T17:47:25Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:47:31Z",
+          "conclusion": "success",
+          "name": "Verify Auth backend compatibility",
+          "number": 3,
+          "startedAt": "2026-11-04T17:47:29Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:47:31Z",
+          "conclusion": "success",
+          "name": "Verify critical request backend compatibility",
+          "number": 4,
+          "startedAt": "2026-11-04T17:47:31Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:47:31Z",
+          "conclusion": "success",
+          "name": "Build public artifact",
+          "number": 5,
+          "startedAt": "2026-11-04T17:47:31Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:47:32Z",
+          "conclusion": "success",
+          "name": "Configure Pages",
+          "number": 6,
+          "startedAt": "2026-11-04T17:47:31Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:47:34Z",
+          "conclusion": "success",
+          "name": "Upload Pages artifact",
+          "number": 7,
+          "startedAt": "2026-11-04T17:47:32Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:48:02Z",
+          "conclusion": "success",
+          "name": "Deploy Pages",
+          "number": 8,
+          "startedAt": "2026-11-04T17:47:34Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:48:03Z",
+          "conclusion": "success",
+          "name": "Verify critical request production deployment",
+          "number": 9,
+          "startedAt": "2026-11-04T17:48:02Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:48:03Z",
+          "conclusion": "success",
+          "name": "Post Checkout",
+          "number": 18,
+          "startedAt": "2026-11-04T17:48:03Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-11-04T17:48:03Z",
+          "conclusion": "success",
+          "name": "Complete job",
+          "number": 19,
+          "startedAt": "2026-11-04T17:48:03Z",
+          "status": "completed"
+        }
+      ],
+      "url": "https://github.com/David14081982/SutiApp-private/actions/runs/41880058089/job/126749880159"
+    }
+  ],
+  "status": "completed",
+  "updatedAt": "2026-11-04T17:50:28Z",
+  "url": "https://github.com/David14081982/SutiApp-private/actions/runs/41880058089",
+  "checkedAt": "2026-11-04T17:53:24.222Z",
+  "verificationStatus": "PASS",
+  "financialWrites": 0
+}

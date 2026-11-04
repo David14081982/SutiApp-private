@@ -24,7 +24,7 @@ Recovery: restore exact scoped code/reader definitions from private verified bas
 
 ## Verification
 
-Implementation and candidate UI/Excel verified. Live source queries for 2026, 2027 and 2028 pass. Final static publication verification is pending; candidate success is not asserted as final production success.
+Implementation, candidate and production UI/Excel verified. Live source queries for 2026, 2027 and 2028 pass. Public bundle/worker hashes match the reviewed candidate, and the real production Excel download passed.
 
 ### Runtime scope expansion: verified Edge CPU limit
 
@@ -61,3 +61,26 @@ An earlier private source snapshot differs from later live PV2 values in several
 Edge reports-jc v14 is active with JWT validation. The 2027 and 2028 live queries return HTTP 200 (9.38 and 12.80 seconds respectively), with 96 financial controls each, exact worker/direct parity, readable bases and resolved references. The savings reader timeout change passed 24 isolated checks and an independent rerun; body, permissions and data are unchanged. Roll back 003 before 001 to preserve exact definition guards.
 
 Candidate bundle SHA256: `885e09fb542024983e4ff958642132d462198d8e297462f1c1289c262d913121`. Pure worker SHA256: `1e28653ba5a8b8d64e48158cf4423efab3182859ba9bbc42d8f4a57d744603dd`. BuildPages PASS. Evidence contains aggregates only; no source snapshots, tokens or private downloaded workbooks are published.
+
+## Production closure
+
+Implementation commit `f1b13587efee3bc137686c3481d75eda694a329c` was pushed to main. GitHub Pages run `41880058089` reports completed/success. Both public artifacts at https://sutiapp.com match the candidate hashes above.
+
+The H005_TEST production browser run on 2026-11-04T17:51:07Z passed without a static overlay or financial API mocks. LOAD and CASH_FLOW returned HTTP 200. The UI and actual downloaded workbook matched all 1,512 concept/month cells, 90,984 calculation rows, and all five source bases. It checked 10,014 original PV2 quotas, component/percentage values, blank unavailable cells and absence of Excel comments. The private workbook was deleted. No financial writes, blocked write attempts, browser errors, persisted tokens or persisted personal records occurred.
+
+This verification does not convert unresolved original-source breakdowns, duplicate capital evidence or undated investor withdrawals into determined values. Those limitations remain explicit and do not prevent exporting known values. No original Google/Supabase financial value was changed; AE remains excluded.
+
+```text
+H-CASH-FLOW-PV2-SOURCE-20261104 RESULT
+Status: PASS
+Files changed: 67 scoped implementation/release/evidence files in f1b1358; final closure evidence committed separately.
+Source-of-truth verdict: PASS; Google original quotas/components and Supabase original savings/investor values retained.
+Invariant verdict: PASS; one placement per loan, paid/scheduled date rule, original components, cross-year quotas, no invented cash.
+Build: PASS; reviewed bundle and Worker hashes equal public artifacts.
+Tests: PASS; 113 focal entries, 24 timeout checks, Worker UI checks, 2026-2028 source controls, real candidate and production Excel downloads.
+Security: PASS; existing backend authorization/JWT and reader permissions preserved, no financial writes or persisted credentials.
+Legacy impact: Read-only Google; no AE, Apps Script, trigger or original financial data changes. Scoped Supabase read RPCs/configuration only.
+Unexpected files changed: None in isolated published scope; unrelated root workspace changes preserved.
+Known limitations: Original REVISAR/ambiguous components and undated records remain visible; no arbitrary allocation. Registry globally STALE in sparse checkout, 56 focal files FRESH.
+Evidence: docs/qa/evidence/cash-flow-source-20261104/ including browser-live-production.json, public-artifacts.json, deployment-production.json and architect-production.json.
+```

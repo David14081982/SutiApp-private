@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-11-04T17:50:38.407Z",
+  "origin": "https://sutiapp.com",
+  "version": "2026110402",
+  "implementationCommit": "f1b13587efee3bc137686c3481d75eda694a329c",
+  "files": [
+    {
+      "file": "app/bundle.js",
+      "httpStatus": 200,
+      "bytes": 3863300,
+      "sha256": "885e09fb542024983e4ff958642132d462198d8e297462f1c1289c262d913121"
+    },
+    {
+      "file": "app/cash-flow-projection-worker.js",
+      "httpStatus": 200,
+      "bytes": 132648,
+      "sha256": "1e28653ba5a8b8d64e48158cf4423efab3182859ba9bbc42d8f4a57d744603dd"
+    }
+  ],
+  "financialWrites": 0
+}

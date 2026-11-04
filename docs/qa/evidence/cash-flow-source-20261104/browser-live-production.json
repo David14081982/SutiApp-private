@@ -1,0 +1,112 @@
+{
+  "status": "PASS",
+  "mode": "production",
+  "checkedAt": "2026-11-04T17:51:07.402Z",
+  "bundleSha256": "885e09fb542024983e4ff958642132d462198d8e297462f1c1289c262d913121",
+  "candidateStaticOverlay": false,
+  "financialApiMocks": 0,
+  "originalQuotasChecked": 10014,
+  "originalReports": 8,
+  "originalConceptsPreserved": 17,
+  "months": 12,
+  "concepts": 126,
+  "groups": 9,
+  "informativeSavingsYield": true,
+  "realAuthenticatedQuery": true,
+  "sourceSnapshotVersion": "cash-flow-inputs-v1",
+  "workerProjectionMatchesDirect": true,
+  "uiMatchesActualSource": true,
+  "sourceDetail": true,
+  "detailComponents": true,
+  "detailPercentages": true,
+  "excel": {
+    "sourceBaseRows": [
+      {
+        "name": "Base PV2",
+        "rows": 17743
+      },
+      {
+        "name": "Base Solicitudes",
+        "rows": 1985
+      },
+      {
+        "name": "Base Ahorro",
+        "rows": 17998
+      },
+      {
+        "name": "Base Inversores",
+        "rows": 7183
+      },
+      {
+        "name": "Base Contratos",
+        "rows": 1850
+      }
+    ],
+    "download": true,
+    "sourceAmountsMatched": 1512,
+    "unknownBlankCells": 487,
+    "negativeNumericCells": 17,
+    "detailRows": 90984,
+    "componentsMatch": true,
+    "percentagesMatch": true,
+    "cellComments": false,
+    "sourceBasesMatched": true
+  },
+  "privateExportDeleted": true,
+  "stateCounts": {
+    "RECORDED": 486,
+    "NOT_APPLICABLE": 469,
+    "PARTIAL": 469,
+    "SCHEDULED": 36,
+    "UNAVAILABLE": 18,
+    "CALCULATED": 22,
+    "PENDING": 12
+  },
+  "issueCount": 90,
+  "coverage": {
+    "loanCount": 1850,
+    "financialWrites": 0,
+    "amortizationEngineActive": false,
+    "savingsAuthority": "SUPABASE",
+    "loanAuthority": "GOOGLE_HISTORIAL_P_V2",
+    "determinedLoans": 1559,
+    "protectedLoans": 291,
+    "derivedForecastRows": 0,
+    "componentAuthority": "HISTORIAL P V2 · Z, AB, AC, AD",
+    "placementAuthority": "Historial de solicitudes · A, H, J, Y; origen PV2 documentado",
+    "investors": {
+      "authority": "SUPABASE_INVESTORS",
+      "contractCount": 88,
+      "activeContractCount": 35,
+      "historyIncompleteCount": 88,
+      "recordedMovements": 0,
+      "obligationCount": 773,
+      "calculatedPeriods": 559,
+      "derivedContinuities": 31,
+      "ambiguousContinuities": 0,
+      "unresolvedReviews": 70,
+      "costBasis": "Original contractual continuity and dated capital/rates; future balances apply scheduled obligations without recording a payment.",
+      "financialWrites": 0
+    },
+    "contractualCalculation": "ORIGINAL_SOURCE_COMPONENTS_READ_ONLY",
+    "fundCount": 4
+  },
+  "unassignedCount": 563,
+  "reportRequests": [
+    {
+      "action": "LOAD",
+      "status": 200
+    },
+    {
+      "action": "CASH_FLOW",
+      "status": 200
+    }
+  ],
+  "responsiveEvidence": "ui-excel-focused.json",
+  "financialWrites": 0,
+  "blockedWriteAttempts": 0,
+  "pageErrors": 0,
+  "persistedTokens": 0,
+  "persistedPersonalRecords": 0,
+  "screenshots": 0
+}

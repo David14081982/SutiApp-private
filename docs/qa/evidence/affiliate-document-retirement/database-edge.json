@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "checks": [
+    "migration and empty recovery preserve original definitions",
+    "screen access alone permits action; role/write/document capabilities unnecessary",
+    "no screen access, forged affiliate, missing reason and stale preview denied",
+    "other document, affiliate, request and catalog references block without mutation",
+    "audit failure rolls back retirement atomically",
+    "withdrawal covers exact ancestry, hides all readers, preserves neighbors and audit",
+    "review, direct links and new URLs cannot revive withdrawn objects",
+    "new upload starts fresh; same bytes can be correctly associated without reviving old asset",
+    "quarantine is retryable, old path disappears and recovery cannot restore retired history",
+    "Edge rejects forged payload and retries interrupted Storage without falsely completing"
+  ],
+  "liveCatalogDefinitions": true,
+  "productionBusinessWrites": 0
+}

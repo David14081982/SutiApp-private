@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "base": "8dc6112ef4b9a58bb914070e0cda6e507b5b4392",
+  "version": "2026110403",
+  "target": "C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\affiliate-document-retirement\\release",
+  "sourceFiles": [
+    "app/admin-affiliates-repository.js",
+    "app/screens-admin-affiliates.jsx",
+    "scripts/generate-affiliate-document-retirement.js",
+    "scripts/inspect-affiliate-document-retirement.js",
+    "scripts/prepare-affiliate-document-retirement-local.js",
+    "scripts/prepare-affiliate-document-retirement-release.js",
+    "scripts/prepare-affiliate-document-retirement-ui.js",
+    "scripts/release-affiliate-document-retirement.js",
+    "scripts/test-affiliate-document-retirement-browser.js",
+    "scripts/test-affiliate-document-retirement.js",
+    "scripts/verify-affiliate-document-retirement-live.js",
+    "scripts/fixtures/affiliate-document-retirement-schema.json",
+    "supabase/migrations/20261104000400_affiliate_document_retirement.sql",
+    "supabase/recovery/20261104000400_affiliate_document_retirement.sql",
+    "supabase/functions/affiliate-document-delete/index.ts",
+    "supabase/functions/affiliate-document-delete/handler.mjs",
+    "docs/audits/H-AFILIADOS-ELIMINACION-INDIVIDUAL-DOCUMENTOS-001.md"
+  ],
+  "preservedPublishedModules": 173,
+  "modifiedModules": [
+    "admin-affiliates-repository.js",
+    "screens-admin-affiliates.jsx"
+  ],
+  "bundleSha256": "3a2c20c4eefcdc553e6ff6fe9d8ea3b923e88e08ebcd84001fc6445190fa8ce9",
+  "sourceHashes": {
+    "admin-affiliates-repository.js": "af5edf9e75b7ac9deda26a38fd3c2ecfc31e93dd1aa3096e7e2d3f1b97ed339e",
+    "screens-admin-affiliates.jsx": "5490e1c212acb415f48e762a3a9d5bc3922448aae40a0e7525dc720127fb2027"
+  },
+  "cachebusterOnly": true
+}

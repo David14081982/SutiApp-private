@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Existing tabs, cards, replacement actions and two-column structure preserved",
+    "Confirmation, mandatory reason, cancel without write, exact scope, counters and fresh type upload",
+    "Read-only screen collaborator can delete on mobile; interrupted operation resumes after modal closure",
+    "Shared reference blocks action and existing Workbench navigation remains"
+  ],
+  "pageErrors": [],
+  "productionWrites": 0
+}

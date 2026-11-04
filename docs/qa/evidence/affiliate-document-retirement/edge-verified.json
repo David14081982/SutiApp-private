@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "slug": "affiliate-document-delete",
+  "artifactSha256": "f126afab46401de0ebf92ed6153362d679d0eb8347c1956b8782f51f2cae0c47",
+  "bytes": 453022,
+  "requiredMarkers": 4
+}

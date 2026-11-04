@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "policies": 4,
+  "retirements": 0,
+  "anon_execute": false,
+  "functions_match": true,
+  "reference_guards": 7,
+  "migration_installed": true,
+  "authenticated_storage_execute": false,
+  "productionBusinessWrites": 0
+}

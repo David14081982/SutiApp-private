@@ -70,5 +70,14 @@
   }
   async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
   async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
+  async function previewDocumentDelete(affiliateId,documentId){
+    requirePermission('affiliates.read');const result=await db().rpc('preview_admin_affiliate_document_delete',{p_affiliate_id:affiliateId,p_document_id:documentId});
+    if(result.error)throw result.error;if(!result.data)throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
+  }
+  async function deleteDocument(body){
+    requirePermission('affiliates.read');const result=await db().functions.invoke('affiliate-document-delete',{body});
+    if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
+    if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
+  }
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
 })();

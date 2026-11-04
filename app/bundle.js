@@ -20780,7 +20780,16 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
   async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
+  async function previewDocumentDelete(affiliateId,documentId){
+    requirePermission('affiliates.read');const result=await db().rpc('preview_admin_affiliate_document_delete',{p_affiliate_id:affiliateId,p_document_id:documentId});
+    if(result.error)throw result.error;if(!result.data)throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
+  }
+  async function deleteDocument(body){
+    requirePermission('affiliates.read');const result=await db().functions.invoke('affiliate-document-delete',{body});
+    if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
+    if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
+  }
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
 })();
 })();
 /* @@file program-request-repository.js */
@@ -72745,6 +72754,118 @@ Object.assign(window, {
       onClick: save
     }, busy ? 'Guardando…' : restoring ? 'Restaurar' : 'Archivar')));
   }
+  function DocumentDeleteModal({
+    profile,
+    row,
+    operation,
+    onClose,
+    onDeleted
+  }) {
+    const [report, setReport] = React.useState(null),
+      [reason, setReason] = React.useState(''),
+      [confirmed, setConfirmed] = React.useState(false),
+      [busy, setBusy] = React.useState(false),
+      [error, setError] = React.useState(''),
+      [pending, setPending] = React.useState(Boolean(operation));
+    const action = React.useRef(operation && operation.operation_id || crypto.randomUUID()),
+      request = React.useRef(null),
+      attempted = React.useRef(Boolean(operation));
+    React.useEffect(() => {
+      if (operation) return;
+      let active = true;
+      window.AdminAffiliatesRepository.previewDocumentDelete(profile.id, row.id).then(value => {
+        if (active) setReport(value);
+      }).catch(() => {
+        if (active) setError('No fue posible comprobar el documento y sus versiones. Cierra e intenta nuevamente.');
+      });
+      return () => {
+        active = false;
+      };
+    }, [profile.id, row && row.id, operation]);
+    const close = () => {
+      if (!busy) onClose(attempted.current);
+    };
+    const submit = async () => {
+      if (busy || !pending && (!report || report.blocked || !confirmed || reason.trim().length < 8)) return;
+      setBusy(true);
+      setError('');
+      attempted.current = true;
+      if (!request.current) request.current = pending ? {
+        action: 'RESUME',
+        affiliate_id: profile.id,
+        operation_id: action.current
+      } : {
+        action: 'DELETE',
+        affiliate_id: profile.id,
+        document_id: row.id,
+        fingerprint: report.fingerprint,
+        reason: reason.trim(),
+        operation_id: action.current
+      };
+      try {
+        const result = await window.AdminAffiliatesRepository.deleteDocument(request.current);
+        if (result.status === 'COMPLETE') {
+          onDeleted();
+          return;
+        }
+        setPending(true);
+        request.current = {
+          action: 'RESUME',
+          affiliate_id: profile.id,
+          operation_id: action.current
+        };
+        setError('El documento ya está retirado del expediente. Falta terminar el retiro del archivo; los enlaces anteriores podrían seguir activos hasta completar este paso. Pulsa Reintentar.');
+      } catch (value) {
+        const code = String(value.message || '');
+        setError(code.includes('SHARED_REFERENCE') ? 'El archivo tiene referencias fuera de esta eliminación. No se modificó; requiere revisión para proteger los demás registros.' : code.includes('PREVIEW_STALE') ? 'El documento cambió. Cierra y vuelve a revisar las versiones antes de confirmar.' : code.includes('DENIED') ? 'Tu acceso actual a Afiliados no permite ejecutar esta operación.' : 'No se pudo confirmar el resultado. Reintenta para consultar y completar la misma operación de forma segura.');
+      } finally {
+        setBusy(false);
+      }
+    };
+    return h(Overlay, {
+      title: pending ? 'Finalizar eliminación' : 'Eliminar documento',
+      description: text(profile.display_name || profile.full_name) + ' · Control ' + text(profile.numero_control),
+      onClose: close
+    }, h('div', {
+      'data-affiliate-document-delete-modal': 'true',
+      className: 'aff-modal-body'
+    }, pending ? h('p', null, 'El retiro está registrado. Se completará la protección del archivo sin repetir la eliminación.') : !report && !error ? h('p', null, 'Comprobando versiones y referencias…') : report && h(React.Fragment, null, h('p', null, 'Se eliminará del expediente ', h('strong', null, row.type_label || row.document_type && row.document_type.label || 'este documento'), ' junto con estas versiones enlazadas:'), h('ul', {
+      'data-delete-version-list': 'true'
+    }, report.documents.map(doc => h('li', {
+      key: doc.id
+    }, doc.label + ' · ' + date(doc.created_at) + ' · ' + doc.status))), h('p', null, 'No podrán abrirse desde el historial ni Document Workbench. Se conservará la auditoría y podrás cargar el documento correcto.'), report.blocked ? h('div', {
+      role: 'alert',
+      className: 'aff-alert'
+    }, 'Este archivo está vinculado a otros registros. La eliminación está bloqueada para protegerlos.') : h(React.Fragment, null, h('label', null, h('span', null, 'Motivo de la eliminación'), h('textarea', {
+      className: inputClass,
+      'aria-label': 'Motivo de la eliminación',
+      value: reason,
+      maxLength: 500,
+      rows: 3,
+      disabled: busy || attempted.current,
+      onChange: event => setReason(event.target.value),
+      placeholder: 'Explica el motivo (mínimo 8 caracteres)'
+    })), h('label', null, h('input', {
+      type: 'checkbox',
+      checked: confirmed,
+      disabled: busy || attempted.current,
+      onChange: event => setConfirmed(event.target.checked)
+    }), ' Confirmo eliminar el documento y las ' + report.documents.length + ' versión(es) indicadas.'))), error && h('div', {
+      role: 'alert',
+      className: 'aff-alert'
+    }, error)), h('footer', {
+      className: 'aff-modal-actions'
+    }, h('button', {
+      className: 'aff-secondary',
+      disabled: busy,
+      onClick: close
+    }, pending ? 'Cerrar' : 'Cancelar'), h('button', {
+      className: 'aff-danger',
+      'data-confirm-document-delete': 'true',
+      disabled: busy || !pending && (!report || report.blocked || !confirmed || reason.trim().length < 8),
+      onClick: submit
+    }, busy ? 'Procesando…' : pending || attempted.current ? 'Reintentar' : 'Eliminar documento')));
+  }
   function DocumentUploadModal({
     profile,
     documents,
@@ -73278,6 +73399,8 @@ Object.assign(window, {
     onStatus,
     onArchive,
     onUpload,
+    onDelete,
+    onResumeDelete,
     onReload,
     onOpenModule,
     onSaved,
@@ -73289,7 +73412,9 @@ Object.assign(window, {
       audit = data.audit || [],
       cap = data.capabilities || {};
     const required = documents.filter(row => row.required),
-      verified = required.filter(row => row.status === 'VERIFIED').length,
+      summary = data.document_summary,
+      requiredCount = summary ? summary.required_count : required.length,
+      verified = summary ? summary.verified_required_count : required.filter(row => row.status === 'VERIFIED').length,
       pending = documents.filter(row => ['PENDING_REVIEW', 'UNDER_REVIEW', 'REUPLOAD_REQUIRED'].includes(row.status)).length;
     const tabs = [['general', 'Datos generales'], ['affiliation', 'Afiliación'], ['documents', 'Expediente'], ['requests', 'Solicitudes'], ['access', 'Acceso'], ['audit', 'Auditoría']];
     let content;
@@ -73373,9 +73498,9 @@ Object.assign(window, {
       value: documents.length,
       label: 'documentos'
     }), h(Metric, {
-      value: required.length ? verified + '/' + required.length : '—',
+      value: requiredCount ? verified + '/' + requiredCount : '—',
       label: 'obligatorios verificados',
-      tone: required.length && verified === required.length ? 'ok' : ''
+      tone: requiredCount && verified === requiredCount ? 'ok' : ''
     }), h(Metric, {
       value: pending,
       label: 'pendientes',
@@ -73408,10 +73533,33 @@ Object.assign(window, {
       'data-affiliate-document-replace': row.id,
       'aria-label': 'Reemplazar ' + (row.type_label || row.document_type && row.document_type.label || 'documento'),
       onClick: () => onUpload(row.document_type_id || row.type_id)
-    }, 'Reemplazar documento'))) : h(Empty, {
+    }, 'Reemplazar documento'), h('button', {
+      type: 'button',
+      className: 'aff-document-delete',
+      'data-affiliate-document-delete': row.id,
+      onClick: () => onDelete(row)
+    }, h(I, {
+      name: 'trash',
+      size: 12
+    }), ' Eliminar documento'))) : !(data.empty_document_slots || []).length && h(Empty, {
       title: 'Expediente vacío',
       sub: 'No hay documentos canónicos relacionados.'
-    })));else if (tab === 'requests') content = !cap.requests ? h('div', {
+    }), (data.empty_document_slots || []).map(slot => h('div', {
+      key: slot.type_id,
+      className: 'aff-document-entry',
+      'data-empty-document-slot': slot.type_id
+    }, h('div', {
+      className: 'aff-boundary'
+    }, h('strong', null, slot.type_label), h('p', null, 'Sin documento cargado')), app.admin.has('documents.write') && h('button', {
+      className: 'aff-secondary',
+      onClick: () => onUpload(slot.type_id)
+    }, 'Cargar documento')))), (data.pending_document_deletions || []).map(op => h('div', {
+      key: op.operation_id,
+      className: 'aff-boundary'
+    }, 'Hay una eliminación pendiente de finalizar. ', h('button', {
+      className: 'aff-secondary',
+      onClick: () => onResumeDelete(op)
+    }, 'Finalizar eliminación'))));else if (tab === 'requests') content = !cap.requests ? h('div', {
       className: 'aff-boundary'
     }, 'Se requiere program_requests.read para consultar solicitudes.') : h('div', null, h('div', {
       className: 'aff-list'
@@ -73834,6 +73982,7 @@ Object.assign(window, {
     initialAffiliateId
   }) {
     const [archiveView, setArchiveView] = React.useState(false);
+    const [showDelete, setShowDelete] = React.useState(null);
     const [filters, setFilters] = React.useState({
       query: '',
       status: '',
@@ -73922,6 +74071,7 @@ Object.assign(window, {
       setDetailPhase('loading');
       setEditing(false);
       setShowUpload(null);
+      setShowDelete(null);
       window.AdminAffiliatesRepository.detail(selectedId).then(async result => {
         if (!active) return;
         setDetail(result);
@@ -74196,6 +74346,14 @@ Object.assign(window, {
         affiliateId: detail.profile.id,
         typeId: typeId || ''
       }),
+      onDelete: row => setShowDelete({
+        row,
+        affiliateId: detail.profile.id
+      }),
+      onResumeDelete: operation => setShowDelete({
+        operation,
+        affiliateId: detail.profile.id
+      }),
       onReload: () => setNonce(value => value + 1),
       onOpenModule: (id, context) => onOpenModule(id, Object.assign({
         from: 'affiliates'
@@ -74205,7 +74363,20 @@ Object.assign(window, {
     }) : h(Empty, {
       title: 'Selecciona un afiliado',
       sub: 'Abre su perfil, expediente, solicitudes y auditoría.'
-    }))), showNew && h(NewAffiliateModal, {
+    }))), showDelete && detail && showDelete.affiliateId === detail.profile.id && h(DocumentDeleteModal, {
+      profile: detail.profile,
+      row: showDelete.row,
+      operation: showDelete.operation,
+      onClose: reload => {
+        setShowDelete(null);
+        if (reload) setNonce(n => n + 1);
+      },
+      onDeleted: () => {
+        setShowDelete(null);
+        setNonce(n => n + 1);
+        app.toast && app.toast('Documento eliminado; expediente actualizado');
+      }
+    }), showNew && h(NewAffiliateModal, {
       options,
       onClose: () => setShowNew(false),
       onCreated: useSaved
@@ -74232,6 +74403,8 @@ Object.assign(window, {
   }
   function Styles() {
     return h('style', null, `
+    .aff-document-delete{display:block;margin:4px auto 0;border:0;background:transparent;color:var(--guinda);font:700 10px var(--font);cursor:pointer;padding:4px 8px}.aff-document-delete:hover{text-decoration:underline}
+
     .aff-danger-button{border:1px solid #F4C9D4;border-radius:11px;min-height:38px;padding:0 13px;background:#FCE9EE;color:#A00027;font:850 11.5px var(--font);cursor:pointer}
     .aff-view-switch{display:inline-flex;gap:4px;margin-bottom:10px;padding:4px;border-radius:12px;background:var(--surface-2)}.aff-view-switch button{border:0;border-radius:9px;padding:8px 14px;background:transparent;color:var(--ink-3);font:850 11px var(--font);cursor:pointer}.aff-view-switch button[aria-current=page]{background:#fff;color:var(--guinda);box-shadow:var(--neo-sm)}.aff-archive-note,.aff-archive-summary{margin-top:10px;padding:11px 12px;border-radius:11px;background:#FFF3D8;color:#704900;font-size:10.5px;line-height:1.45}.aff-archive-summary{display:grid;gap:3px;margin:0 0 10px}.aff-archive-summary strong{font-size:12px}.aff-document-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.aff-document-card{display:grid;grid-template-columns:48px minmax(0,1fr) 18px;align-items:center;gap:9px;border:1px solid var(--hairline);border-radius:12px;padding:8px;background:#fff;color:var(--ink);text-align:left;cursor:pointer}.aff-document-card>span:nth-child(2){min-width:0}.aff-document-card strong,.aff-document-card small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-document-card strong{font-size:10.5px}.aff-document-card small{margin-top:3px;color:var(--ink-3);font-size:8.5px}.aff-document-thumb{width:48px;height:48px;display:grid;place-items:center;overflow:hidden;border-radius:9px;background:var(--surface-2);color:var(--guinda)}.aff-document-thumb img{width:100%;height:100%;object-fit:cover}
     .aff-page{padding:14px 16px 26px!important;color:var(--ink)}.aff-toolbar,.aff-roster,.aff-detail-host{background:var(--surface);border:1px solid var(--hairline);border-radius:17px;box-shadow:var(--neo-sm)}.aff-toolbar{padding:12px;margin-bottom:12px}.aff-toolbar-top,.aff-toolbar-actions,.aff-roster-head,.aff-profile-head,.aff-profile-actions,.aff-edit-actions,.aff-modal-actions,.aff-action-pair{display:flex;align-items:center;gap:9px}.aff-toolbar-top{justify-content:space-between}.aff-search{height:40px;min-width:230px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:12px;background:var(--surface-2)}.aff-search input{width:100%;border:0;outline:0;background:transparent;font:650 13px var(--font);color:var(--ink)}.aff-primary,.aff-secondary,.aff-icon-button,.aff-pagination button{border:0;border-radius:11px;min-height:38px;padding:0 13px;font:850 11.5px var(--font);cursor:pointer}.aff-primary{background:var(--grad-guinda-soft);color:#fff}.aff-secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--hairline)}.aff-icon-button{width:38px;padding:0;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}button:disabled{opacity:.48;cursor:not-allowed}.aff-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:10px}.aff-filters select,.aff-input{width:100%;box-sizing:border-box;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2);color:var(--ink);padding:9px 10px;font:650 11.5px var(--font);outline:none}.aff-workbench{display:grid;grid-template-columns:minmax(560px,1.18fr) minmax(330px,.82fr);gap:12px;min-height:610px}.aff-roster,.aff-detail-host{min-width:0;overflow:hidden}.aff-roster{display:flex;flex-direction:column}.aff-roster-head{justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--hairline)}.aff-roster h2{font-size:15px;margin:0}.aff-roster p{font-size:10.5px;color:var(--ink-3);margin:3px 0 0}.aff-table-head,.aff-table-body>button{display:grid;grid-template-columns:minmax(170px,1.35fr) 72px minmax(80px,.75fr) minmax(78px,.65fr) minmax(88px,.72fr) 78px 20px;gap:8px;align-items:center}.aff-table-head{padding:9px 12px;background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.aff-table-body{overflow:auto;max-height:calc(100vh - 315px);min-height:360px}.aff-table-body>button{width:100%;border:0;border-bottom:1px solid var(--hairline);padding:9px 12px;text-align:left;background:#fff;color:var(--ink);font-family:var(--font);cursor:pointer}.aff-table-body>button:hover,.aff-table-body>button[aria-selected=true]{background:#FFF7F9}.aff-table-body>button[aria-selected=true]{box-shadow:inset 3px 0 var(--guinda)}.aff-cell{min-width:0;font-size:10.5px;font-weight:750;overflow:hidden;text-overflow:ellipsis}.aff-person{display:flex;align-items:center;gap:8px}.aff-person>span{min-width:0}.aff-person strong,.aff-person small,.aff-docs small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-person strong{font-size:11.5px}.aff-person small,.aff-docs small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-control{font:750 10px var(--mono)}.aff-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;overflow:hidden;background:var(--guinda-50);color:var(--guinda);font-size:10px;font-weight:900}.aff-avatar.is-large{width:54px;height:54px;border-radius:17px;font-size:15px}.aff-avatar img{width:100%;height:100%;object-fit:cover}.aff-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:850;white-space:nowrap}.aff-ok{color:#087A50!important}.aff-badge.aff-ok{background:#E5F7EF}.aff-danger{color:#A00027!important}.aff-badge.aff-danger{background:#FCE9EE}.aff-warn{color:#8A5A00!important}.aff-badge.aff-warn{background:#FFF3D8}.aff-neutral{color:#60606A!important}.aff-badge.aff-neutral{background:#EFEFF2}.aff-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;border-top:1px solid var(--hairline);font:750 10px var(--mono)}.aff-pagination button{min-height:31px;background:var(--surface-2)}.aff-detail-host{display:flex;min-height:610px}.aff-detail{display:flex;flex-direction:column;min-width:0;width:100%}.aff-profile-head{padding:14px;border-bottom:1px solid var(--hairline);flex-wrap:wrap}.aff-profile-identity{flex:1 1 125px;min-width:0}.aff-profile-head h2{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-profile-head p{margin:3px 0 6px;color:var(--ink-3);font-size:10.5px}.aff-profile-updated{display:block;margin-top:5px;color:var(--ink-3);font-size:8.5px}.aff-profile-actions{flex:1 1 280px;justify-content:flex-end;flex-wrap:wrap}.aff-profile-actions button{min-height:36px;padding:0 10px;white-space:nowrap;font-size:10px}.aff-tabs{display:flex;gap:5px;overflow-x:auto;padding:9px 11px;border-bottom:1px solid var(--hairline)}.aff-tabs button{border:0;border-radius:9px;padding:7px 9px;background:transparent;color:var(--ink-3);font:800 9.5px var(--font);white-space:nowrap}.aff-tabs button[aria-current=page]{background:var(--guinda-50);color:var(--guinda)}.aff-detail-scroll{flex:1;overflow:auto;padding:12px}.aff-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-fact{min-width:0;padding:9px;border-radius:10px;background:var(--surface-2)}.aff-fact span,.aff-modal label>span,.aff-edit label>span{display:block;font-size:9px;font-weight:800;color:var(--ink-3);margin-bottom:4px}.aff-fact strong{display:block;font-size:10.8px;overflow-wrap:anywhere}.aff-list{display:flex;flex-direction:column;gap:7px}.aff-list>div{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--hairline);border-radius:11px}.aff-list span{min-width:0}.aff-list strong,.aff-list small{display:block}.aff-list strong{font-size:10.8px}.aff-list small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}.aff-metric{padding:9px;border-radius:11px;background:var(--surface-2);text-align:center}.aff-metric strong,.aff-metric span{display:block}.aff-metric strong{font-size:16px}.aff-metric span{font-size:8.5px;color:var(--ink-3);margin-top:2px}.aff-block{width:100%;margin-top:10px}.aff-action-pair{margin-top:10px}.aff-action-pair>*{flex:1}.aff-boundary,.aff-access-card,.aff-assistance{padding:12px;border-radius:12px;background:var(--surface-2);font-size:11px;line-height:1.5}.aff-access-card{display:flex;gap:10px}.aff-access-card strong,.aff-access-card p{display:block;margin:0 0 6px}.aff-assistance{margin-top:10px}.aff-assistance p{font-size:10px;color:var(--ink-3)}.aff-assistance small{display:block;margin-top:7px}.aff-timeline>div{display:grid;grid-template-columns:10px 1fr;gap:8px}.aff-timeline>div>span{width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--guinda)}.aff-timeline section{padding-bottom:14px}.aff-timeline strong,.aff-timeline small,.aff-timeline em{display:block}.aff-timeline strong{font-size:11px}.aff-timeline small,.aff-timeline em{font-size:9px;color:var(--ink-3)}.aff-timeline p{font-size:10.5px;margin:4px 0}.aff-empty,.aff-loading{display:flex;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:7px;padding:20px;text-align:center;color:var(--ink-3);font-size:11px}.aff-empty strong{color:var(--ink);font-size:13px}.aff-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:16px;background:rgba(20,18,24,.48);backdrop-filter:blur(3px)}.aff-modal{width:min(480px,100%);max-height:min(820px,calc(100vh - 32px));display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(20,18,24,.3)}.aff-modal.is-wide{width:min(760px,100%)}.aff-modal>header{display:flex;justify-content:space-between;gap:10px;padding:15px 17px;border-bottom:1px solid var(--hairline)}.aff-modal h2{margin:0;font-size:17px}.aff-modal header p{margin:3px 0 0;color:var(--ink-3);font-size:10.5px}.aff-modal header button{width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2)}.aff-modal-body{display:flex;flex-direction:column;gap:10px;overflow:auto;padding:15px 17px}.aff-form-grid,.aff-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-span-2{grid-column:1 / -1}.aff-modal-actions{justify-content:flex-end;padding:12px 17px;border-top:1px solid var(--hairline)}.aff-alert,.aff-duplicate{padding:10px;border-radius:10px;background:#FCE9EE;color:#A00027;font-size:10.5px;font-weight:750}.aff-duplicate>div{margin-top:5px}.aff-edit{width:100%;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;min-height:0;height:min(820px,calc(100dvh - 110px));padding:14px}.aff-edit-heading{flex:none;padding-bottom:10px}.aff-edit-heading strong,.aff-edit-heading small{display:block}.aff-edit-heading small{margin-top:4px;color:var(--ink-3);font-size:10px}.aff-edit>.aff-edit-grid{flex:1;min-height:0;overflow:auto;border:0;margin:0;padding:2px;align-content:start}.aff-edit-footer{flex:none;padding-top:10px;border-top:1px solid var(--hairline);background:var(--surface)}.aff-edit-footer>small{display:block;font-size:10px;color:var(--ink-3);margin:4px 0}.aff-edit-actions{justify-content:flex-end;margin-top:8px}.aff-document-entry{min-width:0}.aff-document-entry>.aff-document-card{width:100%}.aff-document-replace{width:100%;margin-top:5px}.aff-document-actions{margin:0 0 10px;flex-wrap:wrap}

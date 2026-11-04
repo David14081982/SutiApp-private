@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "slug": "affiliate-document-delete",
+  "version": 1,
+  "verifyJwt": true,
+  "sourceHashes": {
+    "index.ts": "966562e0a04c287cc80953e7c163d5138a6b0d1004412af7dc34d8900b181fd5",
+    "handler.mjs": "59a6fba327737fa627507858a97b48c1b0e941263c5f2ec43c67db5285b6025e"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "status": "PASS",
+  "migration": "20261104000400",
+  "sha256": "b2c45ffdff9e3161aa543bb6a2b2db8e49495bf90aac6c8d65edb69f366ad867",
+  "preserved": [
+    {
+      "name": "affiliates",
+      "rows": 1071,
+      "preserved": "PASS"
+    },
+    {
+      "name": "affiliate_documents",
+      "rows": 5398,
+      "preserved": "PASS"
+    },
+    {
+      "name": "affiliate_files",
+      "rows": 12928,
+      "preserved": "PASS"
+    },
+    {
+      "name": "private_assets",
+      "rows": 14872,
+      "preserved": "PASS"
+    },
+    {
+      "name": "document_types",
+      "rows": 13,
+      "preserved": "PASS"
+    },
+    {
+      "name": "request_documents",
+      "rows": 3117,
+      "preserved": "PASS"
+    },
+    {
+      "name": "savings_requests",
+      "rows": 61,
+      "preserved": "PASS"
+    },
+    {
+      "name": "program_catalog_item_assets",
+      "rows": 269,
+      "preserved": "PASS"
+    },
+    {
+      "name": "program_terms_versions",
+      "rows": 11,
+      "preserved": "PASS"
+    },
+    {
+      "name": "historical_asset_sources",
+      "rows": 25358,
+      "preserved": "PASS"
+    },
+    {
+      "name": "financial_programs",
+      "rows": 3,
+      "preserved": "PASS"
+    },
+    {
+      "name": "sensitive_change_audit",
+      "rows": 3187,
+      "preserved": "PASS"
+    },
+    {
+      "name": "admin_assignments",
+      "rows": 14,
+      "preserved": "PASS"
+    },
+    {
+      "name": "admin_roles",
+      "rows": 3,
+      "preserved": "PASS"
+    },
+    {
+      "name": "admin_role_permissions",
+      "rows": 74,
+      "preserved": "PASS"
+    },
+    {
+      "name": "admin_section_responsibilities",
+      "rows": 147,
+      "preserved": "PASS"
+    }
+  ],
+  "businessWrites": 0,
+  "globalPermissionsChanged": 0
+}

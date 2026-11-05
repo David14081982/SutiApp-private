@@ -1,0 +1,3172 @@
+{
+  "indexes": [
+    {
+      "indexdef": "CREATE UNIQUE INDEX affiliate_documents_pkey ON public.affiliate_documents USING btree (id)",
+      "indexname": "affiliate_documents_pkey",
+      "tablename": "affiliate_documents",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX affiliate_documents_review_idx ON public.affiliate_documents USING btree (status, created_at)",
+      "indexname": "affiliate_documents_review_idx",
+      "tablename": "affiliate_documents",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX affiliate_documents_current_review_idx ON public.affiliate_documents USING btree (affiliate_id, document_type_id) WHERE (status = ANY (ARRAY['PENDING_REVIEW'::text, 'UNDER_REVIEW'::text, 'REUPLOAD_REQUIRED'::text]))",
+      "indexname": "affiliate_documents_current_review_idx",
+      "tablename": "affiliate_documents",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX affiliate_documents_latest_type_idx ON public.affiliate_documents USING btree (affiliate_id, document_type_id, created_at DESC, id DESC)",
+      "indexname": "affiliate_documents_latest_type_idx",
+      "tablename": "affiliate_documents",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX affiliate_files_current_profile_photo ON public.affiliate_files USING btree (affiliate_id) WHERE is_current_profile_photo",
+      "indexname": "affiliate_files_current_profile_photo",
+      "tablename": "affiliate_files",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX affiliate_files_pkey ON public.affiliate_files USING btree (id)",
+      "indexname": "affiliate_files_pkey",
+      "tablename": "affiliate_files",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX affiliate_files_source_unique ON public.affiliate_files USING btree (source_file_hash, source_row_ordinal, source_column_letter, url_order)",
+      "indexname": "affiliate_files_source_unique",
+      "tablename": "affiliate_files",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX affiliate_files_affiliate_key_idx ON public.affiliate_files USING btree (affiliate_id, file_key, sort_order)",
+      "indexname": "affiliate_files_affiliate_key_idx",
+      "tablename": "affiliate_files",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX affiliate_files_private_asset_idx ON public.affiliate_files USING btree (private_asset_id)",
+      "indexname": "affiliate_files_private_asset_idx",
+      "tablename": "affiliate_files",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX affiliate_files_public_asset_idx ON public.affiliate_files USING btree (public_asset_id)",
+      "indexname": "affiliate_files_public_asset_idx",
+      "tablename": "affiliate_files",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX affiliate_files_expediente_classification_idx ON public.affiliate_files USING btree (affiliate_id, expediente_classification, sort_order, url_order)",
+      "indexname": "affiliate_files_expediente_classification_idx",
+      "tablename": "affiliate_files",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX private_assets_pkey ON public.private_assets USING btree (id)",
+      "indexname": "private_assets_pkey",
+      "tablename": "private_assets",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX private_assets_asset_key_key ON public.private_assets USING btree (asset_key)",
+      "indexname": "private_assets_asset_key_key",
+      "tablename": "private_assets",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX private_assets_hash_unique ON public.private_assets USING btree (content_sha256)",
+      "indexname": "private_assets_hash_unique",
+      "tablename": "private_assets",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE UNIQUE INDEX private_assets_storage_unique ON public.private_assets USING btree (storage_bucket, storage_path)",
+      "indexname": "private_assets_storage_unique",
+      "tablename": "private_assets",
+      "schemaname": "public",
+      "tablespace": null
+    },
+    {
+      "indexdef": "CREATE INDEX private_assets_status_hash_idx ON public.private_assets USING btree (status, content_sha256)",
+      "indexname": "private_assets_status_hash_idx",
+      "tablename": "private_assets",
+      "schemaname": "public",
+      "tablespace": null
+    }
+  ],
+  "policies": [
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'private-assets'::text) AND (owner_id = (auth.uid())::text) AND can_delete_unreferenced_affiliate_document_object(name))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "affiliate_document_storage_cleanup",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "affiliate_document_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'private-assets'::text) AND (owner_id = (auth.uid())::text) AND ((name ~~ (('affiliate-documents/'::text || (get_effective_affiliate_id())::text) || '/%'::text)) OR can_admin_upload_affiliate_document_path(name)))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "company_ficha_image_upload",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'company-assets'::text) AND can_upload_company_ficha(name))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((has_admin_permission('documents.write'::text) OR has_section_action('documents'::text, 'assets'::text)) AND ((storage.foldername(name))[1] = 'directory'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "directory_storage_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "directory_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((has_admin_permission('documents.write'::text) OR has_section_action('documents'::text, 'assets'::text)) AND ((storage.foldername(name))[1] = 'directory'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text) AND (bucket_id = 'app-assets'::text))"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "((has_admin_permission('documents.write'::text) OR has_section_action('documents'::text, 'assets'::text)) AND ((storage.foldername(name))[1] = 'directory'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "directory_storage_update",
+      "schemaname": "storage",
+      "with_check": "((has_admin_permission('documents.write'::text) OR has_section_action('documents'::text, 'assets'::text)) AND ((storage.foldername(name))[1] = 'directory'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text) AND (bucket_id = 'app-assets'::text))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "affiliate_document_storage_is_active(bucket_id, name)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "document_retirement_filter",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "ALL",
+      "qual": "(bucket_id <> 'generated-documents'::text)",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "generated_documents_isolation",
+      "schemaname": "storage",
+      "with_check": "(bucket_id <> 'generated-documents'::text)"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(bucket_id = ANY (ARRAY['app-assets'::text, 'company-assets'::text, 'documents'::text]))",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "h0072_storage_public_read",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(((bucket_id = 'app-assets'::text) AND has_admin_permission('assets.write'::text)) OR ((bucket_id = 'company-assets'::text) AND has_admin_permission('companies.write'::text)) OR ((bucket_id = 'documents'::text) AND has_admin_permission('documents.write'::text)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "h008_storage_admin_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "h008_storage_admin_insert",
+      "schemaname": "storage",
+      "with_check": "(((bucket_id = 'app-assets'::text) AND has_admin_permission('assets.write'::text)) OR ((bucket_id = 'company-assets'::text) AND has_admin_permission('companies.write'::text)) OR ((bucket_id = 'documents'::text) AND has_admin_permission('documents.write'::text)))"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(((bucket_id = 'app-assets'::text) AND has_admin_permission('assets.write'::text)) OR ((bucket_id = 'company-assets'::text) AND has_admin_permission('companies.write'::text)) OR ((bucket_id = 'documents'::text) AND has_admin_permission('documents.write'::text)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "h008_storage_admin_update",
+      "schemaname": "storage",
+      "with_check": "(((bucket_id = 'app-assets'::text) AND has_admin_permission('assets.write'::text)) OR ((bucket_id = 'company-assets'::text) AND has_admin_permission('companies.write'::text)) OR ((bucket_id = 'documents'::text) AND has_admin_permission('documents.write'::text)))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'company-assets'::text) AND ((storage.foldername(name))[1] = 'marketplace'::text) AND is_marketplace_company_member(((storage.foldername(name))[2])::uuid, 'write'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "marketplace_company_storage_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "marketplace_company_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'company-assets'::text) AND ((storage.foldername(name))[1] = 'marketplace'::text) AND is_marketplace_company_member(((storage.foldername(name))[2])::uuid, 'write'::text))"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "((bucket_id = 'company-assets'::text) AND ((storage.foldername(name))[1] = 'marketplace'::text) AND is_marketplace_company_member(((storage.foldername(name))[2])::uuid, 'write'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "marketplace_company_storage_update",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'company-assets'::text) AND ((storage.foldername(name))[1] = 'marketplace'::text) AND is_marketplace_company_member(((storage.foldername(name))[2])::uuid, 'write'::text))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'private-assets'::text) AND (( SELECT has_admin_permission('assets.read'::text) AS has_admin_permission) OR (EXISTS ( SELECT 1\n   FROM private_assets pa\n  WHERE ((pa.storage_path = objects.name) AND (pa.storage_bucket = objects.bucket_id) AND (pa.status = 'READY'::text) AND ((EXISTS ( SELECT 1\n           FROM affiliate_files af\n          WHERE ((af.private_asset_id = pa.id) AND (af.affiliate_id = ( SELECT get_effective_affiliate_id() AS get_effective_affiliate_id)) AND (af.status = 'READY'::text) AND (af.expediente_classification = 'CURRENT_DOCUMENT'::text)))) OR (EXISTS ( SELECT 1\n           FROM affiliate_documents d\n          WHERE ((d.private_asset_id = pa.id) AND (d.affiliate_id = ( SELECT get_effective_affiliate_id() AS get_effective_affiliate_id)) AND (d.status <> 'REJECTED'::text)))) OR (EXISTS ( SELECT 1\n           FROM (affiliate_files af\n             JOIN affiliate_documents d ON ((d.affiliate_file_id = af.id)))\n          WHERE ((af.private_asset_id = pa.id) AND (d.affiliate_id = ( SELECT get_effective_affiliate_id() AS get_effective_affiliate_id)) AND (d.status <> 'REJECTED'::text))))))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "master_private_storage_authorized_read",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(bucket_id = 'public-assets'::text)",
+      "roles": [
+        "anon",
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "master_public_storage_read",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "admin_asset_module_boundary(bucket_id, name)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "module_scope_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "module_scope_insert",
+      "schemaname": "storage",
+      "with_check": "admin_asset_module_boundary(bucket_id, name)"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "admin_asset_module_boundary(bucket_id, name)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "module_scope_update",
+      "schemaname": "storage",
+      "with_check": "admin_asset_module_boundary(bucket_id, name)"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'app-assets'::text) AND ((storage.foldername(name))[1] = 'news'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text) AND has_section_action('news'::text, 'assets'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "news_section_storage_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "news_section_storage_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'app-assets'::text) AND ((storage.foldername(name))[1] = 'news'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text) AND has_section_action('news'::text, 'assets'::text))"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "((bucket_id = 'app-assets'::text) AND ((storage.foldername(name))[1] = 'news'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text) AND has_section_action('news'::text, 'assets'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "news_section_storage_update",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'app-assets'::text) AND ((storage.foldername(name))[1] = 'news'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text) AND has_section_action('news'::text, 'assets'::text))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'private-assets'::text) AND (EXISTS ( SELECT 1\n   FROM ((private_assets a\n     JOIN program_catalog_item_assets l ON ((l.private_asset_id = a.id)))\n     JOIN program_catalog_items i ON ((i.id = l.item_id)))\n  WHERE ((a.storage_bucket = objects.bucket_id) AND (a.storage_path = objects.name) AND l.enabled AND (i.enabled OR has_admin_permission('program_catalog.read'::text))))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "program_catalog_linked_private_storage_read",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "((bucket_id = 'app-assets'::text) AND has_admin_permission('program_catalog.write'::text) AND ((storage.foldername(name))[1] = 'program-products'::text) AND ((storage.foldername(name))[2] = (( SELECT auth.uid() AS uid))::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "program_catalog_storage_admin_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "program_catalog_storage_admin_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'app-assets'::text) AND has_admin_permission('program_catalog.write'::text) AND ((storage.foldername(name))[1] = 'program-products'::text) AND ((storage.foldername(name))[2] = (( SELECT auth.uid() AS uid))::text))"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "((bucket_id = 'app-assets'::text) AND has_admin_permission('program_catalog.write'::text) AND ((storage.foldername(name))[1] = 'program-products'::text) AND ((storage.foldername(name))[2] = (( SELECT auth.uid() AS uid))::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "program_catalog_storage_admin_update",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'app-assets'::text) AND has_admin_permission('program_catalog.write'::text) AND ((storage.foldername(name))[1] = 'program-products'::text) AND ((storage.foldername(name))[2] = (( SELECT auth.uid() AS uid))::text))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "program_general_cover_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'app-assets'::text) AND (name ~~ (('program-general/'::text || (auth.uid())::text) || '/%'::text)) AND (has_admin_permission('program_catalog.write'::text) OR has_admin_permission('workflow.write'::text)))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(bucket_id <> 'savings-beneficiary-signatures'::text)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "savings_beneficiary_signature_delete_guard",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "savings_beneficiary_signature_insert",
+      "schemaname": "storage",
+      "with_check": "((bucket_id = 'savings-beneficiary-signatures'::text) AND (owner_id = (auth.uid())::text) AND savings_beneficiary_signature_access(name, true))"
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "public"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "savings_beneficiary_signature_insert_guard",
+      "schemaname": "storage",
+      "with_check": "((bucket_id <> 'savings-beneficiary-signatures'::text) OR ((owner_id = (auth.uid())::text) AND savings_beneficiary_signature_access(name, true)))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'savings-beneficiary-signatures'::text) AND savings_beneficiary_signature_access(name, false))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "savings_beneficiary_signature_read",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((bucket_id <> 'savings-beneficiary-signatures'::text) OR savings_beneficiary_signature_access(name, false))",
+      "roles": [
+        "public"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "savings_beneficiary_signature_read_guard",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(bucket_id <> 'savings-beneficiary-signatures'::text)",
+      "roles": [
+        "public"
+      ],
+      "tablename": "objects",
+      "permissive": "RESTRICTIVE",
+      "policyname": "savings_beneficiary_signature_update_guard",
+      "schemaname": "storage",
+      "with_check": "(bucket_id <> 'savings-beneficiary-signatures'::text)"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(has_section_action((storage.foldername(name))[1], 'assets'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "section_owner_storage_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "section_owner_storage_insert",
+      "schemaname": "storage",
+      "with_check": "(has_section_action((storage.foldername(name))[1], 'assets'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text))"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(has_section_action((storage.foldername(name))[1], 'assets'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "section_owner_storage_update",
+      "schemaname": "storage",
+      "with_check": "(has_section_action((storage.foldername(name))[1], 'assets'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text))"
+    },
+    {
+      "cmd": "DELETE",
+      "qual": "(has_admin_permission('union_content.write'::text) AND ((storage.foldername(name))[1] = 'sindicato'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "union_storage_delete",
+      "schemaname": "storage",
+      "with_check": null
+    },
+    {
+      "cmd": "INSERT",
+      "qual": null,
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "union_storage_insert",
+      "schemaname": "storage",
+      "with_check": "(has_admin_permission('union_content.write'::text) AND ((storage.foldername(name))[1] = 'sindicato'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text) AND (bucket_id = ANY (ARRAY['app-assets'::text, 'documents'::text])))"
+    },
+    {
+      "cmd": "UPDATE",
+      "qual": "(has_admin_permission('union_content.write'::text) AND ((storage.foldername(name))[1] = 'sindicato'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "objects",
+      "permissive": "PERMISSIVE",
+      "policyname": "union_storage_update",
+      "schemaname": "storage",
+      "with_check": "(has_admin_permission('union_content.write'::text) AND ((storage.foldername(name))[1] = 'sindicato'::text) AND ((storage.foldername(name))[2] = (auth.uid())::text) AND (bucket_id = ANY (ARRAY['app-assets'::text, 'documents'::text])))"
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "affiliate_document_asset_is_active(id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "private_assets",
+      "permissive": "RESTRICTIVE",
+      "policyname": "document_retirement_filter",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('assets.read'::text) OR (EXISTS ( SELECT 1\n   FROM affiliate_files af\n  WHERE ((af.private_asset_id = private_assets.id) AND (af.affiliate_id = get_effective_affiliate_id()) AND (af.status = 'READY'::text) AND (af.expediente_classification = 'CURRENT_DOCUMENT'::text)))) OR (EXISTS ( SELECT 1\n   FROM (affiliate_documents d\n     LEFT JOIN affiliate_files af ON ((af.id = d.affiliate_file_id)))\n  WHERE ((COALESCE(d.private_asset_id, af.private_asset_id) = private_assets.id) AND (d.affiliate_id = get_effective_affiliate_id()) AND (d.status <> 'REJECTED'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "private_assets",
+      "permissive": "PERMISSIVE",
+      "policyname": "private_assets_authorized_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (program_catalog_item_assets l\n     JOIN program_catalog_items i ON ((i.id = l.item_id)))\n  WHERE ((l.private_asset_id = private_assets.id) AND l.enabled AND (i.enabled OR has_admin_permission('program_catalog.read'::text)))))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "private_assets",
+      "permissive": "PERMISSIVE",
+      "policyname": "program_catalog_linked_private_asset_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(has_admin_permission('assets.read'::text) OR ((affiliate_id = get_effective_affiliate_id()) AND (expediente_classification = 'CURRENT_DOCUMENT'::text)))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "affiliate_files",
+      "permissive": "PERMISSIVE",
+      "policyname": "affiliate_files_authorized_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "(affiliate_document_file_is_active(id) AND affiliate_document_asset_is_active(private_asset_id))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "affiliate_files",
+      "permissive": "RESTRICTIVE",
+      "policyname": "document_retirement_filter",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "((affiliate_id = get_effective_affiliate_id()) OR has_admin_permission('documents.read'::text))",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "affiliate_documents",
+      "permissive": "PERMISSIVE",
+      "policyname": "affiliate_documents_read",
+      "schemaname": "public",
+      "with_check": null
+    },
+    {
+      "cmd": "SELECT",
+      "qual": "affiliate_document_is_active(id)",
+      "roles": [
+        "authenticated"
+      ],
+      "tablename": "affiliate_documents",
+      "permissive": "RESTRICTIVE",
+      "policyname": "document_retirement_filter",
+      "schemaname": "public",
+      "with_check": null
+    }
+  ],
+  "triggers": [
+    {
+      "table": "private_assets",
+      "function": "CREATE OR REPLACE FUNCTION public.set_master_asset_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin new.updated_at = now(); return new; end $function$\n",
+      "definition": "CREATE TRIGGER private_assets_updated_at BEFORE UPDATE ON public.private_assets FOR EACH ROW EXECUTE FUNCTION set_master_asset_updated_at()"
+    },
+    {
+      "table": "affiliate_files",
+      "function": "CREATE OR REPLACE FUNCTION public.set_master_asset_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin new.updated_at = now(); return new; end $function$\n",
+      "definition": "CREATE TRIGGER affiliate_files_updated_at BEFORE UPDATE ON public.affiliate_files FOR EACH ROW EXECUTE FUNCTION set_master_asset_updated_at()"
+    },
+    {
+      "table": "affiliate_files",
+      "function": "CREATE OR REPLACE FUNCTION document_retirement_private.guard_reference()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v uuid;kind text;begin\n for i in 0..tg_nargs-1 by 2 loop\n  v:=nullif(to_jsonb(new)->>tg_argv[i],'')::uuid;kind:=tg_argv[i+1];\n  if v is null then continue;end if;\n  if tg_op='UPDATE' and tg_argv[i]<>'id' and (to_jsonb(old)->>tg_argv[i]) is not distinct from (to_jsonb(new)->>tg_argv[i]) then continue;end if;\n  if kind='asset' then\n   perform 1 from public.private_assets where id=v for key share;\n   if not public.affiliate_document_asset_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  elsif kind='file' then\n   perform 1 from public.affiliate_files where id=v for key share;\n   if not public.affiliate_document_file_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  else\n   perform 1 from public.affiliate_documents where id=v for key share;\n   if not public.affiliate_document_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  end if;\n end loop;\n return new;\nend $function$\n",
+      "definition": "CREATE TRIGGER retirement_reference_guard BEFORE INSERT OR UPDATE ON public.affiliate_files FOR EACH ROW EXECUTE FUNCTION document_retirement_private.guard_reference('private_asset_id', 'asset')"
+    },
+    {
+      "table": "affiliate_documents",
+      "function": "CREATE OR REPLACE FUNCTION public.sync_affiliate_expediente_classification()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\nbegin\n  if tg_op <> 'INSERT' and old.affiliate_id is not null then\n    perform public.refresh_affiliate_expediente_classification(old.affiliate_id);\n  end if;\n  if tg_op <> 'DELETE' and new.affiliate_id is not null\n     and (tg_op = 'INSERT' or old.affiliate_id is distinct from new.affiliate_id) then\n    perform public.refresh_affiliate_expediente_classification(new.affiliate_id);\n  elsif tg_op = 'UPDATE' and new.affiliate_id is not null then\n    perform public.refresh_affiliate_expediente_classification(new.affiliate_id);\n  end if;\n  return null;\nend;\n$function$\n",
+      "definition": "CREATE TRIGGER affiliate_documents_sync_expediente_classification AFTER INSERT OR DELETE OR UPDATE OF affiliate_id, document_type_id, affiliate_file_id, created_at ON public.affiliate_documents FOR EACH ROW EXECUTE FUNCTION sync_affiliate_expediente_classification()"
+    },
+    {
+      "table": "affiliate_documents",
+      "function": "CREATE OR REPLACE FUNCTION public.set_completion_updated_at()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO ''\nAS $function$ begin new.updated_at=now(); return new; end $function$\n",
+      "definition": "CREATE TRIGGER affiliate_documents_updated_at BEFORE UPDATE ON public.affiliate_documents FOR EACH ROW EXECUTE FUNCTION set_completion_updated_at()"
+    },
+    {
+      "table": "affiliate_documents",
+      "function": "CREATE OR REPLACE FUNCTION document_retirement_private.guard_reference()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v uuid;kind text;begin\n for i in 0..tg_nargs-1 by 2 loop\n  v:=nullif(to_jsonb(new)->>tg_argv[i],'')::uuid;kind:=tg_argv[i+1];\n  if v is null then continue;end if;\n  if tg_op='UPDATE' and tg_argv[i]<>'id' and (to_jsonb(old)->>tg_argv[i]) is not distinct from (to_jsonb(new)->>tg_argv[i]) then continue;end if;\n  if kind='asset' then\n   perform 1 from public.private_assets where id=v for key share;\n   if not public.affiliate_document_asset_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  elsif kind='file' then\n   perform 1 from public.affiliate_files where id=v for key share;\n   if not public.affiliate_document_file_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  else\n   perform 1 from public.affiliate_documents where id=v for key share;\n   if not public.affiliate_document_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  end if;\n end loop;\n return new;\nend $function$\n",
+      "definition": "CREATE TRIGGER retirement_reference_guard BEFORE INSERT OR UPDATE ON public.affiliate_documents FOR EACH ROW EXECUTE FUNCTION document_retirement_private.guard_reference('id', 'document', 'private_asset_id', 'asset', 'affiliate_file_id', 'file', 'replaces_document_id', 'document')"
+    }
+  ],
+  "functions": [
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "87df717a2dd44da6ac5fc2d589344d23",
+      "name": "create_validated_financial_program_request_v1_engine",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "create_validated_financial_program_request_v1_engine(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.create_validated_financial_program_request_v1_engine(p_actor_real_auth_user_id uuid, p_affiliate_id uuid, p_impersonation_session_id uuid, p_program_item_id uuid, p_notes text, p_signature_data text, p_terms_version_id uuid, p_document_ids uuid[], p_idempotency_key uuid, p_amount numeric, p_term integer, p_term_semantics text, p_expected_profile_version integer, p_financial_submission_snapshot jsonb)\n RETURNS program_requests\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_affiliate public.affiliates%rowtype;\n  v_item public.program_catalog_items%rowtype;\n  v_ctx public.impersonation_sessions%rowtype;\n  v_row public.program_requests%rowtype;\n  v_missing integer;\nbegin\n  if coalesce(auth.role(),'')<>'service_role' then raise exception 'SERVICE_ROLE_REQUIRED' using errcode='42501'; end if;\n  if p_actor_real_auth_user_id is null or not exists(select 1 from auth.users where id=p_actor_real_auth_user_id) then\n    raise exception 'AUTH_ACTOR_REQUIRED' using errcode='42501';\n  end if;\n  select * into v_affiliate from public.affiliates where id=p_affiliate_id for update;\n  if v_affiliate.id is null or v_affiliate.financial_profile_version<>p_expected_profile_version then\n    raise exception 'CONDITIONS_CHANGED' using errcode='PT409';\n  end if;\n  if p_impersonation_session_id is null then\n    if v_affiliate.auth_user_id is distinct from p_actor_real_auth_user_id then raise exception 'AFFILIATE_CONTEXT_DENIED' using errcode='42501'; end if;\n  else\n    select * into v_ctx from public.impersonation_sessions where id=p_impersonation_session_id for share;\n    if v_ctx.id is null or v_ctx.actor_real_auth_user_id<>p_actor_real_auth_user_id\n       or v_ctx.usuario_contexto_affiliate_id<>p_affiliate_id or v_ctx.ended_at is not null or v_ctx.expires_at<=now()\n       or not exists(select 1 from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled where a.auth_user_id=p_actor_real_auth_user_id and a.enabled) then\n      raise exception 'IMPERSONATION_CONTEXT_INVALID' using errcode='42501';\n    end if;\n  end if;\n  select * into v_item from public.program_catalog_items\n   where id=p_program_item_id and program_key='prestamo' and enabled and request_mode='supabase' and legacy_boundary;\n  if v_item.id is null then raise exception 'PROGRAM_NOT_REQUESTABLE' using errcode='22023'; end if;\n  if p_idempotency_key is null then raise exception 'IDEMPOTENCY_KEY_REQUIRED' using errcode='22023'; end if;\n  if nullif(btrim(coalesce(p_signature_data,'')),'') is null then raise exception 'SIGNATURE_AND_TERMS_REQUIRED' using errcode='22023'; end if;\n  if p_amount is null or p_amount<=0 or p_term is null or p_term<=0 or length(btrim(coalesce(p_term_semantics,''))) not between 3 and 80 then\n    raise exception 'FINANCIAL_REQUEST_TERMS_INVALID' using errcode='22023';\n  end if;\n  if not exists(select 1 from public.program_terms_versions where id=p_terms_version_id and program_id='prestamo' and membership_offering_id is null and published) then\n    raise exception 'TERMS_VERSION_REQUIRED' using errcode='22023';\n  end if;\n  if p_financial_submission_snapshot is null\n     or jsonb_typeof(p_financial_submission_snapshot)<>'object'\n     or not(p_financial_submission_snapshot ?& array[\n       'affiliate_id','actor_real_auth_user_id','profile_version','profile_fingerprint',\n       'criteria_source_fingerprint','term_policy_fingerprint','calculation_contract_version',\n       'criterion_identity','financialResult','confirmed_at'\n     ])\n     or jsonb_typeof(p_financial_submission_snapshot->'financialResult')<>'object'\n     or p_financial_submission_snapshot->>'affiliate_id'<>p_affiliate_id::text\n     or p_financial_submission_snapshot->>'actor_real_auth_user_id'<>p_actor_real_auth_user_id::text\n     or coalesce(p_financial_submission_snapshot->>'impersonation_session_id','')<>coalesce(p_impersonation_session_id::text,'')\n     or (p_financial_submission_snapshot->>'profile_version')::integer<>p_expected_profile_version\n     or (p_financial_submission_snapshot->'financialResult'->>'amount')::numeric<>p_amount\n     or (p_financial_submission_snapshot->'financialResult'->>'paymentCount')::integer<>p_term then\n    raise exception 'FINANCIAL_SUBMISSION_CONTRACT_MISMATCH' using errcode='22023';\n  end if;\n  select count(*) into v_missing from public.resolve_affiliate_document_requirements('PROGRAM','prestamo',p_affiliate_id) r\n   where r.required and not exists(\n     select 1 from public.affiliate_documents d where d.id=any(coalesce(p_document_ids,array[]::uuid[]))\n       and d.affiliate_id=p_affiliate_id and d.document_type_id=r.document_type_id\n       and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED'));\n  if v_missing>0 then raise exception 'REQUIRED_DOCUMENTS_MISSING' using errcode='22023'; end if;\n\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null then\n    if v_row.actor_real_auth_user_id<>p_actor_real_auth_user_id or v_row.program_id<>'prestamo'\n       or v_row.program_item_id<>p_program_item_id or v_row.requested_amount<>p_amount or v_row.requested_term<>p_term then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    return v_row;\n  end if;\n\n  insert into public.program_requests(\n    actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,\n    numero_control,program_id,program_item_id,request_type,status,quantity,notes,signature_data,terms_accepted,\n    terms_version_id,source_context,financial_processing_status,idempotency_key,requested_amount,requested_term,\n    requested_term_semantics,financial_submission_snapshot\n  ) values(\n    p_actor_real_auth_user_id,p_affiliate_id,case when v_ctx.id is null then null else p_affiliate_id end,v_ctx.id,v_ctx.reason,\n    v_affiliate.numero_control,'prestamo',v_item.id,'quote','requires_financial_processing',1,\n    left(nullif(btrim(coalesce(p_notes,'')),''),2000),p_signature_data,true,p_terms_version_id,\n    jsonb_build_object('source','sutiapp','financial_confirmation','GOOGLE_REVALIDATED','assisted',v_ctx.id is not null),\n    'pending',p_idempotency_key,p_amount,p_term,btrim(p_term_semantics),p_financial_submission_snapshot\n  ) returning * into v_row;\n\n  insert into public.request_documents(request_id,document_type_id,affiliate_document_id,private_asset_id,asset_sha256,status_at_submission)\n  select v_row.id,d.document_type_id,d.id,coalesce(d.private_asset_id,af.private_asset_id),pa.content_sha256,d.status\n  from public.affiliate_documents d left join public.affiliate_files af on af.id=d.affiliate_file_id\n  join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id)\n  where d.id=any(coalesce(p_document_ids,array[]::uuid[])) and d.affiliate_id=p_affiliate_id\n    and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED')\n  on conflict(request_id,document_type_id) do nothing;\n  return v_row;\nexception when unique_violation then\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null then\n    if v_row.actor_real_auth_user_id<>p_actor_real_auth_user_id or v_row.program_id<>'prestamo'\n       or v_row.program_item_id<>p_program_item_id or v_row.requested_amount<>p_amount or v_row.requested_term<>p_term then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    return v_row;\n  end if;\n  raise;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "md5": "406cc53a469519c5f37044fbb663b763",
+      "name": "register_company_ficha_image",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "register_company_ficha_image(uuid,text,text,text,bigint)",
+      "definition": "CREATE OR REPLACE FUNCTION public.register_company_ficha_image(p_company_id uuid, p_path text, p_sha256 text, p_mime text, p_size bigint)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\r\ndeclare v_id uuid;\r\nbegin\r\n if not public.can_upload_company_ficha(p_path) or split_part(p_path,'/',3)<>p_company_id::text then raise exception 'COMPANY_ASSET_DENIED';end if;\r\n if p_mime not in('image/jpeg','image/png','image/webp','image/gif') or p_size not between 1 and 10485760 or p_sha256!~'^[a-fA-F0-9]{64}$' then raise exception 'INVALID_IMAGE';end if;\r\n if not exists(select 1 from storage.objects where bucket_id='company-assets' and name=p_path and (metadata->>'size')::bigint=p_size and metadata->>'mimetype'=p_mime) then raise exception 'UPLOADED_IMAGE_REQUIRED';end if;\r\n insert into public.app_assets(asset_key,asset_type,title,alt_text,storage_bucket,storage_path,mime_type,file_size,content_sha256,status,owner_company_id)\r\n values('company.ficha.'||extensions.gen_random_uuid(),'COMPANY','Imagen empresarial','Imagen empresarial','company-assets',p_path,p_mime,p_size,upper(p_sha256),'READY',p_company_id) returning id into v_id;\r\n return v_id;\r\nend $function$\n"
+    },
+    {
+      "acl": [
+        "=X/postgres",
+        "postgres=X/postgres",
+        "anon=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "8a129ceeb554e1161666868b9cf36811",
+      "name": "attach_request_documents",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "attach_request_documents(uuid,uuid[])",
+      "definition": "CREATE OR REPLACE FUNCTION public.attach_request_documents(p_request_id uuid, p_affiliate_document_ids uuid[])\n RETURNS integer\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$ declare v_affiliate uuid;v_count integer; begin\n  v_affiliate:=public.get_effective_affiliate_id();\n  if not exists(select 1 from public.program_requests where id=p_request_id and affiliate_id=v_affiliate and actor_real_auth_user_id=auth.uid()) then raise exception 'REQUEST_ACCESS_DENIED' using errcode='42501'; end if;\n  insert into public.request_documents(request_id,document_type_id,affiliate_document_id,private_asset_id,asset_sha256,status_at_submission)\n  select p_request_id,d.document_type_id,d.id,coalesce(d.private_asset_id,af.private_asset_id),pa.content_sha256,d.status\n  from public.affiliate_documents d left join public.affiliate_files af on af.id=d.affiliate_file_id\n  join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id)\n  where d.id=any(p_affiliate_document_ids) and d.affiliate_id=v_affiliate and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED')\n  on conflict(request_id,document_type_id) do nothing;\n  get diagnostics v_count=row_count;return v_count;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "add7205980680bccb0abf6dd64e5b104",
+      "name": "register_admin_affiliate_document",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "register_admin_affiliate_document(uuid,uuid,text,text,bigint,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.register_admin_affiliate_document(p_affiliate_id uuid, p_document_type_id uuid, p_storage_path text, p_mime_type text, p_file_size bigint, p_sha256 text, p_reason text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_type public.document_types%rowtype;v_asset public.private_assets%rowtype;v_doc public.affiliate_documents%rowtype;v_replaced uuid;v_path text:=btrim(coalesce(p_storage_path,''));v_reason text:=btrim(coalesce(p_reason,''));v_cleanup_path text;\nbegin\n  if not public.has_admin_permission('documents.write') then raise exception 'ADMIN_DOCUMENT_WRITE_DENIED' using errcode='42501'; end if;\n  if auth.uid() is null or not exists(select 1 from public.affiliates where id=p_affiliate_id) then raise exception 'AFFILIATE_NOT_FOUND' using errcode='22023'; end if;\n  if length(v_reason)>500 then raise exception 'DOCUMENT_REASON_TOO_LONG' using errcode='22023'; end if;\n  select * into v_type from public.document_types where id=p_document_type_id and enabled;\n  if v_type.id is null then raise exception 'DOCUMENT_TYPE_UNAVAILABLE' using errcode='22023'; end if;\n  if not v_type.file_upload_allowed or not(p_mime_type=any(v_type.accepted_mime_types)) or p_file_size<1 or p_file_size>v_type.max_file_size_bytes or upper(coalesce(p_sha256,''))!~'^[A-F0-9]{64}$' then raise exception 'INVALID_DOCUMENT_FILE' using errcode='22023'; end if;\n  if v_path!~('^affiliate-documents/'||p_affiliate_id::text||'/[A-Za-z0-9._-]+$') then raise exception 'INVALID_STORAGE_PATH' using errcode='22023'; end if;\n  if not exists(select 1 from storage.objects where bucket_id='private-assets' and name=v_path and owner_id=auth.uid()::text) then raise exception 'UPLOAD_NOT_FOUND' using errcode='22023'; end if;\n  select d.id into v_replaced from document_retirement_private.active_documents d where d.affiliate_id=p_affiliate_id and d.document_type_id=p_document_type_id order by d.created_at desc,d.id desc limit 1;\n  select * into v_asset from public.private_assets where content_sha256=upper(p_sha256) for update;\n  if v_asset.id is null then begin\n    insert into public.private_assets(asset_key,asset_type,title,storage_bucket,storage_path,mime_type,file_size,content_sha256)\n    values('affiliate_document_'||replace(extensions.gen_random_uuid()::text,'-',''),'AFFILIATE_DOCUMENT',v_type.label,'private-assets',v_path,p_mime_type,p_file_size,upper(p_sha256)) returning * into v_asset;\n  exception when unique_violation then select * into v_asset from public.private_assets where content_sha256=upper(p_sha256) for update;end;end if;\n  if v_asset.id is null then raise exception 'DOCUMENT_ASSET_REGISTRATION_FAILED'; end if;\n  if v_asset.storage_path is distinct from v_path then v_cleanup_path:=v_path; end if;\n  update public.affiliate_documents set status='REJECTED',review_observation='Reemplazado por una nueva carga administrativa.',reviewed_by_auth_user_id=auth.uid(),reviewed_at=now()\n   where public.affiliate_document_is_active(id) and affiliate_id=p_affiliate_id and document_type_id=p_document_type_id and status in('PENDING_REVIEW','UNDER_REVIEW','REUPLOAD_REQUIRED');\n  insert into public.affiliate_documents(affiliate_id,document_type_id,private_asset_id,status,created_by_auth_user_id,replaces_document_id)\n   values(p_affiliate_id,p_document_type_id,v_asset.id,'PENDING_REVIEW',auth.uid(),v_replaced) returning * into v_doc;\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n   values(auth.uid(),p_affiliate_id,'affiliate_documents',case when v_replaced is null then 'ADMIN_UPLOAD' else 'ADMIN_REPLACEMENT_UPLOAD' end,v_doc.id,jsonb_strip_nulls(jsonb_build_object('document_type_id',p_document_type_id,'mime_type',p_mime_type,'file_size',p_file_size,'reason',v_reason,'replaces_document_id',v_replaced)));\n  return jsonb_build_object('document',to_jsonb(v_doc),'cleanup_storage_path',v_cleanup_path);\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "c03569e4cbfe42551f55c5f9f659b88d",
+      "name": "create_validated_financial_program_request",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "create_validated_financial_program_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.create_validated_financial_program_request(p_actor_real_auth_user_id uuid, p_affiliate_id uuid, p_impersonation_session_id uuid, p_program_item_id uuid, p_notes text, p_signature_data text, p_terms_version_id uuid, p_document_ids uuid[], p_idempotency_key uuid, p_amount numeric, p_term integer, p_term_semantics text, p_expected_profile_version integer, p_financial_submission_snapshot jsonb)\n RETURNS program_requests\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_affiliate public.affiliates%rowtype;\n  v_item public.program_catalog_items%rowtype;\n  v_ctx public.impersonation_sessions%rowtype;\n  v_row public.program_requests%rowtype;\n  v_deposit public.loan_request_deposit_snapshots%rowtype;\n  v_submission jsonb;\n  v_phone text;\n  v_bank_text text;\n  v_missing integer;\nbegin\n  v_bank_text:=nullif(btrim(coalesce(p_financial_submission_snapshot->'deposit_selection'->>'bank_account_id','')),'');\n  if v_bank_text is not null then\n    return public.create_validated_financial_program_request_bank_required(\n      p_actor_real_auth_user_id,p_affiliate_id,p_impersonation_session_id,p_program_item_id,p_notes,\n      p_signature_data,p_terms_version_id,p_document_ids,p_idempotency_key,p_amount,p_term,\n      p_term_semantics,p_expected_profile_version,p_financial_submission_snapshot\n    );\n  end if;\n\n  if coalesce(auth.role(),'')<>'service_role' then raise exception 'SERVICE_ROLE_REQUIRED' using errcode='42501'; end if;\n  if p_actor_real_auth_user_id is null or not exists(select 1 from auth.users where id=p_actor_real_auth_user_id) then\n    raise exception 'AUTH_ACTOR_REQUIRED' using errcode='42501';\n  end if;\n  select * into v_affiliate from public.affiliates where id=p_affiliate_id for update;\n  if v_affiliate.id is null or v_affiliate.financial_profile_version<>p_expected_profile_version then\n    raise exception 'CONDITIONS_CHANGED' using errcode='PT409';\n  end if;\n  if p_impersonation_session_id is null then\n    if v_affiliate.auth_user_id is distinct from p_actor_real_auth_user_id then raise exception 'AFFILIATE_CONTEXT_DENIED' using errcode='42501'; end if;\n  else\n    select * into v_ctx from public.impersonation_sessions where id=p_impersonation_session_id for share;\n    if v_ctx.id is null or v_ctx.actor_real_auth_user_id<>p_actor_real_auth_user_id\n       or v_ctx.usuario_contexto_affiliate_id<>p_affiliate_id or v_ctx.ended_at is not null or v_ctx.expires_at<=now()\n       or not exists(select 1 from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled where a.auth_user_id=p_actor_real_auth_user_id and a.enabled) then\n      raise exception 'IMPERSONATION_CONTEXT_INVALID' using errcode='42501';\n    end if;\n  end if;\n  select * into v_item from public.program_catalog_items\n   where id=p_program_item_id and program_key='prestamo' and enabled and request_mode='supabase' and legacy_boundary;\n  if v_item.id is null then raise exception 'PROGRAM_NOT_REQUESTABLE' using errcode='22023'; end if;\n  if p_idempotency_key is null then raise exception 'IDEMPOTENCY_KEY_REQUIRED' using errcode='22023'; end if;\n  if nullif(btrim(coalesce(p_signature_data,'')),'') is null then raise exception 'SIGNATURE_AND_TERMS_REQUIRED' using errcode='22023'; end if;\n  if p_amount is null or p_amount<=0 or p_term is null or p_term<=0 or length(btrim(coalesce(p_term_semantics,''))) not between 3 and 80 then\n    raise exception 'FINANCIAL_REQUEST_TERMS_INVALID' using errcode='22023';\n  end if;\n  if not exists(select 1 from public.program_terms_versions where id=p_terms_version_id and program_id='prestamo' and membership_offering_id is null and published) then\n    raise exception 'TERMS_VERSION_REQUIRED' using errcode='22023';\n  end if;\n  if p_financial_submission_snapshot is null\n     or jsonb_typeof(p_financial_submission_snapshot)<>'object'\n     or not(p_financial_submission_snapshot ?& array[\n       'affiliate_id','actor_real_auth_user_id','profile_version','profile_fingerprint',\n       'criteria_source_fingerprint','term_policy_fingerprint','calculation_contract_version',\n       'criterion_identity','financialResult','confirmed_at','deposit_selection'\n     ])\n     or jsonb_typeof(p_financial_submission_snapshot->'financialResult')<>'object'\n     or jsonb_typeof(p_financial_submission_snapshot->'deposit_selection')<>'object'\n     or nullif(btrim(coalesce(p_financial_submission_snapshot->'deposit_selection'->>'bank_account_id','')),'') is not null\n     or p_financial_submission_snapshot->>'affiliate_id'<>p_affiliate_id::text\n     or p_financial_submission_snapshot->>'actor_real_auth_user_id'<>p_actor_real_auth_user_id::text\n     or coalesce(p_financial_submission_snapshot->>'impersonation_session_id','')<>coalesce(p_impersonation_session_id::text,'')\n     or (p_financial_submission_snapshot->>'profile_version')::integer<>p_expected_profile_version\n     or (p_financial_submission_snapshot->'financialResult'->>'amount')::numeric<>p_amount\n     or (p_financial_submission_snapshot->'financialResult'->>'paymentCount')::integer<>p_term then\n    raise exception 'FINANCIAL_SUBMISSION_CONTRACT_MISMATCH' using errcode='22023';\n  end if;\n  v_phone:=p_financial_submission_snapshot->'deposit_selection'->>'notification_phone';\n  if coalesce(v_phone,'') !~ '^[0-9]{10}$' then raise exception 'INVALID_NOTIFICATION_PHONE' using errcode='22023'; end if;\n\n  v_submission:=(p_financial_submission_snapshot-'deposit_selection') || jsonb_build_object('deposit',jsonb_build_object(\n    'bank_account_id',null,'bank_name',null,'masked_card',null,'masked_clabe',null,\n    'masked_phone','••• ••• '||right(v_phone,4)\n  ));\n\n  select count(*) into v_missing from public.resolve_affiliate_document_requirements('PROGRAM','prestamo',p_affiliate_id) r\n   where r.required and not exists(\n     select 1 from public.affiliate_documents d where d.id=any(coalesce(p_document_ids,array[]::uuid[]))\n       and d.affiliate_id=p_affiliate_id and d.document_type_id=r.document_type_id\n       and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED'));\n  if v_missing>0 then raise exception 'REQUIRED_DOCUMENTS_MISSING' using errcode='22023'; end if;\n\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null then\n    if v_row.actor_real_auth_user_id<>p_actor_real_auth_user_id or v_row.program_id<>'prestamo'\n       or v_row.program_item_id<>p_program_item_id or v_row.requested_amount<>p_amount or v_row.requested_term<>p_term then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    select * into v_deposit from public.loan_request_deposit_snapshots where request_id=v_row.id;\n    if v_deposit.request_id is null or v_deposit.source_bank_account_id is not null or v_deposit.notification_phone<>v_phone then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    return v_row;\n  end if;\n\n  insert into public.program_requests(\n    actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,\n    numero_control,program_id,program_item_id,request_type,status,quantity,notes,signature_data,terms_accepted,\n    terms_version_id,source_context,financial_processing_status,idempotency_key,requested_amount,requested_term,\n    requested_term_semantics,financial_submission_snapshot\n  ) values(\n    p_actor_real_auth_user_id,p_affiliate_id,case when v_ctx.id is null then null else p_affiliate_id end,v_ctx.id,v_ctx.reason,\n    v_affiliate.numero_control,'prestamo',v_item.id,'quote','requires_financial_processing',1,\n    left(nullif(btrim(coalesce(p_notes,'')),''),2000),p_signature_data,true,p_terms_version_id,\n    jsonb_build_object('source','sutiapp','financial_confirmation','SUPABASE_REVALIDATED','assisted',v_ctx.id is not null),\n    'pending',p_idempotency_key,p_amount,p_term,btrim(p_term_semantics),v_submission\n  ) returning * into v_row;\n\n  insert into public.loan_request_deposit_snapshots(request_id,affiliate_id,notification_phone)\n  values(v_row.id,p_affiliate_id,v_phone);\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n  values(p_actor_real_auth_user_id,p_affiliate_id,'program_requests','LOAN_DEPOSIT_CONFIRMED',v_row.id,\n    jsonb_build_object('has_bank_account',false,'phone_last4',right(v_phone,4)));\n\n  insert into public.request_documents(request_id,document_type_id,affiliate_document_id,private_asset_id,asset_sha256,status_at_submission)\n  select v_row.id,d.document_type_id,d.id,coalesce(d.private_asset_id,af.private_asset_id),pa.content_sha256,d.status\n  from public.affiliate_documents d left join public.affiliate_files af on af.id=d.affiliate_file_id\n  join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id)\n  where d.id=any(coalesce(p_document_ids,array[]::uuid[])) and d.affiliate_id=p_affiliate_id\n    and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED')\n  on conflict(request_id,document_type_id) do nothing;\n  return v_row;\nexception when unique_violation then\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null then\n    if v_row.actor_real_auth_user_id<>p_actor_real_auth_user_id or v_row.program_id<>'prestamo'\n       or v_row.program_item_id<>p_program_item_id or v_row.requested_amount<>p_amount or v_row.requested_term<>p_term then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    select * into v_deposit from public.loan_request_deposit_snapshots where request_id=v_row.id;\n    if v_deposit.request_id is null or v_deposit.source_bank_account_id is not null or v_deposit.notification_phone<>v_phone then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    return v_row;\n  end if;\n  raise;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres"
+      ],
+      "md5": "1a0d80cfac75af11fa0e4f973e29aa6b",
+      "name": "create_validated_financial_program_request_bank_required",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "create_validated_financial_program_request_bank_required(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.create_validated_financial_program_request_bank_required(p_actor_real_auth_user_id uuid, p_affiliate_id uuid, p_impersonation_session_id uuid, p_program_item_id uuid, p_notes text, p_signature_data text, p_terms_version_id uuid, p_document_ids uuid[], p_idempotency_key uuid, p_amount numeric, p_term integer, p_term_semantics text, p_expected_profile_version integer, p_financial_submission_snapshot jsonb)\n RETURNS program_requests\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_affiliate public.affiliates%rowtype;\n  v_item public.program_catalog_items%rowtype;\n  v_ctx public.impersonation_sessions%rowtype;\n  v_row public.program_requests%rowtype;\n  v_bank public.affiliate_bank_accounts%rowtype;\n  v_deposit public.loan_request_deposit_snapshots%rowtype;\n  v_submission jsonb;\n  v_phone text;\n  v_bank_id uuid;\n  v_missing integer;\nbegin\n  if coalesce(auth.role(),'')<>'service_role' then raise exception 'SERVICE_ROLE_REQUIRED' using errcode='42501'; end if;\n  if p_actor_real_auth_user_id is null or not exists(select 1 from auth.users where id=p_actor_real_auth_user_id) then\n    raise exception 'AUTH_ACTOR_REQUIRED' using errcode='42501';\n  end if;\n  select * into v_affiliate from public.affiliates where id=p_affiliate_id for update;\n  if v_affiliate.id is null or v_affiliate.financial_profile_version<>p_expected_profile_version then\n    raise exception 'CONDITIONS_CHANGED' using errcode='PT409';\n  end if;\n  if p_impersonation_session_id is null then\n    if v_affiliate.auth_user_id is distinct from p_actor_real_auth_user_id then raise exception 'AFFILIATE_CONTEXT_DENIED' using errcode='42501'; end if;\n  else\n    select * into v_ctx from public.impersonation_sessions where id=p_impersonation_session_id for share;\n    if v_ctx.id is null or v_ctx.actor_real_auth_user_id<>p_actor_real_auth_user_id\n       or v_ctx.usuario_contexto_affiliate_id<>p_affiliate_id or v_ctx.ended_at is not null or v_ctx.expires_at<=now()\n       or not exists(select 1 from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled where a.auth_user_id=p_actor_real_auth_user_id and a.enabled) then\n      raise exception 'IMPERSONATION_CONTEXT_INVALID' using errcode='42501';\n    end if;\n  end if;\n  select * into v_item from public.program_catalog_items\n   where id=p_program_item_id and program_key='prestamo' and enabled and request_mode='supabase' and legacy_boundary;\n  if v_item.id is null then raise exception 'PROGRAM_NOT_REQUESTABLE' using errcode='22023'; end if;\n  if p_idempotency_key is null then raise exception 'IDEMPOTENCY_KEY_REQUIRED' using errcode='22023'; end if;\n  if nullif(btrim(coalesce(p_signature_data,'')),'') is null then raise exception 'SIGNATURE_AND_TERMS_REQUIRED' using errcode='22023'; end if;\n  if p_amount is null or p_amount<=0 or p_term is null or p_term<=0 or length(btrim(coalesce(p_term_semantics,''))) not between 3 and 80 then\n    raise exception 'FINANCIAL_REQUEST_TERMS_INVALID' using errcode='22023';\n  end if;\n  if not exists(select 1 from public.program_terms_versions where id=p_terms_version_id and program_id='prestamo' and membership_offering_id is null and published) then\n    raise exception 'TERMS_VERSION_REQUIRED' using errcode='22023';\n  end if;\n  if p_financial_submission_snapshot is null\n     or jsonb_typeof(p_financial_submission_snapshot)<>'object'\n     or not(p_financial_submission_snapshot ?& array[\n       'affiliate_id','actor_real_auth_user_id','profile_version','profile_fingerprint',\n       'criteria_source_fingerprint','term_policy_fingerprint','calculation_contract_version',\n       'criterion_identity','financialResult','confirmed_at','deposit_selection'\n     ])\n     or jsonb_typeof(p_financial_submission_snapshot->'financialResult')<>'object'\n     or jsonb_typeof(p_financial_submission_snapshot->'deposit_selection')<>'object'\n     or p_financial_submission_snapshot->>'affiliate_id'<>p_affiliate_id::text\n     or p_financial_submission_snapshot->>'actor_real_auth_user_id'<>p_actor_real_auth_user_id::text\n     or coalesce(p_financial_submission_snapshot->>'impersonation_session_id','')<>coalesce(p_impersonation_session_id::text,'')\n     or (p_financial_submission_snapshot->>'profile_version')::integer<>p_expected_profile_version\n     or (p_financial_submission_snapshot->'financialResult'->>'amount')::numeric<>p_amount\n     or (p_financial_submission_snapshot->'financialResult'->>'paymentCount')::integer<>p_term then\n    raise exception 'FINANCIAL_SUBMISSION_CONTRACT_MISMATCH' using errcode='22023';\n  end if;\n  begin\n    v_bank_id:=(p_financial_submission_snapshot->'deposit_selection'->>'bank_account_id')::uuid;\n  exception when others then\n    raise exception 'INVALID_DEPOSIT_ACCOUNT' using errcode='22023';\n  end;\n  v_phone:=p_financial_submission_snapshot->'deposit_selection'->>'notification_phone';\n  if coalesce(v_phone,'') !~ '^[0-9]{10}$' then raise exception 'INVALID_NOTIFICATION_PHONE' using errcode='22023'; end if;\n  select * into v_bank from public.affiliate_bank_accounts\n   where id=v_bank_id and affiliate_id=p_affiliate_id and data_status='COMPLETE'\n     and (card_number ~ '^[0-9]{16}$' or public.is_valid_clabe(clabe))\n     and (card_number is null or card_number ~ '^[0-9]{16}$')\n     and (clabe is null or public.is_valid_clabe(clabe))\n   for share;\n  if v_bank.id is null then raise exception 'DEPOSIT_ACCOUNT_UNAVAILABLE' using errcode='42501'; end if;\n\n  v_submission:=(p_financial_submission_snapshot-'deposit_selection') || jsonb_build_object('deposit',jsonb_build_object(\n    'bank_account_id',v_bank.id,'bank_name',v_bank.bank_name,\n    'masked_card','•••• '||right(v_bank.card_number,4),\n    'masked_clabe','•••• •••• •••• ••'||right(v_bank.clabe,4),\n    'masked_phone','••• ••• '||right(v_phone,4)\n  ));\n\n  select count(*) into v_missing from public.resolve_affiliate_document_requirements('PROGRAM','prestamo',p_affiliate_id) r\n   where r.required and not exists(\n     select 1 from public.affiliate_documents d where d.id=any(coalesce(p_document_ids,array[]::uuid[]))\n       and d.affiliate_id=p_affiliate_id and d.document_type_id=r.document_type_id\n       and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED'));\n  if v_missing>0 then raise exception 'REQUIRED_DOCUMENTS_MISSING' using errcode='22023'; end if;\n\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null then\n    if v_row.actor_real_auth_user_id<>p_actor_real_auth_user_id or v_row.program_id<>'prestamo'\n       or v_row.program_item_id<>p_program_item_id or v_row.requested_amount<>p_amount or v_row.requested_term<>p_term then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    select * into v_deposit from public.loan_request_deposit_snapshots where request_id=v_row.id;\n    if v_deposit.request_id is null or v_deposit.source_bank_account_id<>v_bank.id or v_deposit.notification_phone<>v_phone then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    return v_row;\n  end if;\n\n  insert into public.program_requests(\n    actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,\n    numero_control,program_id,program_item_id,request_type,status,quantity,notes,signature_data,terms_accepted,\n    terms_version_id,source_context,financial_processing_status,idempotency_key,requested_amount,requested_term,\n    requested_term_semantics,financial_submission_snapshot\n  ) values(\n    p_actor_real_auth_user_id,p_affiliate_id,case when v_ctx.id is null then null else p_affiliate_id end,v_ctx.id,v_ctx.reason,\n    v_affiliate.numero_control,'prestamo',v_item.id,'quote','requires_financial_processing',1,\n    left(nullif(btrim(coalesce(p_notes,'')),''),2000),p_signature_data,true,p_terms_version_id,\n    jsonb_build_object('source','sutiapp','financial_confirmation','SUPABASE_REVALIDATED','assisted',v_ctx.id is not null),\n    'pending',p_idempotency_key,p_amount,p_term,btrim(p_term_semantics),v_submission\n  ) returning * into v_row;\n\n  insert into public.loan_request_deposit_snapshots(\n    request_id,affiliate_id,source_bank_account_id,bank_name,account_holder,card_number,clabe,notification_phone\n  ) values(\n    v_row.id,p_affiliate_id,v_bank.id,v_bank.bank_name,v_bank.account_holder,v_bank.card_number,v_bank.clabe,v_phone\n  );\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n  values(p_actor_real_auth_user_id,p_affiliate_id,'program_requests','LOAN_DEPOSIT_SELECTED',v_row.id,\n    jsonb_build_object('bank_account_id',v_bank.id,'card_last4',right(v_bank.card_number,4),'clabe_last4',right(v_bank.clabe,4),'phone_last4',right(v_phone,4)));\n\n  insert into public.request_documents(request_id,document_type_id,affiliate_document_id,private_asset_id,asset_sha256,status_at_submission)\n  select v_row.id,d.document_type_id,d.id,coalesce(d.private_asset_id,af.private_asset_id),pa.content_sha256,d.status\n  from public.affiliate_documents d left join public.affiliate_files af on af.id=d.affiliate_file_id\n  join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id)\n  where d.id=any(coalesce(p_document_ids,array[]::uuid[])) and d.affiliate_id=p_affiliate_id\n    and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED')\n  on conflict(request_id,document_type_id) do nothing;\n  return v_row;\nexception when unique_violation then\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null then\n    if v_row.actor_real_auth_user_id<>p_actor_real_auth_user_id or v_row.program_id<>'prestamo'\n       or v_row.program_item_id<>p_program_item_id or v_row.requested_amount<>p_amount or v_row.requested_term<>p_term then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    select * into v_deposit from public.loan_request_deposit_snapshots where request_id=v_row.id;\n    if v_deposit.request_id is null or v_deposit.source_bank_account_id<>v_bank.id or v_deposit.notification_phone<>v_phone then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    return v_row;\n  end if;\n  raise;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "aedd6ae131f181fc924fbbd1e98694e4",
+      "name": "register_program_catalog_asset",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "register_program_catalog_asset(text,text,bigint,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.register_program_catalog_asset(p_storage_path text, p_mime_type text, p_file_size bigint, p_content_sha256 text, p_alt_text text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_actor uuid:=(select auth.uid()); v_id uuid;\nbegin\n  if v_actor is null or not public.has_admin_permission('program_catalog.write') then raise exception 'PROGRAM_CATALOG_WRITE_REQUIRED' using errcode='42501'; end if;\n  if p_storage_path is null or p_storage_path not like 'program-products/'||v_actor::text||'/%'\n    or p_mime_type not in('image/png','image/jpeg','image/gif','image/webp')\n    or p_file_size not between 1 and 10485760\n    or upper(coalesce(p_content_sha256,''))!~'^[A-F0-9]{64}$'\n    or not exists(select 1 from storage.objects where bucket_id='app-assets' and name=p_storage_path)\n  then raise exception 'PROGRAM_CATALOG_ASSET_INVALID' using errcode='22023'; end if;\n\n  insert into public.app_assets(asset_key,asset_type,title,alt_text,storage_bucket,storage_path,mime_type,file_size,content_sha256,status)\n  values('program.catalog.admin.'||replace(extensions.gen_random_uuid()::text,'-',''),'image','Producto de programa',left(nullif(btrim(coalesce(p_alt_text,'')),''),240),'app-assets',p_storage_path,p_mime_type,p_file_size,upper(p_content_sha256),'READY')\n  on conflict(storage_bucket,storage_path) do update set status='READY',alt_text=coalesce(excluded.alt_text,public.app_assets.alt_text),updated_at=now()\n  returning id into v_id;\n\n  insert into public.asset_sources(asset_id,source_sheet,source_column,source_snapshot_hash)\n  values(v_id,'ADMIN_PROGRAM_CATALOG','image',upper(p_content_sha256)) on conflict do nothing;\n  return v_id;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "f7d1d12f7a4a5fa379d87f6641821e93",
+      "name": "create_validated_program_product_payment_request",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "create_validated_program_product_payment_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,integer,date)",
+      "definition": "CREATE OR REPLACE FUNCTION public.create_validated_program_product_payment_request(p_actor_real_auth_user_id uuid, p_affiliate_id uuid, p_impersonation_session_id uuid, p_program_item_id uuid, p_notes text, p_signature_data text, p_terms_version_id uuid, p_document_ids uuid[], p_idempotency_key uuid, p_down_payment numeric, p_term integer, p_expected_profile_version integer, p_schedule_anchor_date date)\n RETURNS program_requests\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_affiliate public.affiliates%rowtype;\n  v_item public.program_catalog_items%rowtype;\n  v_ctx public.impersonation_sessions%rowtype;\n  v_quote public.program_requests%rowtype;\n  v_row public.program_requests%rowtype;\n  v_policy public.loan_term_policy%rowtype;\n  v_rules jsonb;\n  v_rule jsonb; v_financing jsonb;\n  v_rule_count integer;\n  v_price numeric(14,2);\n  v_amount numeric(14,2);\n  v_source text;\n  v_result jsonb;\n  v_schedule jsonb;\n  v_process text;\n  v_period text;\n  v_union_label text;\n  v_category_label text;\n  v_missing integer;\n  v_snapshot jsonb;\n  v_business_date date:=(now() at time zone 'America/Hermosillo')::date;\nbegin\n  if coalesce(auth.role(),'')<>'service_role' then raise exception 'SERVICE_ROLE_REQUIRED' using errcode='42501'; end if;\n  if p_actor_real_auth_user_id is null or not exists(select 1 from auth.users where id=p_actor_real_auth_user_id) then\n    raise exception 'AUTH_ACTOR_REQUIRED' using errcode='42501';\n  end if;\n  select * into v_affiliate from public.affiliates where id=p_affiliate_id for update;\n  if v_affiliate.id is null or v_affiliate.financial_profile_version<>p_expected_profile_version then\n    raise exception 'CONDITIONS_CHANGED' using errcode='PT409';\n  end if;\n  if p_impersonation_session_id is null then\n    if v_affiliate.auth_user_id is distinct from p_actor_real_auth_user_id then raise exception 'AFFILIATE_CONTEXT_DENIED' using errcode='42501'; end if;\n  else\n    select * into v_ctx from public.impersonation_sessions where id=p_impersonation_session_id for share;\n    if v_ctx.id is null or v_ctx.actor_real_auth_user_id<>p_actor_real_auth_user_id\n       or v_ctx.usuario_contexto_affiliate_id<>p_affiliate_id or v_ctx.ended_at is not null or v_ctx.expires_at<=now()\n       or not exists(select 1 from public.admin_assignments a join public.admin_roles r on r.id=a.role_id and r.enabled\n         where a.auth_user_id=p_actor_real_auth_user_id and a.enabled) then\n      raise exception 'IMPERSONATION_CONTEXT_INVALID' using errcode='42501';\n    end if;\n  end if;\n  select * into v_item from public.program_catalog_items where id=p_program_item_id and enabled and request_mode='supabase' for share;\n  if v_item.id is null or v_item.program_key='prestamo' then raise exception 'PROGRAM_PRODUCT_NOT_FINANCEABLE' using errcode='22023'; end if;\n  if v_item.requires_quote then\n    select * into v_quote from public.program_requests\n    where affiliate_id=p_affiliate_id and program_item_id=v_item.id and request_type='quote' and status='approved'\n      and quoted_amount>0 and (valid_until is null or valid_until>=v_business_date)\n    order by responded_at desc nulls last,created_at desc,id desc limit 1 for share;\n    if v_quote.id is null then raise exception 'AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE' using errcode='P0001'; end if;\n    v_price:=v_quote.quoted_amount;v_source:='APPROVED_QUOTE';\n  else\n    if v_item.price_cash is null or v_item.price_cash<=0 then raise exception 'AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE' using errcode='P0001'; end if;\n    v_price:=v_item.price_cash;v_source:='PRICE_CASH';\n  end if;\n  if p_down_payment is null or p_down_payment<0 or p_down_payment>=v_price then raise exception 'DOWN_PAYMENT_OUT_OF_RANGE' using errcode='22023'; end if;\n  v_amount:=round(v_price-p_down_payment,2);\n  select * into v_policy from public.loan_term_policy where id='primary' and enabled;\n  if v_policy.id is null then raise exception 'LOAN_TERM_POLICY_UNAVAILABLE' using errcode='P0001'; end if;\n  select u.label,c.label into v_union_label,v_category_label\n  from public.affiliates a\n  left join public.segmentation_catalog_entries u on u.catalog_type='union' and u.code=a.financial_union_code and u.enabled\n  left join public.segmentation_catalog_entries c on c.catalog_type='employment_category' and c.code=a.financial_employee_category_code and c.enabled\n  where a.id=v_affiliate.id;\n  if v_union_label is null or v_category_label is null then raise exception 'AFFILIATE_FINANCIAL_PROFILE_INCOMPLETE' using errcode='P0001'; end if;\n  v_rules:=public.get_financial_runtime_rules();\n  select count(*) into v_rule_count\n  from jsonb_array_elements(v_rules) candidate(value)\n  where value->>'program_id'='caja'\n    and public.normalize_suti_financial_key(value->>'category')=public.normalize_suti_financial_key(v_category_label)\n    and public.normalize_suti_financial_key(value->>'union')=public.normalize_suti_financial_key(v_union_label)\n    and case upper(coalesce(value->>'visibility_mode','AUTO'))\n      when 'MOSTRAR' then true when 'OCULTAR' then false\n      else value->>'available_on' is null or (value->>'available_on')::date between v_business_date\n        and (date_trunc('month',v_business_date)+interval '5 months - 1 day')::date end;\n  if v_rule_count<>1 then raise exception 'CAJA_CHICA_RULE_NOT_ELIGIBLE' using errcode='P0001'; end if;\n  select value into v_rule\n  from jsonb_array_elements(v_rules) candidate(value)\n  where value->>'program_id'='caja'\n    and public.normalize_suti_financial_key(value->>'category')=public.normalize_suti_financial_key(v_category_label)\n    and public.normalize_suti_financial_key(value->>'union')=public.normalize_suti_financial_key(v_union_label)\n    and case upper(coalesce(value->>'visibility_mode','AUTO'))\n      when 'MOSTRAR' then true when 'OCULTAR' then false\n      else value->>'available_on' is null or (value->>'available_on')::date between v_business_date\n        and (date_trunc('month',v_business_date)+interval '5 months - 1 day')::date end\n  limit 1;\n  v_rule:=v_rule||jsonb_build_object('status','AVAILABLE');\n  v_financing:=public.resolve_program_product_financing(v_item.id,v_affiliate.id,v_rule,v_price);\r\n  v_rule:=v_financing->'rule';\r\n  if p_down_payment<>(round(p_down_payment,2)) or p_down_payment<(v_financing->>'minimum_down_payment')::numeric then raise exception 'DOWN_PAYMENT_OUT_OF_RANGE' using errcode='22023'; end if;\r\n  v_result:=public.resolve_suti_loan_quote_contract(\n    jsonb_build_array(v_rule),v_union_label,v_category_label,\n    v_rule->>'id',v_amount,p_term,jsonb_build_object(\n      'source','SUPABASE_LOAN_TERM_POLICY','standardTerms',v_policy.standard_terms,\n      'customMinTerm',v_policy.custom_min_term,'customStep',v_policy.custom_step,\n      'decisionReference',v_policy.decision_reference\n    )\n  );\n  v_process:=case v_affiliate.financial_employee_category_code\n    when 'SUPLENTES_VARIABLES' then '3' when 'JUBILADOS_PENSIONADOS' then 'JUB'\n    when 'SUPLENTES_FIJOS' then '1' when 'EVENTUALES' then '1' when 'BASE' then '1'\n    else null end;\n  if v_process is null then raise exception 'PAYROLL_PROCESS_UNRESOLVED' using errcode='P0001'; end if;\n  v_period:=case when v_process='JUB' then 'mensual' else 'quincenal' end;\n  v_result:=(v_result||jsonb_build_object('paymentPeriod',v_period,'ratePeriod',v_period,'source','SUPABASE_FINANCIAL_CRITERIA'));\n  if p_schedule_anchor_date is distinct from v_business_date then raise exception 'SCHEDULE_ANCHOR_CHANGED' using errcode='PT409'; end if;\n  v_schedule:=public.generate_program_product_payment_schedule(\n    p_schedule_anchor_date,v_process,(v_result->>'paymentCount')::integer,\n    (v_result->>'total')::numeric,(v_result->>'paymentPerPeriod')::numeric\n  );\n  if p_idempotency_key is null then raise exception 'IDEMPOTENCY_KEY_REQUIRED' using errcode='22023'; end if;\n  if nullif(btrim(coalesce(p_signature_data,'')),'') is null then raise exception 'SIGNATURE_AND_TERMS_REQUIRED' using errcode='22023'; end if;\n  if not exists(select 1 from public.program_terms_versions where id=p_terms_version_id and program_id='prestamo'\n    and membership_offering_id is null and published) then raise exception 'TERMS_VERSION_REQUIRED' using errcode='22023'; end if;\n  select count(*) into v_missing\n  from public.resolve_affiliate_document_requirements('PROGRAM','prestamo',p_affiliate_id) requirement\n  where requirement.required and not exists(\n    select 1 from public.affiliate_documents d\n    left join public.affiliate_files af on af.id=d.affiliate_file_id\n    join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id) and pa.status='READY'\n    join storage.objects so on so.bucket_id=pa.storage_bucket and so.name=pa.storage_path\n    where d.id=any(coalesce(p_document_ids,array[]::uuid[])) and d.affiliate_id=p_affiliate_id\n      and d.document_type_id=requirement.document_type_id and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED')\n      and not exists(select 1 from public.affiliate_documents newer where newer.affiliate_id=d.affiliate_id\n        and newer.document_type_id=d.document_type_id and (newer.created_at,newer.id)>(d.created_at,d.id))\n  );\n  if v_missing>0 then raise exception 'REQUIRED_DOCUMENTS_MISSING' using errcode='22023'; end if;\n  v_snapshot:=jsonb_build_object(\n    'contract_version','PROGRAM_PRODUCT_PAYMENT_V1','calculation_contract_version','SUTI_LOAN_QUOTE_V1',\n    'calendar_contract_version','PROGRAM_PRODUCT_PAYROLL_CALENDAR_V1','affiliate_id',p_affiliate_id,\n    'actor_real_auth_user_id',p_actor_real_auth_user_id,'impersonation_session_id',p_impersonation_session_id,\n    'profile_version',v_affiliate.financial_profile_version,'product',jsonb_build_object(\n      'program_item_id',v_item.id,'program_key',v_item.program_key,'name',v_item.name\n    ),'authorized_price',v_price,'price_source',v_source,'quote_request_id',v_quote.id,\n    'down_payment',round(p_down_payment,2),'financed_amount',v_amount,'fund_program_id','caja',\n    'fund_rule_id',v_rule->>'rule_id','criterion_identity',v_rule->>'criterion_identity',\n    'financial_authority','SUPABASE','financial_rules_source_hash',v_rule->>'source_snapshot_hash',\n    'financing_conditions',v_financing->'conditions','financialResult',v_result,'payment_schedule',v_schedule,'terms_version_id',p_terms_version_id,\n    'confirmed_at',now()\n  );\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null then\n    if v_row.actor_real_auth_user_id<>p_actor_real_auth_user_id or v_row.program_item_id<>p_program_item_id\n       or v_row.requested_amount<>v_amount or v_row.requested_term<>p_term\n       or (v_row.financial_submission_snapshot->>'down_payment')::numeric<>round(p_down_payment,2)\n       or v_row.financial_submission_snapshot->>'price_source'<>v_source\n       or coalesce(v_row.financial_submission_snapshot->>'quote_request_id','')<>coalesce(v_quote.id::text,'') then\n      raise exception 'IDEMPOTENCY_CONTRACT_MISMATCH' using errcode='22023';\n    end if;\n    return v_row;\n  end if;\n  insert into public.program_requests(\n    actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,\n    numero_control,program_id,program_item_id,request_type,status,quantity,notes,signature_data,terms_accepted,\n    terms_version_id,source_context,financial_processing_status,idempotency_key,requested_amount,requested_term,\n    requested_term_semantics,financial_submission_snapshot\n  ) values(\n    p_actor_real_auth_user_id,p_affiliate_id,case when v_ctx.id is null then null else p_affiliate_id end,v_ctx.id,v_ctx.reason,\n    v_affiliate.numero_control,v_item.program_key,v_item.id,'benefit','requires_financial_processing',1,\n    left(nullif(btrim(coalesce(p_notes,'')),''),2000),p_signature_data,true,p_terms_version_id,\n    jsonb_build_object('source','sutiapp','flow','PROGRAM_PRODUCT_PAYMENT_V1','price_source',v_source,\n      'quote_request_id',v_quote.id,'fund_program_id','caja','assisted',v_ctx.id is not null),\n    'pending',p_idempotency_key,v_amount,p_term,v_period,v_snapshot\n  ) returning * into v_row;\n  insert into public.request_documents(request_id,document_type_id,affiliate_document_id,private_asset_id,asset_sha256,status_at_submission)\n  select v_row.id,d.document_type_id,d.id,coalesce(d.private_asset_id,af.private_asset_id),pa.content_sha256,d.status\n  from public.affiliate_documents d left join public.affiliate_files af on af.id=d.affiliate_file_id\n  join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id)\n  join storage.objects so on so.bucket_id=pa.storage_bucket and so.name=pa.storage_path\n  where d.id=any(coalesce(p_document_ids,array[]::uuid[])) and d.affiliate_id=p_affiliate_id\n    and d.status in('PENDING_REVIEW','UNDER_REVIEW','VERIFIED')\n  on conflict(request_id,document_type_id) do nothing;\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n  values(p_actor_real_auth_user_id,p_affiliate_id,'program_requests','PROGRAM_PRODUCT_PAYMENT_CONFIRMED',v_row.id,\n    jsonb_build_object('program_item_id',v_item.id,'price_source',v_source,'quote_request_id',v_quote.id,\n      'payment_count',p_term,'payment_period',v_period,'assisted',v_ctx.id is not null));\n  return v_row;\nexception when unique_violation then\n  select * into v_row from public.program_requests where affiliate_id=p_affiliate_id and idempotency_key=p_idempotency_key;\n  if v_row.id is not null and v_row.program_item_id=p_program_item_id and v_row.requested_amount=v_amount\n     and v_row.requested_term=p_term and (v_row.financial_submission_snapshot->>'down_payment')::numeric=round(p_down_payment,2) then\n    return v_row;\n  end if;\n  raise;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "md5": "9bd92378a8c60e077c215184a2fa68a7",
+      "name": "register_branding_assets",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "register_branding_assets(jsonb)",
+      "definition": "CREATE OR REPLACE FUNCTION public.register_branding_assets(p_assets jsonb)\n RETURNS TABLE(asset_key text, asset_id uuid, previous_storage_bucket text, previous_storage_path text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_item jsonb;\n  v_asset_key text;\n  v_storage_path text;\n  v_mime_type text;\n  v_file_size bigint;\n  v_content_sha256 text;\n  v_extension text;\n  v_expected_path text;\n  v_asset_id uuid;\n  v_previous_bucket text;\n  v_previous_path text;\n  v_count integer;\n  v_keys text[] := array[]::text[];\nbegin\n  if not (public.has_admin_permission('assets.write') and public.admin_module_boundary(array['branding'],'update')) then\n    raise exception 'ADMIN_DENIED' using errcode = '42501';\n  end if;\n\n  if jsonb_typeof(p_assets) <> 'array' then\n    raise exception 'INVALID_ASSET_BATCH' using errcode = '22023';\n  end if;\n  v_count := jsonb_array_length(p_assets);\n  if v_count < 1 or v_count > 4 then\n    raise exception 'INVALID_ASSET_BATCH' using errcode = '22023';\n  end if;\n\n  for v_item in select value from jsonb_array_elements(p_assets)\n  loop\n    v_asset_key := nullif(trim(v_item->>'asset_key'), '');\n    v_storage_path := nullif(trim(v_item->>'storage_path'), '');\n    v_mime_type := nullif(trim(v_item->>'mime_type'), '');\n    v_content_sha256 := upper(nullif(trim(v_item->>'content_sha256'), ''));\n    begin\n      v_file_size := (v_item->>'file_size')::bigint;\n    exception when others then\n      raise exception 'INVALID_ASSET_FILE_SIZE' using errcode = '22023';\n    end;\n\n    if v_asset_key is null or not (v_asset_key = any(array[\n      'brand.pwa.512',\n      'brand.institutional-seal',\n      'brand.favicon-pwa-192',\n      'brand.pwa.apple-touch',\n      'brand.pwa.maskable-512',\n      'pwa.install-screen-1',\n      'pwa.install-screen-2',\n      'pwa.install-screen-3',\n      'home.header.collapsed'\n    ]::text[])) then\n      raise exception 'UNKNOWN_BRANDING_ASSET' using errcode = '22023';\n    end if;\n    if v_asset_key = any(v_keys) then\n      raise exception 'DUPLICATE_BRANDING_ASSET' using errcode = '22023';\n    end if;\n    v_keys := array_append(v_keys, v_asset_key);\n\n    v_extension := case v_mime_type\n      when 'image/png' then 'png'\n      when 'image/jpeg' then 'jpg'\n      when 'image/gif' then 'gif'\n      when 'image/webp' then 'webp'\n      when 'image/svg+xml' then 'svg'\n      when 'image/x-icon' then 'ico'\n      else null\n    end;\n    if v_extension is null or v_file_size < 1 or v_file_size > 10485760\n       or v_content_sha256 !~ '^[A-F0-9]{64}$' then\n      raise exception 'INVALID_BRANDING_ASSET' using errcode = '22023';\n    end if;\n\n    v_expected_path := 'branding/admin/' ||\n      regexp_replace(v_asset_key, '[^a-zA-Z0-9._-]', '-', 'g') || '/' ||\n      lower(v_content_sha256) || '.' || v_extension;\n    if v_storage_path is distinct from v_expected_path then\n      raise exception 'INVALID_BRANDING_STORAGE_PATH' using errcode = '22023';\n    end if;\n    if not exists(\n      select 1 from storage.objects o\n      where o.bucket_id = 'app-assets' and o.name = v_storage_path\n    ) then\n      raise exception 'BRANDING_UPLOAD_NOT_FOUND' using errcode = '22023';\n    end if;\n\n    select a.id, a.storage_bucket, a.storage_path\n      into v_asset_id, v_previous_bucket, v_previous_path\n    from public.app_assets a\n    where a.asset_key = v_asset_key\n    for update;\n\n    if v_asset_id is null then\n      insert into public.app_assets(\n        asset_key, asset_type, title, alt_text, storage_bucket, storage_path,\n        mime_type, file_size, content_sha256, status\n      ) values (\n        v_asset_key, 'BRANDING', v_asset_key, replace(v_asset_key, '.', ' '),\n        'app-assets', v_storage_path, v_mime_type, v_file_size,\n        v_content_sha256, 'READY'\n      ) returning id into v_asset_id;\n    else\n      update public.app_assets set\n        asset_type = 'BRANDING',\n        title = v_asset_key,\n        alt_text = replace(v_asset_key, '.', ' '),\n        storage_bucket = 'app-assets',\n        storage_path = v_storage_path,\n        mime_type = v_mime_type,\n        file_size = v_file_size,\n        content_sha256 = v_content_sha256,\n        status = 'READY'\n      where id = v_asset_id;\n    end if;\n\n    insert into public.asset_sources(\n      asset_id, source_sheet, source_column, source_snapshot_hash\n    ) values (\n      v_asset_id, 'ADMIN_H009', v_asset_key, v_content_sha256\n    ) on conflict do nothing;\n\n    case v_asset_key\n      when 'brand.pwa.512' then\n        update public.app_settings\n          set app_icon_asset_id = v_asset_id, pwa_icon_512_asset_id = v_asset_id\n        where id = 'primary';\n      when 'brand.institutional-seal' then\n        update public.app_settings set institutional_seal_asset_id = v_asset_id where id = 'primary';\n      when 'brand.favicon-pwa-192' then\n        update public.app_settings\n          set favicon_asset_id = v_asset_id, pwa_icon_192_asset_id = v_asset_id\n        where id = 'primary';\n      when 'brand.pwa.apple-touch' then\n        update public.app_settings set apple_touch_asset_id = v_asset_id where id = 'primary';\n      when 'brand.pwa.maskable-512' then\n        update public.app_settings set pwa_maskable_512_asset_id = v_asset_id where id = 'primary';\n      when 'pwa.install-screen-1' then\n        update public.app_settings set install_screen_1_asset_id = v_asset_id where id = 'primary';\n      when 'pwa.install-screen-2' then\n        update public.app_settings set install_screen_2_asset_id = v_asset_id where id = 'primary';\n      when 'pwa.install-screen-3' then\n        update public.app_settings set install_screen_3_asset_id = v_asset_id where id = 'primary';\n      when 'home.header.collapsed' then null;\n    end case;\n\n    asset_key := v_asset_key;\n    asset_id := v_asset_id;\n    previous_storage_bucket := v_previous_bucket;\n    previous_storage_path := v_previous_path;\n    return next;\n  end loop;\nend;\n$function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "md5": "5e44fa1919b12fed6a1c2e21bb162512",
+      "name": "list_admin_affiliate_documents",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "list_admin_affiliate_documents(uuid,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.list_admin_affiliate_documents(p_target_affiliate_id uuid, p_purpose text)\n RETURNS TABLE(document_id uuid, affiliate_id uuid, document_type_id uuid, affiliate_file_id uuid, private_asset_id uuid, replaces_document_id uuid, document_status text, review_observation text, reviewed_at timestamp with time zone, created_at timestamp with time zone, updated_at timestamp with time zone, document_type_code text, document_type_label text, document_type_description text, document_type_icon text, accepted_mime_types text[], mime_type text, sha256 text, available boolean, availability text, verification_provenance text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_actor uuid:=auth.uid();\n  v_effective uuid:=public.get_effective_affiliate_id();\n  v_session uuid;\nbegin\n  if v_actor is null or not public.has_admin_permission('documents.read') then\n    raise exception 'ADMIN_DOCUMENT_ACCESS_DENIED' using errcode='42501';\n  end if;\n  if p_target_affiliate_id is null or not exists(select 1 from public.affiliates a where a.id=p_target_affiliate_id) then\n    raise exception 'TARGET_AFFILIATE_REQUIRED' using errcode='22023';\n  end if;\n  if p_purpose not in('ADMIN_DOCUMENT_REVIEW','ADMIN_AFFILIATE_PROFILE','ADMIN_FINANCIAL_REQUEST') then\n    raise exception 'INVALID_DOCUMENT_ACCESS_PURPOSE' using errcode='22023';\n  end if;\n  select s.id into v_session from public.impersonation_sessions s\n   where s.actor_real_auth_user_id=v_actor and s.ended_at is null and s.expires_at>now() limit 1;\n  insert into public.document_access_audit_log(\n    actor_auth_user_id,effective_affiliate_id,target_affiliate_id,action,purpose,\n    context_mode,impersonation_session_id,access_context\n  ) values(\n    v_actor,v_effective,p_target_affiliate_id,'LIST_METADATA',p_purpose,'ADMIN',v_session,\n    jsonb_build_object('source','list_admin_affiliate_documents')\n  );\n  return query\n  select d.id,d.affiliate_id,d.document_type_id,d.affiliate_file_id,d.private_asset_id,\n    d.replaces_document_id,d.status,d.review_observation,d.reviewed_at,d.created_at,d.updated_at,\n    dt.code,dt.label,dt.description,dt.icon,dt.accepted_mime_types,pa.mime_type,\n    coalesce(pa.content_sha256,af.sha256),\n    (pa.id is not null and pa.status='READY' and so.id is not null),\n    case when pa.id is null then 'ASSET_METADATA_MISSING'\n      when pa.status<>'READY' then 'ASSET_DISABLED'\n      when so.id is null then 'OBJECT_MISSING' else 'AVAILABLE' end,\n    case when d.status='VERIFIED' and d.reviewed_by_auth_user_id is not null and d.reviewed_at is not null then 'HUMAN_REVIEWED'\n      when d.status='VERIFIED' and d.affiliate_file_id is not null and d.reviewed_by_auth_user_id is null and d.reviewed_at is null then 'HISTORICAL_IMPORT'\n      else 'WORKFLOW_STATUS' end\n  from document_retirement_private.active_documents d\n  join public.document_types dt on dt.id=d.document_type_id\n  left join public.affiliate_files af on af.id=d.affiliate_file_id\n  left join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id)\n  left join storage.objects so on so.bucket_id=pa.storage_bucket and so.name=pa.storage_path\n  where d.affiliate_id=p_target_affiliate_id\n  order by d.created_at desc,d.id desc;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "80cd58e6d5ad55c6c7bae9af6697fb83",
+      "name": "set_self_profile_photo",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "set_self_profile_photo(text,text,bigint,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.set_self_profile_photo(p_storage_path text, p_mime_type text, p_file_size bigint, p_sha256 text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_affiliate public.affiliates%rowtype;\n  v_asset public.private_assets%rowtype;\n  v_previous uuid; v_result uuid; v_meta jsonb;\nbegin\n  select * into v_affiliate from public.affiliates where id=public.get_effective_affiliate_id() for update;\n  if auth.uid() is null or v_affiliate.id is null or v_affiliate.auth_user_id is distinct from auth.uid()\n    or exists(select 1 from public.get_impersonation_context()) then\n    raise exception 'PROFILE_PHOTO_SELF_ONLY' using errcode='42501';\n  end if;\n  if p_storage_path is null or p_storage_path!~('^affiliate-documents/'||v_affiliate.id::text||'/[a-f0-9-]+\\.(jpg|png|webp)$')\n    or p_mime_type is null or p_mime_type not in('image/jpeg','image/png','image/webp')\n    or p_file_size is null or p_file_size<1 or p_file_size>5242880\n    or p_sha256 is null or upper(p_sha256)!~'^[A-F0-9]{64}$' then\n    raise exception 'INVALID_PROFILE_PHOTO' using errcode='22023';\n  end if;\n  select metadata into v_meta from storage.objects where bucket_id='private-assets' and name=p_storage_path and owner_id=auth.uid()::text;\n  if v_meta is null or (v_meta->>'size')::bigint is distinct from p_file_size or v_meta->>'mimetype' is distinct from p_mime_type then\n    raise exception 'PROFILE_PHOTO_UPLOAD_NOT_FOUND' using errcode='42501';\n  end if;\n  select id into v_result from public.affiliate_files where affiliate_id=v_affiliate.id and storage_path=p_storage_path and is_current_profile_photo;\n  if v_result is not null then return v_result; end if;\n  select * into v_asset from public.private_assets where content_sha256=upper(p_sha256);\n  if v_asset.id is not null then\n    -- Never attach another user's private asset by guessing its hash.\n    if not exists(select 1 from public.affiliate_files where affiliate_id=v_affiliate.id and private_asset_id=v_asset.id)\n      and not exists(select 1 from public.affiliate_documents where affiliate_id=v_affiliate.id and private_asset_id=v_asset.id) then\n      raise exception 'PROFILE_PHOTO_CONTENT_UNAVAILABLE' using errcode='42501';\n    end if;\n    if v_asset.status<>'READY' or v_asset.mime_type<>p_mime_type or v_asset.file_size<>p_file_size then\n      raise exception 'INVALID_PROFILE_PHOTO' using errcode='22023';\n    end if;\n  else\n    insert into public.private_assets(asset_key,asset_type,title,storage_bucket,storage_path,mime_type,file_size,content_sha256)\n    values('profile_photo_'||extensions.gen_random_uuid()::text,'AFFILIATE_DOCUMENT','Foto de perfil','private-assets',p_storage_path,p_mime_type,p_file_size,upper(p_sha256)) returning * into v_asset;\n  end if;\n  select id into v_previous from public.affiliate_files where affiliate_id=v_affiliate.id and is_current_profile_photo;\n  update public.affiliate_files set is_current_profile_photo=false where affiliate_id=v_affiliate.id and is_current_profile_photo;\n  insert into public.affiliate_files(affiliate_id,numero_control,private_asset_id,classification,file_key,file_type,source_column,source_column_letter,title,storage_bucket,storage_path,mime_type,sha256,file_size,source_url,source_row_ordinal,source_file_hash,expediente_classification,is_current_profile_photo)\n  values(v_affiliate.id,v_affiliate.numero_control,v_asset.id,'PRIVATE','profile_photo','image','Photo','DK','Foto de perfil',v_asset.storage_bucket,v_asset.storage_path,v_asset.mime_type,v_asset.content_sha256,v_asset.file_size,\n    'supabase://private-assets/'||p_storage_path,coalesce(v_affiliate.source_row_ordinal,1),upper(encode(extensions.digest('PROFILE_UPLOAD:'||p_storage_path,'sha256'),'hex')),'CURRENT_DOCUMENT',true)\n  returning id into v_result;\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n  values(auth.uid(),v_affiliate.id,'profile_photo','SELF_REPLACE',v_result,jsonb_build_object('previous_file_id',v_previous,'private_asset_id',v_asset.id));\n  return v_result;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "77bfcfb4c657f03bc9c329a861803877",
+      "name": "register_program_general_cover",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "register_program_general_cover(text,text,bigint,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.register_program_general_cover(p_path text, p_mime text, p_size bigint, p_sha text)\n RETURNS uuid\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare result uuid;\nbegin\n  if auth.uid() is null or not (public.has_admin_permission('program_catalog.write') or (public.has_admin_permission('workflow.write') and public.admin_module_boundary(array['fincat'],'update'))) then raise exception 'PROGRAM_INFO_WRITE_REQUIRED' using errcode='42501'; end if;\n  if p_path is null or p_path not like 'program-general/'||auth.uid()::text||'/%'\n    or p_mime not in ('image/png','image/jpeg','image/gif','image/webp') or p_size not between 1 and 10485760\n    or upper(coalesce(p_sha,''))!~'^[A-F0-9]{64}$'\n    or not exists(select 1 from storage.objects where bucket_id='app-assets' and name=p_path)\n    then raise exception 'PROGRAM_INFO_COVER_INVALID'; end if;\n  insert into public.app_assets(asset_key,asset_type,title,alt_text,storage_bucket,storage_path,mime_type,file_size,content_sha256,status)\n  values('program.general.'||extensions.gen_random_uuid()::text,'image','Portada de programa','Portada de programa','app-assets',p_path,p_mime,p_size,upper(p_sha),'READY') returning id into result;\n  return result;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "b75751b6b83fa1653a7c52788950a073",
+      "name": "preview_admin_affiliate_document_delete",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "preview_admin_affiliate_document_delete(uuid,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.preview_admin_affiliate_document_delete(p_affiliate_id uuid, p_document_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare ids uuid[];assets uuid[];files uuid[];v_rows jsonb;v_fingerprint text;v_shared boolean;begin\n if not document_retirement_private.authorized() then raise exception 'AFFILIATE_DOCUMENT_DELETE_DENIED' using errcode='42501';end if;\n if not exists(select 1 from public.affiliate_documents where id=p_document_id and affiliate_id=p_affiliate_id and public.affiliate_document_is_active(id)) then raise exception 'DOCUMENT_CONTEXT_MISMATCH' using errcode='42501';end if;\n select array_agg(document_id order by document_id),array_agg(distinct asset_id) filter(where asset_id is not null),array_agg(distinct affiliate_file_id) filter(where affiliate_file_id is not null)\n into ids,assets,files from document_retirement_private.scope(p_affiliate_id,p_document_id);\n -- A broken/cross-affiliate predecessor link must never silently expand the scope.\n if exists(select 1 from public.affiliate_documents d join public.affiliate_documents prior on prior.id=d.replaces_document_id where d.id=any(ids) and (prior.affiliate_id<>p_affiliate_id or prior.document_type_id<>d.document_type_id)) then raise exception 'DOCUMENT_VERSION_SCOPE_INVALID';end if;\n select jsonb_agg(jsonb_build_object('id',d.id,'label',t.label,'created_at',d.created_at,'updated_at',d.updated_at,'status',d.status,'replaces_document_id',d.replaces_document_id) order by d.created_at desc,d.id desc),\n md5(string_agg(d.id::text||':'||d.updated_at::text||':'||coalesce(d.replaces_document_id::text,'')||':'||coalesce(s.asset_id::text,''),'|' order by d.id))\n into v_rows,v_fingerprint from document_retirement_private.scope(p_affiliate_id,p_document_id) s join public.affiliate_documents d on d.id=s.document_id join public.document_types t on t.id=d.document_type_id;\n v_shared:=exists(select 1 from public.affiliate_documents d left join public.affiliate_files af on af.id=d.affiliate_file_id\n  where public.affiliate_document_is_active(d.id) and not d.id=any(ids) and (coalesce(d.private_asset_id,af.private_asset_id)=any(assets) or d.affiliate_file_id=any(files)))\n or exists(select 1 from public.affiliate_files f where f.private_asset_id=any(assets) and not f.id=any(coalesce(files,'{}'::uuid[])) and public.affiliate_document_file_is_active(f.id))\n or exists(select 1 from public.request_documents where affiliate_document_id=any(ids) or private_asset_id=any(assets))\n or exists(select 1 from public.savings_requests where supporting_document_id=any(ids))\n or exists(select 1 from public.program_terms_versions where private_asset_id=any(assets))\n or exists(select 1 from public.program_catalog_item_assets where private_asset_id=any(assets))\n or exists(select 1 from public.financial_programs where icon_asset_id=any(assets));\n return jsonb_build_object('affiliate_id',p_affiliate_id,'document_id',p_document_id,'documents',v_rows,'fingerprint',v_fingerprint,'blocked',v_shared,'blocker',case when v_shared then 'DOCUMENT_SHARED_REFERENCE' end);\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "da02af5fa09cfe25b12d8d6584e20850",
+      "name": "prepare_admin_affiliate_document_delete",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "prepare_admin_affiliate_document_delete(uuid,uuid,text,text,uuid)",
+      "definition": "CREATE OR REPLACE FUNCTION public.prepare_admin_affiliate_document_delete(p_affiliate_id uuid, p_document_id uuid, p_fingerprint text, p_reason text, p_action_id uuid)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare report jsonb;v_op document_retirement_private.operations%rowtype;ids uuid[];assets uuid[];begin\n if not document_retirement_private.authorized() then raise exception 'AFFILIATE_DOCUMENT_DELETE_DENIED' using errcode='42501';end if;\n if p_action_id is null or length(btrim(coalesce(p_reason,''))) not between 8 and 500 then raise exception 'DOCUMENT_DELETE_REASON_REQUIRED' using errcode='22023';end if;\n -- Serialize retries before examining the immutable action identity.\n perform pg_advisory_xact_lock(hashtextextended(p_action_id::text,0));\n select * into v_op from document_retirement_private.operations where id=p_action_id;\n if found then\n  if v_op.affiliate_id<>p_affiliate_id or v_op.document_id<>p_document_id or v_op.actor_auth_user_id<>auth.uid() or v_op.fingerprint is distinct from p_fingerprint or v_op.reason is distinct from btrim(p_reason) then raise exception 'DOCUMENT_DELETE_RETRY_MISMATCH' using errcode='42501';end if;\n  return jsonb_build_object('operation_id',v_op.id,'status',case when v_op.completed_at is null then 'PENDING_STORAGE' else 'COMPLETE' end);\n end if;\n select array_agg(document_id),array_agg(distinct asset_id) filter(where asset_id is not null) into ids,assets from document_retirement_private.scope(p_affiliate_id,p_document_id);\n perform 1 from public.affiliate_documents where id=any(ids) order by id for update;\n perform 1 from public.private_assets where id=any(assets) order by id for update;\n report:=public.preview_admin_affiliate_document_delete(p_affiliate_id,p_document_id);\n if report->>'fingerprint' is distinct from p_fingerprint then raise exception 'DOCUMENT_DELETE_PREVIEW_STALE';end if;\n if (report->>'blocked')::boolean then raise exception 'DOCUMENT_SHARED_REFERENCE';end if;\n insert into document_retirement_private.operations(id,affiliate_id,document_id,actor_auth_user_id,effective_affiliate_id,reason,fingerprint)\n values(p_action_id,p_affiliate_id,p_document_id,auth.uid(),public.get_effective_affiliate_id(),btrim(p_reason),p_fingerprint);\n insert into document_retirement_private.documents(document_id,operation_id,affiliate_file_id,asset_id)\n select document_id,p_action_id,affiliate_file_id,asset_id from document_retirement_private.scope(p_affiliate_id,p_document_id);\n insert into document_retirement_private.assets(asset_id,operation_id,storage_bucket,original_path,quarantine_path,original_sha256,original_status)\n select pa.id,p_action_id,pa.storage_bucket,pa.storage_path,'retired-documents/'||p_action_id::text||'/'||pa.id::text,pa.content_sha256,pa.status\n from public.private_assets pa where pa.id=any(assets);\n -- Preserve the original hash privately while allowing the same bytes to be\n -- uploaded under their correct owner with a new, independent object/path.\n update public.private_assets set status='DISABLED',content_sha256=null where id=any(assets);\n insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n values(auth.uid(),p_affiliate_id,'affiliate_documents','ADMIN_DOCUMENT_DELETE',p_document_id,\n jsonb_build_object('operation_id',p_action_id,'reason',btrim(p_reason),'document_ids',ids,'effective_affiliate_id',public.get_effective_affiliate_id(),'storage_state','PENDING_STORAGE'));\n return jsonb_build_object('operation_id',p_action_id,'status','PENDING_STORAGE');\nend $function$\n"
+    },
+    {
+      "acl": null,
+      "md5": "fff1b9e81485a850eb35c2ec84b7deb6",
+      "name": "guard_reference",
+      "owner": "16388",
+      "schema": "document_retirement_private",
+      "signature": "document_retirement_private.guard_reference()",
+      "definition": "CREATE OR REPLACE FUNCTION document_retirement_private.guard_reference()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v uuid;kind text;begin\n for i in 0..tg_nargs-1 by 2 loop\n  v:=nullif(to_jsonb(new)->>tg_argv[i],'')::uuid;kind:=tg_argv[i+1];\n  if v is null then continue;end if;\n  if tg_op='UPDATE' and tg_argv[i]<>'id' and (to_jsonb(old)->>tg_argv[i]) is not distinct from (to_jsonb(new)->>tg_argv[i]) then continue;end if;\n  if kind='asset' then\n   perform 1 from public.private_assets where id=v for key share;\n   if not public.affiliate_document_asset_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  elsif kind='file' then\n   perform 1 from public.affiliate_files where id=v for key share;\n   if not public.affiliate_document_file_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  else\n   perform 1 from public.affiliate_documents where id=v for key share;\n   if not public.affiliate_document_is_active(v) then raise exception 'DOCUMENT_RETIRED' using errcode='42501';end if;\n  end if;\n end loop;\n return new;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "service_role=X/postgres",
+        "authenticated=X/postgres"
+      ],
+      "md5": "a92384aa4d503b9f04ed68e8a3bc64b4",
+      "name": "list_effective_affiliate_documents",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "list_effective_affiliate_documents(text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.list_effective_affiliate_documents(p_purpose text)\n RETURNS TABLE(document_id uuid, affiliate_id uuid, document_type_id uuid, affiliate_file_id uuid, private_asset_id uuid, replaces_document_id uuid, document_status text, review_observation text, reviewed_at timestamp with time zone, created_at timestamp with time zone, updated_at timestamp with time zone, document_type_code text, document_type_label text, document_type_description text, document_type_icon text, accepted_mime_types text[], mime_type text, sha256 text, available boolean, availability text, verification_provenance text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare\n  v_actor uuid:=auth.uid();\n  v_target uuid:=public.get_effective_affiliate_id();\n  v_session uuid;\nbegin\n  if v_actor is null then raise exception 'AUTH_REQUIRED' using errcode='42501'; end if;\n  if v_target is null then raise exception 'AFFILIATE_IDENTITY_REQUIRED' using errcode='42501'; end if;\n  if p_purpose not in('SELF_SERVICE_EXPEDIENTE','SELF_SERVICE_LOAN','SELF_SERVICE_MEMBERSHIP') then\n    raise exception 'INVALID_DOCUMENT_ACCESS_PURPOSE' using errcode='22023';\n  end if;\n  select s.id into v_session from public.impersonation_sessions s\n   where s.actor_real_auth_user_id=v_actor and s.usuario_contexto_affiliate_id=v_target\n     and s.ended_at is null and s.expires_at>now() limit 1;\n  insert into public.document_access_audit_log(\n    actor_auth_user_id,effective_affiliate_id,target_affiliate_id,action,purpose,\n    context_mode,impersonation_session_id,access_context\n  ) values(\n    v_actor,v_target,v_target,'LIST_METADATA',p_purpose,'SELF_SERVICE',v_session,\n    jsonb_build_object('source','list_effective_affiliate_documents')\n  );\n  return query\n  select d.id,d.affiliate_id,d.document_type_id,d.affiliate_file_id,d.private_asset_id,\n    d.replaces_document_id,d.status,d.review_observation,d.reviewed_at,d.created_at,d.updated_at,\n    dt.code,dt.label,dt.description,dt.icon,dt.accepted_mime_types,pa.mime_type,\n    coalesce(pa.content_sha256,af.sha256),\n    (pa.id is not null and pa.status='READY' and so.id is not null),\n    case when pa.id is null then 'ASSET_METADATA_MISSING'\n      when pa.status<>'READY' then 'ASSET_DISABLED'\n      when so.id is null then 'OBJECT_MISSING' else 'AVAILABLE' end,\n    case when d.status='VERIFIED' and d.reviewed_by_auth_user_id is not null and d.reviewed_at is not null then 'HUMAN_REVIEWED'\n      when d.status='VERIFIED' and d.affiliate_file_id is not null and d.reviewed_by_auth_user_id is null and d.reviewed_at is null then 'HISTORICAL_IMPORT'\n      else 'WORKFLOW_STATUS' end\n  from document_retirement_private.active_documents d\n  join public.document_types dt on dt.id=d.document_type_id\n  left join public.affiliate_files af on af.id=d.affiliate_file_id\n  left join public.private_assets pa on pa.id=coalesce(d.private_asset_id,af.private_asset_id)\n  left join storage.objects so on so.bucket_id=pa.storage_bucket and so.name=pa.storage_path\n  where d.affiliate_id=v_target\n  order by d.created_at desc,d.id desc;\nend $function$\n"
+    },
+    {
+      "acl": [
+        "postgres=X/postgres",
+        "authenticated=X/postgres",
+        "service_role=X/postgres"
+      ],
+      "md5": "865e2d8062e95215079a7a8fdb0c2af0",
+      "name": "register_affiliate_document",
+      "owner": "16388",
+      "schema": "public",
+      "signature": "register_affiliate_document(uuid,text,text,bigint,text,text)",
+      "definition": "CREATE OR REPLACE FUNCTION public.register_affiliate_document(p_document_type_id uuid, p_storage_path text, p_mime_type text, p_file_size bigint, p_sha256 text, p_source text)\n RETURNS affiliate_documents\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\ndeclare v_affiliate uuid;v_type public.document_types%rowtype;v_asset public.private_assets%rowtype;v_doc public.affiliate_documents%rowtype;v_replaced uuid;v_path text:=btrim(p_storage_path);\nbegin\n  v_affiliate:=public.get_effective_affiliate_id();\n  if auth.uid() is null or v_affiliate is null then raise exception 'AFFILIATE_REQUIRED' using errcode='42501'; end if;\n  select * into v_type from public.document_types where id=p_document_type_id and enabled;\n  if v_type.id is null then raise exception 'DOCUMENT_TYPE_UNAVAILABLE' using errcode='22023'; end if;\n  if upper(coalesce(p_source,'')) not in('CAMERA','FILE')\n    or (upper(p_source)='CAMERA' and not v_type.camera_allowed)\n    or (upper(p_source)='FILE' and not v_type.file_upload_allowed)\n    or (upper(p_source)='CAMERA' and p_mime_type not like 'image/%')\n    or not(p_mime_type=any(v_type.accepted_mime_types)) or p_file_size<1 or p_file_size>v_type.max_file_size_bytes or upper(p_sha256)!~'^[A-F0-9]{64}$' then raise exception 'INVALID_DOCUMENT_FILE' using errcode='22023'; end if;\n  if v_path!~('^affiliate-documents/'||v_affiliate::text||'/[A-Za-z0-9._-]+$') then raise exception 'INVALID_STORAGE_PATH' using errcode='22023'; end if;\n  if not exists(select 1 from storage.objects where bucket_id='private-assets' and name=v_path and owner_id=auth.uid()::text) then raise exception 'UPLOAD_NOT_FOUND' using errcode='22023'; end if;\n  select d.id into v_replaced from document_retirement_private.active_documents d where d.affiliate_id=v_affiliate and d.document_type_id=p_document_type_id order by d.created_at desc,d.id desc limit 1;\n  select * into v_asset from public.private_assets where content_sha256=upper(p_sha256);\n  if v_asset.id is null then insert into public.private_assets(asset_key,asset_type,title,storage_bucket,storage_path,mime_type,file_size,content_sha256)\n    values('affiliate_document_'||replace(extensions.gen_random_uuid()::text,'-',''),'AFFILIATE_DOCUMENT',v_type.label,'private-assets',v_path,p_mime_type,p_file_size,upper(p_sha256)) returning * into v_asset; end if;\n  update public.affiliate_documents set status='REJECTED',review_observation='Reemplazado por una nueva carga.',reviewed_by_auth_user_id=auth.uid(),reviewed_at=now()\n    where public.affiliate_document_is_active(id) and affiliate_id=v_affiliate and document_type_id=p_document_type_id and status in('PENDING_REVIEW','UNDER_REVIEW','REUPLOAD_REQUIRED');\n  insert into public.affiliate_documents(affiliate_id,document_type_id,private_asset_id,status,created_by_auth_user_id,replaces_document_id)\n    values(v_affiliate,p_document_type_id,v_asset.id,'PENDING_REVIEW',auth.uid(),v_replaced) returning * into v_doc;\n  insert into public.sensitive_change_audit(actor_auth_user_id,affiliate_id,resource,action,target_id,metadata)\n    values(auth.uid(),v_affiliate,'affiliate_documents',case when v_replaced is null then 'UPLOAD' else 'REPLACEMENT_UPLOAD' end,v_doc.id,\n      jsonb_strip_nulls(jsonb_build_object('document_type_id',p_document_type_id,'mime_type',p_mime_type,'file_size',p_file_size,'source',upper(p_source),'replaces_document_id',v_replaced)));\n  return v_doc;\nend $function$\n"
+    }
+  ],
+  "migrations": [
+    "20261104000400"
+  ],
+  "references": [
+    {
+      "table": "affiliate_files",
+      "column": "private_asset_id",
+      "target": "private_assets"
+    },
+    {
+      "table": "program_terms_versions",
+      "column": "private_asset_id",
+      "target": "private_assets"
+    },
+    {
+      "table": "historical_asset_sources",
+      "column": "private_asset_id",
+      "target": "private_assets"
+    },
+    {
+      "table": "program_catalog_item_assets",
+      "column": "private_asset_id",
+      "target": "private_assets"
+    },
+    {
+      "table": "financial_programs",
+      "column": "icon_asset_id",
+      "target": "private_assets"
+    },
+    {
+      "table": "request_documents",
+      "column": "affiliate_document_id",
+      "target": "affiliate_documents"
+    },
+    {
+      "table": "request_documents",
+      "column": "private_asset_id",
+      "target": "private_assets"
+    },
+    {
+      "table": "affiliate_documents",
+      "column": "affiliate_file_id",
+      "target": "affiliate_files"
+    },
+    {
+      "table": "affiliate_documents",
+      "column": "private_asset_id",
+      "target": "private_assets"
+    },
+    {
+      "table": "affiliate_documents",
+      "column": "replaces_document_id",
+      "target": "affiliate_documents"
+    },
+    {
+      "table": "document_access_audit_log",
+      "column": "document_id",
+      "target": "affiliate_documents"
+    },
+    {
+      "table": "savings_requests",
+      "column": "supporting_document_id",
+      "target": "affiliate_documents"
+    },
+    {
+      "table": "document_retirement_private.operations",
+      "column": "document_id",
+      "target": "affiliate_documents"
+    },
+    {
+      "table": "document_retirement_private.documents",
+      "column": "document_id",
+      "target": "affiliate_documents"
+    },
+    {
+      "table": "document_retirement_private.documents",
+      "column": "affiliate_file_id",
+      "target": "affiliate_files"
+    },
+    {
+      "table": "document_retirement_private.documents",
+      "column": "asset_id",
+      "target": "private_assets"
+    },
+    {
+      "table": "document_retirement_private.assets",
+      "column": "asset_id",
+      "target": "private_assets"
+    }
+  ],
+  "constraints": [
+    {
+      "name": "private_assets_asset_key_key",
+      "type": "u",
+      "table": "private_assets",
+      "definition": "UNIQUE (asset_key)"
+    },
+    {
+      "name": "private_assets_bucket_check",
+      "type": "c",
+      "table": "private_assets",
+      "definition": "CHECK ((storage_bucket = 'private-assets'::text))"
+    },
+    {
+      "name": "private_assets_hash_check",
+      "type": "c",
+      "table": "private_assets",
+      "definition": "CHECK ((content_sha256 ~ '^[A-F0-9]{64}$'::text))"
+    },
+    {
+      "name": "private_assets_hash_unique",
+      "type": "u",
+      "table": "private_assets",
+      "definition": "UNIQUE (content_sha256)"
+    },
+    {
+      "name": "private_assets_live_sha256_check",
+      "type": "c",
+      "table": "private_assets",
+      "definition": "CHECK (((status = 'DISABLED'::text) OR (content_sha256 IS NOT NULL)))"
+    },
+    {
+      "name": "private_assets_path_check",
+      "type": "c",
+      "table": "private_assets",
+      "definition": "CHECK (((storage_path <> ''::text) AND (storage_path !~ '(^|/)\\.\\.(/|$)'::text)))"
+    },
+    {
+      "name": "private_assets_pkey",
+      "type": "p",
+      "table": "private_assets",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "private_assets_size_check",
+      "type": "c",
+      "table": "private_assets",
+      "definition": "CHECK (((file_size > 0) AND (file_size <= 104857600)))"
+    },
+    {
+      "name": "private_assets_status_check",
+      "type": "c",
+      "table": "private_assets",
+      "definition": "CHECK ((status = ANY (ARRAY['READY'::text, 'DISABLED'::text])))"
+    },
+    {
+      "name": "private_assets_storage_unique",
+      "type": "u",
+      "table": "private_assets",
+      "definition": "UNIQUE (storage_bucket, storage_path)"
+    },
+    {
+      "name": "affiliate_files_affiliate_id_fkey",
+      "type": "f",
+      "table": "affiliate_files",
+      "definition": "FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_files_asset_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK (((public_asset_id IS NULL) <> (private_asset_id IS NULL)))"
+    },
+    {
+      "name": "affiliate_files_bucket_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK ((((classification = 'PRIVATE'::text) AND (storage_bucket = 'private-assets'::text)) OR (classification = 'PUBLIC'::text)))"
+    },
+    {
+      "name": "affiliate_files_classification_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK ((((classification = 'PUBLIC'::text) AND (public_asset_id IS NOT NULL) AND (private_asset_id IS NULL)) OR ((classification = 'PRIVATE'::text) AND (public_asset_id IS NULL) AND (private_asset_id IS NOT NULL))))"
+    },
+    {
+      "name": "affiliate_files_control_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK (((numero_control IS NULL) OR (numero_control <> ''::text)))"
+    },
+    {
+      "name": "affiliate_files_expediente_classification_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK ((expediente_classification = ANY (ARRAY['CURRENT_DOCUMENT'::text, 'HISTORICAL_DOCUMENT_VERSION'::text, 'LEGACY_DOCUMENT'::text, 'DUPLICATE_RELATION'::text, 'UNCLASSIFIED_DOCUMENT'::text, 'HISTORICAL_NON_DOCUMENT'::text])))"
+    },
+    {
+      "name": "affiliate_files_hash_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK (((sha256 ~ '^[A-F0-9]{64}$'::text) AND (source_file_hash ~ '^[A-F0-9]{64}$'::text)))"
+    },
+    {
+      "name": "affiliate_files_order_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK (((source_row_ordinal > 0) AND (url_order > 0) AND (sort_order > 0)))"
+    },
+    {
+      "name": "affiliate_files_pkey",
+      "type": "p",
+      "table": "affiliate_files",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "affiliate_files_private_asset_id_fkey",
+      "type": "f",
+      "table": "affiliate_files",
+      "definition": "FOREIGN KEY (private_asset_id) REFERENCES private_assets(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_files_public_asset_id_fkey",
+      "type": "f",
+      "table": "affiliate_files",
+      "definition": "FOREIGN KEY (public_asset_id) REFERENCES app_assets(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_files_size_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK (((file_size > 0) AND (file_size <= 104857600)))"
+    },
+    {
+      "name": "affiliate_files_source_unique",
+      "type": "u",
+      "table": "affiliate_files",
+      "definition": "UNIQUE (source_file_hash, source_row_ordinal, source_column_letter, url_order)"
+    },
+    {
+      "name": "affiliate_files_status_check",
+      "type": "c",
+      "table": "affiliate_files",
+      "definition": "CHECK ((status = ANY (ARRAY['READY'::text, 'DISABLED'::text])))"
+    },
+    {
+      "name": "affiliate_documents_affiliate_file_id_fkey",
+      "type": "f",
+      "table": "affiliate_documents",
+      "definition": "FOREIGN KEY (affiliate_file_id) REFERENCES affiliate_files(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_documents_affiliate_id_fkey",
+      "type": "f",
+      "table": "affiliate_documents",
+      "definition": "FOREIGN KEY (affiliate_id) REFERENCES affiliates(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_documents_asset_check",
+      "type": "c",
+      "table": "affiliate_documents",
+      "definition": "CHECK (((affiliate_file_id IS NULL) <> (private_asset_id IS NULL)))"
+    },
+    {
+      "name": "affiliate_documents_created_by_auth_user_id_fkey",
+      "type": "f",
+      "table": "affiliate_documents",
+      "definition": "FOREIGN KEY (created_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_documents_document_type_id_fkey",
+      "type": "f",
+      "table": "affiliate_documents",
+      "definition": "FOREIGN KEY (document_type_id) REFERENCES document_types(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_documents_pkey",
+      "type": "p",
+      "table": "affiliate_documents",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "name": "affiliate_documents_private_asset_id_fkey",
+      "type": "f",
+      "table": "affiliate_documents",
+      "definition": "FOREIGN KEY (private_asset_id) REFERENCES private_assets(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_documents_replaces_document_id_fkey",
+      "type": "f",
+      "table": "affiliate_documents",
+      "definition": "FOREIGN KEY (replaces_document_id) REFERENCES affiliate_documents(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_documents_review_check",
+      "type": "c",
+      "table": "affiliate_documents",
+      "definition": "CHECK ((((status = 'VERIFIED'::text) AND (affiliate_file_id IS NOT NULL) AND (created_by_auth_user_id IS NULL)) OR ((status = ANY (ARRAY['PENDING_REVIEW'::text, 'UNDER_REVIEW'::text])) AND (reviewed_by_auth_user_id IS NULL) AND (reviewed_at IS NULL)) OR ((status = ANY (ARRAY['VERIFIED'::text, 'REJECTED'::text, 'REUPLOAD_REQUIRED'::text])) AND (reviewed_by_auth_user_id IS NOT NULL) AND (reviewed_at IS NOT NULL))))"
+    },
+    {
+      "name": "affiliate_documents_reviewed_by_auth_user_id_fkey",
+      "type": "f",
+      "table": "affiliate_documents",
+      "definition": "FOREIGN KEY (reviewed_by_auth_user_id) REFERENCES auth.users(id) ON DELETE RESTRICT"
+    },
+    {
+      "name": "affiliate_documents_status_check",
+      "type": "c",
+      "table": "affiliate_documents",
+      "definition": "CHECK ((status = ANY (ARRAY['PENDING_REVIEW'::text, 'UNDER_REVIEW'::text, 'VERIFIED'::text, 'REJECTED'::text, 'REUPLOAD_REQUIRED'::text])))"
+    }
+  ],
+  "columns": [
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "affiliate_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "document_type_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "affiliate_file_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "private_asset_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default": "'PENDING_REVIEW'::text"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "review_observation",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "reviewed_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "reviewed_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "created_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_documents",
+      "name": "replaces_document_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "affiliate_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "numero_control",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "public_asset_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "private_asset_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "classification",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "file_key",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "file_type",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "source_column",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "source_column_letter",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "title",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "storage_bucket",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "storage_path",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "mime_type",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "sha256",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "file_size",
+      "type": "bigint",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "source_url",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "source_row_ordinal",
+      "type": "integer",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "source_file_hash",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "url_order",
+      "type": "integer",
+      "not_null": true,
+      "default": "1"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default": "'READY'::text"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "sort_order",
+      "type": "integer",
+      "not_null": true,
+      "default": "1"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "expediente_classification",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliate_files",
+      "name": "is_current_profile_photo",
+      "type": "boolean",
+      "not_null": true,
+      "default": "false"
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "numero_control",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "full_name",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "display_name",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "historical_status_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "affiliate_status_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "historical_email_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "historical_email_normalized",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "phone_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "address_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "birth_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "gender_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "marital_status_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "children_count_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "rfc_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "curp_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "unit_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "city_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "employment_position_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "employment_entry_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "occupation_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "institute_entry_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "employment_area_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "employment_level_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "pension_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "subdirectorate_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "union_enrollment_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "capture_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "affiliation_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "union_position_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "termination_date_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "auth_eligibility",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "auth_ineligibility_reason",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "source_row_ordinal",
+      "type": "integer",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "source_file_hash",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_union_code",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_employee_category_code",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_employee_type",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_affiliation_status",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_employment_status",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_profile_version",
+      "type": "integer",
+      "not_null": true,
+      "default": "0"
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_profile_updated_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_profile_updated_by",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_profile_seed_source_hash",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_profile_seed_row_ordinal",
+      "type": "integer",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "financial_profile_seeded_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "record_origin",
+      "type": "text",
+      "not_null": true,
+      "default": "'HISTORICAL_IMPORT'::text"
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "notification_phone",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "is_archived",
+      "type": "boolean",
+      "not_null": true,
+      "default": "false"
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "archived_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "archived_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "archive_reason",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "archive_previous_status_raw",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "restored_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "restored_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "affiliates",
+      "name": "restore_reason",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "code",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "label",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "description",
+      "type": "text",
+      "not_null": true,
+      "default": "''::text"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "icon",
+      "type": "text",
+      "not_null": true,
+      "default": "'doc'::text"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "required_by_default",
+      "type": "boolean",
+      "not_null": true,
+      "default": "false"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "accepted_mime_types",
+      "type": "text[]",
+      "not_null": true,
+      "default": "ARRAY['image/jpeg'::text, 'image/png'::text, 'image/webp'::text, 'application/pdf'::text]"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "enabled",
+      "type": "boolean",
+      "not_null": true,
+      "default": "true"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "sort_order",
+      "type": "integer",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "system_type",
+      "type": "boolean",
+      "not_null": true,
+      "default": "false"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "camera_allowed",
+      "type": "boolean",
+      "not_null": true,
+      "default": "true"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "file_upload_allowed",
+      "type": "boolean",
+      "not_null": true,
+      "default": "true"
+    },
+    {
+      "schema": "public",
+      "table": "document_types",
+      "name": "max_file_size_bytes",
+      "type": "bigint",
+      "not_null": true,
+      "default": "10485760"
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "asset_key",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "asset_type",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "title",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "storage_bucket",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "storage_path",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "mime_type",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "file_size",
+      "type": "bigint",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "content_sha256",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default": "'READY'::text"
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "private_assets",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "folio",
+      "type": "text",
+      "not_null": true,
+      "default": "((('SR-'::text || to_char((CURRENT_DATE)::timestamp with time zone, 'YYYY'::text)) || '-'::text) || lpad((nextval('program_request_folio_seq'::regclass))::text, 6, '0'::text))"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "affiliate_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "numero_control",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "program_id",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "program_item_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "product_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "company_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "request_type",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default": "'submitted'::text"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "quantity",
+      "type": "integer",
+      "not_null": true,
+      "default": "1"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "notes",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "signature_data",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "terms_accepted",
+      "type": "boolean",
+      "not_null": true,
+      "default": "false"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "source_context",
+      "type": "jsonb",
+      "not_null": true,
+      "default": "'{}'::jsonb"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "financial_processing_status",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "legacy_reference",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "idempotency_key",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "quoted_amount",
+      "type": "numeric(14,2)",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "quote_note",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "valid_until",
+      "type": "date",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "responded_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "responded_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "requested_amount",
+      "type": "numeric(14,2)",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "requested_term",
+      "type": "numeric(10,2)",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "requested_term_semantics",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "financial_profile_snapshot",
+      "type": "jsonb",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "financial_approval_snapshot",
+      "type": "jsonb",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "financial_approved_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "financial_approved_by",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "impersonation_session_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "impersonation_reason",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "membership_offering_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "terms_version_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "applicant_profile_snapshot",
+      "type": "jsonb",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "financial_submission_snapshot",
+      "type": "jsonb",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "document_requirements_snapshot",
+      "type": "jsonb",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "workflow_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "workflow_version",
+      "type": "integer",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "workflow_snapshot",
+      "type": "jsonb",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "seen_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "rental_start",
+      "type": "date",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "program_requests",
+      "name": "rental_end",
+      "type": "date",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "request_documents",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "request_documents",
+      "name": "request_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "request_documents",
+      "name": "document_type_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "request_documents",
+      "name": "affiliate_document_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "request_documents",
+      "name": "private_asset_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "request_documents",
+      "name": "asset_sha256",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "request_documents",
+      "name": "status_at_submission",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "request_documents",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "folio",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "participant_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "enrollment_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "request_type",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "withdrawal_kind",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "component",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "requested_amount",
+      "type": "numeric(14,2)",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "requested_capital_amount",
+      "type": "numeric(14,2)",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "requested_yield_amount",
+      "type": "numeric(14,2)",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "new_contribution_amount",
+      "type": "numeric(14,2)",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "continue_saving",
+      "type": "boolean",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "supporting_document_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "status",
+      "type": "text",
+      "not_null": true,
+      "default": "'SUBMITTED'::text"
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "effective_from",
+      "type": "date",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "reason",
+      "type": "text",
+      "not_null": true,
+      "default": "''::text"
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "actor_real_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "usuario_contexto_affiliate_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "idempotency_key",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "submitted_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "reviewed_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "reviewed_by_auth_user_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "settled_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "data_classification",
+      "type": "text",
+      "not_null": true,
+      "default": "'SHADOW'::text"
+    },
+    {
+      "schema": "public",
+      "table": "savings_requests",
+      "name": "metadata",
+      "type": "jsonb",
+      "not_null": true,
+      "default": "'{}'::jsonb"
+    },
+    {
+      "schema": "public",
+      "table": "sensitive_change_audit",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "extensions.gen_random_uuid()"
+    },
+    {
+      "schema": "public",
+      "table": "sensitive_change_audit",
+      "name": "actor_auth_user_id",
+      "type": "uuid",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "sensitive_change_audit",
+      "name": "affiliate_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "sensitive_change_audit",
+      "name": "resource",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "sensitive_change_audit",
+      "name": "action",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "sensitive_change_audit",
+      "name": "target_id",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "public",
+      "table": "sensitive_change_audit",
+      "name": "metadata",
+      "type": "jsonb",
+      "not_null": true,
+      "default": "'{}'::jsonb"
+    },
+    {
+      "schema": "public",
+      "table": "sensitive_change_audit",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": true,
+      "default": "now()"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "id",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "name",
+      "type": "text",
+      "not_null": true,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "owner",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": "now()"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": "now()"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "public",
+      "type": "boolean",
+      "not_null": false,
+      "default": "false"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "avif_autodetection",
+      "type": "boolean",
+      "not_null": false,
+      "default": "false"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "file_size_limit",
+      "type": "bigint",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "allowed_mime_types",
+      "type": "text[]",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "owner_id",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "type",
+      "type": "storage.buckettype",
+      "not_null": true,
+      "default": "'STANDARD'::storage.buckettype"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "versioning_status",
+      "type": "text",
+      "not_null": true,
+      "default": "'DISABLED'::text"
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "lifecycle_configuration",
+      "type": "jsonb",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "buckets",
+      "name": "lifecycle_configuration_generation",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "id",
+      "type": "uuid",
+      "not_null": true,
+      "default": "gen_random_uuid()"
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "bucket_id",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "name",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "owner",
+      "type": "uuid",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": "now()"
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": "now()"
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "last_accessed_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": "now()"
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "metadata",
+      "type": "jsonb",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "path_tokens",
+      "type": "text[]",
+      "not_null": false,
+      "default": "string_to_array(name, '/'::text)"
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "version",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "owner_id",
+      "type": "text",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "user_metadata",
+      "type": "jsonb",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "archived_at",
+      "type": "timestamp with time zone",
+      "not_null": false,
+      "default": null
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "is_delete_marker",
+      "type": "boolean",
+      "not_null": true,
+      "default": "false"
+    },
+    {
+      "schema": "storage",
+      "table": "objects",
+      "name": "is_versioned",
+      "type": "boolean",
+      "not_null": true,
+      "default": "false"
+    }
+  ]
+}

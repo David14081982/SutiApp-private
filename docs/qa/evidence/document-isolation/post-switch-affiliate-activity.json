@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "completed_at": "2026-11-05 16:31:57.896966+00",
+  "updated_before_switch_end": 0,
+  "updated_after_switch_end": 2,
+  "classification": "Separate affiliate edits after every isolation transaction had completed; no affiliate DML in maintenance",
+  "restoredAffiliates": 0,
+  "rowsBitwiseUnchanged": false
+}

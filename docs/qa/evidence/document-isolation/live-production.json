@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "mode": "production",
+  "bundleSha256": "3a2c20c4eefcdc553e6ff6fe9d8ea3b923e88e08ebcd84001fc6445190fa8ce9",
+  "version": "2026110403",
+  "documentCards": 8,
+  "confirmedScopeVersions": 1,
+  "legitimatePreviewStatus": 200,
+  "requiredDocumentCount": 8,
+  "anonymousRpc": 401,
+  "anonymousEdge": 401,
+  "unprivilegedRpc": "NOT_CONFIGURED",
+  "checks": [
+    "Real Afiliados access, per-document action, server-derived version scope and cancellation without deletion",
+    "Previously shared profile photo can now reach confirmation without the shared-reference block",
+    "Legitimate current document still opens; authoritative required-document counters present",
+    "Every available document in the affected expediente and the other affiliate profile photo still opens",
+    "Authenticated refresh loads exact release",
+    "Anonymous RPC/Edge denied; existing unprivileged account checked when configured"
+  ],
+  "profilePhotoSharedBlock": false,
+  "documentReads": {
+    "checked": 8,
+    "mimeTypes": [
+      "application/pdf",
+      "image/jpeg"
+    ],
+    "otherAffiliatePhotoStatus": 200
+  },
+  "productionDocumentDeletions": 0,
+  "blockedWrites": 0,
+  "pageErrors": 0,
+  "screenshots": 0
+}

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "units": 5394,
+  "sourceAssets": 772,
+  "documents": 281,
+  "fileRelations": 5113,
+  "bytes": 1456059952,
+  "sourceObjectsPreserved": true,
+  "privateSnapshot": true
+}

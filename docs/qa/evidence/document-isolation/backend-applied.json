@@ -1,0 +1,77 @@
+{
+  "status": "PASS",
+  "migration": "20261105000100",
+  "sha256": "7c4558d21d6d7c92471786a137e3b0f850440c10487a0c80fcbaf751bb856cbb",
+  "preserved": [
+    {
+      "name": "admin_assignments",
+      "rows": 14
+    },
+    {
+      "name": "admin_role_permissions",
+      "rows": 74
+    },
+    {
+      "name": "admin_roles",
+      "rows": 3
+    },
+    {
+      "name": "admin_section_responsibilities",
+      "rows": 147
+    },
+    {
+      "name": "affiliate_documents",
+      "rows": 5414
+    },
+    {
+      "name": "affiliate_files",
+      "rows": 12928
+    },
+    {
+      "name": "affiliates",
+      "rows": 1071
+    },
+    {
+      "name": "document_types",
+      "rows": 13
+    },
+    {
+      "name": "financial_programs",
+      "rows": 3
+    },
+    {
+      "name": "historical_asset_sources",
+      "rows": 25358
+    },
+    {
+      "name": "private_assets",
+      "rows": 14887
+    },
+    {
+      "name": "program_catalog_item_assets",
+      "rows": 269
+    },
+    {
+      "name": "program_requests",
+      "rows": 549
+    },
+    {
+      "name": "program_terms_versions",
+      "rows": 11
+    },
+    {
+      "name": "request_documents",
+      "rows": 3162
+    },
+    {
+      "name": "savings_requests",
+      "rows": 64
+    },
+    {
+      "name": "sensitive_change_audit",
+      "rows": 3216
+    }
+  ],
+  "existingBusinessRowsChanged": 0,
+  "globalPermissionChanges": 0
+}

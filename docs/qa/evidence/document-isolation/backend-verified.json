@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "shared_units": 0,
+  "cross_affiliate_assets": 0,
+  "isolated_units": 5394,
+  "ownership_mismatches": 0,
+  "functions_match": true,
+  "copy_metadata_mismatches": 0,
+  "protectedTablesUnchanged": 10,
+  "concurrentRequestActivityReconciled": true,
+  "postSwitchAffiliateEdits": 2,
+  "originalAssetRowsUnchanged": 772,
+  "fileMetadataPreserved": 5113,
+  "documentMetadataPreserved": 1916,
+  "globalPermissionChanges": 0
+}

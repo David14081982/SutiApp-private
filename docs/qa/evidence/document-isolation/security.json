@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "uploadFunctionsChecked": 3,
+  "ownersAndGrantsPreserved": true,
+  "anonymousUploadExecute": false,
+  "privateJournal": {
+    "tables": 3,
+    "forced_rls": true,
+    "direct_api_grant": false
+  }
+}

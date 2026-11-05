@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "baseline_requests": 549,
+  "baseline_documents": 3162,
+  "documents_fingerprint": "ede1b5e10d1f624309dc16c8f6fc810b",
+  "archived_requests": 3,
+  "new_requests": 0,
+  "updated_requests": 4,
+  "unaudited_updates": 0,
+  "classification": "Existing request-deletion/admin-decision flows during storage copy; no request DML in isolation maintenance",
+  "restoredRequests": 0,
+  "requestDocumentBaselineReconciledExactly": true,
+  "requestRowsBitwiseUnchanged": false
+}

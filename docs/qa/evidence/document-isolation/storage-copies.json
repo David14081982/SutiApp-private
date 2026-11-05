@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "copiedAndVerified": 5394,
+  "expected": 5394,
+  "sha256EveryDestination": true,
+  "originalsDeleted": 0,
+  "documentPointersChanged": 0
+}

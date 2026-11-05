@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "checks": [
+    "empty migration recovery preserves exact three upload definitions",
+    "identical image uploads in two affiliates use distinct assets and paths",
+    "same affiliate different document and replacement also get independent files",
+    "admin retry of the same stored upload is idempotent",
+    "PDF self uploads and exact-path retries retain separate ownership",
+    "profile photo edits accept identical bytes across affiliates without sharing",
+    "profile replacement preserves previous file and retry returns current one",
+    "backend blocks forged cross-owner and reused same-owner asset references",
+    "existing upload permissions and path authorization remain enforced",
+    "deleting one image and its predecessors leaves identical image of another affiliate intact",
+    "historical separation checks snapshots, copies, hashes and audit atomically; retry is idempotent",
+    "recovery refuses to re-share files after isolated history exists"
+  ],
+  "productionWrites": 0,
+  "capturedLiveDefinitions": true,
+  "migrationSha256": "7c4558d21d6d7c92471786a137e3b0f850440c10487a0c80fcbaf751bb856cbb",
+  "coreSha256": "e6c640121542dd346fb58b29967de3832deb109c9c10eb97219fce84eedf96e4"
+}

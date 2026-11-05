@@ -22,7 +22,7 @@ Guardian verdicts for proposed implementation: Source of truth SAFE; migration/s
 
 ## H-AFFILIATE-DOCUMENT-ISOLATION-001 RESULT
 
-Status: PASS - backend and existing production UI verified; source/evidence publication receipt follows.
+Status: PASS - backend, source publication and production UI verified.
 Files changed: three existing SQL upload function bodies via one additive migration/recovery; new private audit journal and reference/owner guards; focal scripts/schema fixture/evidence; appended governance and derived architecture registry. No frontend bundle, cachebuster, Edge, Storage policy or global role change.
 Source-of-truth verdict: PASS. Same canonical tables/Storage; private before snapshots are recovery evidence, never runtime fallback.
 Invariant verdict: PASS. 5,394 independently owned units; zero shared units, zero cross-affiliate assets, zero ownership or copy-metadata mismatches. Exact original rows of 772 assets preserved. Metadata of 5,113 file relations and 1,916 documents preserved except the declared physical pointer/path and updated_at changes. Source provenance, status, versions, dates of creation and business affiliation remain intact.
@@ -51,3 +51,13 @@ Source of truth: PASS. Architecture: PASS, one authority and unchanged UI/API si
 Owner decision: NO; this is the implementation explicitly requested after the explained plan. WORK_QUEUE_HISTORY.md is absent; no unrelated work-queue continuation is inferred.
 Next action: publish only the isolated source/evidence delta, check the Pages workflow and unchanged production artifact, record the receipt, then stop.
 Response generated for Codex: YES.
+
+## Publication and final review
+
+Release 41f2270867050f67aec76fabd322765982949773 published to main. [Pages workflow 42072735395](https://github.com/David14081982/SutiApp-private/actions/runs/42072735395) completed successfully, including Auth compatibility, critical request compatibility, public build/deployment and post-deployment request verification. A fresh production download returned HTTP 200 and the exact unchanged bundle SHA-256 recorded above. Receipt: docs/qa/evidence/document-isolation/deployment.json. The isolated release contains only the declared delta; original unrelated workspace changes remain untouched.
+
+SUTIAPP ARCHITECT REVIEW: APPROVED. Objective and evidence verified; no new owner decision. Source of truth, server security, physical isolation, preserved originals/history and UI preservation PASS with the limitations explicitly stated above.
+
+# RESPONSE TO CODEX
+
+Close H-AFFILIATE-DOCUMENT-ISOLATION-001 after recording this publication receipt. Do not advance to another H. Stop.

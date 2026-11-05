@@ -32,7 +32,7 @@ The isolated release built 34 public files. Its canonical LF bundle SHA256 equal
 
 ## H-AFFILIATE-DOCUMENT-UPLOAD-REGRESSION-001 RESULT
 
-Status: PASS for backend implementation and focused production verification; source publication receipt follows.
+Status: PASS; backend correction applied, scoped source published, deployment and production verified.
 Files changed: only the declared migration/recovery, test fixture/scripts, audit/evidence, four governance appendices and derived architecture index in the isolated release.
 Source-of-truth verdict: PASS; affiliate_documents and the retirement ledger remain authoritative; review_slots is private derived integrity enforcement.
 Invariant verdict: PASS; historical rows preserved, active review uniqueness enforced, document/affiliate ownership isolated.
@@ -44,4 +44,23 @@ Unexpected files changed: none in the isolated release; unrelated root workspace
 Known limitations: no live PNG/PDF upload or separate ordinary-user credential; no multi-session stress test; live browser used blocked service workers for full request interception. Recovery refuses overlapping historical pending slots or schema drift instead of altering history.
 Evidence: docs/qa/evidence/document-upload-regression/{diagnosis,reproduction,database,preflight,backend-applied,backend-verified,build,live-production,live-preservation}.json. Migration SHA256 6affb20b2864026f1986ad4da4e942a18cfee1fcb66ce59de33b045c74639fc2; recovery SHA256 c308f4dceaad44e41fae773aa497c4ce556b8c7e887d02797be9a553ffa0b6ba; database test SHA256 5abf0b9394faefa9cf2ca43b9c4ce166718a6d343e928f7644e63a9c7233937d.
 
-Final publication and independent review are recorded below when completed. Stop after this H; no next task authorized here.
+## Publication and independent architectural review
+
+Source commit: f43516fc19d636231e36d0aedeab7c61b7205b37. Only 25 declared files were published from the isolated release; zero frontend files and zero unrelated root changes. Staged migration/recovery/test hashes matched the tested/applied hashes. Syntax, JSON, credential scan, diff checks and source/evidence copy parity passed. Both workspace and isolated release architecture indexes were regenerated separately and checked FRESH. The final deployment receipt and this closure only change documentation; they are intentionally not another architecture regeneration and must not be described as a newly fresh content snapshot.
+
+GitHub Pages workflow [42105949117](https://github.com/David14081982/SutiApp-private/actions/runs/42105949117) succeeded, including Auth compatibility, request backend compatibility, public artifact build and post-deployment request verification. Final read-only fetch from https://sutiapp.com/ returned the unchanged tested bundle with HTTP 200 and SHA256 3a2c20c4eefcdc553e6ff6fe9d8ea3b923e88e08ebcd84001fc6445190fa8ce9. See docs/qa/evidence/document-upload-regression/deployment.json.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-AFFILIATE-DOCUMENT-UPLOAD-REGRESSION-001
+Verdict: APPROVED.
+Critical findings: exact schema reproduced the omitted old-index failure; tested/applied source hashes match. Three real JPEG UI flows and server-side preservation passed. No new decision or unresolved implementation defect identified. Coverage limits above remain explicit.
+Source of truth: unchanged canonical documents and retirement ledger; private derived review reservations only.
+Architecture: scoped database integrity fix; no shared frontend/repository/viewer changes.
+Security: forced RLS, no API grants, original writers/permissions unchanged.
+Data: 16 original table fingerprints preserved at install; 18 original documents/assets/objects preserved through real uploads; three new independent versions retained.
+Legacy: no financial/Google writes; background financial initialization excluded from document tests.
+Owner decision: NO.
+Next action: record publication evidence and stop; no next H.
+Response generated for Codex: YES.
+
+RESPONSE TO CODEX: Approve this H. Publish only reviewed source, evidence, governance appendices and derived registry; verify deployment read-only, retain all test versions/private recovery records, then stop. These actions are complete; this final documentary receipt records their closure. No further runtime action or live upload is required.

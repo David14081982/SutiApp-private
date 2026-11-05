@@ -1,0 +1,92 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-11-05T20:44:08.253Z",
+  "sourceCommit": "f43516fc19d636231e36d0aedeab7c61b7205b37",
+  "workflowUrl": "https://github.com/David14081982/SutiApp-private/actions/runs/42105949117",
+  "workflowConclusion": "success",
+  "jobs": [
+    {
+      "id": 127520686516,
+      "name": "deploy",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 42105949117,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Verify Auth backend compatibility",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Verify critical request backend compatibility",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Build public artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Configure Pages",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Upload Pages artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Deploy Pages",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Verify critical request production deployment",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Post Checkout",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        }
+      ]
+    }
+  ],
+  "productionUrl": "https://sutiapp.com/",
+  "bundleStatus": 200,
+  "bundleSha256": "3a2c20c4eefcdc553e6ff6fe9d8ea3b923e88e08ebcd84001fc6445190fa8ce9",
+  "frontendChanged": false,
+  "finalVerificationReadOnly": true,
+  "registry": "FRESH at source commit; final deployment receipt and audit closure are documentation-only, no further architecture change",
+  "independentArchitectVerdict": "APPROVED"
+}

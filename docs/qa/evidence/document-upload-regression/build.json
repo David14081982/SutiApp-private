@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "productionFrontendChanged": false,
+  "buildOutput": "{\"status\":\"PASS\",\"output\":\"C:\\\\Users\\\\david\\\\Downloads\\\\SutiApp\\\\.tmp\\\\document-upload-diagnosis\\\\site\",\"files\":34}",
+  "localBundleSha256": "52f5b8b1f8d80bc3a2bee37a8eea97382c018155288b87717330d92a221cf4c4",
+  "canonicalLfBundleSha256": "3a2c20c4eefcdc553e6ff6fe9d8ea3b923e88e08ebcd84001fc6445190fa8ce9",
+  "lineEndingNote": "Local Windows checkout contains CRLF; GitHub Pages builds from canonical LF. No frontend source changes."
+}

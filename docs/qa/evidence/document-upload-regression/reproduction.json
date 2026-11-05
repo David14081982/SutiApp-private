@@ -1,0 +1,50 @@
+{
+  "status": "REPRODUCED_BEFORE_FIX",
+  "productionWrites": 0,
+  "productionDeletions": 0,
+  "syntheticInMemoryOnly": true,
+  "indexes": 17,
+  "triggers": 9,
+  "cases": [
+    {
+      "mode": "admin",
+      "mime": "image/png",
+      "newUpload": "PASS",
+      "normalReplacement": "PASS",
+      "afterRetiredPending": {
+        "code": "23505",
+        "constraint": "affiliate_documents_current_review_idx"
+      }
+    },
+    {
+      "mode": "admin",
+      "mime": "application/pdf",
+      "newUpload": "PASS",
+      "normalReplacement": "PASS",
+      "afterRetiredPending": {
+        "code": "23505",
+        "constraint": "affiliate_documents_current_review_idx"
+      }
+    },
+    {
+      "mode": "self",
+      "mime": "image/png",
+      "newUpload": "PASS",
+      "normalReplacement": "PASS",
+      "afterRetiredPending": {
+        "code": "23505",
+        "constraint": "affiliate_documents_current_review_idx"
+      }
+    },
+    {
+      "mode": "self",
+      "mime": "application/pdf",
+      "newUpload": "PASS",
+      "normalReplacement": "PASS",
+      "afterRetiredPending": {
+        "code": "23505",
+        "constraint": "affiliate_documents_current_review_idx"
+      }
+    }
+  ]
+}

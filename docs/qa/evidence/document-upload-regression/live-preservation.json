@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "originalDocumentsPreserved": 18,
+  "originalAssetsPreserved": 18,
+  "otherAffiliateUnchanged": true,
+  "onlyTargetTypeReplacementStatusChanged": true,
+  "retainedNewDocuments": 3,
+  "newAssetsIndependentlyOwned": 3,
+  "adminAuditWithReason": 2,
+  "sourceObjectsMissing": 0,
+  "productionFileDeletions": 0,
+  "verifiedAt": "2026-11-05T20:34:31.539Z"
+}

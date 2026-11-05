@@ -1,0 +1,49 @@
+{
+  "status": "CONFIRMED",
+  "productionWrites": 0,
+  "productionDeletions": 0,
+  "errors": [
+    {
+      "timestamp": "2026-11-05T19:30:06.635000",
+      "sqlstate": "23505",
+      "message": "duplicate key value violates unique constraint \"affiliate_documents_current_review_idx\""
+    },
+    {
+      "timestamp": "2026-11-05T19:29:38.517000",
+      "sqlstate": "23505",
+      "message": "duplicate key value violates unique constraint \"affiliate_documents_current_review_idx\""
+    },
+    {
+      "timestamp": "2026-11-05T18:26:16.607000",
+      "sqlstate": "23505",
+      "message": "duplicate key value violates unique constraint \"affiliate_documents_current_review_idx\""
+    },
+    {
+      "timestamp": "2026-11-05T18:25:09.362000",
+      "sqlstate": "23505",
+      "message": "duplicate key value violates unique constraint \"affiliate_documents_current_review_idx\""
+    },
+    {
+      "timestamp": "2026-11-05T18:24:44.230000",
+      "sqlstate": "23505",
+      "message": "duplicate key value violates unique constraint \"affiliate_documents_current_review_idx\""
+    },
+    {
+      "timestamp": "2026-11-05T18:24:22.596000",
+      "sqlstate": "23505",
+      "message": "duplicate key value violates unique constraint \"affiliate_documents_current_review_idx\""
+    },
+    {
+      "timestamp": "2026-11-05T18:24:06.159000",
+      "sqlstate": "23505",
+      "message": "duplicate key value violates unique constraint \"affiliate_documents_current_review_idx\""
+    },
+    {
+      "timestamp": "2026-11-05T18:23:51.511000",
+      "sqlstate": "23505",
+      "message": "duplicate key value violates unique constraint \"affiliate_documents_current_review_idx\""
+    }
+  ],
+  "retiredPendingSlots": 7,
+  "diagnosis": "Status-only review uniqueness still reserves withdrawn pending documents."
+}

@@ -1,0 +1,186 @@
+{
+  "status": "PASS",
+  "engine": "PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.74 (1092ec30a3fb1d46b1782ff1b4db5094d3d06ae5), 32-bit",
+  "checks": [
+    "all17 live indexes,9 live triggers and captured writer definitions match before reproduction",
+    "original failure reproduced for admin/self image/PDF after retired pending",
+    "migration fails closed when exact old index is absent",
+    "atomic install backfills only active review states and preserves all history and original functions",
+    "recovery refuses a later function or trigger revision",
+    "recovery exactly restores old index before overlapping historical slots exist",
+    "forcedRLS and no API grants protect the derived index and trigger function",
+    "the four exact reproduced failures now save independent documents with retired rows unchanged",
+    "complete upload/replacement matrix: admin/self xPNG/JPEG/PDF x4 retired statuses",
+    "same bytes remain isolated across affiliates, document types and profile photo histories",
+    "status transitions release/reacquire slots; reviewer-only edits do not rewrite derived rows",
+    "document type edits move reservation atomically and conflicting edits preserve both documents",
+    "direct duplicate pending insertion fails via real UNIQUE and preserves source document",
+    "existing authorization and cross-owner asset denials remain unchanged",
+    "retirement rollback restores the same reservation and every historical row",
+    "ordinary affiliate without documents.write may upload its own image and PDF",
+    "verified-to-review conflict is atomic; existing active candidate remains reserved",
+    "restoring retired metadata with a conflicting active slot fails without deleting history",
+    "exact-path upload retries keep one document and one reservation",
+    "recovery refuses historical overlap without removing slots or altering documents",
+    "no stored object was deleted during any synthetic scenario"
+  ],
+  "matrix": [
+    {
+      "mode": "admin",
+      "mime": "image/png",
+      "retiredStatus": "PENDING_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "image/png",
+      "retiredStatus": "UNDER_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "image/png",
+      "retiredStatus": "REUPLOAD_REQUIRED",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "image/png",
+      "retiredStatus": "VERIFIED",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "image/jpeg",
+      "retiredStatus": "PENDING_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "image/jpeg",
+      "retiredStatus": "UNDER_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "image/jpeg",
+      "retiredStatus": "REUPLOAD_REQUIRED",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "image/jpeg",
+      "retiredStatus": "VERIFIED",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "application/pdf",
+      "retiredStatus": "PENDING_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "application/pdf",
+      "retiredStatus": "UNDER_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "application/pdf",
+      "retiredStatus": "REUPLOAD_REQUIRED",
+      "result": "PASS"
+    },
+    {
+      "mode": "admin",
+      "mime": "application/pdf",
+      "retiredStatus": "VERIFIED",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "image/png",
+      "retiredStatus": "PENDING_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "image/png",
+      "retiredStatus": "UNDER_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "image/png",
+      "retiredStatus": "REUPLOAD_REQUIRED",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "image/png",
+      "retiredStatus": "VERIFIED",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "image/jpeg",
+      "retiredStatus": "PENDING_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "image/jpeg",
+      "retiredStatus": "UNDER_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "image/jpeg",
+      "retiredStatus": "REUPLOAD_REQUIRED",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "image/jpeg",
+      "retiredStatus": "VERIFIED",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "application/pdf",
+      "retiredStatus": "PENDING_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "application/pdf",
+      "retiredStatus": "UNDER_REVIEW",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "application/pdf",
+      "retiredStatus": "REUPLOAD_REQUIRED",
+      "result": "PASS"
+    },
+    {
+      "mode": "self",
+      "mime": "application/pdf",
+      "retiredStatus": "VERIFIED",
+      "result": "PASS"
+    }
+  ],
+  "reproducedCases": 4,
+  "productionWrites": 0,
+  "productionDeletions": 0,
+  "storageObjectDeletions": 0,
+  "syntheticInMemoryOnly": true,
+  "concurrency": "Single connection; real UNIQUE constraint verified, no multisession claim",
+  "baselineIndexes": 17,
+  "baselineTriggers": 9,
+  "existingFunctionsUnchanged": true,
+  "historicalDocumentsPreserved": true,
+  "migrationSha256": "6affb20b2864026f1986ad4da4e942a18cfee1fcb66ce59de33b045c74639fc2",
+  "recoverySha256": "c308f4dceaad44e41fae773aa497c4ce556b8c7e887d02797be9a553ffa0b6ba",
+  "testSha256": "5abf0b9394faefa9cf2ca43b9c4ce166718a6d343e928f7644e63a9c7233937d"
+}

@@ -1,0 +1,76 @@
+{
+  "status": "PASS",
+  "version": "20261105000200",
+  "migrationSha256": "6affb20b2864026f1986ad4da4e942a18cfee1fcb66ce59de33b045c74639fc2",
+  "preserved": [
+    {
+      "name": "admin_assignments",
+      "rows": 14
+    },
+    {
+      "name": "admin_role_permissions",
+      "rows": 74
+    },
+    {
+      "name": "admin_roles",
+      "rows": 3
+    },
+    {
+      "name": "admin_section_responsibilities",
+      "rows": 147
+    },
+    {
+      "name": "affiliate_documents",
+      "rows": 5431
+    },
+    {
+      "name": "affiliate_files",
+      "rows": 12928
+    },
+    {
+      "name": "affiliates",
+      "rows": 1071
+    },
+    {
+      "name": "document_retirement_private.assets",
+      "rows": 8
+    },
+    {
+      "name": "document_retirement_private.documents",
+      "rows": 8
+    },
+    {
+      "name": "document_retirement_private.operations",
+      "rows": 7
+    },
+    {
+      "name": "document_types",
+      "rows": 13
+    },
+    {
+      "name": "private_assets",
+      "rows": 20298
+    },
+    {
+      "name": "program_requests",
+      "rows": 558
+    },
+    {
+      "name": "request_documents",
+      "rows": 3207
+    },
+    {
+      "name": "savings_requests",
+      "rows": 65
+    },
+    {
+      "name": "sensitive_change_audit",
+      "rows": 8655
+    }
+  ],
+  "originalBusinessRowsChanged": 0,
+  "uploadWriterChanges": 0,
+  "globalPermissionChanges": 0,
+  "productionFileDeletions": 0,
+  "appliedAt": "2026-11-05T20:22:13.142Z"
+}

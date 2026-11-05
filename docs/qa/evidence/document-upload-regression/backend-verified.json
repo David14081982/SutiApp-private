@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "active_slots": 1569,
+  "mismatches": 0,
+  "preserved_retired_pending": 7,
+  "retired_slots": 0,
+  "obsolete_index_removed": true,
+  "security": {
+    "rls": true,
+    "forced_rls": true,
+    "api_grants": false
+  },
+  "existingWriterAndPermissionChanges": 0,
+  "productionFileDeletions": 0,
+  "verifiedAt": "2026-11-05T20:34:56.540Z"
+}

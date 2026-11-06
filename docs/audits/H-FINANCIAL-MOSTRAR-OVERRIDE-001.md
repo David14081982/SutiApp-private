@@ -1,7 +1,7 @@
 # H-FINANCIAL-MOSTRAR-OVERRIDE-001
 
 > Estado vigente 2026-11-06: backend PASS (SQL + Edge v68, tres reglas disponibles).
-> Frontend enviado en 3841619; GitHub Pages falló en despliegue tras build/contratos PASS.
+> Frontend BLOCKED: tres ejecuciones de Pages fallaron tras build/contratos PASS.
 > Las secciones de preflight HTTP401 se conservan como evidencia histórica resuelta.
 
 ## PRE-CHANGE AUDIT
@@ -242,3 +242,75 @@ Evidencia: activation-backup/candidate/compile/sql/edge/runtime.json.
 Publicación frontend desde main ea3e602; bundle de 175 módulos con sólo
 screens-admin-fondos.jsx regenerado. Chrome aislado contra ese bundle PASS 25,
 1440/1024/390 px. SutiApp.html y sw.js cambian sólo tokens a 2026110601.
+
+## Revisión de publicación — 2026-11-06
+
+Código subido: 3841619be6785c8c0595f471eb1c8efe806cc979; evidencia backend
+8022c24fa6095cc4e9899c42131b8bfe0cc34180. GitHub Pages falló en runs
+42267400780, 42268004885 y 42268802806: `deployment_queued` termina en
+`Deployment failed, try again later`. Un reintento adicional de 42267400780
+falló por dos artefactos github-pages; se evitó con ejecuciones nuevas.
+Build, Auth backend compatibility y critical request backend compatibility
+pasaron. No se alteró workflow, dominio, configuración de Pages ni contratos.
+El sitio conserva bundle 2026110403; candidato 2026110601 todavía NO publicado.
+
+La sesión Chrome real confirma las tres reglas MOSTRAR como AVAILABLE/VISIBLE
+y etiqueta Disponible en la matriz vigente. El control administrativo nuevo
+no está todavía en la interfaz pública. No afirmar publicación frontend completa.
+
+```text
+H-FINANCIAL-MOSTRAR-OVERRIDE-001 RESULT
+Status: BLOCKED (sólo publicación frontend); backend PASS
+Files changed: 37 archivos del commit 3841619, más documentación de activación; alcance focal declarado.
+Source-of-truth verdict: PASS; financial_programs/funds/rules y writer existentes.
+Invariant verdict: PASS; selección explícita, elegibilidad, AUTO/OCULTAR e históricos preservados.
+Build: PASS; 175 módulos, 174 idénticos; artefacto público compilado por Actions.
+Tests: PASS SQL 170, writer 166, política/perfil 25, Chrome aislado 25, identidad 70; runtime real tres cotizaciones y 151 reglas intactas.
+Security: PASS; JWT, OID/owner/ACL, permiso administrativo y ausencia de secretos publicados comprobados.
+Legacy impact: sin Google, fórmulas, tasas, plazos ni históricos modificados; única excepción de fecha autorizada.
+Unexpected files changed: ninguno en commits de publicación; trabajo ajeno del workspace preservado.
+Known limitations: GitHub Pages rechaza despliegue; no se certifica UI nueva en producción ni regresión global (NOT APPLICABLE: módulo focal/cachebuster).
+Evidence: docs/qa/evidence/financial-mostrar-override/; runs de Actions citados.
+```
+
+## ARCHITECT REVIEW
+
+Task reviewed: H-FINANCIAL-MOSTRAR-OVERRIDE-001, activación y publicación autorizadas.
+Verdict: BLOCKED — únicamente despliegue Pages.
+What Codex did correctly: contrastó diff focal, hashes de backend, siete tablas, permisos, catálogo real, cotizaciones y artefacto compilado.
+Important findings: el bloqueo HTTP401 quedó resuelto; la política nueva YA rige en producción. Pages es un bloqueo independiente.
+Problems detected: nueva interfaz no publicada; evidencia de build no sustituye verificación del sitio.
+Architecture implications: sin nueva autoridad ni cambio estructural de Registry; SW sólo tokens.
+Source-of-truth implications: autoridad Supabase intacta; sin fallback.
+Security implications: ningún grant, RLS, credencial frontend ni autorización global alterados.
+Data implications: no edición de criterios, solicitudes, pagos ni registros históricos; sesiones temporales de navegación normales.
+Owner decision required: NO.
+Recommended next action: reintentar publicación al resolverse el rechazo de Pages y verificar hashes, control administrativo y refresh.
+
+### RESPONSE TO CODEX
+
+Mantén la H BLOCKED por frontend. Conserva SQL y Edge v68 activos, no reapliques
+la migración ni cambies datos. Cuando Pages acepte despliegues, usa una ejecución
+nueva de deploy-pages.yml sobre main; verifica hashes del bundle focal, tokens
+2026110601, control autorizado de visibilidad, tres reglas y recarga. No avances
+a otra H ni declares PASS completo sin evidencia del sitio. Esta instrucción
+retoma la publicación ya autorizada; no añade trabajo ni decisiones de negocio.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-FINANCIAL-MOSTRAR-OVERRIDE-001
+Verdict: BLOCKED
+Critical findings: backend activado y probado; frontend rechazado por Pages.
+Source of truth: PASS
+Architecture: PASS
+Security: PASS
+Data: PASS
+Legacy: PASS dentro de excepción autorizada
+Owner decision: NO
+Next action: completar únicamente publicación y verificación frontend.
+Response generated for Codex: YES
+
+Verificación final Chrome actual: PASS en carga inicial y recarga, tres reglas
+AVAILABLE/VISIBLE, etiqueta Disponible, service worker activo y cero pageErrors.
+La primera prueba de refresh se corrigió por carrera del harness: el módulo
+se restaura automáticamente; no se cambió código de aplicación. Evidencia:
+activation-browser-current.json. El control nuevo sigue pendiente de Pages.

@@ -1,0 +1,73 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/SutiApp.html",
+  "checkedAt": "2026-11-06T18:19:45.358Z",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "businessWrites": 0,
+  "rawResponsesSaved": false,
+  "screenshotsSaved": false,
+  "checks": [
+    {
+      "phase": "initial",
+      "targets": [
+        {
+          "category": "Suplentes Variables",
+          "status": "AVAILABLE",
+          "effective": "VISIBLE"
+        },
+        {
+          "category": "Suplentes Fijos",
+          "status": "AVAILABLE",
+          "effective": "VISIBLE"
+        },
+        {
+          "category": "Eventuales",
+          "status": "AVAILABLE",
+          "effective": "VISIBLE"
+        }
+      ],
+      "desktopVisibilityControl": false,
+      "availableLabel": true,
+      "bundle": "app/bundle.js?v=2026110403"
+    },
+    {
+      "phase": "refresh",
+      "targets": [
+        {
+          "category": "Suplentes Variables",
+          "status": "AVAILABLE",
+          "effective": "VISIBLE"
+        },
+        {
+          "category": "Suplentes Fijos",
+          "status": "AVAILABLE",
+          "effective": "VISIBLE"
+        },
+        {
+          "category": "Eventuales",
+          "status": "AVAILABLE",
+          "effective": "VISIBLE"
+        }
+      ],
+      "desktopVisibilityControl": false,
+      "availableLabel": true,
+      "bundle": "app/bundle.js?v=2026110403"
+    }
+  ],
+  "serviceWorker": {
+    "controlled": true,
+    "registrations": 1
+  },
+  "stats": {
+    "blockedOperations": [],
+    "pageErrors": 0,
+    "financialActions": [
+      "loanSessionOpen",
+      "catalog",
+      "catalog"
+    ]
+  }
+}

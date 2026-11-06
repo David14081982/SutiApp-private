@@ -1,9 +1,9 @@
 # Reglas de migración
 
-## 20261106000100 — excepción MOSTRAR — PREPARED / NOT APPLIED
+## 20261106000100 — excepción MOSTRAR — APPLIED
 
-Candidato de H-FINANCIAL-MOSTRAR-OVERRIDE-001. La numeración y deriva live deberán
-confirmarse al restablecer acceso: el preflight de sólo lectura devuelve HTTP401.
+H-FINANCIAL-MOSTRAR-OVERRIDE-001 aplicado el 2026-11-06. Numeración y definición
+live verificadas con acceso renovado; migración registrada transaccionalmente.
 Reemplaza únicamente la guarda de cierre en resolve_suti_loan_quote_contract,
 permitiendo MOSTRAR explícito. Conserva firma, OID, ACL, propietario, motor,
 funciones de snapshot y datos de negocio. Guarda de definición completa a través

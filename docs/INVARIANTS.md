@@ -12,7 +12,7 @@
   snapshots temporales, sin reescribir solicitudes ni términos históricos.
 - La excepción debe funcionar en Edge y SQL; no basta con cambiar la etiqueta UI.
 - Enmienda a la prohibición absoluta de MOSTRAR documentada el 2026-10-05.
-  Candidato local probado; NO instalado todavía por HTTP401 de administración.
+  Excepción instalada y comprobada en SQL y Edge v68 el 2026-11-06.
 
 ## H-AFFILIATE-CONTROL-CHANGE-001 — publicado y verificado, 2026-10-15
 

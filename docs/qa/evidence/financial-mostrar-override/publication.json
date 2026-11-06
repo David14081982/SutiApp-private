@@ -1,0 +1,14 @@
+{
+  "status": "BLOCKED",
+  "backend": "PASS",
+  "frontend": "BLOCKED",
+  "reason": "GitHub Pages deployment queued then failed; build and backend compatibility checks pass",
+  "codeCommit": "3841619be6785c8c0595f471eb1c8efe806cc979",
+  "failedRuns": [
+    42267400780,
+    42268004885
+  ],
+  "nextAction": "Publish backend evidence in new commit and retry Pages with fresh build SHA",
+  "businessDataChanged": false,
+  "expectedNormalizedBundleSha256": "86715f04b714dc7f85cd5dd31a2d7ba2ad1e586b808bbe90b08fc78d0f3c82ed"
+}

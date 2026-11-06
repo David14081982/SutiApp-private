@@ -30,5 +30,6 @@
     "scripts/test-financial-program-visibility.mjs": "b7385fb3c9a01f57cffe6069ec8b926721f44207700e7dcf6d3d490383087ada",
     "scripts/test-admin-program-criteria-matrix.js": "6a15c039e9add28d2a57fee1a6cdf8e9d3408c17689b7f8ed500330c398d34eb",
     "scripts/test-financial-supabase-cutover.js": "87ac44e9954dd902d4a8261133e4cc82af4faa9daefd540ceb660affb1e5e254"
-  }
+  },
+  "recordedStage": "Historical local verification before successful SQL/Edge activation; see activation-runtime.json and publication.json"
 }

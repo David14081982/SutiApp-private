@@ -1,5 +1,9 @@
 # H-FINANCIAL-MOSTRAR-OVERRIDE-001
 
+> Estado vigente 2026-11-06: backend PASS (SQL + Edge v68, tres reglas disponibles).
+> Frontend enviado en 3841619; GitHub Pages falló en despliegue tras build/contratos PASS.
+> Las secciones de preflight HTTP401 se conservan como evidencia histórica resuelta.
+
 ## PRE-CHANGE AUDIT
 
 Owner request 2026-11-06 explicitly authorizes MOSTRAR overriding automatic date

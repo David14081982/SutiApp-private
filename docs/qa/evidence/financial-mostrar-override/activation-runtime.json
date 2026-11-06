@@ -1,0 +1,34 @@
+{
+  "status": "PASS",
+  "at": "2026-11-06T18:01:16.075Z",
+  "authenticatedLiveCatalog": true,
+  "authenticatedLiveOverview": true,
+  "catalogRules": 154,
+  "newlyAvailableRules": 3,
+  "undatedRulesPreserved": 47,
+  "unselectedRulesPreserved": 151,
+  "targetResults": [
+    {
+      "category": "Suplentes Variables",
+      "status": "AVAILABLE",
+      "visibility": "MOSTRAR",
+      "quoteAccepted": true
+    },
+    {
+      "category": "Suplentes Fijos",
+      "status": "AVAILABLE",
+      "visibility": "MOSTRAR",
+      "quoteAccepted": true
+    },
+    {
+      "category": "Eventuales",
+      "status": "AVAILABLE",
+      "visibility": "MOSTRAR",
+      "quoteAccepted": true
+    }
+  ],
+  "permittedQuoteSamplesUnchanged": 2,
+  "automaticCutoffPreserved": true,
+  "businessWrites": 0,
+  "realLoanRequestsCreated": 0
+}

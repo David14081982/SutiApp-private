@@ -1,5 +1,23 @@
 # Registro de decisiones arquitectónicas
 
+## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — excepción autorizada, 2026-11-06
+
+El propietario solicita que el administrador pueda seleccionar MOSTRAR para
+reglas/fondos que figuren No disponibles por la política automática, conservando
+la elegibilidad y las funcionalidades existentes. Esta instrucción sustituye
+exclusivamente la prohibición de MOSTRAR del corte H-LOAN-DATED-FUND-CUTOFF-001.
+AUTO conserva el cierre inclusivo un mes antes del vencimiento; OCULTAR conserva
+su efecto. MOSTRAR no publica borradores, reactiva catálogos deshabilitados,
+modifica fechas/tasas/plazos ni elude sindicato, categoría, Ahorro o validación
+de cotización. Se reutiliza visibility_mode y su writer autorizado con motivo,
+auditoría e invalidación de simulaciones temporales. No se modifica ninguna
+solicitud enviada, préstamo aprobado, pago ni histórico.
+
+Estado: SQL y Edge v68 publicados y verificados el 2026-11-06. Las tres reglas
+MOSTRAR del propietario están AVAILABLE; 151 reglas no seleccionadas preservadas.
+Publicación de interfaz en curso; ver evidencia de activación.
+Véase [auditoría](audits/H-FINANCIAL-MOSTRAR-OVERRIDE-001.md).
+
 ## H-LOAN-JANUARY-FUNDS-001 — ampliación autorizada de adelantos, 2026-10-20
 
 El propietario autorizó continuar con Incentivos trimestrales del 15/01/2027 y

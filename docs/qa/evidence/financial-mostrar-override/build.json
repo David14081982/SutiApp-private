@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "module": "screens-admin-fondos.jsx",
+  "sourceSha256": "af33165cb69078eabba1ad66cbd73efd2b777dd0156f1e9af6c5374b773212b2",
+  "bundleBeforeSha256": "52f5b8b1f8d80bc3a2bee37a8eea97382c018155288b87717330d92a221cf4c4",
+  "bundleAfterSha256": "4ab30eeb2738015c9f1a23ae929893f8fe8f9b818a5b5e72d0005af7e004f53c",
+  "unchangedOtherModules": true,
+  "nonFocalSha256": "72a0bb6ba570ee434572d4ccf4ea87221a6413f20ee5ced4632905f3fef4d70b",
+  "moduleCount": 175
+}

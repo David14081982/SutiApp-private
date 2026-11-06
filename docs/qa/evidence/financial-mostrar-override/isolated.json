@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "checks": 170,
+  "example": {
+    "before": 143000,
+    "after": 133000
+  },
+  "beforeFunctionHash": "2f621bc02e9e0919a00fb63c7a5032be",
+  "afterFunctionHash": "8770861a7505632737d2e860c026ff07",
+  "exactRecovery": true,
+  "productionWrites": 0,
+  "mostrarOverride": true,
+  "automaticCutoffPreserved": true
+}

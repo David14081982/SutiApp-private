@@ -1,5 +1,16 @@
 # Bitácora de agentes
 
+## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — activación autorizada, 2026-11-06
+
+Excepción explícita MOSTRAR al cierre automático, con selector de visibilidad
+disponible también en la matriz de escritorio. Mantiene requisitos de afiliado,
+writer auditado, motivo, permisos, cálculos e históricos. Forward/recovery
+preparados; bundle actualizado únicamente en screens-admin-fondos.jsx.
+Pruebas aisladas de SQL, Edge, catálogo y Chrome; evidencia y límites en
+[auditoría](audits/H-FINANCIAL-MOSTRAR-OVERRIDE-001.md). SQL y Edge v68 activos:
+catálogo real con tres reglas MOSTRAR disponibles, 151 restantes preservadas,
+cotizaciones aceptadas y siete tablas sin cambios. Interfaz pendiente de despliegue.
+
 ## H-LOAN-JANUARY-FUNDS-001 — 2026-10-20 — PASS
 
 Aplicados dos fondos Incentivos trimestrales del 15/01/2027 y 15/01/2028, con seis

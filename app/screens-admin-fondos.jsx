@@ -77,7 +77,7 @@
     return React.createElement('span', { className: 'pcmx-badge', style: { background: tone[0], color: tone[1] }, [attr]: value }, meta.label);
   }
 
-  function CriteriaDetail({ row, compared, onClearCompare, canEdit, onEdit }) {
+  function CriteriaDetail({ row, compared, onClearCompare, canEdit, onEdit, canWriteVisibility, onVisibility }) {
     if (!row) return React.createElement('aside', { className: 'pcmx-panel pcmx-detail', 'data-criteria-detail': 'empty' }, React.createElement('div', { className: 'pcmx-empty' }, 'Selecciona una regla para consultar su detalle.'));
     const kv = (items) => React.createElement('div', { className: 'pcmx-kv' }, items.map(([label, value]) => React.createElement('div', { key: label }, React.createElement('span', null, label), React.createElement('strong', null, value))));
     const comparisonFields = [['Fondo', (item) => item.fondo], ['Sindicato', (item) => item.sindicato], ['Categoría', (item) => item.categoria], ['Monto máximo', (item) => moneyLabel(item.montoMax)], ['Tasa', rateLabel], ['Plazo', termLabel], ['Vigencia', (item) => item.permanent ? 'Permanente' : dateLabel(item.fecha)], ['Estado', (item) => statusMeta(item.status).label]];
@@ -97,13 +97,13 @@
         ])),
         React.createElement('section', { className: 'pcmx-detail-card' }, React.createElement('h3', null, 'Vigencia, visibilidad y estado'), kv([
           ['Vigencia', row.permanent ? 'Permanente' : dateLabel(row.fecha)], ['Modo de visibilidad', modeLabel(row.visibilityMode)], ['Política automática', visibleLabel(row.automaticVisibility)], ['Visibilidad efectiva', visibleLabel(row.effectiveVisibility)], ['Estado', statusMeta(row.status).label], ['Ventana automática', row.permanent ? 'Todo el año' : dateLabel(row.visibilityWindowStart) + ' – ' + dateLabel(row.visibilityWindowEnd)],
-        ])),
+        ]), canWriteVisibility && React.createElement('button', { type: 'button', className: 'pcmx-secondary', onClick: () => onVisibility(row), 'data-visibility-control': row.id, style: { marginTop: 10 } }, 'Administrar visibilidad')),
         React.createElement('div', { className: 'pcmx-explainer' }, React.createElement('strong', null, 'Elegibilidad y visibilidad son distintas. '), 'Sindicato y categoría definen a quién aplica la regla; el modo, la fecha y la política automática determinan si aparece en SutiApp. Esta vista no evalúa a una persona.'),
         row.signals.length > 0 && React.createElement('section', { className: 'pcmx-detail-card', style: { marginTop: 9 } }, React.createElement('h3', null, 'Señales de revisión'), React.createElement('div', { className: 'pcmx-signals' }, row.signals.map((signal) => React.createElement('span', { key: signal, className: 'pcmx-signal', style: { background: signalMeta[signal][1], color: signalMeta[signal][2] } }, signalMeta[signal][0]))), React.createElement('div', { className: 'pcmx-explainer', style: { marginTop: 8 } }, 'Son coincidencias potenciales para inspección; no declaran un error ni modifican la fuente.')),
         React.createElement('details', { className: 'pcmx-tech' }, React.createElement('summary', null, 'Información técnica'), React.createElement('code', null, 'Fila de origen: ', row.sheetRow), React.createElement('code', null, 'Identidad: ', row.id))));
   }
 
-  function DesktopCriteriaMatrix({ store, canEdit, onEdit, onCreate }) {
+  function DesktopCriteriaMatrix({ store, canEdit, onEdit, onCreate, canWriteVisibility, onVisibility }) {
     const [search, setSearch] = useState(''), [program, setProgram] = useState('all'), [fund, setFund] = useState('all'), [union, setUnion] = useState('all'), [category, setCategory] = useState('all'), [validity, setValidity] = useState('all'), [visibility, setVisibilityFilter] = useState('all'), [status, setStatus] = useState('all'), [sort, setSort] = useState('program');
     const [grouped, setGrouped] = useState(true), [selectedId, setSelectedId] = useState(''), [compareIds, setCompareIds] = useState([]);
     useEffect(ensureMatrixStyles, []);
@@ -148,7 +148,7 @@
         React.createElement('div', { className: 'pcmx-toolbar-foot' }, React.createElement('span', { 'data-criteria-result-count': visible.length }, React.createElement('strong', null, visible.length), ' de ', source.length, ' reglas'), React.createElement('div', { className: 'pcmx-toolbar-actions' }, React.createElement('label', { className: 'pcmx-check' }, React.createElement('input', { type: 'checkbox', checked: grouped, onChange: (event) => setGrouped(event.target.checked) }), 'Agrupar por programa'), React.createElement('span', null, compareIds.length, '/4 para comparar'), React.createElement('button', { className: 'pcmx-link', type: 'button', onClick: reset }, 'Limpiar filtros')))),
       React.createElement('div', { className: 'pcmx-workspace' },
         React.createElement('section', { className: 'pcmx-panel pcmx-matrix', 'data-criteria-matrix-table': 'true' }, React.createElement('div', { className: 'pcmx-table-scroll' }, !visible.length ? React.createElement('div', { className: 'pcmx-empty' }, 'No hay reglas que coincidan con los filtros.') : React.createElement('table', { className: 'pcmx-table' }, React.createElement('thead', null, React.createElement('tr', null, ['Comparar', 'Fondo', 'Programa', 'Sindicato', 'Categoría', 'Monto máximo', 'Tasa', 'Plazo', 'Vigencia', 'Visibilidad', 'Estado', 'Señales'].map((label, index) => React.createElement('th', { key: label, className: index === 0 ? 'pcmx-compare-cell' : index === 1 ? 'pcmx-sticky' : '' }, label)))), React.createElement('tbody', null, bodyRows)))),
-        React.createElement(CriteriaDetail, { row: selected, compared, onClearCompare: () => setCompareIds([]), canEdit, onEdit })));
+        React.createElement(CriteriaDetail, { row: selected, compared, onClearCompare: () => setCompareIds([]), canEdit, onEdit, canWriteVisibility, onVisibility })));
   }
 
   function EditorShell({ title, saving, error, onClose, onSave, saveLabel, children }) {
@@ -244,7 +244,7 @@
     }, [React.createElement('option', { key: 'all', value: 'all' }, allLabel)].concat(options.map((value) => React.createElement('option', { key: value, value }, value)))));
 
     const nav = desktop && React.createElement('div', { className: 'pcmx-nav', role: 'tablist', 'aria-label': 'Configuración financiera' }, [['rules', 'Reglas / criterios'], ['programs', 'Programas'], ['funds', 'Fondos']].map(([id, label]) => React.createElement('button', { key: id, type: 'button', role: 'tab', 'aria-selected': section === id, onClick: () => setSection(id) }, label)));
-    const desktopContent = section === 'programs' ? React.createElement(CatalogPanel, { kind: 'programs', store, canWrite: canProgramsWrite, onCreate: () => setEditor({ type: 'program', value: null }), onEdit: (value) => setEditor({ type: 'program', value }) }) : section === 'funds' ? React.createElement(CatalogPanel, { kind: 'funds', store, canWrite: canProgramsWrite, onCreate: () => setEditor({ type: 'fund', value: null }), onEdit: (value) => setEditor({ type: 'fund', value }) }) : React.createElement(DesktopCriteriaMatrix, { store, canEdit: canRulesWrite, onCreate: () => setEditor({ type: 'rule', value: null }), onEdit: (value) => setEditor({ type: 'rule', value }) });
+    const desktopContent = section === 'programs' ? React.createElement(CatalogPanel, { kind: 'programs', store, canWrite: canProgramsWrite, onCreate: () => setEditor({ type: 'program', value: null }), onEdit: (value) => setEditor({ type: 'program', value }) }) : section === 'funds' ? React.createElement(CatalogPanel, { kind: 'funds', store, canWrite: canProgramsWrite, onCreate: () => setEditor({ type: 'fund', value: null }), onEdit: (value) => setEditor({ type: 'fund', value }) }) : React.createElement(DesktopCriteriaMatrix, { store, canEdit: canRulesWrite, canWriteVisibility: canWrite, onVisibility: setEditing, onCreate: () => setEditor({ type: 'rule', value: null }), onEdit: (value) => setEditor({ type: 'rule', value }) });
     return React.createElement('div', { 'data-admin-view': 'fondos', 'data-admin-classification': 'PRODUCTIVE_SUPABASE_CONTROLLED' },
       header({ title: desktop ? 'Configuración financiera' : 'Fondos y reglas', sub: store.all().length + (desktop ? ' reglas · autoridad Supabase' : ' criterios · visibilidad SutiApp'), onBack }),
       window.ActingBanner && React.createElement(window.ActingBanner, {}),
@@ -265,7 +265,7 @@
             React.createElement(window.Btn, { full: true, variant: 'outline', onClick: () => store.load(true) }, 'Reintentar')) :
             !rows.length ? React.createElement(window.EmptyState, { icon: 'finance', title: 'Sin criterios', sub: 'Ajusta los filtros para ampliar la consulta.' }) :
               React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } }, rows.map((row) => React.createElement(RuleRow, { key: row.id, row, canWrite, onEdit: () => setEditing(row) }))))),
-      !desktop && editing && React.createElement(VisibilityEditor, { row: editing, store, app, onClose: () => setEditing(null) }),
+      editing && canWrite && React.createElement(VisibilityEditor, { row: editing, store, app, onClose: () => setEditing(null) }),
       desktop && editor?.type === 'program' && React.createElement(ProgramEditor, { value: editor.value, store, app, onClose: () => setEditor(null) }),
       desktop && editor?.type === 'fund' && React.createElement(FundEditor, { value: editor.value, store, app, onClose: () => setEditor(null) }),
       desktop && editor?.type === 'rule' && React.createElement(RuleEditor, { value: editor.value, store, app, canPublish, onClose: () => setEditor(null) }));
@@ -315,8 +315,8 @@
       } catch (failure) { setError(failure && failure.message ? failure.message : 'No fue posible actualizar la visibilidad'); setSaving(false); }
     };
     const choices = [
-      ['AUTO', 'Automático', 'Aplica permanencia o ventana de cuatro meses calendario.'],
-      ['MOSTRAR', 'Mostrar excepcionalmente', 'Hace visible el criterio fuera de la ventana, sin saltar elegibilidad.'],
+      ['AUTO', 'Automático', 'Aplica la ventana automática y cierra los fondos con fecha un mes antes del vencimiento.'],
+      ['MOSTRAR', 'Mostrar excepcionalmente', 'Habilita esta regla aunque la fecha automática indique No disponible. Conserva sindicato, categoría y demás requisitos del afiliado.'],
       ['OCULTAR', 'Ocultar', 'Lo oculta en SutiApp aunque AUTO lo mostraría.'],
     ];
     return React.createElement('div', { style: { position: 'absolute', inset: 0, zIndex: 74, background: 'var(--bg)', display: 'flex', flexDirection: 'column' }, 'data-visibility-editor': '' },

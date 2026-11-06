@@ -27,8 +27,8 @@ assert.equal(evaluateVisibility('2026-10-15','OCULTAR',now).status,'UNAVAILABLE'
 assert.equal(evaluateVisibility('2026-10-15','',now).visibilityMode,'AUTO');
 const cutoff = new Date('2026-09-15T07:00:00Z');
 for (const mode of ['AUTO','MOSTRAR','OCULTAR']) {
-  assert.equal(evaluateVisibility('2026-10-15',mode,cutoff).status,'UNAVAILABLE');
-  assert.equal(evaluateVisibility('2026-10-15',mode,cutoff).effectiveVisibility,'HIDDEN');
+  assert.equal(evaluateVisibility('2026-10-15',mode,cutoff).status,mode==='MOSTRAR'?'AVAILABLE':'UNAVAILABLE');
+  assert.equal(evaluateVisibility('2026-10-15',mode,cutoff).effectiveVisibility,mode==='MOSTRAR'?'VISIBLE':'HIDDEN');
 }
 assert.equal(evaluateVisibility('2026-10-15','MOSTRAR',new Date('2026-09-15T06:59:59Z')).status,'AVAILABLE');
 

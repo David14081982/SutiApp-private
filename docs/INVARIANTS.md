@@ -1,5 +1,19 @@
 # Invariantes
 
+## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — enmienda autorizada del corte
+
+- MOSTRAR explícito es excepción a la ventana y al cierre automático por fecha;
+  AUTO conserva ambos límites y OCULTAR sigue ocultando la regla.
+- Se selecciona una regla mediante su identidad existente; no se habilitan por
+  defecto otros fondos, categorías ni sindicatos.
+- Los requisitos del afiliado, estado habilitado/publicado del catálogo, límites,
+  tasas y motor financiero siguen siendo obligatorios. No hay override del cliente.
+- La RPC administrativa conserva permiso, motivo y auditoría; invalida únicamente
+  snapshots temporales, sin reescribir solicitudes ni términos históricos.
+- La excepción debe funcionar en Edge y SQL; no basta con cambiar la etiqueta UI.
+- Enmienda a la prohibición absoluta de MOSTRAR documentada el 2026-10-05.
+  Candidato local probado; NO instalado todavía por HTTP401 de administración.
+
 ## H-AFFILIATE-CONTROL-CHANGE-001 — publicado y verificado, 2026-10-15
 
 - Una corrección explícita desde Admin conserva UUID/Auth/TEXT y el número anterior

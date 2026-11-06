@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "operation": "read-only release preflight",
+  "productionWrites": 0,
+  "httpStatus": 201,
+  "result": [
+    {
+      "quote_hash": "2f621bc02e9e0919a00fb63c7a5032be",
+      "latest_migration": "20261105000200",
+      "candidate_version_exists": false
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": 25,
+  "isolated": true,
+  "realBrowser": "Chrome",
+  "viewports": [
+    1440,
+    1024,
+    390
+  ],
+  "structurePreserved": true,
+  "builtModuleTested": true,
+  "productionWrites": 0,
+  "networkRequests": 0
+}

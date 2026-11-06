@@ -10,7 +10,7 @@ for(const token of ['min-width: 1024px','data-admin-program-criteria-matrix','Co
 for(const token of ['ProgramEditor','FundEditor','RuleEditor','Guardar borrador','Publicar después de guardar el borrador','financial_programs.write','financial_rules.write','financial_rules.publish','financial_rates.write','data-financial-rule-edit','data-financial-rule-create']) assert(screen.includes(token),'controlled Admin missing: '+token);
 for(const label of ['Disponible','Programado','No disponible','Automático','Mostrar excepcionalmente','Ocultar','Programa y regla','Condiciones financieras','Vigencia, visibilidad y estado','Posible duplicado','Posible conflicto']) assert(screen.includes(label),label+' missing');
 assert.doesNotMatch(screen,/Google no respondió|autoridad Google|PRODUCTIVE_GOOGLE_CONTROLLED/);
-assert.match(screen,/!desktop && editing/);assert.match(screen,/function RuleRow/);assert.match(screen,/function VisibilityEditor/);
+assert.match(screen,/editing && canWrite && React.createElement\(VisibilityEditor/);assert.match(screen,/canWriteVisibility: canWrite, onVisibility: setEditing/);assert.match(screen,/function RuleRow/);assert.match(screen,/function VisibilityEditor/);
 
 for(const token of ['FinancialLegacyRepository.listCriteriaCatalog()','FinancialLegacyRepository.getFinancialAdminCatalog()','adminCatalog: () => adminCatalog','saveProgram','saveFund','saveRuleDraft','publishRule','readOnly: false']) assert(store.includes(token),'store contract missing: '+token);
 assert.doesNotMatch(store,/localStorage|sessionStorage|\bDATA\b/);

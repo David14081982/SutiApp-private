@@ -36,6 +36,6 @@ assert(adminEdge.includes('set_financial_rule_visibility')&&adminEdge.includes('
 assert.doesNotMatch(repository,/administrativeFeeTotal\s*=|paymentPerPeriod\s*=/);
 assert(repository.includes("client.rpc('resolve_current_loan_snapshot_quote'")&&repository.includes('getFinancialAdminCatalog'));
 assert(loan.includes('latestSelection.current === request.key')&&loan.includes('activeRequest.current.controller.abort()')&&loan.includes('const displayedResult = result;')&&loan.includes("setRequestError('SIMULATION_RESPONSE_MISMATCH')")&&loan.includes('SmoothMoney'));
-assert(admin.includes('!desktop && editing')&&admin.includes('PRODUCTIVE_SUPABASE_CONTROLLED')&&admin.includes('RuleEditor')&&admin.includes('ProgramEditor')&&admin.includes('FundEditor'));
+assert(admin.includes('editing && canWrite')&&admin.includes('canWriteVisibility: canWrite, onVisibility: setEditing')&&admin.includes('PRODUCTIVE_SUPABASE_CONTROLLED')&&admin.includes('RuleEditor')&&admin.includes('ProgramEditor')&&admin.includes('FundEditor'));
 assert(apply.includes('sourceSnapshotHash')&&apply.includes("assert.equal(draft.length, 146")&&apply.includes('googleWrites: 0')&&apply.includes('final-cleanup'));
 console.log(JSON.stringify({status:'PASS',authority:'SUPABASE_READY',rules:146,funds:35,programs:3,frontendMath:0,googleRuntimeUrls:0,mobileBranchPreserved:true}));

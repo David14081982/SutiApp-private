@@ -30,7 +30,8 @@ export function evaluateVisibility(eventDateISO, requestedMode, now = new Date()
     Math.min(eventDate.getUTCDate(), new Date(Date.UTC(eventDate.getUTCFullYear(), eventDate.getUTCMonth(), 0)).getUTCDate())));
   const payrollClosed = !!cutoff && window.lower >= cutoff;
   const automaticVisible = !payrollClosed && (!eventDate || (eventDate >= window.lower && eventDate <= window.upper));
-  const effectiveVisible = !payrollClosed && (visibilityMode === 'MOSTRAR' ? true : visibilityMode === 'OCULTAR' ? false : automaticVisible);
+  // Explicit admin MOSTRAR overrides automatic dates, never profile eligibility.
+  const effectiveVisible = visibilityMode === 'MOSTRAR' ? true : visibilityMode === 'OCULTAR' ? false : automaticVisible;
   const status = effectiveVisible ? 'AVAILABLE' : eventDate && eventDate > window.upper ? 'SCHEDULED' : 'UNAVAILABLE';
   return {
     visibilityMode,

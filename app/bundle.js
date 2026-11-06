@@ -54476,7 +54476,9 @@ Object.assign(window, {
     compared,
     onClearCompare,
     canEdit,
-    onEdit
+    onEdit,
+    canWriteVisibility,
+    onVisibility
   }) {
     if (!row) return React.createElement('aside', {
       className: 'pcmx-panel pcmx-detail',
@@ -54535,7 +54537,15 @@ Object.assign(window, {
       className: 'pcmx-detail-card'
     }, React.createElement('h3', null, 'Condiciones financieras'), kv([['Monto máximo', moneyLabel(row.montoMax)], ['Tasa', rateLabel(row)], ['Plazo', termLabel(row)], ['Periodicidad', row.periodoPago === 'quincenal' ? 'Quincenal' : row.periodoPago || '—']])), React.createElement('section', {
       className: 'pcmx-detail-card'
-    }, React.createElement('h3', null, 'Vigencia, visibilidad y estado'), kv([['Vigencia', row.permanent ? 'Permanente' : dateLabel(row.fecha)], ['Modo de visibilidad', modeLabel(row.visibilityMode)], ['Política automática', visibleLabel(row.automaticVisibility)], ['Visibilidad efectiva', visibleLabel(row.effectiveVisibility)], ['Estado', statusMeta(row.status).label], ['Ventana automática', row.permanent ? 'Todo el año' : dateLabel(row.visibilityWindowStart) + ' – ' + dateLabel(row.visibilityWindowEnd)]])), React.createElement('div', {
+    }, React.createElement('h3', null, 'Vigencia, visibilidad y estado'), kv([['Vigencia', row.permanent ? 'Permanente' : dateLabel(row.fecha)], ['Modo de visibilidad', modeLabel(row.visibilityMode)], ['Política automática', visibleLabel(row.automaticVisibility)], ['Visibilidad efectiva', visibleLabel(row.effectiveVisibility)], ['Estado', statusMeta(row.status).label], ['Ventana automática', row.permanent ? 'Todo el año' : dateLabel(row.visibilityWindowStart) + ' – ' + dateLabel(row.visibilityWindowEnd)]]), canWriteVisibility && React.createElement('button', {
+      type: 'button',
+      className: 'pcmx-secondary',
+      onClick: () => onVisibility(row),
+      'data-visibility-control': row.id,
+      style: {
+        marginTop: 10
+      }
+    }, 'Administrar visibilidad')), React.createElement('div', {
       className: 'pcmx-explainer'
     }, React.createElement('strong', null, 'Elegibilidad y visibilidad son distintas. '), 'Sindicato y categoría definen a quién aplica la regla; el modo, la fecha y la política automática determinan si aparece en SutiApp. Esta vista no evalúa a una persona.'), row.signals.length > 0 && React.createElement('section', {
       className: 'pcmx-detail-card',
@@ -54564,7 +54574,9 @@ Object.assign(window, {
     store,
     canEdit,
     onEdit,
-    onCreate
+    onCreate,
+    canWriteVisibility,
+    onVisibility
   }) {
     const [search, setSearch] = useState(''),
       [program, setProgram] = useState('all'),
@@ -54801,7 +54813,9 @@ Object.assign(window, {
       compared,
       onClearCompare: () => setCompareIds([]),
       canEdit,
-      onEdit
+      onEdit,
+      canWriteVisibility,
+      onVisibility
     })));
   }
   function EditorShell({
@@ -55294,6 +55308,8 @@ Object.assign(window, {
     }) : React.createElement(DesktopCriteriaMatrix, {
       store,
       canEdit: canRulesWrite,
+      canWriteVisibility: canWrite,
+      onVisibility: setEditing,
       onCreate: () => setEditor({
         type: 'rule',
         value: null
@@ -55400,7 +55416,7 @@ Object.assign(window, {
       row,
       canWrite,
       onEdit: () => setEditing(row)
-    }))))), !desktop && editing && React.createElement(VisibilityEditor, {
+    }))))), editing && canWrite && React.createElement(VisibilityEditor, {
       row: editing,
       store,
       app,
@@ -55579,7 +55595,7 @@ Object.assign(window, {
         setSaving(false);
       }
     };
-    const choices = [['AUTO', 'Automático', 'Aplica permanencia o ventana de cuatro meses calendario.'], ['MOSTRAR', 'Mostrar excepcionalmente', 'Hace visible el criterio fuera de la ventana, sin saltar elegibilidad.'], ['OCULTAR', 'Ocultar', 'Lo oculta en SutiApp aunque AUTO lo mostraría.']];
+    const choices = [['AUTO', 'Automático', 'Aplica la ventana automática y cierra los fondos con fecha un mes antes del vencimiento.'], ['MOSTRAR', 'Mostrar excepcionalmente', 'Habilita esta regla aunque la fecha automática indique No disponible. Conserva sindicato, categoría y demás requisitos del afiliado.'], ['OCULTAR', 'Ocultar', 'Lo oculta en SutiApp aunque AUTO lo mostraría.']];
     return React.createElement('div', {
       style: {
         position: 'absolute',

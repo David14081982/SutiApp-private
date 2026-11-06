@@ -1,0 +1,34 @@
+{
+  "implementation": "PASS",
+  "deployment": "BLOCKED",
+  "deploymentReason": "Supabase Management API HTTP 401 on read-only preflight",
+  "productionWrites": 0,
+  "checks": {
+    "sqlForwardRecoveryAndSecurity": 170,
+    "nativeCatalogAndWriter": 166,
+    "edgeProfilePolicy": 25,
+    "chromeBuiltModule": 25,
+    "nativeCriterionIdentity": 70
+  },
+  "additionalPassedSuites": [
+    "test-financial-program-visibility.mjs",
+    "test-admin-program-criteria-matrix.js",
+    "test-financial-supabase-cutover.js",
+    "test-authenticated-loan-snapshot-rpc.js"
+  ],
+  "diffCheck": "PASS",
+  "sha256": {
+    "app/screens-admin-fondos.jsx": "af33165cb69078eabba1ad66cbd73efd2b777dd0156f1e9af6c5374b773212b2",
+    "app/bundle.js": "4ba18204b7ce5b8401a87c22a6de2f22d0a79b066423ad7ac1a4f3a474e7a830",
+    "supabase/functions/financial-legacy/visibility-policy.js": "12618d7c524863ca4b5fb0a7600e95a92b65a3520adbe6aab8045f8b5c21c6ce",
+    "supabase/migrations/20261106000100_financial_mostrar_override.sql": "66b2a538d169b0119829e67fd63f3aca7d697d58107238558eab7bc77d7c555f",
+    "supabase/recovery/20261106000100_financial_mostrar_override.sql": "e4ab5d8276896767bbb60b6c44c140f4636f15fdd591a2e20a3965eb558e5501",
+    "scripts/build-financial-mostrar-override.js": "ac1f9ab0cf9c2bc8c9a59f03130fdb96831286eb263c1e9a5b933ddcf916658a",
+    "scripts/test-financial-mostrar-override.js": "8377c1d6476e2bf1974701df1e08309f98e34dcca83934184ec0fd49fe3531fd",
+    "scripts/test-financial-mostrar-override-browser.js": "2b3f132bb46d9258bca4a44e06e6e31b8644b1e427f94610a7481a0090d4ffa7",
+    "scripts/test-loan-dated-fund-cutoff.js": "261f973430d5682983ed1a2bd67145d560cd24b1a44d86a253bd114dc0e39cd7",
+    "scripts/test-financial-program-visibility.mjs": "b7385fb3c9a01f57cffe6069ec8b926721f44207700e7dcf6d3d490383087ada",
+    "scripts/test-admin-program-criteria-matrix.js": "6a15c039e9add28d2a57fee1a6cdf8e9d3408c17689b7f8ed500330c398d34eb",
+    "scripts/test-financial-supabase-cutover.js": "87ac44e9954dd902d4a8261133e4cc82af4faa9daefd540ceb660affb1e5e254"
+  }
+}

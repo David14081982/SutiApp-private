@@ -1,5 +1,21 @@
 # Reglas de migración
 
+## 20261106000100 — excepción MOSTRAR — PREPARED / NOT APPLIED
+
+Candidato de H-FINANCIAL-MOSTRAR-OVERRIDE-001. La numeración y deriva live deberán
+confirmarse al restablecer acceso: el preflight de sólo lectura devuelve HTTP401.
+Reemplaza únicamente la guarda de cierre en resolve_suti_loan_quote_contract,
+permitiendo MOSTRAR explícito. Conserva firma, OID, ACL, propietario, motor,
+funciones de snapshot y datos de negocio. Guarda de definición completa a través
+del hash normalizado de su predecesor; aborta ante cualquier deriva.
+
+Forward/recovery exactos, CRLF, deriva, permisos y cotizaciones se verifican en
+PGlite aislado, sin DDL ni fixtures productivos. Recovery restaura el cierre
+anterior y debe acompañarse de la reversión Edge/UI. SQL debe instalarse antes
+de Edge para evitar mostrar opciones que el servidor rechace. No reescribir
+historia, criterios ni solicitudes. No publicar el bundle completo del workspace:
+la regeneración focal conserva todos los otros módulos existentes.
+
 ## 20261020000100 — reglas financieras nativas — APPLIED
 
 H-LOAN-JANUARY-FUNDS-001 modifica sólo los cuerpos de tres funciones existentes:

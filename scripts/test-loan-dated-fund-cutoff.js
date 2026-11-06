@@ -6,6 +6,7 @@ const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p
 const pglitePath=process.env.SUTIAPP_PGLITE_PATH||path.join(root,'.tmp/savings-loan-eligibility/node_modules/@electric-sql/pglite');
 const {PGlite}=require(pglitePath),{pgcrypto}=require(path.join(pglitePath,'dist/contrib/pgcrypto.cjs'));
 const version='20261005000100_loan_dated_fund_cutoff.sql';
+const overrideVersion='20261106000100_financial_mostrar_override.sql';
 const policy={source:'SUPABASE_LOAN_TERM_POLICY',standardTerms:[1,6,12,24],customMinTerm:1,customStep:1};
 const base={id:'advance',program_id:'prestamo',status:'AVAILABLE',fund:'Isolated advance',union:'SUTISSSTESON',category:'Base',max_amount:25000,rate_factor:.06,rate:6,payment_count:1,payment_period:'quincenal',term_label:'1 Qnas'};
 const actor='10000000-0000-0000-0000-000000000001',affiliate='20000000-0000-0000-0000-000000000001',session='30000000-0000-0000-0000-000000000001';
@@ -25,7 +26,7 @@ async function main(){
   const profile={financial_union:base.union,financial_employee_category:base.category};
   const overviewAt=instant=>ctx.overview([
    {...base,id:'permanent',available_on:null,max_amount:133000,status:'AVAILABLE'},
-   {...base,max_amount:10000,available_on:'2026-10-15',status:evaluateVisibility('2026-10-15','MOSTRAR',new Date(instant)).status},
+   {...base,max_amount:10000,available_on:'2026-10-15',status:evaluateVisibility('2026-10-15','AUTO',new Date(instant)).status},
    {...base,id:'wrong-profile',category:'Confianza',max_amount:999999,status:'AVAILABLE'},
   ],profile,policy);
   const beforeOverview=overviewAt('2026-09-15T06:59:59Z'),afterOverview=overviewAt('2026-09-15T07:00:00Z');
@@ -64,8 +65,8 @@ async function main(){
   }
   const definitions=async()=>(await db.query("select oid,oid::regprocedure::text signature,pg_get_functiondef(oid) definition,md5(pg_get_functiondef(oid)) hash,proacl::text acl,proowner,prosecdef,proconfig from pg_proc where proname in ('resolve_suti_loan_quote_contract','resolve_current_loan_snapshot_quote','resolve_suti_loan_quote_contract_v1_engine','payroll_periods','enforce_request_date') order by 2")).rows;
   const before=await definitions(),today=await scalar("select (now() at time zone 'America/Hermosillo')::date::text v");
-  fs.mkdirSync(path.join(root,'.tmp/loan-dated-fund-cutoff'),{recursive:true});
-  fs.writeFileSync(path.join(root,'.tmp/loan-dated-fund-cutoff/isolated-before.json'),JSON.stringify(before,null,2));
+  fs.mkdirSync(path.join(root,'.tmp/financial-mostrar-override'),{recursive:true});
+  fs.writeFileSync(path.join(root,'.tmp/financial-mostrar-override/isolated-before.json'),JSON.stringify(before,null,2));
   const future=await scalar("select ((now() at time zone 'America/Hermosillo')::date + interval '3 months')::date::text v");
   const permitted=[{...base,available_on:null},{...base,available_on:future},{...base,id:'cash',program_id:'caja',payment_count:24,available_on:null}];
   const clean=q=>{const {resolved_at,...rest}=q;return rest;};
@@ -74,18 +75,25 @@ async function main(){
   await db.query('insert into program_requests(id,financial_submission_snapshot) values(gen_random_uuid(),$1)',[{financialResult:oldClosed}]);
   const history=await scalar('select jsonb_agg(to_jsonb(t) order by id) v from program_requests t');
   await db.exec(read('supabase/migrations/'+version));
+  const cutoffDefinitions=await definitions();
+  await reject(quote({...base,available_on:today,visibility_mode:'MOSTRAR'}),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
+  await db.exec(read('supabase/migrations/'+overrideVersion));
   const after=await definitions();
   check(after.map(({definition,hash,...r})=>r),before.map(({definition,hash,...r})=>r),'signature/OID/ACL/owner/security unchanged');
   for(const row of before.filter(r=>!r.signature.startsWith('resolve_suti_loan_quote_contract(')))check(after.find(r=>r.oid===row.oid),row,'unrelated engine/calendar/snapshot code unchanged');
   for(let i=0;i<permitted.length;i++)check(clean(await quote(permitted[i])),oldQuotes[i],'permitted financial results unchanged');
-  await reject(quote({...base,available_on:today,visibility_mode:'MOSTRAR'}),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
+  check(clean(await quote({...base,available_on:today,visibility_mode:'MOSTRAR'})),clean(oldClosed),'MOSTRAR preserves underlying financial result');
+  for(const mode of [undefined,'AUTO','OCULTAR','INVALID'])await reject(quote({...base,available_on:today,visibility_mode:mode}),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
+  await reject(quote({...base,available_on:today,visibility_mode:'MOSTRAR',status:'UNAVAILABLE'}),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
+  await reject(scalar('select resolve_suti_loan_quote_contract($1,$2,$3,$4,5000,1,$5) v',[[{...base,available_on:today,visibility_mode:'MOSTRAR'}],'OTHER UNION',base.category,base.id,policy]),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
+  await reject(scalar('select resolve_suti_loan_quote_contract($1,$2,$3,$4,5000,1,$5) v',[[{...base,available_on:today,visibility_mode:'MOSTRAR'}],base.union,'OTHER CATEGORY',base.id,policy]),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
   check(await scalar('select jsonb_agg(to_jsonb(t) order by id) v from program_requests t'),history,'history untouched');
   const patched=after.find(r=>r.signature.startsWith('resolve_suti_loan_quote_contract('));
 
   // Isolated copy changes only its clock, allowing actual SQL to run at boundaries.
   await db.exec(patched.definition.replace('public.resolve_suti_loan_quote_contract(', 'public.test_cutoff_quote(')
    .replace("today date:=(now() at time zone 'America/Hermosillo')::date;","today date:=current_setting('test.today')::date;"));
-  const dates=[['2026-10-15','2026-09-15'],['2027-01-15','2026-12-15'],['2027-03-31','2027-02-28'],['2028-03-31','2028-02-29'],['2026-05-31','2026-04-30'],['2026-03-01','2026-02-01']];
+  const dates=[['2026-11-30','2026-10-30'],['2026-10-15','2026-09-15'],['2027-01-15','2026-12-15'],['2027-03-31','2027-02-28'],['2028-03-31','2028-02-29'],['2026-05-31','2026-04-30'],['2026-03-01','2026-02-01']];
   for(const [due,cutoff] of dates){
    const prior=new Date(cutoff+'T12:00:00Z');prior.setUTCDate(prior.getUTCDate()-1);
    const following=new Date(cutoff+'T12:00:00Z');following.setUTCDate(following.getUTCDate()+1);
@@ -93,10 +101,10 @@ async function main(){
     await db.query("select set_config('test.today',$1,false)",[day]);
     for(const mode of ['AUTO','MOSTRAR','OCULTAR']){
      const v=evaluateVisibility(due,mode,new Date(day+'T12:00:00-07:00'));
-     check(v.status,closed||mode==='OCULTAR'?'UNAVAILABLE':'AVAILABLE',due+' '+day+' '+mode);
+     check(v.status,mode==='MOSTRAR'||(!closed&&mode==='AUTO')?'AVAILABLE':'UNAVAILABLE',due+' '+day+' '+mode);
      // Deliberately use stale AVAILABLE to prove SQL enforces cutoff independently.
      const r={...base,available_on:due,visibility_mode:mode};
-     if(closed)await reject(quote(r,'test_cutoff_quote'),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
+     if(closed&&mode!=='MOSTRAR')await reject(quote(r,'test_cutoff_quote'),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
      else check((await quote(r,'test_cutoff_quote')).amount,5000,'SQL remains open before cutoff');
     }
    }
@@ -114,26 +122,35 @@ async function main(){
   await db.query("insert into financial_session_snapshots(id,affiliate_id,actor_real_auth_user_id,financial_profile_version,expires_at,calculation_contract_version,session_purpose,profile_fingerprint,term_policy_fingerprint,eligible_rules) values($1,$2,$3,1,now()+interval '10 minutes','SUTI_LOAN_QUOTE_V3','LOAN',$4,$5,$6)",[session,affiliate,actor,profileHash,policyHash,[{...base,available_on:future}]]);
   const interactive=()=>scalar('select resolve_current_loan_snapshot_quote($1,$2,5000,1) v',[session,base.id]);
   await db.exec('set role authenticated');check((await interactive()).amount,5000,'valid authenticated quote');await db.exec('reset role');
-  await db.query('update financial_session_snapshots set eligible_rules=$1',[[{...base,available_on:today,visibility_mode:'MOSTRAR'}]]);
+  await db.query('update financial_session_snapshots set eligible_rules=$1',[[{...base,available_on:today,visibility_mode:'AUTO'}]]);
   await db.exec('set role authenticated');await reject(interactive(),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);await db.exec('reset role');
+  await db.query('update financial_session_snapshots set eligible_rules=$1',[[{...base,available_on:today,visibility_mode:'MOSTRAR'}]]);
+  await db.exec('set role authenticated');check((await interactive()).amount,5000,'owned MOSTRAR snapshot permits quote');await db.exec('reset role');
+  await db.exec("update financial_session_snapshots set invalidated_at=now(),invalidation_reason='FINANCIAL_VISIBILITY_CHANGED'");
+  await db.exec('set role authenticated');await reject(interactive(),/SNAPSHOT_INVALID/);await db.exec('reset role');
+  await db.exec('update financial_session_snapshots set invalidated_at=null,invalidation_reason=null');
   await db.exec('set role anon');await reject(interactive(),/permission denied/);await db.exec('reset role');
   await db.exec("update financial_session_snapshots set actor_real_auth_user_id=gen_random_uuid()");
   await db.exec('set role authenticated');await reject(interactive(),/SNAPSHOT_INVALID/);await db.exec('reset role');
-  await db.exec(read('supabase/recovery/'+version));
-  check(await definitions(),before,'exact recovery of all function definitions and ACLs');
+  await db.exec(read('supabase/recovery/'+overrideVersion));
+  check(await definitions(),cutoffDefinitions,'exact recovery to previous cutoff functions and ACLs');
   check(await scalar('select jsonb_agg(to_jsonb(t) order by id) v from program_requests t'),history,'recovery preserves history');
-  await db.exec(read('supabase/migrations/'+version));
-  await reject(db.exec(read('supabase/migrations/'+version)),/DATED_FUND_CUTOFF_FUNCTION_DRIFT/);await db.exec('rollback');
-  await db.exec(patched.definition.replace(' -- H-LOAN-DATED-FUND-CUTOFF-001:', ' -- Unexpected later modification: H-LOAN-DATED-FUND-CUTOFF-001:'));
-  await reject(db.exec(read('supabase/recovery/'+version)),/RECOVERY_BLOCKED_DATED_FUND_CUTOFF_DRIFT/);await db.exec('rollback');
+  await reject(quote({...base,available_on:today,visibility_mode:'MOSTRAR'}),/FINANCIAL_PROGRAM_NOT_ELIGIBLE/);
+  await db.exec(read('supabase/migrations/'+overrideVersion));
+  await reject(db.exec(read('supabase/migrations/'+overrideVersion)),/FINANCIAL_MOSTRAR_FUNCTION_DRIFT/);await db.exec('rollback');
+  await db.exec(patched.definition.replace(' -- H-FINANCIAL-MOSTRAR-OVERRIDE-001:', ' -- Unexpected modification: H-FINANCIAL-MOSTRAR-OVERRIDE-001:'));
+  await reject(db.exec(read('supabase/recovery/'+overrideVersion)),/RECOVERY_BLOCKED_FINANCIAL_MOSTRAR_DRIFT/);await db.exec('rollback');
   await db.exec(patched.definition);
-  // Recovery also rejects drift elsewhere, outside the exact added block.
   await db.exec(patched.definition.replace(' -- Simple interest', ' -- Later code change: simple interest'));
-  await reject(db.exec(read('supabase/recovery/'+version)),/RECOVERY_BLOCKED_DATED_FUND_CUTOFF_DRIFT/);await db.exec('rollback');
+  await reject(db.exec(read('supabase/recovery/'+overrideVersion)),/RECOVERY_BLOCKED_FINANCIAL_MOSTRAR_DRIFT/);await db.exec('rollback');
   await db.exec(patched.definition);
-  await db.exec(read('supabase/recovery/'+version).replace(/\r?\n/g,'\r\n'));
-  check(await definitions(),before,'CRLF checkout exact recovery');
-  await db.exec(read('supabase/migrations/'+version).replace(/\r?\n/g,'\r\n'));
+  await db.exec(read('supabase/recovery/'+overrideVersion).replace(/\r?\n/g,'\r\n'));
+  check(await definitions(),cutoffDefinitions,'CRLF checkout exact recovery');
+  const oldCutoff=cutoffDefinitions.find(r=>r.signature.startsWith('resolve_suti_loan_quote_contract('));
+  await db.exec(oldCutoff.definition.replace(' -- Simple interest', ' -- Unrelated pre-install drift: simple interest'));
+  await reject(db.exec(read('supabase/migrations/'+overrideVersion)),/FINANCIAL_MOSTRAR_FUNCTION_DRIFT/);await db.exec('rollback');
+  await db.exec(oldCutoff.definition);
+  await db.exec(read('supabase/migrations/'+overrideVersion).replace(/\r?\n/g,'\r\n'));
   check(await definitions(),after,'CRLF checkout same migration result');
   // Existing approval honors captured financial terms even after visibility closes.
   const extract=(a,b)=>edge.slice(edge.indexOf(a),edge.indexOf(b,edge.indexOf(a)));
@@ -141,8 +158,8 @@ async function main(){
   ctx.BUSINESS_TIME_ZONE='America/Hermosillo';
   const captured=ctx.capture({...base,available_on:today,status:'UNAVAILABLE'},{created_at:today+'T12:00:00-07:00',requested_amount:5000,requested_term:1,financial_submission_snapshot:{financialResult:oldClosed}});
   check(captured,oldClosed,'historical submitted advance preserves captured contract');
-  const result={status:'PASS',checks,example:{before:143000,after:133000},beforeFunctionHash:before.find(r=>r.signature.startsWith('resolve_suti_loan_quote_contract(')).hash,afterFunctionHash:patched.hash,exactRecovery:true,productionWrites:0,uiFilesChanged:0};
-  const out=path.join(root,'docs/qa/evidence/loan-dated-fund-cutoff');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'isolated.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+  const result={status:'PASS',checks,example:{before:143000,after:133000},beforeFunctionHash:cutoffDefinitions.find(r=>r.signature.startsWith('resolve_suti_loan_quote_contract(')).hash,afterFunctionHash:patched.hash,exactRecovery:true,productionWrites:0,mostrarOverride:true,automaticCutoffPreserved:true};
+  const out=path.join(root,'docs/qa/evidence/financial-mostrar-override');fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,'isolated.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
  }finally{await db.close();}
 }
 main().catch(e=>{console.error(e.message,e.where||'');process.exitCode=1;});

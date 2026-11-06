@@ -1,5 +1,19 @@
 # Fuentes de verdad
 
+## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — activación autorizada, 2026-11-06
+
+financial_programs, financial_funds y financial_rules siguen como autoridad
+única. visibility_mode mantiene AUTO/MOSTRAR/OCULTAR y el writer existente
+set_financial_rule_visibility: permiso financial_criteria.visibility.write,
+motivo, auditoría e invalidación de snapshots. MOSTRAR puede superar el cierre
+por fecha en la política autorizada; no cambia criterios de elegibilidad,
+publicación, estados habilitados ni autoridades financieras. No hay nuevas
+columnas, tablas, RPCs, cachés ni fallback. Edge y SQL consumen el mismo modo.
+El corte histórico del 2026-10-05 conserva su evidencia; su prohibición absoluta
+de MOSTRAR queda enmendada por la instrucción del propietario del 2026-11-06.
+SQL y Edge v68 activados: catálogo real y cotizaciones verificadas, sin escrituras
+de negocio. Los siete dominios protegidos conservan conteos y fingerprints.
+
 ## Adelantos de enero 2027/2028 — H-LOAN-JANUARY-FUNDS-001
 
 La ampliación autorizada conserva financial_programs, financial_funds y

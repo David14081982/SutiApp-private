@@ -4,8 +4,12 @@ import {createHash} from 'node:crypto';
 export function documentVerifier({PNG,jpeg,PDFDocument,webp}){
 const hash=b=>createHash('sha256').update(b).digest('hex');
 const fail=code=>{throw Error(code);};
-return async function validate(bytes,mime,expected,size){
+return async function validate(bytes,mime,expected,size,{existingRead=false}={}){
  if(bytes.length!==Number(size)||hash(bytes)!==expected)fail('BYTE_INTEGRITY_MISMATCH');
+ // Existing evidence retains the exact bytes originally registered. Decoding
+ // limits for new uploads must not prevent access to a protected original.
+ // This mode is selected only by the server's read handler, never its payload.
+ if(existingRead) return {integrityVerified:true,sha256:hash(bytes),size:bytes.length,mime};
  if(mime==='image/png') { if(bytes.length<24||bytes.readUInt32BE(16)*bytes.readUInt32BE(20)>24000000)fail('INVALID_PNG_DIMENSIONS');const p=PNG.sync.read(bytes,{checkCRC:true});if(!p.width||!p.height)fail('INVALID_PNG'); }
  else if(mime==='image/jpeg') { const p=jpeg.decode(bytes,{maxResolutionInMP:24,maxMemoryUsageInMB:128});if(!p.width||!p.height||bytes.at(-2)!==255||bytes.at(-1)!==217)fail('INVALID_JPEG'); }
  else if(mime==='image/webp') {

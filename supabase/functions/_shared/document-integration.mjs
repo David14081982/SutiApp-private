@@ -4,9 +4,9 @@ const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const fail=(code,status=409)=>Object.assign(new Error(code),{status});
 const strict=(body,keys)=>body&&typeof body==='object'&&!Array.isArray(body)&&Object.keys(body).every(k=>keys.includes(k));
 async function rpc(client,name,args){const r=await client.rpc(name,args);if(r.error)throw r.error;return r.data;}
-async function verifyObject(service,descriptor,verify){
+async function verifyObject(service,descriptor,verify,options){
  const result=await service.storage.from(descriptor.bucket).download(descriptor.path);if(result.error||!result.data)throw fail('DOCUMENT_BYTES_UNAVAILABLE',503);
- return verify(Buffer.from(await result.data.arrayBuffer()),descriptor.mime,descriptor.sha256,Number(descriptor.size));
+ return verify(Buffer.from(await result.data.arrayBuffer()),descriptor.mime,descriptor.sha256,Number(descriptor.size),options);
 }
 export function documentError(e){
  const text=String(e?.message||'');
@@ -46,7 +46,7 @@ export async function documentAccess(body,user,service,verify){
  try{
   if(!strict(body,['source','association_id','mode'])||!['EXPEDIENTE','REQUEST','SAVINGS','GENERATED'].includes(body.source)||!['SELF_SERVICE','ADMIN'].includes(body.mode)||!UUID.test(body.association_id||''))throw fail('INVALID_ACCESS_REQUEST',400);
   const args={p_source:body.source,p_association:body.association_id,p_mode:body.mode};
-  const d=await rpc(user,'resolve_document_access',args);await verifyObject(service,d,verify);
+  const d=await rpc(user,'resolve_document_access',args);await verifyObject(service,d,verify,{existingRead:true});
   const current=await rpc(user,'resolve_document_access',args);if(JSON.stringify(current)!==JSON.stringify(d))throw fail('DOCUMENT_CONTEXT_DENIED',403);
   const signed=await service.storage.from(d.bucket).createSignedUrl(d.path,30);if(signed.error||!signed.data?.signedUrl)throw fail('DOCUMENT_BYTES_UNAVAILABLE',503);
   return{status:200,body:{signedUrl:signed.data.signedUrl,expiresIn:30,mimeType:d.mime,sha256:d.sha256,associationId:body.association_id}};

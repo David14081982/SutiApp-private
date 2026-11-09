@@ -12,8 +12,8 @@ type SupabaseClientLike = any;
 async function documentFinancialRpc(userClient:SupabaseClientLike,privileged:SupabaseClientLike,name:string,args:Record<string,unknown>){
  const local=Deno.env.get('DOCUMENT_PHASE4')==='PRODUCTION_V1'||Deno.env.get('DOCUMENT_PHASE4')==='LOCAL_ONLY'&&/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(Deno.env.get('SUPABASE_URL')||'');
  if(!local)return privileged.rpc(name,args);
- const [{verifiedFinancialDocumentRpc},{candidateDocumentVerifier}]=await Promise.all([import('../_shared/document-integration.mjs'),import('../_shared/document-verifier-runtime.ts')]);
- return verifiedFinancialDocumentRpc(userClient,privileged,name,args,await candidateDocumentVerifier());
+ const {verifiedFinancialDocumentRpc}=await import('../_shared/document-integration.mjs');
+ return verifiedFinancialDocumentRpc(userClient,privileged,name,args,null);
 }
 
 const JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -1496,3 +1496,4 @@ Deno.serve(async (req) => {
     return reply(status, { error: code }, origin || null);
   }
 });
+

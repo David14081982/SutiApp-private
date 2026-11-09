@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "checks": "Real upload and verified read of all four 100 MiB fixtures",
+  "files": [
+    {
+      "name": "100mb.pdf",
+      "size": 104857600,
+      "sha256": "f4732e7620d8ad6d550035472d472ca3abb5453d66259f6268558230a0c5584f",
+      "uploaded": true,
+      "readHashMatched": true,
+      "uploadMs": 97111,
+      "viewer": "PENDING_PUBLISHED_RENDER"
+    },
+    {
+      "name": "100mb.jfif",
+      "size": 104857600,
+      "sha256": "eb85aa6faede4fafca04cac48536e5a0ade69aaab64589b4d5dfd74067636ea8",
+      "uploaded": true,
+      "readHashMatched": true,
+      "uploadMs": 133733,
+      "viewer": "PASS"
+    },
+    {
+      "name": "100mb.png",
+      "size": 104857600,
+      "sha256": "2d7eebb1aa9f06b1aa0aeb47f6c3ab15396358ce4a72a55d9cee668e8e6c22da",
+      "uploaded": true,
+      "readHashMatched": true,
+      "uploadMs": 122988,
+      "viewer": "PASS"
+    },
+    {
+      "name": "100mb.webp",
+      "size": 104857600,
+      "sha256": "90c689937c3910a6bcd366f0498fcd97f2e7a95424a3d173ea05ca3cdb2706c3",
+      "uploaded": true,
+      "readHashMatched": true,
+      "uploadMs": 109770,
+      "viewer": "PASS"
+    }
+  ],
+  "historicalRequestOriginalPreserved": true
+}

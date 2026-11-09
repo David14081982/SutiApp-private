@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "migrationSha256": "d2a9f951e045600f064f8ea210f0f980fe465cea99a61ded672388194b1d6395",
+  "historyUnchanged": {
+    "public.affiliate_documents": {
+      "count": 5497,
+      "hash": "88be81efaf2c91b653088709898105e1"
+    },
+    "public.private_assets": {
+      "count": 20367,
+      "hash": "0eec698c51c1ee92e7f6e80b39ca7ff9"
+    },
+    "public.request_documents": {
+      "count": 3346,
+      "hash": "dc218c051ccb8f85209d5bd86fa1bacc"
+    },
+    "public.program_requests": {
+      "count": 585,
+      "hash": "af862564a576948efb44a1a2c2c4909a"
+    }
+  },
+  "policiesUnchanged": {
+    "hash": "7759f537bb767fcb3ba72ed54a405b40"
+  },
+  "aclOwnersPreserved": true,
+  "bucketVisibilityAndMimeUnchanged": true
+}

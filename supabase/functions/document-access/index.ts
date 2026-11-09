@@ -74,8 +74,8 @@ Deno.serve(async (req) => {
     const identity = await user.auth.getUser(auth.slice(7));
     if (identity.error || !identity.data.user) return reply(401,{error:'AUTH_INVALID'},origin);
     const service = createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'',{auth:{persistSession:false}});
-    const [{documentAccess},{candidateDocumentVerifier}]=await Promise.all([import('../_shared/document-integration.mjs'),import('../_shared/document-verifier-runtime.ts')]);
-    const result = await documentAccess(body,user,service,await candidateDocumentVerifier());
+    const {documentAccess}=await import('../_shared/document-integration.mjs');
+    const result = await documentAccess(body,user,service,null);
     return reply(result.status,result.body,origin);
   }
   if (!validPayload(body)) return reply(400, { error: "INVALID_DOCUMENT_PREVIEW_REQUEST" }, origin);
@@ -129,3 +129,4 @@ Deno.serve(async (req) => {
     documentId: authorized.authorized_document_id,
   }, origin);
 });
+

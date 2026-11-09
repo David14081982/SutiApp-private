@@ -1,12 +1,16 @@
+import {verifyStoredDocument} from './document-stream.mjs';
+import {createHmac,timingSafeEqual} from 'node:crypto';
 import {Buffer} from 'node:buffer';
 ﻿// Shared by the prepared Edge entries and the real local integration gateway.
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const fail=(code,status=409)=>Object.assign(new Error(code),{status});
 const strict=(body,keys)=>body&&typeof body==='object'&&!Array.isArray(body)&&Object.keys(body).every(k=>keys.includes(k));
 async function rpc(client,name,args){const r=await client.rpc(name,args);if(r.error)throw r.error;return r.data;}
+export function internalVerificationSignature(body,key){return createHmac('sha256',key).update(JSON.stringify(body)).digest('hex');}
+export function internalVerificationAuthorized(body,key,signature){return !!key&&Number.isSafeInteger(body?.issued_at)&&Math.abs(Date.now()-body.issued_at)<120000&&/^[a-f0-9]{64}$/.test(signature||'')&&timingSafeEqual(Buffer.from(signature),Buffer.from(internalVerificationSignature(body,key)));}
 async function verifyObject(service,descriptor,verify,options){
- const result=await service.storage.from(descriptor.bucket).download(descriptor.path);if(result.error||!result.data)throw fail('DOCUMENT_BYTES_UNAVAILABLE',503);
- return verify(Buffer.from(await result.data.arrayBuffer()),descriptor.mime,descriptor.sha256,Number(descriptor.size),options);
+ if(options?.isolated){const key=globalThis.Deno?.env.get('DOCUMENT_VERIFIER_SECRET')||service.documentVerifierKey;if(!key)throw fail('DOCUMENT_BYTES_UNAVAILABLE',503);const body={action:'VERIFY_INTERNAL',descriptor,existing_read:true,issued_at:Date.now()},r=await service.functions.invoke('document-operation',{headers:{'x-document-verifier-signature':internalVerificationSignature(body,key)},body});if(r.error){let code=r.data?.error;try{code=code||(await r.error.context.json()).error;}catch{}throw fail(code||'DOCUMENT_BYTES_UNAVAILABLE',503);}if(!r.data?.verified||r.data.sha256!==descriptor.sha256||Number(r.data.size)!==Number(descriptor.size)||r.data.mime!==descriptor.mime)throw fail('BYTE_INTEGRITY_MISMATCH',422);return r.data;}
+ return verifyStoredDocument(service,descriptor,options);
 }
 export function documentError(e){
  const text=String(e?.message||'');
@@ -21,7 +25,7 @@ export async function documentOperation(body,user,service,verify){
    if(!strict(body,['action','operation_id','function_name','arguments'])||!UUID.test(body.operation_id||''))throw fail('INVALID_OPERATION',400);
    const args={p_id:body.operation_id,p_function:body.function_name,p_arguments:body.arguments};
    const prepared=await rpc(user,'prepare_document_submission',args),receipts=[];
-   for(const d of prepared.documents){const receipt=await verifyObject(service,d,verify);receipts.push({...receipt,document_id:d.document_id});}
+   for(const d of prepared.documents){const receipt=await verifyObject(service,d,verify,{existingRead:true,isolated:prepared.documents.reduce((n,x)=>n+Number(x.size),0)>16*1024*1024});receipts.push({...receipt,document_id:d.document_id});}
    const current=await rpc(user,'prepare_document_submission',args);if(JSON.stringify(current)!==JSON.stringify(prepared))throw fail('DOCUMENT_OPERATION_CHANGED');
    return{status:200,body:await rpc(service,'complete_document_submission',{p_id:body.operation_id,p_receipts:receipts})};
   }
@@ -36,7 +40,7 @@ export async function documentOperation(body,user,service,verify){
   }
   if(!strict(body,['action','operation_id'])||!UUID.test(body.operation_id||''))throw fail('INVALID_OPERATION',400);
   const d=await rpc(user,'get_document_operation',{p_id:body.operation_id});
-  await verifyObject(service,d,verify);const receipt=await verifyObject(service,d,verify);
+  const receipt=await verifyObject(service,d,verify);
   const current=await rpc(user,'get_document_operation',{p_id:body.operation_id});
   if(JSON.stringify(current)!==JSON.stringify(d))throw fail('DOCUMENT_OPERATION_CHANGED');
   return{status:200,body:await rpc(service,'complete_document_operation',{p_id:body.operation_id,p_receipt:receipt})};
@@ -58,8 +62,9 @@ export async function verifiedFinancialDocumentRpc(user,service,name,args,verify
   if(!['create_validated_financial_program_request','confirm_program_product_financing'].includes(name))throw fail('FINANCIAL_WRITER_REQUIRED',403);
   const id=crypto.randomUUID(),payload={p_id:id,p_function:name,p_arguments:args};
   const prepared=await rpc(user,'prepare_document_submission',payload),receipts=[];
-  for(const d of prepared.documents)receipts.push({...await verifyObject(service,d,verify),document_id:d.document_id});
+  for(const d of prepared.documents)receipts.push({...await verifyObject(service,d,verify,{existingRead:true,isolated:prepared.documents.reduce((n,x)=>n+Number(x.size),0)>16*1024*1024}),document_id:d.document_id});
   const current=await rpc(user,'prepare_document_submission',payload);if(JSON.stringify(current)!==JSON.stringify(prepared))throw fail('DOCUMENT_OPERATION_CHANGED');
   return{data:await rpc(service,'complete_document_financial_submission',{p_id:id,p_receipts:receipts}),error:null};
  }catch(error){return{data:null,error};}
 }
+

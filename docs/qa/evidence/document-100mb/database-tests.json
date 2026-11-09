@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "maxBytes": 104857600,
+  "exactLimitAccepted": true,
+  "oneByteOverDenied": true,
+  "crossAffiliateDenied": true,
+  "aclOwnersPreserved": true,
+  "historyPreserved": {
+    "public.affiliate_documents": {
+      "count": 5463,
+      "hash": "c28542b276dd8bb9fd64082393255003"
+    },
+    "public.private_assets": {
+      "count": 20330,
+      "hash": "9f8ad1e256a518a4c8f8264350769359"
+    },
+    "public.request_documents": {
+      "count": 3326,
+      "hash": "cae32d2bc9b2f48a7ca2447d49f83f34"
+    },
+    "public.program_requests": {
+      "count": 580,
+      "hash": "625c0c5330aa4d09802e799aa48b6a0b"
+    }
+  },
+  "recoveryExact": true,
+  "recoveryRetainsAcceptedLargeFiles": true,
+  "migrationSha256": "d2a9f951e045600f064f8ea210f0f980fe465cea99a61ded672388194b1d6395",
+  "productionWrites": 0
+}

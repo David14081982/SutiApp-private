@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "syntheticWebpIssue": "Ancillary chunk inserted before the required first image/container chunk",
+  "correctedFixtureDecodedAt100MiB": true,
+  "serverRejectsInvalidFirstChunk": true,
+  "realDocumentsAltered": 0
+}

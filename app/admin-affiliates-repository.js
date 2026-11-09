@@ -2,7 +2,7 @@
 (function(){
   'use strict';
   function db(){return window.SutiSupabase.getClient();}
-  const MAX_DOCUMENT_SIZE=10*1024*1024;
+  const MAX_DOCUMENT_SIZE=100*1024*1024;
   function requirePermission(permission){if(!window.AdminRepository||!window.AdminRepository.has(permission))throw new Error('ADMIN_DENIED');}
   function clean(value){return value===undefined||value===''?null:value;}
   function extension(file){const value=String(file&&file.name||'').split('.').pop().toLowerCase();return /^[a-z0-9]{1,8}$/.test(value)?'.'+value:'';}
@@ -84,3 +84,4 @@
   }
   window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
 })();
+

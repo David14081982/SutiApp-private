@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "version": 74,
+  "sourceUnchangedBySecretReload": true,
+  "verify_jwt": true
+}

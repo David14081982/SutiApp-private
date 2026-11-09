@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "invalidWebpChunkOrderDenied": true,
+  "internalMacValidAccepted": true,
+  "changedPayloadDenied": true,
+  "wrongKeyDenied": true,
+  "expiredMacDenied": true
+}

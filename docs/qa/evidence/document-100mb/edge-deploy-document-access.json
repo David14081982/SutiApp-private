@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "mode": "deploy",
+  "slug": "document-access",
+  "version": 28,
+  "verify_jwt": true,
+  "files": [
+    {
+      "file": "document-access/index.ts",
+      "sha256": "6c7e5bd70b4bc4e0b34d0ea7906686dba9e4c193c557d45e7d80abbb0c9c47c9"
+    },
+    {
+      "file": "_shared/document-integration.mjs",
+      "sha256": "3dac6427e3103f500ef4dd901cf9e4e1a935b546f846a533a4e246fc7f311d75"
+    },
+    {
+      "file": "_shared/document-stream.mjs",
+      "sha256": "aca8e7ea5ee3879781f3ce155adea87fc3b6950f0897b078e0fc6e2331803d89"
+    },
+    {
+      "file": "_shared/document-crc.mjs",
+      "sha256": "736c706b74e974e7cb57ca3ffca3431d2f3186b53c54feea2ad1c17ee06b8eff"
+    }
+  ]
+}

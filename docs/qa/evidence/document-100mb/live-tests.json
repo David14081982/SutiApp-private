@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "published": false,
+  "checks": [
+    {
+      "name": "100mb.webp",
+      "status": "PASS",
+      "size": 104857600,
+      "sha256": "90c689937c3910a6bcd366f0498fcd97f2e7a95424a3d173ea05ca3cdb2706c3",
+      "uploadMs": 109770,
+      "verifiedReadMs": 74296,
+      "viewer": true
+    }
+  ],
+  "startedAt": "2026-11-09T21:24:05.379Z",
+  "oversizeRejectedBeforeUpload": true,
+  "historicalRequestOriginalPreserved": true,
+  "finishedAt": "2026-11-09T21:27:19.535Z",
+  "network": [
+    {
+      "action": "PREPARE",
+      "source": "FILE",
+      "status": 200
+    },
+    {
+      "action": "COMPLETE",
+      "status": 200
+    },
+    {
+      "source": "EXPEDIENTE",
+      "status": 200
+    },
+    {
+      "source": "EXPEDIENTE",
+      "status": 200
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "authenticatedCallerDeniedInternalVerification": true,
+  "twoLargeDocumentsVerifiedInSeparateInvocations": [
+    {
+      "status": 200,
+      "size": 104857600,
+      "ms": 5274
+    },
+    {
+      "status": 200,
+      "size": 104857600,
+      "ms": 6132
+    }
+  ],
+  "alteredHashDenied": true,
+  "productionBusinessWrites": 0,
+  "parentWriterHarnessOnly": true
+}

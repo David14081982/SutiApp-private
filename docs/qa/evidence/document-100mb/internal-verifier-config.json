@@ -1,0 +1,6 @@
+{
+  "status": "PASS",
+  "serverOnlySecretConfigured": true,
+  "unrelatedSecretsUnchanged": true,
+  "secretValuePublished": false
+}

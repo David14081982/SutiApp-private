@@ -1,0 +1,49 @@
+{
+  "status": "PASS",
+  "mode": "deploy",
+  "slug": "financial-legacy",
+  "version": 76,
+  "verify_jwt": true,
+  "files": [
+    {
+      "file": "financial-legacy/index.ts",
+      "sha256": "1fd56d9e2a9e05f29a06156b822520ff8566a8fe17d979df6d721aff1306d870"
+    },
+    {
+      "file": "financial-legacy/visibility-policy.js",
+      "sha256": "bb4bb4bfb620c5cef3b3029944381e050f377bed3958b66e1c2d908c3bf4aa41"
+    },
+    {
+      "file": "financial-legacy/request-google-sync.js",
+      "sha256": "0e5760e20ca48a8eb8b3f7fe03029e0b693236af76dcd960b7ef74b17f73b07a"
+    },
+    {
+      "file": "financial-legacy/savings-eligibility.ts",
+      "sha256": "aa6b055e454725e924c70aeee8d1b3bced2fd10edfc26a803c2535e6ce4a1d64"
+    },
+    {
+      "file": "financial-legacy/loan-capacity.mjs",
+      "sha256": "96cfa23bd6f03a6157de77541c9489640f83d08275baabc1de5bf24bfc536a08"
+    },
+    {
+      "file": "loan-history/history.mjs",
+      "sha256": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2"
+    },
+    {
+      "file": "financial-legacy/historical-obligation-map.mjs",
+      "sha256": "6237c357ea4c9be17f0e5add9fef65457442d940309206410963fc3d615e0b62"
+    },
+    {
+      "file": "_shared/document-integration.mjs",
+      "sha256": "3dac6427e3103f500ef4dd901cf9e4e1a935b546f846a533a4e246fc7f311d75"
+    },
+    {
+      "file": "_shared/document-stream.mjs",
+      "sha256": "aca8e7ea5ee3879781f3ce155adea87fc3b6950f0897b078e0fc6e2331803d89"
+    },
+    {
+      "file": "_shared/document-crc.mjs",
+      "sha256": "736c706b74e974e7cb57ca3ffca3431d2f3186b53c54feea2ad1c17ee06b8eff"
+    }
+  ]
+}

@@ -19,7 +19,7 @@
  function access(source,id,mode){return window.PrivateResourceDemand.run(JSON.stringify(['document-association',source,id,mode]),()=>invoke('document-access',{source,association_id:id,mode:mode||'SELF_SERVICE'}));}
  async function upload(type,file,options){
   const o=options||{},before=context(),progress=o.onProgress||(()=>{}),mode=o.mode||'SELF_SERVICE';
-  const sha=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()))).map(x=>x.toString(16).padStart(2,'0')).join('');checked(before);
+  const sha=await window.DocumentTransfer.hash(file,()=>checked(before));checked(before);
   const key=await recoveryKey([mode,o.affiliateId||null,type.id,sha,file.size,String(o.source||'FILE').toUpperCase(),o.reason||'']);checked(before);
   let job=pending.get(key);
   if(!job){const saved=sessionStorage.getItem(key);if(saved){try{const value=JSON.parse(saved);if(/^[0-9a-f-]{36}$/i.test(value.id)&&(!value.expected||/^[0-9a-f-]{36}$/i.test(value.expected)))job=value;}catch(_){}if(!job)sessionStorage.removeItem(key);}}
@@ -27,7 +27,7 @@
   if(!job){const current=await rpc('document_upload_context',{p_mode:mode,p_affiliate:o.affiliateId||null,p_type:type.id});checked(before);job={id:crypto.randomUUID(),expected:current.document_id||null};pending.set(key,job);sessionStorage.setItem(key,JSON.stringify(job));}
   progress('preparing');const prepared=await invoke('document-operation',{action:'PREPARE',operation_id:job.id,mode,affiliate_id:o.affiliateId||null,document_type_id:type.id,mime:file.type,size:file.size,sha256:sha,expected_document_id:job.expected,source:String(o.source||'FILE').toUpperCase(),reason:o.reason||''});
   if(prepared.state!=='COMPLETE'){
-   progress('uploading');const result=await db().storage.from(prepared.bucket).upload(prepared.path,file,{contentType:file.type,upsert:false});checked(before);
+   progress('uploading');const result=await window.DocumentTransfer.upload(db(),prepared,file,()=>checked(before));checked(before);
    // Duplicate at the exact operation path is verified server-side; never overwrite or remove it.
    if(result.error&&!['409','400'].includes(String(result.error.statusCode||result.error.status))&&!/already exists|duplicate/i.test(String(result.error.message||'')))throw result.error;
   }
@@ -42,3 +42,4 @@
  function generated(contextId,domain,mode){return rpc('list_generated_document_evidence',{p_context:contextId,p_domain:domain,p_mode:mode});}
  window.DocumentIntegration=Object.freeze({enabled,normalizeFile,access,upload,withdraw,evidence,submission,generated});
 })();
+

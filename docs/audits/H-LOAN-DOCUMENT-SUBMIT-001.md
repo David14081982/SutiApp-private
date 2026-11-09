@@ -1,6 +1,38 @@
 # H-LOAN-DOCUMENT-SUBMIT-001
 
+## Current owner authorization: 100 MB end to end
+
+The subsequent explicit owner instruction authorizes 100 MB for BOTH existing originals and new documentary uploads, all necessary PostgreSQL/Storage/RPC/Edge/frontend changes, publication and deployment. This supersedes the prior pending decision and the previous new-upload limit. Do not change financial calculations, Google, historical bytes or unrelated features. No additional general audit/phases: extend this scoped repair only.
+
+Runtime scope: document upload/read/attachment. Exact published baseline e8b54c0241973689d565b67183490fbcb7531b91; isolated candidate .tmp/document-100mb/candidate, no wholesale dirty-root publication. Source files: app/document-integration.js, document-workflow-repository.js, admin-affiliates-repository.js, screens-admin-affiliates.jsx, screens-admin-documents.jsx; new document-transfer source/bundle for chunked hashing and resumable upload; scripts/build-bundle.js plus generated bundle/cachebusters; shared document-integration/verifier/stream modules and their document-operation, document-access, financial-legacy deployments. SQL: documentary size constraints, configuration/RPC size guards, existing-document enrollment before attachment, document_types size configuration, Storage global/bucket documentary limits. Keep all permissions, MIME authorization per type, actor/session checks and protected historical references.
+
+Performance: one server download per verification, incremental SHA-256, bounded format inspection without allocating decoded pixel arrays, chunked browser hashing and resumable upload. The viewer performs actual rendering; server continues MIME/format, dimensions, SHA-256 and exact length checks. Existing originals use the established hash/length contract. No browser-provided verification receipts are trusted.
+
+Live preflight: private-assets already allows 100 MiB; Storage global cap is 50 MiB; all 13 document types and operation/asset constraints still cap 10 MiB. Other MIME types in private Storage are retained; current document-type catalogs allow JPEG/PNG/WebP/PDF and JFIF normalizes to JPEG. Existing HEIC/Office originals must remain usable regardless of new-upload codec lists.
+
+Verification limited to essentials requested: size boundaries and permissions in restored PostgreSQL, streaming/hash/format cases and memory bounds, actual authenticated 100 MiB upload/read on the existing explicitly synthetic test affiliate, historical fingerprints, focused browser controls and published build/readback. Owner limits verification to indispensable checks; broad unrelated financial/Google regressions are excluded. UI structure and interactions remain intact.
+
+Recovery: exact pre-change function/configuration backups, transactional SQL and hash guards, prior Edge artifacts and published frontend; no removal or rewriting of existing documents. Restoring a smaller cap must refuse if it would invalidate subsequently accepted files.
+
 ## PRE-CHANGE AUDIT
+
+### Current 100 MB implementation and essential evidence
+
+The current authorization supersedes all earlier BLOCKED / OWNER_DECISION_REQUIRED statements below. They describe the previous loan-only boundary, not the current authorization.
+
+Migration `20261109000400_document_100mb.sql` is active. All 13 document types, documentary integrity operations/assets and the documentary Storage buckets accept up to 104857600 bytes. Global Storage was increased from 52428800 to 104857600; other Storage configuration, visibility and MIME policies were compared unchanged. No document bytes or historical request rows were migrated. The migration transaction compared fingerprints of all four canonical document/request tables, function ACLs/owners and public/Storage/integrity policies.
+
+Browser uploads use incremental SHA-256 in 2 MiB reads and authenticated TUS uploads in 6 MiB chunks. Originals selected from files retain their bytes; camera compression retains its existing behavior. Server verification downloads once, hashes incrementally and inspects format containers without allocating full decoded pixel arrays. PNG CRC32 uses pinned hash-wasm 4.12.0; PDF scanning avoids repeated string conversion once required structural markers have been found. New-file validation is structural/container validation, not full codec decoding or malware scanning. Existing originals retain their prior mandatory SHA-256 and exact-length contract, including already-authorized Office/HEIC originals.
+
+The real 100 MiB trial exposed a Supabase CPU limit that local tests alone did not reveal. It was fixed by removing unnecessary PDF processing and using the bounded CRC implementation. Submission batches above 16 MiB now verify each original in a separate invocation of the existing document-operation endpoint. The parent validates every receipt, rechecks context and only then invokes the existing atomic writer. Internal requests require a short-lived HMAC over the entire payload, constant-time comparison and a server-only DOCUMENT_VERIFIER_SECRET; ordinary authenticated callers are denied. This avoids cumulative CPU exhaustion for multiple large originals. No financial formula/writer or Google source was changed.
+
+Evidence under `docs/qa/evidence/document-100mb/`: database boundary/permissions/recovery tests, four-format 100 MiB streaming tests and peak RSS, exact production SQL readback and preserved historical fingerprints, Storage configuration, real upload/read checks, two-large-document internal-verification tests, bundle isolation, public artifact build and deployed Edge source comparisons. Real live tests use only the previously authorized synthetic affiliate. The financial handoff test uses real verification services with a non-writing parent RPC harness; it does not create a production loan.
+
+The WebP fixture initially placed an ancillary chunk before its required image/container chunk. The browser correctly rejected that synthetic container. The fixture was corrected and independently decoded at 100 MiB; the server now rejects the invalid first-chunk order. No real document was altered to fix a test. The isolated test objects are retained.
+
+The architecture index is updated only for the declared files and dependencies from the exact GitHub baseline; unrelated stale entries remain explicitly stale. The public bundle retains all unrelated chunks byte-for-byte. Service-worker changes are cache-version-only. General unrelated regressions are excluded by the owner's explicit indispensable-verification instruction; focused upload/view/history/auth tests apply.
+
+Publication status: backend active; final published-frontend verification pending. This is not yet a complete-task PASS.
 
 Owner requests a surgical repair of loan confirmation error 161BE45C for all users, approximately five virtual tests, commit/push and deployment if successful. Authorized 2026-11-09.
 

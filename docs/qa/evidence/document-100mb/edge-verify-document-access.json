@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "mode": "verify",
+  "slug": "document-access",
+  "version": 24,
+  "verify_jwt": true,
+  "files": [
+    {
+      "file": "document-access/index.ts",
+      "sha256": "6c7e5bd70b4bc4e0b34d0ea7906686dba9e4c193c557d45e7d80abbb0c9c47c9"
+    },
+    {
+      "file": "_shared/document-integration.mjs",
+      "sha256": "da7d2d2e639bedf1a9664b2bfd72557ed7621825d1ed37db3e9c3bd85cb8a3bd"
+    },
+    {
+      "file": "_shared/document-stream.mjs",
+      "sha256": "eec690105d3de7748737a6022dcafb2c15897175e833b69172b994454e98c8ea"
+    }
+  ]
+}

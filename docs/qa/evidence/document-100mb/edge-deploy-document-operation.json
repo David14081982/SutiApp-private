@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "mode": "deploy",
+  "slug": "document-operation",
+  "version": 12,
+  "verify_jwt": true,
+  "files": [
+    {
+      "file": "document-operation/index.ts",
+      "sha256": "a79d7c34213c70ef1372e6e46472f46c585ccdd651aa342113b437ed65666636"
+    },
+    {
+      "file": "_shared/document-integration.mjs",
+      "sha256": "3dac6427e3103f500ef4dd901cf9e4e1a935b546f846a533a4e246fc7f311d75"
+    },
+    {
+      "file": "_shared/document-stream.mjs",
+      "sha256": "aca8e7ea5ee3879781f3ce155adea87fc3b6950f0897b078e0fc6e2331803d89"
+    },
+    {
+      "file": "_shared/document-crc.mjs",
+      "sha256": "736c706b74e974e7cb57ca3ffca3431d2f3186b53c54feea2ad1c17ee06b8eff"
+    }
+  ]
+}

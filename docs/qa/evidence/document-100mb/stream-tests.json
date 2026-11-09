@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "name": "100mb.pdf",
+      "status": "PASS",
+      "size": 104857600,
+      "ms": 1913
+    },
+    {
+      "name": "100mb.jfif",
+      "status": "PASS",
+      "size": 104857600,
+      "ms": 1015
+    },
+    {
+      "name": "100mb.png",
+      "status": "PASS",
+      "size": 104857600,
+      "ms": 1103
+    },
+    {
+      "name": "100mb.webp",
+      "status": "PASS",
+      "size": 104857600,
+      "ms": 1573
+    }
+  ],
+  "oversizeDenied": true,
+  "alteredHashDenied": true,
+  "mimeMismatchDenied": true,
+  "existingOriginalFormatsPreserved": true,
+  "peakRssBytes": 98148352,
+  "memoryBudgetBytes": 268435456,
+  "sourceSha256": "aca8e7ea5ee3879781f3ce155adea87fc3b6950f0897b078e0fc6e2331803d89"
+}

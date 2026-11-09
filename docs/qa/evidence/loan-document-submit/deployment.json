@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "appliedAt": "2026-11-09T20:24:35.485Z",
+  "version": "20261109000300",
+  "migrationSha256": "2ca54baada5fccf76c769b7f515a82f91311104d99bc061e022807bd370a98dd",
+  "functions": [
+    {
+      "signature": "complete_document_financial_submission(uuid,jsonb)",
+      "sha256": "7a190c0c83ca919c16dc682644f623678da629c06f0c01a4a066a2ba36b228ab",
+      "acl": "{postgres=X/postgres,service_role=X/postgres}",
+      "owner": "postgres"
+    },
+    {
+      "signature": "prepare_document_submission(uuid,text,jsonb)",
+      "sha256": "14e1e7f9d01c58cf56891d58c50cd53d0327b7cb18d33665a79fb05ddbe8588f",
+      "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+      "owner": "postgres"
+    }
+  ],
+  "tablesUnchanged": {
+    "public.affiliate_documents": {
+      "count": 5496,
+      "hash": "de2b55337d9f69e9667ecd722065826b"
+    },
+    "public.private_assets": {
+      "count": 20366,
+      "hash": "a484d9c05774ac52067519a44bc874f7"
+    },
+    "public.request_documents": {
+      "count": 3336,
+      "hash": "52f17394087ddc3ebb6d1e52227a11d6"
+    },
+    "public.program_requests": {
+      "count": 583,
+      "hash": "87dd3fac788c1fba8217066b0546bfc5"
+    },
+    "document_lab_integrity.assets": {
+      "count": 33,
+      "hash": "6647dc538178a2646b128af1510849cd"
+    }
+  },
+  "productionTestRequests": 0
+}

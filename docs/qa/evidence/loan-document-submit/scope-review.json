@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "review": "Source and evidence inspection; no independent subagent used",
+  "changedEdgeSources": [
+    "financial-legacy/index.ts",
+    "financial-legacy/loan-document-verification.mjs"
+  ],
+  "sharedSourcesUnchanged": 10,
+  "sqlFunctionsChanged": 2,
+  "tests": 5,
+  "authorization": {
+    "loanFix": "AUTHORIZED",
+    "existingPrivateAssetCeiling": "PENDING_AUTOMATIC_APPROVAL_REJECTION"
+  },
+  "invariants": {
+    "noFinancialFormulaChange": true,
+    "noGoogleCodeChange": true,
+    "noFrontendChange": true,
+    "actorAndEffectiveAffiliatePreserved": true,
+    "newUploadPolicyPreserved": true,
+    "originalByteHashAndLengthRequired": true
+  },
+  "production": {
+    "originalFixApplied": true,
+    "compatibilityEdgeDeployed": false,
+    "sharedSizeChangeApplied": false
+  }
+}

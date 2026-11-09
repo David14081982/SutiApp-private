@@ -1,0 +1,109 @@
+{
+  "status": "PASS",
+  "groups": [
+    {
+      "test": 1,
+      "status": "PASS",
+      "name": "Historical documents: reproduce failure then complete real loan writer",
+      "documents": 5,
+      "elapsedMs": 521,
+      "requestCreatedOnlyInRolledBackLocalTransaction": true
+    },
+    {
+      "test": 2,
+      "status": "PASS",
+      "name": "Verified document reuse and retry do not duplicate request or attachments"
+    },
+    {
+      "test": 3,
+      "status": "PASS",
+      "name": "Cross-user, invalid session and authenticated completion denied"
+    },
+    {
+      "test": 4,
+      "status": "PASS",
+      "name": "Missing/altered bytes, disabled source and concurrent quarantine rejected; no partial enrollment"
+    },
+    {
+      "test": 5,
+      "status": "PASS",
+      "name": "Exact rollback/reapply, idempotent install, unchanged ACL/owners and unrelated functions"
+    }
+  ],
+  "migrationSha256": "2ca54baada5fccf76c769b7f515a82f91311104d99bc061e022807bd370a98dd",
+  "sizeMigrationSha256": "2ba284ac3648bbb23a9116a95fd419df7f678727d21eea1baf8fbe6d424641bd",
+  "sourceHashes": {
+    "integration": "a6f9fccf7b8b5c13ee9edb84dcd93726084726bb8f90d4d591a6e3d2b6dd24b3",
+    "verifier": "7336c34b7e2289b27bf15eececcb1c59ddf9e0dae666ed7552907396a00c2d90",
+    "loanAdapter": "d99156a54a1268d9a0ac248e853c10986891585ec998048951d15add7887a896"
+  },
+  "timings": [
+    {
+      "name": "prepare_document_submission",
+      "ms": 31.61
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 3.75
+    },
+    {
+      "name": "complete_document_financial_submission",
+      "ms": 212.62
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 11.88
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 5.21
+    },
+    {
+      "name": "complete_document_financial_submission",
+      "ms": 29.96
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 11.42
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 4.03
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 12.66
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 5.99
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 5.54
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 7.21
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 14.43
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 5.77
+    },
+    {
+      "name": "prepare_document_submission",
+      "ms": 3.33
+    }
+  ],
+  "limitations": [
+    "Local timings exclude real network and Storage latency",
+    "Transport and historical originals simulated; PostgreSQL functions, roles, financial writer and byte verifier are real",
+    "Existing-original contract verifies identity/hash/length, not retroactive codec validity",
+    "No production test request or Google call"
+  ],
+  "productionWrites": 0
+}

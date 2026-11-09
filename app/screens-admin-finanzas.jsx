@@ -228,7 +228,7 @@
     const epoch = window.PrivateResourceDemand.useContext();
     const documents = [];
     [['request', detail && detail.request_documents || []], ['affiliate', detail && detail.current_affiliate_documents || []]].forEach(([scope, rows]) => rows.forEach((row) => documents.push({
-      id: row.affiliate_document_id || row.id, key: scope + ':' + row.id,
+      id: window.DocumentIntegration&&window.DocumentIntegration.enabled()&&scope==='request'?row.id:row.affiliate_document_id||row.id, source:scope==='request'?'REQUEST':'EXPEDIENTE', key: scope + ':' + row.id,
       mime: String(row.mimeType || '').toLowerCase(), version: row.updated_at || row.created_at || '',
       title: row.document_type && row.document_type.label || 'Documento'
     })));
@@ -293,7 +293,7 @@
               if (!valid()) break;
               const started = Date.now();
               const preview = await bounded((done, fail) => {
-                window.DocumentWorkflowRepository.adminPreview(entry.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST').then(done, fail);
+                (window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentWorkflowRepository.historicalPreview(entry.id,entry.source,'ADMIN'):window.DocumentWorkflowRepository.adminPreview(entry.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST')).then(done, fail);
               }, 25000, false);
               const expiresAt = started + Math.min(300, Number(preview.expiresIn) || 300) * 1000;
               if (!preview.signedUrl || expiresAt <= Date.now()) throw new Error('PREVIEW_EXPIRED');
@@ -590,7 +590,7 @@
  setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'success' })); setActionNote(''); setQuoteAmount(''); if (advance && nextId !== currentId) setSelectedId(nextId);
       } catch (actionError) { setFeedback({ tone: 'error', text: humanActionError(actionError) }); if (action === 'approveLoan') setResolution(approvalRecovery(actionError)); setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'error' })); } finally { actionLock.current = false; setBusy(false); }
     };
-    const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && app.admin.has('documents.read'), setViewer);
+    const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && (app.admin.has('documents.read') || window.DocumentIntegration&&window.DocumentIntegration.enabled()&&app.admin.has('program_requests.read')), setViewer);
     const closeDetail = () => { if (busy || confirmation) return; setViewer(null); setDetailOpen(false); };
     const deleteRequest = async () => {
       if (!detail || busy || !app.admin.has('program_requests.write')) return;

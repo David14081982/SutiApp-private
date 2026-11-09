@@ -81,12 +81,15 @@
 
   async function rpc(name, values) {
     const writing = !/^(get_|preview_)/.test(name);
-    if (writing) invalidateSelf(true);
+    const localDocumentSubmit=name==='submit_self_savings_request'&&window.DocumentIntegration&&window.DocumentIntegration.enabled();
+    // Keep the local pending/result form mounted. It refreshes on dismissal;
+    // identity changes still invalidate and notify immediately.
+    if (writing) invalidateSelf(!localDocumentSubmit);
     try {
-      const result = await db().rpc(name, values || {});
+      const result = await (name==='submit_self_savings_request'&&window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentIntegration.submission:db().rpc.bind(db()))(name, values || {});
       if (result.error) throw result.error;
       return result.data;
-    } finally { if (writing) invalidateSelf(true); }
+    } finally { if (writing) invalidateSelf(!localDocumentSubmit); }
   }
 
   async function submitJoin(input) {

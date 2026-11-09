@@ -77,7 +77,7 @@ fs.copyFileSync(path.join(root, 'SutiApp.html'), path.join(output, 'index.html')
 fs.writeFileSync(path.join(output, '.nojekyll'), '');
 fs.writeFileSync(
   path.join(output, 'app', 'supabase-config.js'),
-  `window.__SUTIAPP_CONFIG__ = Object.freeze({ supabase: Object.freeze({ url: ${JSON.stringify(url)}, publishableKey: ${JSON.stringify(publishableKey)} }) });\n`,
+  `window.__SUTIAPP_CONFIG__ = Object.freeze({ documentIntegration: 'DOCUMENT_V1', supabase: Object.freeze({ url: ${JSON.stringify(url)}, publishableKey: ${JSON.stringify(publishableKey)} }) });\n`,
   'utf8',
 );
 

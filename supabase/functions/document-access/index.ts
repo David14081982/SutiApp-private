@@ -66,6 +66,18 @@ Deno.serve(async (req) => {
   const auth = req.headers.get("authorization") || "";
   if (!auth.startsWith("Bearer ")) return reply(401, { error: "AUTH_REQUIRED" }, origin);
   const body = await req.json().catch(() => null);
+  // Prepared integration: activation is restricted to the isolated loopback runtime.
+  if (['LOCAL_ONLY','PRODUCTION_V1'].includes(Deno.env.get('DOCUMENT_PHASE4')||'') && body?.source) {
+    const url = Deno.env.get('SUPABASE_URL') || '';
+    if (!(Deno.env.get('DOCUMENT_PHASE4')==='PRODUCTION_V1'&&/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url))&&!/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(url)) return reply(503, { error: 'LOCAL_INTEGRATION_ONLY' }, origin);
+    const user = createClient(url,Deno.env.get('SUPABASE_ANON_KEY')||'',{global:{headers:{Authorization:auth}},auth:{persistSession:false}});
+    const identity = await user.auth.getUser(auth.slice(7));
+    if (identity.error || !identity.data.user) return reply(401,{error:'AUTH_INVALID'},origin);
+    const service = createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')||'',{auth:{persistSession:false}});
+    const [{documentAccess},{candidateDocumentVerifier}]=await Promise.all([import('../_shared/document-integration.mjs'),import('../_shared/document-verifier-runtime.ts')]);
+    const result = await documentAccess(body,user,service,await candidateDocumentVerifier());
+    return reply(result.status,result.body,origin);
+  }
   if (!validPayload(body)) return reply(400, { error: "INVALID_DOCUMENT_PREVIEW_REQUEST" }, origin);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";

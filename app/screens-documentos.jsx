@@ -95,10 +95,11 @@
         const code=e&&(e.code||e.message);
         setError(type.label+': '+(code==='DOCUMENT_OBJECT_MISSING'
           ?'este documento ya no está disponible. Puedes cargarlo nuevamente.'
-          :'no fue posible autorizar la vista. Intenta nuevamente.'));
+          :'no fue posible abrir el documento. Intenta nuevamente.'));
         await onChanged();
       }finally{setBusy(null);}
     };
+    const retire=async(doc,type)=>{if(!window.confirm('¿Retirar '+type.label+' del expediente? Las solicitudes anteriores conservarán su documento.'))return;setBusy({id:type.id,phase:'retiring'});setError('');try{await window.DocumentWorkflowRepository.withdraw(doc.id,crypto.randomUUID(),'Retiro solicitado desde el expediente');await onChanged();}catch(e){setError(type.label+': no se pudo retirar el documento. Intenta nuevamente.');}finally{setBusy(null);}};
     const hiddenInput=h('input',{ref:input,type:'file',style:{display:'none'},onChange:upload,'aria-hidden':'true',tabIndex:-1});
     const alert=error&&h('div',{role:'alert',style:{fontSize: 'var(--text-12, 12px)',fontWeight:700,color:'#A32921',marginBottom:9}},error);
     const originType=origin&&origin.type,originCapabilities=sourceCapabilities(originType);
@@ -110,7 +111,7 @@
       h('video',{ref:cameraVideo,'data-document-live-camera':'true',playsInline:true,muted:true,style:{display:cameraError?'none':'block',width:'100%',maxHeight:'52vh',objectFit:'cover',borderRadius:15,background:'#111'}}),
       cameraError&&h('div',{role:'alert',style:{padding:13,borderRadius:12,background:'#FCE9EE',color:'#A00027',fontSize: 'var(--text-12, 12px)',fontWeight:750}},cameraError),
       h('div',{style:{display:'flex',gap:9,marginTop:12}},h('button',{type:'button',onClick:()=>setCamera(null),style:{flex:1,minHeight:48,border:'1px solid var(--hairline-strong)',borderRadius:13,background:'#fff',fontWeight:800}},'Cancelar'),h('button',{type:'button',disabled:!!cameraError,onClick:captureCamera,style:{flex:1,minHeight:48,border:0,borderRadius:13,background:'var(--guinda)',color:'#fff',fontWeight:850}},'Capturar foto'))));
-    const phaseLabel=(type)=>{if(!busy||busy.id!==type.id)return'';return busy.phase==='preparing'?'Preparando imagen…':busy.phase==='authorizing'?'Autorizando vista…':busy.phase==='registering'?'Registrando…':'Subiendo…';};
+    const phaseLabel=(type)=>{if(!busy||busy.id!==type.id)return'';return busy.phase==='preparing'?'Preparando imagen…':busy.phase==='authorizing'?'Abriendo…':busy.phase==='verifying'?'Verificando archivo…':busy.phase==='retiring'?'Retirando…':busy.phase==='registering'?'Registrando…':'Subiendo…';};
     const actionButton=(label,icon,onClick,disabled,kind)=>h('button',{type:'button',disabled,onClick,'data-document-action':kind,style:{height:36,border:'1px solid var(--hairline-strong)',borderRadius:10,background:'#fff',color:'var(--guinda)',fontSize: 'var(--text-11-5, 11.5px)',fontWeight:800,padding:'0 10px',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:5,flex:'1 1 auto'}},h(I,{name:icon,size:14,stroke:2}),label);
 
     if(variant==='tiles'){
@@ -133,7 +134,7 @@
               verified&&available&&h('span',{className:'mr-doc-ok','aria-label':state.label},h(I,{name:'checkCircle',size:15,stroke:2.3}))),
             preview&&h('button',{type:'button',className:'mr-doc-view','aria-label':'Ver '+type.label,onClick:()=>open(doc,type)},h(I,{name:'eye',size:16,stroke:2})),
             preview&&canUpload&&h('button',{type:'button',className:'mr-doc-replace','aria-label':'Reemplazar '+type.label,onClick:()=>setOrigin({type,replacing:true})},h(I,{name:'camera',size:13,stroke:2}),'Reemplazar'),
-            accepted&&available&&h('span',{className:'mr-doc-status'},state.label),
+            accepted&&available&&h('span',{className:'mr-doc-status'},state.label),doc&&editable&&window.DocumentIntegration&&window.DocumentIntegration.enabled()&&h('button',{type:'button','data-document-action':'retire','aria-label':'Retirar '+type.label,disabled:isBusy,onClick:()=>retire(doc,type),style:{position:'relative',width:'100%',minHeight:32,border:0,background:'#fff',color:'var(--guinda)',fontWeight:750}},'Retirar'),
             doc&&doc.review_observation&&h('p',{className:'mr-doc-observation'},doc.review_observation));
         })),originSheet,cameraSheet,viewer&&viewer.context===resourceContext&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
     }
@@ -151,7 +152,7 @@
               h('div',{style:{display:'flex',alignItems:'center',gap:5,fontSize: 'var(--text-11-8, 11.8px)',fontWeight:700,color:state.fg,marginTop:2}},h(I,{name:isBusy?'clock':state.icon,size:13,stroke:2.1}),isBusy?phaseLabel(type):state.label),
               doc&&doc.review_observation&&h('div',{style:{fontSize: 'var(--text-11, 11px)',color:'#9B2743',marginTop:3}},doc.review_observation)),
             canView&&h('button',{type:'button','aria-label':'Ver '+type.label,disabled:isBusy,onClick:()=>open(doc,type),style:{width:38,height:38,borderRadius:11,border:'1px solid var(--hairline-strong)',background:'#fff',display:'grid',placeItems:'center',color:'var(--ink-3)'}},h(I,{name:'eye',size:18,stroke:2}))),
-          canUpload&&h('div',{style:{display:'flex',gap:7,marginTop:10,flexWrap:'wrap'}},actionButton(doc?'Reemplazar':'Adjuntar','upload',()=>setOrigin({type,replacing:!!doc}),isBusy,doc?'replace':'upload')));
+          canUpload&&h('div',{style:{display:'flex',gap:7,marginTop:10,flexWrap:'wrap'}},actionButton(doc?'Reemplazar':'Adjuntar','upload',()=>setOrigin({type,replacing:!!doc}),isBusy,doc?'replace':'upload'),doc&&editable&&window.DocumentIntegration&&window.DocumentIntegration.enabled()&&actionButton('Retirar','trash',()=>retire(doc,type),isBusy,'retire')));
       })),originSheet,cameraSheet,viewer&&viewer.context===resourceContext&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
   }
 
@@ -211,5 +212,32 @@
   window.DocumentRequirementList=DocumentRequirementList;
   window.UnifiedDocumentPhase=UnifiedDocumentPhase;
   window.DocumentRequestGate=DocumentRequestGate;
+
+  function DocumentEvidencePanel({contextId,source='REQUEST',mode='SELF_SERVICE',rows:provided}){
+    const [rows,setRows]=useState(provided||null),[error,setError]=useState(''),[viewer,setViewer]=useState(null),[busy,setBusy]=useState(null);
+    const identity=window.PrivateResourceDemand.useContext();
+    useEffect(()=>{let alive=true;setViewer(null);setError('');setRows(provided||null);if(!provided)window.DocumentIntegration.evidence(contextId,source,mode).then(r=>{if(alive)setRows(r);}).catch(()=>{if(alive)setError('No fue posible consultar la evidencia documental.');});return()=>{alive=false;};},[contextId,source,mode,identity,provided]);
+    const open=async row=>{const before=window.PrivateResourceDemand.context();setBusy(row.id);setError('');try{const result=await window.DocumentWorkflowRepository.historicalPreview(row.id,source,mode);if(before===window.PrivateResourceDemand.context())setViewer({source:result.signedUrl,mimeType:result.mimeType||row.mimeType,title:row.document_type?.label||'Documento',context:before});}catch(_){if(before===window.PrivateResourceDemand.context())setError('No fue posible abrir el archivo original. Reintenta.');}finally{setBusy(null);}};
+    return h('section',{'data-document-evidence':source,style:{marginTop:18}},h(window.SectionHead,{title:'Documentos de la solicitud',icon:'folder'}),error&&h('p',{role:'alert'},error),!rows&&!error&&h('p',{role:'status'},'Cargando documentos…'),rows&&rows.length===0&&h('p',null,'Sin documentos asociados.'),(rows||[]).map(row=>h('button',{key:row.id,type:'button','data-association-id':row.id,onClick:()=>open(row),disabled:busy===row.id,style:{display:'flex',gap:10,alignItems:'center',width:'100%',padding:14,border:'1px solid var(--hairline)',borderRadius:12,background:'var(--surface)',color:'var(--ink)',marginBottom:8}},h(I,{name:row.mimeType==='application/pdf'?'doc':'image',size:20}),row.document_type?.label||'Documento',busy===row.id?' · Abriendo…':'')),viewer&&viewer.context===identity&&h(window.DocumentViewer,{...viewer,onClose:()=>setViewer(null)}));
+  }
+
+  function DocumentSupportSelector({value,onChange,disabled}){
+    const identity=window.PrivateResourceDemand.useContext(),[state,setState]=useState({phase:'loading',rows:[]});
+    useEffect(()=>{let alive=true;setState({phase:'loading',rows:[]});Promise.all([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE'),window.DocumentWorkflowRepository.catalog()]).then(([rows,types])=>{if(alive)setState({phase:'ready',rows:rows.filter(d=>ACCEPTED.has(d.status)&&physicalAvailable(d)).map(d=>({...d,label:types.find(t=>t.id===d.document_type_id)?.label||'Documento'}))});}).catch(()=>{if(alive)setState({phase:'error',rows:[]});});return()=>{alive=false;};},[identity]);
+    return h('label',{style:{display:'grid',gap:8,margin:'12px 0'}},'Documento de soporte (opcional)',state.phase==='error'?h('span',{role:'alert'},'No fue posible consultar los documentos de tu expediente.'):h('select',{'aria-label':'Documento de soporte',value:value||'',disabled:disabled||state.phase!=='ready',onChange:e=>onChange(e.target.value||null)},h('option',{value:''},state.phase==='loading'?'Cargando…':'Sin documento de soporte'),state.rows.map(d=>h('option',{key:d.id,value:d.id},d.label))));
+  }
+  window.DocumentSupportSelector=DocumentSupportSelector;
+
+
+  function ArchivedDocumentEvidence({mode='SELF_SERVICE'}){
+    const identity=window.PrivateResourceDemand.useContext(),[rows,setRows]=useState(null),[error,setError]=useState(''),[selected,setSelected]=useState(null);
+    useEffect(()=>{let alive=true;setSelected(null);setRows(null);setError('');window.SutiSupabase.getClient().rpc('list_archived_document_contexts',{p_mode:mode}).then(r=>{if(!alive)return;if(r.error)setError('No fue posible consultar los documentos archivados.');else setRows(r.data||[]);});return()=>{alive=false;};},[identity,mode]);
+    if(!error&&(!rows||!rows.length))return null;
+    return h('section',{'data-archived-document-evidence':'',style:{marginTop:18}},h(window.SectionHead,{title:'Solicitudes archivadas',icon:'folder'}),error&&h('p',{role:'alert'},error),(rows||[]).map(row=>h('div',{key:row.id},h('button',{type:'button',onClick:()=>setSelected(selected===row.id?null:row.id),style:{padding:12,width:'100%',borderRadius:12,background:'var(--surface)',border:'1px solid var(--hairline)',color:'var(--ink)',textAlign:'left'}},row.label),selected===row.id&&h(DocumentEvidencePanel,{contextId:row.id,source:row.source,mode}),selected===row.id&&(mode==='ADMIN'||row.source==='SAVINGS')&&h(window.GeneratedDocuments,{domain:row.source==='SAVINGS'?'savings':'program',operationId:row.id,admin:mode==='ADMIN'}))));
+  }
+  window.ArchivedDocumentEvidence=ArchivedDocumentEvidence;
+
+  window.DocumentEvidencePanel=DocumentEvidencePanel;
+
   window.DocumentosScreen=DocumentosScreen;
 })();

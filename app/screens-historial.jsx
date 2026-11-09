@@ -43,6 +43,7 @@
     return React.createElement('div', { className: 'su-route', style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'historial' }),
       React.createElement(window.RequestAuthorizationNotice, { app, requests: operations.all() }),
+      window.DocumentIntegration&&window.DocumentIntegration.enabled()&&React.createElement(window.ArchivedDocumentEvidence),
       React.createElement(window.FarmaHistory,{app}),
       // active tracker hero
       activa && React.createElement('div', { style: { padding: '4px 16px 0' } },
@@ -114,6 +115,7 @@
             React.createElement('div', null, React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600 } }, 'Plazo'), React.createElement('div', { style: { fontSize: 'var(--text-18, 18px)', fontWeight: 800, marginTop: 2 } }, s.plazo)),
             React.createElement('div', null, React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600 } }, 'Fecha'), React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, marginTop: 4 } }, s.fecha)))),
         s.rental&&React.createElement(window.RentaCarSummary,{snapshot:{rental:s.rental,product:{name:s.tipo}},showApplicant:false}),
+        window.DocumentIntegration&&window.DocumentIntegration.enabled()&&React.createElement(window.DocumentEvidencePanel,{contextId:requestId}),
         // rejection reason
         s.motivo && React.createElement('div', { style: { marginTop: 16, background: '#FDEAEA', border: '1px solid #F6CBC6', borderRadius: 16, padding: 16, display: 'flex', gap: 11 } },
           React.createElement(I, { name: 'info', size: 20, stroke: 2, style: { color: '#C0341D', flexShrink: 0, marginTop: 1 } }),

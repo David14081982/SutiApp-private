@@ -8,6 +8,14 @@ import { projectLoanCapacity, applyLoanCapacity, publicLoanCapacityError } from 
 // contracts are enforced by migrations/RLS/RPCs and validated again at this boundary.
 type SupabaseClientLike = any;
 
+// Phase 4 changes only the document handoff. Default deployed behavior is unchanged.
+async function documentFinancialRpc(userClient:SupabaseClientLike,privileged:SupabaseClientLike,name:string,args:Record<string,unknown>){
+ const local=Deno.env.get('DOCUMENT_PHASE4')==='PRODUCTION_V1'||Deno.env.get('DOCUMENT_PHASE4')==='LOCAL_ONLY'&&/^http:\/\/(localhost|127\.0\.0\.1):\d+$/.test(Deno.env.get('SUPABASE_URL')||'');
+ if(!local)return privileged.rpc(name,args);
+ const [{verifiedFinancialDocumentRpc},{candidateDocumentVerifier}]=await Promise.all([import('../_shared/document-integration.mjs'),import('../_shared/document-verifier-runtime.ts')]);
+ return verifiedFinancialDocumentRpc(userClient,privileged,name,args,await candidateDocumentVerifier());
+}
+
 const JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
 const ACTION_KEYS: Record<string, Set<string>> = {
   loanSessionOpen: new Set(["action"]),
@@ -822,7 +830,7 @@ async function confirmProgramPaymentSession(
     const code = error instanceof Error ? error.message : "CONDITIONS_CHANGED";
     return { status: 409, body: { error: code === "DOWN_PAYMENT_OUT_OF_RANGE" ? code : "CONDITIONS_CHANGED", correlation_id: correlationId } };
   }
-  const { data: request, error } = await privileged.rpc("confirm_program_product_financing", { p_submission: {
+  const { data: request, error } = await documentFinancialRpc(userClient,privileged,"confirm_program_product_financing", { p_submission: {
     p_actor_real_auth_user_id: context.actorId, p_affiliate_id: context.affiliateId,
     p_impersonation_session_id: context.impersonationSessionId, p_program_item_id: body.program_item_id,
     p_notes: body.notes, p_signature_data: body.signature_data, p_terms_version_id: body.terms_version_id,
@@ -935,7 +943,7 @@ async function confirmPersonalizedLoanSession(
       notification_phone: String(body.notification_phone || "").replace(/\D/g, ""),
     },
   };
-  const { data: request, error } = await privileged.rpc("create_validated_financial_program_request", {
+  const { data: request, error } = await documentFinancialRpc(userClient,privileged,"create_validated_financial_program_request", {
     p_actor_real_auth_user_id: context.actorId, p_affiliate_id: context.affiliateId,
     p_impersonation_session_id: context.impersonationSessionId,
     p_program_item_id: body.program_item_id, p_notes: body.notes, p_signature_data: body.signature_data,

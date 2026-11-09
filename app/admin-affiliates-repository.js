@@ -27,9 +27,10 @@
       const prior=new Map((data.documents||[]).map((row)=>[row.id,row]));
       const versions=new Map();
       canonical.slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at))).forEach((row)=>{const next=(versions.get(row.document_type_id)||0)+1;versions.set(row.document_type_id,next);versions.set(row.id,next);});
+      let ordinals=null;if(window.DocumentIntegration&&window.DocumentIntegration.enabled()){const result=await db().rpc('list_document_version_ordinals',{p_affiliate:id});if(result.error)throw result.error;ordinals=new Map((result.data||[]).map(r=>[r.document_id,Number(r.version)]));}
       data.documents=canonical.map((row)=>Object.freeze(Object.assign({},prior.get(row.id)||{},row,{
         type_id:row.document_type_id,type_code:row.document_type.code,type_label:row.document_type.label,
-        type_description:row.document_type.description,mime_type:row.mimeType,version:versions.get(row.id)||1
+        type_description:row.document_type.description,mime_type:row.mimeType,version:ordinals?ordinals.get(row.id):versions.get(row.id)||1
       })));
     }
     return Object.freeze(data);
@@ -58,6 +59,7 @@
     const accepted=Array.isArray(type.accepted_mime_types)?type.accepted_mime_types:[];
     const limit=Math.min(MAX_DOCUMENT_SIZE,Number(type.max_file_size_bytes)||MAX_DOCUMENT_SIZE);
     if(file.size<1||file.size>limit||!accepted.includes(file.type))throw new Error('INVALID_DOCUMENT_FILE');
+    if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.upload(type,file,{mode:'ADMIN',affiliateId,reason:reason||''});
     const digest=hex(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()));
     const path='affiliate-documents/'+affiliateId+'/'+crypto.randomUUID()+extension(file);
     const stored=await db().storage.from('private-assets').upload(path,file,{contentType:file.type,upsert:false});if(stored.error)throw stored.error;
@@ -75,7 +77,7 @@
     if(result.error)throw result.error;if(!result.data)throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }
   async function deleteDocument(body){
-    requirePermission('affiliates.read');const result=await db().functions.invoke('affiliate-document-delete',{body});
+    requirePermission('affiliates.read');if(window.DocumentIntegration&&window.DocumentIntegration.enabled()&&body.action==='DELETE')return window.DocumentIntegration.withdraw(body.document_id,body.operation_id,body.reason);const result=await db().functions.invoke('affiliate-document-delete',{body});
     if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
     if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }

@@ -1,3 +1,49 @@
+/* @@file document-integration.js */
+(function(){
+﻿/* Documentary operations over the existing authenticated Supabase authority. */
+(function(){
+ 'use strict';
+ const db=()=>window.SutiSupabase.getClient(),pending=new Map();let previous='';
+ function enabled(){const c=window.__SUTIAPP_CONFIG__||{};let host='';try{host=new URL(c.supabase&&c.supabase.url).hostname;}catch(_){}return c.documentIntegration==='DOCUMENT_V1'&&/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(c.supabase.url)||c.documentIntegration==='LOCAL_PHASE4'&&['localhost','127.0.0.1'].includes(location.hostname)&&['localhost','127.0.0.1'].includes(host);}
+ function context(){const c=window.PrivateResourceDemand.context();if(c!==previous){pending.clear();previous=c;}return c;}
+ function checked(before){if(context()!==before)throw Error('DOCUMENT_CONTEXT_CHANGED');}
+ async function invoke(name,body){const before=context(),r=await db().functions.invoke(name,{body});checked(before);if(r.error){let code=r.data&&r.data.error;try{code=code||(await r.error.context.clone().json()).error;}catch(_){}throw Object.assign(Error(code||'DOCUMENT_OPERATION_UNAVAILABLE'),{code:code||'DOCUMENT_OPERATION_UNAVAILABLE'});}return r.data;}
+ async function rpc(name,args){const before=context(),r=await db().rpc(name,args);checked(before);if(r.error)throw r.error;return r.data;}
+ async function recoveryKey(parts){
+  const auth=window.AffiliateAuth.getState(),session=auth.session||{};let claims;
+  try{claims=JSON.parse(atob(session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));}catch(_){throw Error('DOCUMENT_SESSION_UNAVAILABLE');}
+  if(!claims.session_id||!session.user?.id)throw Error('DOCUMENT_SESSION_UNAVAILABLE');
+  const text=JSON.stringify([session.user.id,claims.session_id,auth.affiliate?.id||'',auth.impersonation||auth.affiliate?._impersonation||null,...parts]);
+  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+  return 'suti.document.operation.v1.'+Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
+ }
+ function access(source,id,mode){return window.PrivateResourceDemand.run(JSON.stringify(['document-association',source,id,mode]),()=>invoke('document-access',{source,association_id:id,mode:mode||'SELF_SERVICE'}));}
+ async function upload(type,file,options){
+  const o=options||{},before=context(),progress=o.onProgress||(()=>{}),mode=o.mode||'SELF_SERVICE';
+  const sha=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()))).map(x=>x.toString(16).padStart(2,'0')).join('');checked(before);
+  const key=await recoveryKey([mode,o.affiliateId||null,type.id,sha,file.size,String(o.source||'FILE').toUpperCase(),o.reason||'']);checked(before);
+  let job=pending.get(key);
+  if(!job){const saved=sessionStorage.getItem(key);if(saved){try{const value=JSON.parse(saved);if(/^[0-9a-f-]{36}$/i.test(value.id)&&(!value.expected||/^[0-9a-f-]{36}$/i.test(value.expected)))job=value;}catch(_){}if(!job)sessionStorage.removeItem(key);}}
+  try{
+  if(!job){const current=await rpc('document_upload_context',{p_mode:mode,p_affiliate:o.affiliateId||null,p_type:type.id});checked(before);job={id:crypto.randomUUID(),expected:current.document_id||null};pending.set(key,job);sessionStorage.setItem(key,JSON.stringify(job));}
+  progress('preparing');const prepared=await invoke('document-operation',{action:'PREPARE',operation_id:job.id,mode,affiliate_id:o.affiliateId||null,document_type_id:type.id,mime:file.type,size:file.size,sha256:sha,expected_document_id:job.expected,source:String(o.source||'FILE').toUpperCase(),reason:o.reason||''});
+  if(prepared.state!=='COMPLETE'){
+   progress('uploading');const result=await db().storage.from(prepared.bucket).upload(prepared.path,file,{contentType:file.type,upsert:false});checked(before);
+   // Duplicate at the exact operation path is verified server-side; never overwrite or remove it.
+   if(result.error&&!['409','400'].includes(String(result.error.statusCode||result.error.status))&&!/already exists|duplicate/i.test(String(result.error.message||'')))throw result.error;
+  }
+  progress('verifying');const result=await invoke('document-operation',{action:'COMPLETE',operation_id:job.id});
+  if(result.status!=='COMPLETE'||!result.document||!result.document.id)throw Error('DOCUMENT_REGISTRATION_INCOMPLETE');
+  checked(before);pending.delete(key);sessionStorage.removeItem(key);progress('complete');return Object.freeze(result.document);
+  }catch(error){if(error.code==='DOCUMENT_VERSION_CONFLICT'){pending.delete(key);sessionStorage.removeItem(key);}throw error;}
+ }
+ async function submission(name,args){const key=JSON.stringify(['submission',context(),name,args]);let job=pending.get(key);if(!job){job={id:crypto.randomUUID()};pending.set(key,job);}try{const data=await invoke('document-operation',{action:'SUBMIT',operation_id:job.id,function_name:name,arguments:args});return{data,error:null};}catch(error){return{data:null,error};}}
+ function withdraw(id,operation,reason){return invoke('document-operation',{action:'WITHDRAW',document_id:id,operation_id:operation||crypto.randomUUID(),reason:reason||'Retiro del expediente'});}
+ function evidence(contextId,source,mode){return rpc('list_document_evidence',{p_context:contextId,p_source:source||'REQUEST',p_mode:mode||'SELF_SERVICE'});}
+ function generated(contextId,domain,mode){return rpc('list_generated_document_evidence',{p_context:contextId,p_domain:domain,p_mode:mode});}
+ window.DocumentIntegration=Object.freeze({enabled,access,upload,withdraw,evidence,submission,generated});
+})();
+})();
 /* @@file finance-blocks-repository.js */
 (function(){
 /* Administrative restrictions: Supabase is the only authority. No persistent cache. */
@@ -2916,6 +2962,1635 @@
   window.ReportsJcAdminModule = ReportsJcAdmin;
 })();
 })();
+/* @@file savings-refunds-repository.js */
+(function(){
+/* Canonical refund cases, with context-bound reads and idempotent commands. */
+(function(){
+ 'use strict';
+ function context(){
+  const auth=window.AffiliateAuth?.getState(),admin=window.AdminRepository?.getState();
+  if(auth?.phase!=='authenticated'||!auth.session?.user?.id)throw Error('AUTH_REQUIRED');
+  let session=auth.session.session_id||'';
+  if(!session&&auth.session.access_token){try{session=JSON.parse(atob(auth.session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).session_id||'';}catch(_){}}
+  return JSON.stringify([auth.session.user.id,session,auth.affiliate?.id,auth.impersonation,admin?.phase,admin?.subjectKey,admin?.assignment]);
+ }
+ async function rpc(name,args){const key=context(),{data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(context()!==key)throw Error('CONTEXT_CHANGED');if(error)throw error;return data;}
+ window.SavingsRefundsRepository=Object.freeze({
+  contextKey:context,
+  list:values=>rpc('get_admin_savings_refunds',{p_case_id:values?.case_id||null,p_folio:values?.folio||null}),
+  people:values=>rpc('get_admin_savings_refund_people',{p_search:values?.search||''}),
+  regularization:values=>rpc('get_admin_savings_regularization',{p_year:values?.year,p_folio:values?.folio||null}),
+  save:(command,key)=>{if(!key)throw Error('IDEMPOTENCY_KEY_REQUIRED');return rpc('save_admin_savings_refund',{p_command:command,p_client_action_id:key});},
+  saveTermination:(command,key)=>{if(!key)throw Error('IDEMPOTENCY_KEY_REQUIRED');return rpc('save_admin_savings_termination',{p_command:command,p_client_action_id:key});}
+ });
+})();
+})();
+/* @@file savings-refunds-admin.jsx */
+(function(){
+/* Refund records belong to Caja de Ahorro. Recording a payment never executes a bank transfer. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React;
+  const money = n => new Intl.NumberFormat('es-MX', {
+    style: 'currency',
+    currency: 'MXN'
+  }).format(Number(n || 0));
+  const labels = {
+    DRAFT: 'En captura',
+    SUBMITTED: 'Por autorizar',
+    APPROVED: 'Autorizado',
+    PARTIAL: 'Pago parcial',
+    PAID: 'Reembolsado',
+    REJECTED: 'Rechazado',
+    CANCELLED: 'Cancelado'
+  };
+  const causes = {
+    POST_TERMINATION: 'Descuento posterior a la baja · nómina enviada previamente',
+    DUPLICATE_DISCOUNT: 'Descuento duplicado',
+    OTHER: 'Otro motivo documentado'
+  };
+  const treatments = {
+    NOT_CREDITED: 'El exceso no se acreditó al ahorro',
+    ALREADY_EXCLUDED: 'El exceso ya está excluido del ahorro',
+    EXISTING_ADJUSTMENT: 'Existe una corrección vinculada'
+  };
+  const css = '.srf{color:var(--ink);min-width:0}.srf-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:12px 0}.srf button{font:inherit;cursor:pointer}.srf-btn{border:1px solid var(--hairline);border-radius:10px;padding:10px 14px;background:var(--surface);color:var(--ink);font-weight:800}.srf-btn.primary{background:var(--guinda,#861e45);color:white}.srf button:disabled{opacity:.5;cursor:default}.srf label{display:grid;gap:6px;font-size:12px;font-weight:800}.srf input,.srf select,.srf textarea{min-width:0;width:100%;box-sizing:border-box;border:1px solid var(--hairline-strong);border-radius:9px;padding:10px;background:var(--surface);color:var(--ink);font:inherit}.srf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.srf-card{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin:12px 0}.srf-note{font-size:13px;line-height:1.6;color:var(--ink-2)}.srf-error{background:#fff0ed;color:#9b241b;border-radius:10px;padding:12px}.srf-state{border-radius:30px;padding:5px 10px;background:var(--surface-2);font-size:12px;font-weight:800}.srf-table{overflow:auto}.srf table{border-collapse:collapse;width:100%;font-size:13px}.srf th,.srf td{text-align:left;padding:10px;border-bottom:1px solid var(--hairline);vertical-align:top}.srf-wide{grid-column:1/-1}.srf details{margin-top:12px}.srf fieldset{border:1px solid var(--hairline);border-radius:12px;margin:15px 0;padding:14px}.srf legend{font-weight:800}.srf h3{margin:4px 0 12px}';
+  const blank = () => ({
+    source_reference: '',
+    deduction_on: '',
+    sent_to_rh_on: '',
+    sent_to_rh_unknown_reason: '',
+    rh_unknown: false,
+    historical_payroll_code: '',
+    historical_payroll_reference: '',
+    expected_amount: '0',
+    actual_amount: '',
+    confirmed_on: '',
+    confirmation_reference: '',
+    balance_treatment: '',
+    balance_note: '',
+    adjustment_id: ''
+  });
+  const blankPayment = () => ({
+    amount: '',
+    paid_on: '',
+    bank_reference: '',
+    reason: ''
+  });
+  const cents = value => Math.round(Number(value || 0) * 100);
+  const effectivePayments = entry => (entry.payments || []).filter(p => !p.is_superseded);
+  const captured = value => value ? new Date(value).toLocaleString('es-MX', {
+    timeZone: 'America/Hermosillo'
+  }) : 'Sin fecha de captura disponible';
+  function explainHistorical(error) {
+    const messages = {
+      SAVINGS_REFUND_PAYROLL_EVIDENCE_REQUIRED: 'Falta documentar el tipo de nómina que correspondía a esa quincena histórica.',
+      SAVINGS_REFUND_PAYROLL_EVIDENCE_INVALID: 'Selecciona el tipo de nómina de la quincena y su referencia documental.',
+      SAVINGS_REFUND_PAYROLL_EVIDENCE_CONFLICT: 'El tipo de nómina indicado no coincide con la inscripción vigente en esa quincena. Revisa el antecedente.',
+      SAVINGS_REFUND_RH_DATE_REQUIRED: 'Registra la fecha de envío a RH o explica por qué no se conserva en este antecedente histórico.',
+      SAVINGS_REFUND_HISTORICAL_PAYMENTS_REQUIRED: 'Registra los pagos que acreditan la devolución histórica completa.',
+      SAVINGS_REFUND_EFFECTIVE_PAYMENT_REQUIRED: 'Este pago ya tiene una corrección. Actualiza el expediente y revisa el registro vigente.',
+      SAVINGS_REFUND_DISCOUNT_HISTORY_REQUIRED: 'Documenta el descuento real, su fecha y el respaldo del antecedente.'
+    };
+    return messages[error?.message] || explain(error);
+  }
+  function explain(error) {
+    const code = String(error?.message || '');
+    const meanings = {
+      CONTEXT_CHANGED: 'La sesión cambió. Consulta nuevamente.',
+      AUTH_REQUIRED: 'Vuelve a iniciar sesión.',
+      SAVINGS_REFUND_VERSION_CONFLICT: 'Otra persona actualizó el expediente. Actualiza la consulta antes de continuar.',
+      SAVINGS_REFUND_DISCOUNT_ALREADY_CLAIMED: 'Ese descuento ya está vinculado a otro expediente.',
+      SAVINGS_REFUND_DUPLICATE_DISCOUNT: 'La referencia del descuento está repetida.',
+      SAVINGS_REFUND_PAYMENT_ALREADY_RECORDED: 'Este comprobante ya tiene un pago registrado en el expediente.',
+      SAVINGS_REFUND_PAYMENT_EXCEEDED: 'El importe supera el saldo pendiente de devolución.',
+      SAVINGS_REFUND_FULL_EXCESS_REQUIRED: 'La autorizaci\u00f3n debe cubrir todo el exceso confirmado.',
+      SAVINGS_REFUND_EXCESS_EXCEEDED: 'El importe autorizado supera el exceso confirmado.',
+      SAVINGS_REFUND_CONFIRM_DISCOUNTS_FIRST: 'Confirma los descuentos efectivamente realizados antes de autorizar.',
+      SAVINGS_REFUND_DENIED: 'Tu cuenta no tiene permiso para esta acción.',
+      SAVINGS_REFUND_AMOUNT_INVALID: 'Revisa los importes; utiliza como máximo dos decimales.',
+      SAVINGS_REFUND_PAYMENT_DATE_INVALID: 'Revisa la fecha real de la devolución y las fechas de sus descuentos.',
+      SAVINGS_REFUND_DISCOUNT_DATE_INVALID: 'Revisa las fechas del descuento, envío a RH y confirmación.',
+      SAVINGS_REFUND_EXACT_IDENTITY_REQUIRED: 'Selecciona una cuenta de ahorro identificada por su número de control.',
+      SAVINGS_REFUND_ADJUSTMENT_INVALID: 'La corrección vinculada no corresponde a este ahorro o ya fue utilizada.',
+      SAVINGS_REFUND_STATE_INVALID: 'El estado actual del expediente no permite esta acción. Actualiza la consulta.',
+      SAVINGS_REFUND_PERIOD_INVALID: 'Selecciona un mes anterior para confirmar su histórico.'
+    };
+    return meanings[code] || 'No se pudo completar la operación. ' + code;
+  }
+  function Field({
+    label,
+    value,
+    onChange,
+    type = 'text',
+    required = false,
+    ...rest
+  }) {
+    return h('label', null, label, h('input', {
+      type,
+      value: value ?? '',
+      onChange: e => onChange(e.target.value),
+      required,
+      ...rest
+    }));
+  }
+  function RefundEditor({
+    entry,
+    historical = false,
+    today,
+    onSave,
+    onCancel,
+    busy,
+    onDirty
+  }) {
+    const [reason, setReason] = useState(entry?.reason || ''),
+      [cause, setCause] = useState(entry?.cause || 'POST_TERMINATION'),
+      [deductions, setDeductions] = useState(() => entry?.deductions?.length ? entry.deductions.map(d => ({
+        ...d,
+        actual_amount: d.actual_amount ?? '',
+        adjustment_id: d.adjustment_id || '',
+        confirmed_on: d.confirmed_on || '',
+        confirmation_reference: d.confirmation_reference || ''
+      })) : [blank()]);
+    const [search, setSearch] = useState(''),
+      [people, setPeople] = useState([]),
+      [person, setPerson] = useState(entry ? {
+        participant_id: entry.participant_id,
+        folio: entry.numero_control
+      } : null),
+      [searchBusy, setSearchBusy] = useState(false),
+      [error, setError] = useState(''),
+      [payments, setPayments] = useState(() => [blankPayment()]);
+    const sequence = useRef(0);
+    useEffect(() => () => {
+      sequence.current++;
+    }, []);
+    const change = (setter, val) => {
+      onDirty?.(true);
+      setter(val);
+    };
+    const edit = (i, key, val) => {
+      onDirty?.(true);
+      setDeductions(ds => ds.map((d, j) => i === j ? {
+        ...d,
+        [key]: val
+      } : d));
+    };
+    async function find() {
+      if (searchBusy || !search.trim()) return;
+      const seq = ++sequence.current;
+      setSearchBusy(true);
+      setError('');
+      try {
+        const result = await window.SavingsRefundsRepository.people({
+          search: search.trim()
+        });
+        if (seq === sequence.current) setPeople((result.rows || []).filter(p => p.participant_id && !p.identity_conflict && (historical || !p.is_archived)));
+      } catch (e) {
+        if (seq === sequence.current) setError(explain(e));
+      } finally {
+        if (seq === sequence.current) setSearchBusy(false);
+      }
+    }
+    function submit(e) {
+      e.preventDefault();
+      setError('');
+      if (!person?.participant_id) {
+        setError('Selecciona a la persona de su cuenta de ahorro.');
+        return;
+      }
+      const items = deductions.map(d => ({
+        source_reference: d.source_reference.trim(),
+        deduction_on: d.deduction_on,
+        sent_to_rh_on: historical && d.rh_unknown ? null : d.sent_to_rh_on,
+        ...(historical && d.rh_unknown ? {
+          sent_to_rh_unknown_reason: d.sent_to_rh_unknown_reason
+        } : {}),
+        ...(historical ? {
+          historical_payroll_code: Number(d.historical_payroll_code),
+          historical_payroll_reference: d.historical_payroll_reference
+        } : {}),
+        expected_amount: Number(d.expected_amount),
+        actual_amount: d.actual_amount === '' ? null : Number(d.actual_amount),
+        confirmed_on: d.actual_amount === '' ? null : d.confirmed_on,
+        confirmation_reference: d.actual_amount === '' ? null : d.confirmation_reference,
+        balance_treatment: d.balance_treatment,
+        balance_note: d.balance_note,
+        adjustment_id: d.adjustment_id || null
+      }));
+      const paid = payments.map(p => ({
+        ...p,
+        amount: Number(p.amount),
+        bank_reference: p.bank_reference.trim()
+      }));
+      if (historical && (items.some(d => d.actual_amount === null) || paid.reduce((n, p) => n + cents(p.amount), 0) !== items.reduce((n, d) => n + Math.max(0, cents(d.actual_amount) - cents(d.expected_amount)), 0))) {
+        setError('Las devoluciones registradas deben cubrir exactamente el exceso confirmado de todas las quincenas.');
+        return;
+      }
+      onSave({
+        kind: historical ? 'REGISTER_HISTORICAL' : entry ? 'SAVE' : 'CREATE',
+        ...(entry ? {
+          case_id: entry.id,
+          expected_version: entry.version
+        } : {}),
+        participant_id: person.participant_id,
+        reason,
+        cause,
+        deductions: items,
+        ...(historical ? {
+          payments: paid
+        } : {})
+      });
+    }
+    return h('form', {
+      className: 'srf-card',
+      onSubmit: submit
+    }, h('h3', null, historical ? 'Registrar reembolso histórico ya pagado' : entry ? 'Editar expediente' : 'Nuevo expediente de reembolso'), historical && h('p', {
+      className: 'srf-note'
+    }, 'Captura devoluciones que ya se realizaron, aunque sean de años anteriores. Las fechas reales se conservan; la validación y la captura se registran hoy. Esta acción no realiza una transferencia ni altera el saldo.'), !entry && h('div', {
+      className: 'srf-card'
+    }, h('div', {
+      className: 'srf-bar'
+    }, h(Field, {
+      label: 'Buscar por número de control o nombre',
+      value: search,
+      onChange: v => change(setSearch, v)
+    }), h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      disabled: searchBusy,
+      onClick: find
+    }, searchBusy ? 'Buscando…' : 'Buscar ahorrador')), people.map(p => h('button', {
+      type: 'button',
+      className: 'srf-btn',
+      key: p.participant_id,
+      onClick: () => {
+        change(setPerson, p);
+        setPeople([]);
+      }
+    }, (p.nombre || p.name || 'Ahorrador') + ' · ' + p.folio + (p.is_archived ? ' · Afiliado archivado' : '')))), person && h('p', {
+      className: 'srf-note'
+    }, 'Número de control: ' + (person.folio || person.numero_control)), person?.is_archived && h('p', {
+      className: 'srf-note'
+    }, 'El vínculo se usa para documentar su antecedente. No reactiva su afiliación ni su ahorro.'), h('div', {
+      className: 'srf-grid'
+    }, h('label', null, 'Motivo del caso', h('select', {
+      value: cause,
+      onChange: e => change(setCause, e.target.value)
+    }, Object.entries(causes).map(([v, l]) => h('option', {
+      key: v,
+      value: v
+    }, l)))), h('label', null, 'Justificación', h('textarea', {
+      required: true,
+      minLength: 8,
+      maxLength: 1000,
+      rows: 3,
+      value: reason,
+      onChange: e => change(setReason, e.target.value)
+    }))), deductions.map((d, i) => h('fieldset', {
+      key: i
+    }, h('legend', null, 'Descuento / quincena ' + (i + 1)), h('div', {
+      className: 'srf-grid'
+    }, h(Field, {
+      label: 'Referencia única del descuento o recibo',
+      value: d.source_reference,
+      onChange: v => edit(i, 'source_reference', v),
+      required: true,
+      maxLength: 180,
+      readOnly: Boolean(entry)
+    }), h(Field, {
+      label: 'Fecha del descuento / quincena',
+      type: 'date',
+      value: d.deduction_on,
+      onChange: v => edit(i, 'deduction_on', v),
+      required: true,
+      ...(historical ? {
+        max: today
+      } : {})
+    }), !d.rh_unknown && h(Field, {
+      label: 'Fecha en que se envió a RH',
+      type: 'date',
+      value: d.sent_to_rh_on,
+      onChange: v => edit(i, 'sent_to_rh_on', v),
+      required: true
+    }), historical && h('label', {
+      className: 'srf-note',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: Boolean(d.rh_unknown),
+      onChange: e => edit(i, 'rh_unknown', e.target.checked),
+      style: {
+        width: 'auto'
+      }
+    }), 'No se conserva la fecha del envío histórico a RH'), historical && d.rh_unknown && h(Field, {
+      label: 'Explicación de la fecha de envío a RH desconocida',
+      value: d.sent_to_rh_unknown_reason,
+      onChange: v => edit(i, 'sent_to_rh_unknown_reason', v),
+      required: true,
+      minLength: 3,
+      maxLength: 1000
+    }), historical && h('label', null, 'Tipo de nómina de esta quincena', h('select', {
+      required: true,
+      value: d.historical_payroll_code,
+      onChange: e => edit(i, 'historical_payroll_code', e.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Selecciona el tipo documentado'), h('option', {
+      value: '573'
+    }, 'Personal activo · 573'), h('option', {
+      value: '580'
+    }, 'Jubilados y pensionados · 580'))), historical && h(Field, {
+      label: 'Referencia que acredita el tipo de nómina',
+      value: d.historical_payroll_reference,
+      onChange: v => edit(i, 'historical_payroll_reference', v),
+      required: true,
+      minLength: 3,
+      maxLength: 180
+    }), h(Field, {
+      label: 'Importe que correspondía descontar',
+      type: 'number',
+      step: '.01',
+      min: '0',
+      value: d.expected_amount,
+      onChange: v => edit(i, 'expected_amount', v),
+      required: true
+    }), h(Field, {
+      label: historical ? 'Importe realmente descontado' : 'Importe realmente descontado (vacío si es futuro)',
+      type: 'number',
+      step: '.01',
+      min: '0',
+      value: d.actual_amount,
+      onChange: v => edit(i, 'actual_amount', v),
+      required: historical
+    }), d.actual_amount !== '' && h(Field, {
+      label: 'Fecha de confirmación del descuento',
+      type: 'date',
+      value: d.confirmed_on,
+      onChange: v => edit(i, 'confirmed_on', v),
+      required: true
+    }), d.actual_amount !== '' && h(Field, {
+      label: 'Referencia que acredita el descuento',
+      value: d.confirmation_reference,
+      onChange: v => edit(i, 'confirmation_reference', v),
+      required: true,
+      maxLength: 180
+    }), h('label', null, 'Tratamiento del importe en el ahorro', h('select', {
+      required: true,
+      value: d.balance_treatment,
+      onChange: e => edit(i, 'balance_treatment', e.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Selecciona el tratamiento'), Object.entries(treatments).map(([v, l]) => h('option', {
+      key: v,
+      value: v
+    }, l)))), d.balance_treatment === 'EXISTING_ADJUSTMENT' && h(Field, {
+      label: 'Identificador de la corrección existente',
+      value: d.adjustment_id,
+      onChange: v => edit(i, 'adjustment_id', v),
+      required: true
+    }), h(Field, {
+      label: 'Explicación del tratamiento del saldo',
+      value: d.balance_note,
+      onChange: v => edit(i, 'balance_note', v),
+      required: true,
+      maxLength: 1000
+    })), !entry && deductions.length > 1 && h('button', {
+      type: 'button',
+      className: 'srf-btn',
+      onClick: () => change(setDeductions, deductions.filter((_, j) => j !== i))
+    }, 'Quitar esta quincena'))), h('p', {
+      className: 'srf-note'
+    }, 'Este expediente conserva el descuento y su devolución. Registrar un reembolso no vuelve a descontar el dinero del saldo de ahorro.'), !entry && h('button', {
+      type: 'button',
+      className: 'srf-btn',
+      onClick: () => change(setDeductions, [...deductions, blank()])
+    }, 'Agregar otra quincena'), historical && h(React.Fragment, null, h('h4', null, 'Devoluciones ya realizadas'), payments.map((p, i) => h('fieldset', {
+      key: i,
+      'data-refund-payment-editor': true
+    }, h('legend', null, 'Pago histórico ' + (i + 1)), h('div', {
+      className: 'srf-grid'
+    }, h(Field, {
+      label: 'Importe devuelto',
+      type: 'number',
+      step: '.01',
+      min: '.01',
+      value: p.amount,
+      onChange: v => change(setPayments, payments.map((x, j) => i === j ? {
+        ...x,
+        amount: v
+      } : x)),
+      required: true
+    }), h(Field, {
+      label: 'Fecha real de la devolución',
+      type: 'date',
+      max: today,
+      value: p.paid_on,
+      onChange: v => change(setPayments, payments.map((x, j) => i === j ? {
+        ...x,
+        paid_on: v
+      } : x)),
+      required: true
+    }), h(Field, {
+      label: 'Referencia bancaria o comprobante del pago',
+      value: p.bank_reference,
+      onChange: v => change(setPayments, payments.map((x, j) => i === j ? {
+        ...x,
+        bank_reference: v
+      } : x)),
+      required: true,
+      maxLength: 180
+    }), h(Field, {
+      label: 'Justificación del pago histórico',
+      value: p.reason,
+      onChange: v => change(setPayments, payments.map((x, j) => i === j ? {
+        ...x,
+        reason: v
+      } : x)),
+      required: true,
+      minLength: 8,
+      maxLength: 1000
+    })), payments.length > 1 && h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      onClick: () => change(setPayments, payments.filter((_, j) => j !== i))
+    }, 'Quitar este pago'))), h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      onClick: () => change(setPayments, [...payments, blankPayment()])
+    }, 'Agregar otro pago histórico'), h('p', {
+      className: 'srf-note',
+      'aria-live': 'polite'
+    }, 'Exceso confirmado: ' + money(deductions.reduce((n, d) => n + Math.max(0, cents(d.actual_amount) - cents(d.expected_amount)), 0) / 100) + ' · Devoluciones registradas: ' + money(payments.reduce((n, p) => n + cents(p.amount), 0) / 100) + '. El reporte contará un caso en el mes del último pago que lo completó.')), error && h('p', {
+      role: 'alert',
+      className: 'srf-error'
+    }, error), h('div', {
+      className: 'srf-bar'
+    }, h('button', {
+      type: 'button',
+      className: 'srf-btn',
+      disabled: busy,
+      onClick: onCancel
+    }, 'Cancelar captura'), h('button', {
+      type: 'submit',
+      className: 'srf-btn primary',
+      disabled: busy
+    }, busy ? 'Guardando…' : historical ? 'Guardar histórico ya pagado' : 'Guardar expediente')));
+  }
+  function ActionForm({
+    entry,
+    kind,
+    payment,
+    today,
+    onSave,
+    onCancel,
+    busy,
+    onDirty
+  }) {
+    const isPayment = ['PAY', 'CORRECT_PAYMENT'].includes(kind);
+    const [reason, setReason] = useState(''),
+      [amount, setAmount] = useState(payment ? String(payment.amount) : kind === 'APPROVE' ? ((entry.deductions || []).reduce((n, d) => n + Math.max(0, Math.round(Number(d.actual_amount || 0) * 100) - Math.round(Number(d.expected_amount || 0) * 100)), 0) / 100).toFixed(2) : String(entry.pending_amount || '')),
+      [date, setDate] = useState(payment?.paid_on || ''),
+      [reference, setReference] = useState(payment?.bank_reference || '');
+    const title = {
+      APPROVE: 'Autorizar reembolso',
+      PAY: 'Registrar devolución realizada',
+      CORRECT_PAYMENT: 'Guardar corrección del pago',
+      SUBMIT: 'Enviar a revisión',
+      REJECT: 'Rechazar expediente',
+      CANCEL: 'Cancelar expediente'
+    }[kind];
+    const change = (setter, value) => {
+      onDirty?.(true);
+      setter(value);
+    };
+    return h('form', {
+      className: 'srf-card',
+      onSubmit: e => {
+        e.preventDefault();
+        onSave({
+          kind,
+          case_id: entry.id,
+          expected_version: entry.version,
+          reason,
+          ...(kind === 'APPROVE' ? {
+            authorized_amount: Number(amount)
+          } : {}),
+          ...(isPayment ? {
+            amount: Number(amount),
+            paid_on: date,
+            bank_reference: reference
+          } : {}),
+          ...(kind === 'CORRECT_PAYMENT' ? {
+            payment_id: payment.id
+          } : {})
+        });
+      }
+    }, h('h3', null, title), h('div', {
+      className: 'srf-grid'
+    }, (isPayment || kind === 'APPROVE') && h(Field, {
+      label: isPayment ? 'Importe devuelto' : 'Importe autorizado',
+      value: amount,
+      onChange: v => change(setAmount, v),
+      readOnly: kind === 'APPROVE',
+      type: 'number',
+      min: '.01',
+      step: '.01',
+      required: true
+    }), isPayment && h(Field, {
+      label: 'Fecha real de la devolución',
+      value: date,
+      onChange: v => change(setDate, v),
+      type: 'date',
+      max: today,
+      required: true
+    }), isPayment && h(Field, {
+      label: 'Referencia bancaria o comprobante del pago',
+      value: reference,
+      onChange: v => change(setReference, v),
+      required: true,
+      maxLength: 180
+    }), h('label', null, kind === 'CORRECT_PAYMENT' ? 'Motivo de la corrección' : 'Justificación' + (kind === 'PAY' ? ' y explicación si es una devolución anterior' : ''), h('textarea', {
+      required: true,
+      minLength: 8,
+      maxLength: 1000,
+      rows: 3,
+      value: reason,
+      onChange: e => change(setReason, e.target.value)
+    }))), kind === 'APPROVE' && h('p', {
+      className: 'srf-note'
+    }, 'Se autoriza el exceso confirmado completo. Puedes registrar la devolución en varios pagos; el caso se concluye cuando se devuelve todo el importe.'), kind === 'PAY' && h('p', {
+      className: 'srf-note'
+    }, 'Registra únicamente dinero que ya se devolvió. La fecha del pago se conserva separada de la fecha de captura.'), kind === 'CORRECT_PAYMENT' && h('p', {
+      className: 'srf-note'
+    }, 'Se conserva el pago anterior y se agrega una corrección con tu motivo y la fecha actual. Se revisarán nuevamente los meses afectados. Corregir el registro no realiza ni revierte una transferencia.'), h('div', {
+      className: 'srf-bar'
+    }, h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      disabled: busy,
+      onClick: onCancel
+    }, 'Volver'), h('button', {
+      className: 'srf-btn primary',
+      type: 'submit',
+      disabled: busy
+    }, busy ? 'Guardando…' : title)));
+  }
+  function PayrollCorrectionForm({
+    entry,
+    deduction,
+    onSave,
+    onCancel,
+    busy,
+    onDirty
+  }) {
+    const [code, setCode] = useState(String(deduction.effective_historical_payroll_code ?? deduction.historical_payroll_code ?? '')),
+      [reference, setReference] = useState(deduction.effective_historical_payroll_reference ?? deduction.historical_payroll_reference ?? ''),
+      [reason, setReason] = useState('');
+    const change = (setter, value) => {
+      onDirty?.(true);
+      setter(value);
+    };
+    return h('form', {
+      className: 'srf-card',
+      'data-refund-payroll-correction': true,
+      onSubmit: e => {
+        e.preventDefault();
+        onSave({
+          kind: 'CORRECT_PAYROLL_EVIDENCE',
+          case_id: entry.id,
+          expected_version: entry.version,
+          deduction_id: deduction.id,
+          historical_payroll_code: Number(code),
+          historical_payroll_reference: reference,
+          reason
+        });
+      }
+    }, h('h3', null, 'Corregir tipo de nómina'), h('p', {
+      className: 'srf-note'
+    }, 'Quincena ' + deduction.deduction_on + ' · ' + deduction.source_reference + ' · Descontado: ' + money(deduction.actual_amount)), deduction.payroll_resolution?.conflict && h('p', {
+      className: 'srf-error',
+      role: 'alert'
+    }, 'La inscripción de esta quincena identifica la nómina ' + deduction.payroll_resolution.canonical_code + '. Revisa el comprobante y corrige la clasificación documentada.'), h('div', {
+      className: 'srf-grid'
+    }, h('label', null, 'Tipo de nómina de esta quincena', h('select', {
+      required: true,
+      value: code,
+      onChange: e => change(setCode, e.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Selecciona el tipo documentado'), h('option', {
+      value: '573'
+    }, 'Personal activo · 573'), h('option', {
+      value: '580'
+    }, 'Jubilados y pensionados · 580'))), h(Field, {
+      label: 'Referencia que acredita el tipo de nómina',
+      value: reference,
+      onChange: v => change(setReference, v),
+      required: true,
+      minLength: 3,
+      maxLength: 180
+    }), h('label', null, 'Motivo de la corrección de nómina', h('textarea', {
+      required: true,
+      minLength: 8,
+      maxLength: 1000,
+      rows: 3,
+      value: reason,
+      onChange: e => change(setReason, e.target.value)
+    }))), h('p', {
+      className: 'srf-note'
+    }, 'Se conserva la clasificación anterior y se registra esta corrección con su motivo. El tipo documentado debe coincidir con la inscripción que correspondía a esa quincena. Los importes, fechas de descuento y pagos permanecen intactos; el mes del caso concluido requerirá revisión.'), h('div', {
+      className: 'srf-bar'
+    }, h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      disabled: busy,
+      onClick: onCancel
+    }, 'Volver'), h('button', {
+      className: 'srf-btn primary',
+      type: 'submit',
+      disabled: busy
+    }, busy ? 'Guardando…' : 'Guardar corrección de nómina')));
+  }
+  function PayrollEvidence({
+    deduction,
+    canCorrect,
+    onCorrect
+  }) {
+    const code = deduction.effective_historical_payroll_code ?? deduction.historical_payroll_code,
+      reference = deduction.effective_historical_payroll_reference ?? deduction.historical_payroll_reference;
+    return h('div', {
+      className: 'srf-card',
+      'data-refund-payroll-evidence': true
+    }, h('strong', null, 'Nómina de la quincena ' + deduction.deduction_on), h('p', {
+      className: 'srf-note'
+    }, deduction.source_reference), h('p', {
+      className: 'srf-note'
+    }, code ? 'Clasificación vigente: ' + code + ' · ' + reference : 'Sin clasificación histórica documentada.'), deduction.payroll_resolution?.conflict && h('p', {
+      className: 'srf-error',
+      role: 'alert'
+    }, 'La clasificación documentada no coincide con la inscripción de esta quincena, que identifica la nómina ' + deduction.payroll_resolution.canonical_code + '. Este caso requiere corregir su tipo de nómina para el reporte.'), canCorrect && h('button', {
+      className: 'srf-btn',
+      onClick: onCorrect
+    }, 'Corregir tipo de nómina'), h('details', null, h('summary', null, 'Historial del tipo de nómina'), h('p', {
+      className: 'srf-note'
+    }, 'Original: ' + (deduction.historical_payroll_code ?? 'Sin dato') + ' · ' + (deduction.historical_payroll_reference || 'Sin referencia original')), (deduction.payroll_history || []).map((version, i) => h('p', {
+      className: 'srf-note',
+      key: version.id || version.version || i
+    }, 'Versión ' + version.version + ': ' + version.historical_payroll_code + ' · ' + version.historical_payroll_reference + ' · Capturada el ' + captured(version.captured_at) + ' · ' + version.reason))));
+  }
+  function RefundCoverage({
+    periods,
+    onSave,
+    busy,
+    canConfirm,
+    onDirty
+  }) {
+    const [period, setPeriod] = useState(''),
+      [reason, setReason] = useState(''),
+      [confirmed, setConfirmed] = useState(false);
+    return h('details', {
+      className: 'srf-card'
+    }, h('summary', null, 'Histórico mensual de reembolsos'), h('p', {
+      className: 'srf-note'
+    }, 'Para informar los meses anteriores, registra primero sus devoluciones. Después confirma que están incluidos todos los casos concluidos de cada mes. Esta confirmación no cambia aportaciones ni saldos.'), (periods || []).map(p => h('p', {
+      key: p.period,
+      className: 'srf-note'
+    }, p.period.slice(0, 7) + ' · ' + (p.invalidated_at || !p.confirmed_at ? 'Requiere actualización' : 'Histórico registrado') + ' · ' + p.confirmed_case_count + ' caso(s)')), canConfirm && h('form', {
+      onSubmit: e => {
+        e.preventDefault();
+        if (confirmed && period) onSave({
+          kind: 'CONFIRM_PERIOD',
+          period: period + '-01',
+          reason
+        });
+      }
+    }, h('div', {
+      className: 'srf-grid'
+    }, h(Field, {
+      label: 'Mes del histórico',
+      type: 'month',
+      value: period,
+      onChange: v => {
+        onDirty?.(true);
+        setPeriod(v);
+        setConfirmed(false);
+      },
+      required: true
+    }), h('label', null, 'Referencia o explicación de la revisión', h('textarea', {
+      required: true,
+      minLength: 8,
+      maxLength: 1000,
+      value: reason,
+      onChange: e => {
+        onDirty?.(true);
+        setReason(e.target.value);
+      }
+    }))), h('label', {
+      className: 'srf-note',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, h('input', {
+      type: 'checkbox',
+      required: true,
+      checked: confirmed,
+      onChange: e => {
+        onDirty?.(true);
+        setConfirmed(e.target.checked);
+      },
+      style: {
+        width: 'auto'
+      }
+    }), 'Todos los casos de reembolso concluidos de este mes están registrados.'), h('button', {
+      className: 'srf-btn',
+      type: 'submit',
+      disabled: busy || !confirmed
+    }, busy ? 'Guardando…' : 'Confirmar histórico del mes')));
+  }
+  function SavingsRefundsAdmin({
+    folio,
+    initialYear,
+    focusSourceIds,
+    onSaved,
+    onDirty
+  }) {
+    const [state, setState] = useState({
+        loading: true,
+        data: null,
+        error: null
+      }),
+      [revision, setRevision] = useState(0),
+      [selected, setSelected] = useState(null),
+      [editor, setEditor] = useState(null),
+      [action, setAction] = useState(null),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [filter, setFilter] = useState('ALL'),
+      [query, setQuery] = useState('');
+    const [year, setYear] = useState(initialYear ? String(initialYear) : ''),
+      [month, setMonth] = useState('');
+    const [detail, setDetail] = useState({
+      loading: false,
+      entry: null,
+      error: null
+    });
+    const sequence = useRef(0),
+      detailSequence = useRef(0),
+      pending = useRef(null),
+      dirty = useRef(false),
+      subjectRef = useRef(null);
+    let subject;
+    try {
+      subject = window.SavingsRefundsRepository.contextKey();
+    } catch (_) {
+      subject = 'denied';
+    }
+    subjectRef.current = subject;
+    const markDirty = value => {
+      dirty.current = value;
+      onDirty?.(value);
+    };
+    const mayLeave = () => !dirty.current || window.confirm('Hay cambios sin guardar. ¿Deseas descartarlos?');
+    useEffect(() => {
+      const warn = e => {
+        if (dirty.current) {
+          e.preventDefault();
+          e.returnValue = '';
+        }
+      };
+      window.addEventListener('beforeunload', warn);
+      return () => window.removeEventListener('beforeunload', warn);
+    }, []);
+    useEffect(() => {
+      const seq = ++sequence.current;
+      setState({
+        loading: true,
+        data: null,
+        error: null
+      });
+      window.SavingsRefundsRepository.list({
+        folio
+      }).then(data => {
+        if (seq === sequence.current) setState({
+          loading: false,
+          data,
+          error: null
+        });
+      }).catch(e => {
+        if (seq === sequence.current) setState({
+          loading: false,
+          data: null,
+          error: e
+        });
+      });
+      return () => {
+        sequence.current++;
+      };
+    }, [revision, folio, subject]);
+    useEffect(() => {
+      setEditor(null);
+      setAction(null);
+      setSelected(null);
+      setBusy(false);
+      setError('');
+      pending.current = null;
+      markDirty(false);
+    }, [subject, folio]);
+    useEffect(() => {
+      const seq = ++detailSequence.current;
+      setDetail({
+        loading: Boolean(selected),
+        entry: null,
+        error: null
+      });
+      if (selected) window.SavingsRefundsRepository.list({
+        case_id: selected,
+        folio
+      }).then(data => {
+        if (seq === detailSequence.current) setDetail({
+          loading: false,
+          entry: (data.cases || []).find(c => c.id === selected) || null,
+          error: null
+        });
+      }).catch(e => {
+        if (seq === detailSequence.current) setDetail({
+          loading: false,
+          entry: null,
+          error: e
+        });
+      });
+      return () => {
+        detailSequence.current++;
+      };
+    }, [selected, revision, folio, subject]);
+    async function refresh() {
+      setRevision(r => r + 1);
+      if (onSaved) await onSaved();
+    }
+    async function save(command) {
+      if (busy) return;
+      const requestSubject = subject,
+        signature = JSON.stringify(command);
+      if (!pending.current || pending.current.signature !== signature) pending.current = {
+        signature,
+        key: crypto.randomUUID()
+      };
+      setBusy(true);
+      setError('');
+      try {
+        const result = await window.SavingsRefundsRepository.save(command, pending.current.key);
+        if (subjectRef.current !== requestSubject) return;
+        pending.current = null;
+        setEditor(null);
+        setAction(null);
+        setSelected(result.case_id || result.id || null);
+        markDirty(false);
+        await refresh();
+      } catch (e) {
+        if (subjectRef.current === requestSubject) setError(explainHistorical(e));
+      } finally {
+        if (subjectRef.current === requestSubject) setBusy(false);
+      }
+    }
+    function cancel() {
+      if (busy || !mayLeave()) return;
+      setEditor(null);
+      setAction(null);
+      setError('');
+      markDirty(false);
+    }
+    function openEditor(value) {
+      if (!mayLeave()) return;
+      markDirty(false);
+      setEditor(value);
+      setAction(null);
+      if (!value.id) setSelected(null);
+    }
+    function openAction(value) {
+      if (!mayLeave()) return;
+      markDirty(false);
+      setAction(value);
+    }
+    function openRefund({
+      period,
+      case_id
+    } = {}) {
+      if (!mayLeave()) return;
+      markDirty(false);
+      if (period) {
+        setYear(String(period).slice(0, 4));
+        setMonth(String(period).slice(5, 7));
+      }
+      setQuery('');
+      setFilter('ALL');
+      setSelected(case_id || null);
+    }
+    const data = state.data,
+      permissions = data?.permissions || {},
+      cases = (data?.cases || []).map(c => c.id === selected && detail.entry?.id === c.id ? detail.entry : c),
+      entry = cases.find(c => c.id === selected),
+      shown = cases.filter(c => {
+        const dates = [c.paid_at, ...effectivePayments(c).map(p => p.paid_on)].filter(Boolean).map(String),
+          inPeriod = c.status !== 'PAID' || !year || dates.some(d => d.slice(0, 4) === year && (!month || d.slice(5, 7) === month));
+        return inPeriod && (filter === 'ALL' || c.status === filter) && (!query || [c.folio, c.numero_control, c.reason].some(v => String(v || '').toLowerCase().includes(query.toLowerCase())));
+      }),
+      actionKind = typeof action === 'string' ? action : action?.kind;
+    return h('section', {
+      className: 'srf',
+      'data-savings-refunds': true
+    }, h('style', null, css), h('div', {
+      className: 'srf-bar'
+    }, h('div', null, h('h3', null, 'Reembolsos'), h('p', {
+      className: 'srf-note'
+    }, 'Descuentos enviados previamente a RH, importes por devolver y casos concluidos.')), permissions.can_write && h('button', {
+      className: 'srf-btn primary',
+      disabled: busy || Boolean(editor) || Boolean(action),
+      onClick: () => openEditor({})
+    }, 'Nuevo expediente'), permissions.can_write && permissions.can_approve && h('button', {
+      className: 'srf-btn',
+      disabled: busy || Boolean(editor) || Boolean(action),
+      onClick: () => openEditor({
+        historical: true
+      })
+    }, 'Registrar reembolso histórico ya pagado')), state.loading && h('p', {
+      role: 'status'
+    }, 'Consultando expedientes…'), state.error && h('div', {
+      role: 'alert',
+      className: 'srf-error'
+    }, explain(state.error), h('button', {
+      className: 'srf-btn',
+      onClick: () => setRevision(r => r + 1)
+    }, 'Reintentar')), error && h('p', {
+      role: 'alert',
+      className: 'srf-error'
+    }, error), editor && h(RefundEditor, {
+      key: editor.id || (editor.historical ? 'historical' : 'new'),
+      entry: editor.id ? editor : null,
+      historical: !!editor.historical,
+      today: data?.today,
+      busy,
+      onSave: save,
+      onCancel: cancel,
+      onDirty: markDirty
+    }), action && entry && (actionKind === 'CORRECT_PAYROLL_EVIDENCE' ? h(PayrollCorrectionForm, {
+      key: entry.id + actionKind + action.deduction.id,
+      entry,
+      deduction: action.deduction,
+      busy,
+      onSave: save,
+      onCancel: cancel,
+      onDirty: markDirty
+    }) : h(ActionForm, {
+      key: entry.id + actionKind + (action?.payment?.id || ''),
+      entry,
+      kind: actionKind,
+      payment: action?.payment,
+      today: data?.today,
+      busy,
+      onSave: save,
+      onCancel: cancel,
+      onDirty: markDirty
+    })), data && !editor && !action && h(React.Fragment, null, window.SavingsRegularizationAdmin ? h(window.SavingsRegularizationAdmin, {
+      key: revision,
+      initialYear: /^\d{4}$/.test(year) && Number(year) >= 2000 && Number(year) <= 2100 ? Number(year) : initialYear,
+      folio,
+      onSaved: refresh,
+      onDirty: markDirty,
+      onOpenRefund: openRefund,
+      focusSourceIds
+    }) : h(RefundCoverage, {
+      key: revision,
+      periods: data.coveragePeriods,
+      onSave: save,
+      busy,
+      canConfirm: permissions.can_write && permissions.can_approve,
+      onDirty: markDirty
+    }), h('div', {
+      className: 'srf-bar'
+    }, h(Field, {
+      label: 'Buscar expediente o número de control',
+      value: query,
+      onChange: setQuery
+    }), h('label', null, 'Estado', h('select', {
+      value: filter,
+      onChange: e => setFilter(e.target.value)
+    }, h('option', {
+      value: 'ALL'
+    }, 'Todos'), Object.entries(labels).map(([v, l]) => h('option', {
+      key: v,
+      value: v
+    }, l)))), h(Field, {
+      label: 'Año de las devoluciones (vacío: todos)',
+      type: 'number',
+      min: '2000',
+      max: '2100',
+      value: year,
+      onChange: value => {
+        if (mayLeave()) {
+          markDirty(false);
+          setYear(value);
+          setMonth('');
+        }
+      }
+    }), h('label', null, 'Mes de las devoluciones', h('select', {
+      value: month,
+      disabled: !year,
+      onChange: e => setMonth(e.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Todos'), Array.from({
+      length: 12
+    }, (_, i) => h('option', {
+      key: i,
+      value: String(i + 1).padStart(2, '0')
+    }, String(i + 1).padStart(2, '0'))))), h('button', {
+      className: 'srf-btn',
+      disabled: busy,
+      onClick: () => {
+        if (mayLeave()) {
+          markDirty(false);
+          setRevision(r => r + 1);
+        }
+      }
+    }, 'Actualizar')), h('p', {
+      className: 'srf-note'
+    }, 'El periodo usa las fechas reales de devolución y conclusión, no la fecha de captura. Los expedientes pendientes permanecen visibles.'), !shown.length && h('p', {
+      className: 'srf-note'
+    }, 'No hay expedientes registrados para esta consulta. Un cero en el historial de ahorro no acredita por sí solo una devolución.'), shown.map(c => h('article', {
+      className: 'srf-card',
+      key: c.id
+    }, h('div', {
+      className: 'srf-bar'
+    }, h('strong', null, c.folio + ' · Control ' + c.numero_control), h('span', {
+      className: 'srf-state'
+    }, labels[c.status] || c.status)), h('p', {
+      className: 'srf-note'
+    }, c.reason), h('div', {
+      className: 'srf-bar'
+    }, h('span', null, 'Autorizado: ' + money(c.authorized_amount)), h('span', null, 'Devuelto: ' + money(c.paid_amount)), h('span', null, 'Pendiente: ' + money(c.pending_amount)), h('button', {
+      className: 'srf-btn',
+      'aria-expanded': selected === c.id,
+      onClick: () => setSelected(selected === c.id ? null : c.id)
+    }, selected === c.id ? 'Cerrar detalle' : 'Ver expediente')), selected === c.id && h(React.Fragment, null, detail.loading && h('p', {
+      role: 'status',
+      className: 'srf-note'
+    }, 'Consultando historial del expediente…'), detail.error && h('p', {
+      role: 'alert',
+      className: 'srf-error'
+    }, explain(detail.error)), c.origin === 'HISTORICAL' && h('p', {
+      className: 'srf-note'
+    }, 'Antecedente histórico · Validado el ' + captured(c.approved_at) + ' · Capturado el ' + captured(c.created_at)), h('div', {
+      className: 'srf-table'
+    }, h('table', null, h('thead', null, h('tr', null, ['Quincena', 'Enviado a RH', 'Esperado', 'Descontado', 'Tratamiento'].map(l => h('th', {
+      key: l
+    }, l)))), h('tbody', null, (c.deductions || []).map(d => h('tr', {
+      key: d.id || d.source_reference
+    }, h('td', null, d.deduction_on, h('div', {
+      className: 'srf-note'
+    }, d.source_reference), d.historical_payroll_code && h('div', {
+      className: 'srf-note'
+    }, 'Nómina documentada vigente ' + (d.effective_historical_payroll_code ?? d.historical_payroll_code) + ' · ' + (d.effective_historical_payroll_reference ?? d.historical_payroll_reference))), h('td', null, d.sent_to_rh_on || 'Fecha histórica desconocida', !d.sent_to_rh_on && h('div', {
+      className: 'srf-note'
+    }, d.sent_to_rh_unknown_reason)), h('td', null, money(d.expected_amount)), h('td', null, d.actual_amount == null ? 'Por confirmar' : money(d.actual_amount)), h('td', null, treatments[d.balance_treatment], h('div', {
+      className: 'srf-note'
+    }, d.balance_note))))))), c.origin === 'HISTORICAL' && (c.deductions || []).map(d => h(PayrollEvidence, {
+      key: d.id || d.source_reference,
+      deduction: d,
+      canCorrect: permissions.can_write && permissions.can_approve,
+      onCorrect: () => openAction({
+        kind: 'CORRECT_PAYROLL_EVIDENCE',
+        deduction: d
+      })
+    })), h('h4', null, 'Devoluciones registradas'), effectivePayments(c).map(p => h('div', {
+      key: p.id,
+      className: 'srf-card'
+    }, h('p', {
+      className: 'srf-note'
+    }, p.paid_on + ' · ' + money(p.amount) + ' · ' + p.bank_reference), h('p', {
+      className: 'srf-note'
+    }, 'Capturado el ' + captured(p.captured_at) + (p.supersedes_payment_id ? ' · Corrección de un registro anterior' : '')), h('p', {
+      className: 'srf-note'
+    }, p.reason), permissions.can_write && permissions.can_approve && h('button', {
+      className: 'srf-btn',
+      onClick: () => openAction({
+        kind: 'CORRECT_PAYMENT',
+        payment: p
+      })
+    }, 'Corregir registro del pago'))), !effectivePayments(c).length && h('p', {
+      className: 'srf-note'
+    }, 'Todavía no hay pagos registrados.'), (c.payments || []).some(p => p.is_superseded) && h('details', null, h('summary', null, 'Versiones anteriores de los pagos'), (c.payments || []).filter(p => p.is_superseded).map(p => h('p', {
+      key: p.id,
+      className: 'srf-note'
+    }, p.paid_on + ' · ' + money(p.amount) + ' · ' + p.bank_reference + ' · Sustituido por corrección · Capturado el ' + captured(p.captured_at) + ' · ' + (p.reason || '')))), h('div', {
+      className: 'srf-bar'
+    }, permissions.can_write && ['DRAFT', 'SUBMITTED', 'REJECTED'].includes(c.status) && h('button', {
+      className: 'srf-btn',
+      onClick: () => openEditor(c)
+    }, 'Editar captura'), permissions.can_write && c.status === 'DRAFT' && h('button', {
+      className: 'srf-btn',
+      onClick: () => openAction('SUBMIT')
+    }, 'Enviar a revisión'), permissions.can_approve && c.status === 'SUBMITTED' && h('button', {
+      className: 'srf-btn primary',
+      onClick: () => openAction('APPROVE')
+    }, 'Autorizar'), permissions.can_approve && c.status === 'SUBMITTED' && h('button', {
+      className: 'srf-btn',
+      onClick: () => openAction('REJECT')
+    }, 'Rechazar'), permissions.can_approve && ['APPROVED', 'PARTIAL'].includes(c.status) && h('button', {
+      className: 'srf-btn primary',
+      onClick: () => openAction('PAY')
+    }, 'Registrar devolución'), permissions.can_approve && ['DRAFT', 'SUBMITTED', 'APPROVED'].includes(c.status) && h('button', {
+      className: 'srf-btn',
+      onClick: () => openAction('CANCEL')
+    }, 'Cancelar expediente')), h('details', null, h('summary', null, 'Historial del expediente'), (c.events || []).map(event => h('p', {
+      key: event.id,
+      className: 'srf-note'
+    }, new Date(event.created_at).toLocaleString('es-MX') + ' · ' + (event.action || event.kind || 'Registro') + ' · ' + (event.reason || '')))))))));
+  }
+  window.SavingsRefundsAdmin = SavingsRefundsAdmin;
+})();
+})();
+/* @@file savings-regularization-admin.jsx */
+(function(){
+/* Historical event documentation; never a withdrawal or a balance writer. */
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React;
+  const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  const states = {
+    PENDING: 'Pendiente de completar',
+    REVIEWED: 'Revisado',
+    REVIEWED_ZERO: 'Revisado sin reembolsos',
+    REOPENED: 'Requiere nueva revisión',
+    CURRENT: 'Mes en curso · al corte',
+    FUTURE: 'Mes futuro'
+  };
+  const terminationStates = {
+    PENDING: 'Fecha por documentar',
+    RESOLVED: 'Fecha documentada',
+    CONFLICT: 'Requiere resolver una diferencia',
+    VOIDED: 'Constancia retirada'
+  };
+  function errorText(error) {
+    const code = String(error?.message || '');
+    const known = {
+      CONTEXT_CHANGED: 'La sesión cambió. Consulta de nuevo.',
+      AUTH_REQUIRED: 'Vuelve a iniciar sesión.',
+      SAVINGS_TERMINATION_DENIED: 'Tu cuenta no tiene permiso para validar bajas históricas.',
+      SAVINGS_TERMINATION_VERSION_CONFLICT: 'El antecedente fue actualizado. Consulta de nuevo antes de guardar.',
+      SAVINGS_TERMINATION_SOURCE_CHANGED: 'Cambió el antecedente de origen. Consulta de nuevo y revisa su información.',
+      SAVINGS_TERMINATION_DATE_INVALID: 'Revisa la fecha efectiva: debe corresponder al antecedente y no puede ser futura.',
+      SAVINGS_TERMINATION_CANONICAL_CONFLICT: 'La baja existente tiene información diferente. Revisa el vínculo antes de continuar.',
+      SAVINGS_REFUND_PERIOD_INVALID: 'Sólo se puede confirmar un mes ya terminado.',
+      SAVINGS_REFUND_DENIED: 'Tu cuenta no tiene permiso para confirmar este periodo.'
+    };
+    return known[code] || 'No se pudo completar la operación. ' + code;
+  }
+  function Field({
+    label,
+    value,
+    onChange,
+    ...props
+  }) {
+    return h('label', null, label, h('input', {
+      ...props,
+      value: value ?? '',
+      onChange: e => onChange(e.target.value)
+    }));
+  }
+  function TerminationForm({
+    entry,
+    today,
+    busy,
+    onSave,
+    onCancel,
+    onDirty,
+    voiding = false
+  }) {
+    const [mode, setMode] = useState(voiding ? 'VOID' : entry.mode === 'LINK' ? 'LINK' : 'ATTESTED'),
+      [date, setDate] = useState(entry.effective_on || ''),
+      [enrollment, setEnrollment] = useState(entry.enrollment_id || ''),
+      [reason, setReason] = useState(''),
+      [evidence, setEvidence] = useState(entry.evidence_reference || '');
+    const change = (setter, value) => {
+      onDirty?.(true);
+      setter(value);
+    };
+    const candidates = entry.candidates || [];
+    const possibleCandidates = candidates.filter(c => c.linked || !c.started_on || !date || c.started_on <= date);
+    function selectEnrollment(id) {
+      change(setEnrollment, id);
+      const selected = candidates.find(c => c.id === id);
+      if (mode === 'LINK') setDate(selected?.terminated_on || '');
+    }
+    return h('form', {
+      className: 'srf-card',
+      onSubmit: e => {
+        e.preventDefault();
+        onSave({
+          kind: 'SAVE_TERMINATION',
+          source_record_id: entry.source_record_id,
+          source_fingerprint: entry.source_fingerprint,
+          expected_version: Number(entry.version || 0),
+          mode,
+          enrollment_id: enrollment || null,
+          effective_on: date,
+          reason,
+          evidence_reference: evidence
+        });
+      }
+    }, h('h4', null, voiding ? 'Retirar una constancia que ya no acredita la baja' : entry.version ? 'Corregir constancia de baja histórica' : 'Completar baja histórica'), h('p', {
+      className: 'srf-note'
+    }, 'Control ' + entry.numero_control + ' · ' + (entry.source_sheet || 'Solicitud de Ahorro') + ' · fila ' + entry.source_row), h('div', {
+      className: 'srf-grid'
+    }, !voiding && h('label', null, 'Cómo se acredita la baja', h('select', {
+      value: mode,
+      onChange: e => {
+        change(setMode, e.target.value);
+        if (e.target.value === 'LINK') setDate(candidates.find(c => c.id === enrollment)?.terminated_on || '');
+      }
+    }, h('option', {
+      value: 'ATTESTED'
+    }, 'Documentar una baja histórica'), h('option', {
+      value: 'LINK',
+      disabled: !candidates.some(c => c.terminated_on)
+    }, 'Vincular una baja existente'))), !voiding && h('label', null, 'Inscripción correspondiente', h('select', {
+      value: enrollment,
+      required: mode === 'LINK' || possibleCandidates.length > 0,
+      onChange: e => selectEnrollment(e.target.value)
+    }, h('option', {
+      value: ''
+    }, possibleCandidates.length ? 'Selecciona la inscripción correspondiente' : 'Antecedente sin inscripción vinculada'), candidates.filter(c => mode !== 'LINK' || c.terminated_on).map(c => h('option', {
+      key: c.id,
+      value: c.id,
+      disabled: mode === 'ATTESTED' && date && c.started_on > date && !c.linked
+    }, (c.started_on || 'Inicio sin fecha') + ' · ' + (c.terminated_on ? 'Baja ' + c.terminated_on : c.status || 'Inscripción'))))), h(Field, {
+      label: voiding ? 'Fecha conservada en el antecedente' : 'Fecha efectiva de la baja',
+      type: 'date',
+      required: !voiding,
+      max: today,
+      value: date,
+      readOnly: mode === 'LINK' || voiding,
+      onChange: v => {
+        change(setDate, v);
+        const selected = candidates.find(c => c.id === enrollment);
+        if (mode === 'ATTESTED' && selected?.started_on > v && !selected.linked) setEnrollment('');
+      }
+    }), h(Field, {
+      label: 'Referencia que acredita la baja',
+      required: true,
+      minLength: 3,
+      maxLength: 180,
+      value: evidence,
+      onChange: v => change(setEvidence, v)
+    }), h('label', {
+      className: 'srf-wide'
+    }, 'Justificación de la constancia o corrección', h('textarea', {
+      required: true,
+      minLength: 8,
+      maxLength: 1000,
+      rows: 3,
+      value: reason,
+      onChange: e => change(setReason, e.target.value)
+    }))), h('p', {
+      className: 'srf-note'
+    }, voiding ? 'El retiro de esta constancia conserva todas sus versiones. Documenta por qué la fuente corregida ya no acredita la baja; no cambia la cuenta de ahorro.' : 'La validación y su responsable se registran con la fecha actual. Esta constancia documenta el antecedente; no ejecuta una baja, un retiro ni un cambio de saldo.'), h('div', {
+      className: 'srf-bar'
+    }, h('button', {
+      type: 'button',
+      className: 'srf-btn',
+      disabled: busy,
+      onClick: onCancel
+    }, 'Cancelar constancia'), h('button', {
+      type: 'submit',
+      className: 'srf-btn primary',
+      disabled: busy
+    }, busy ? 'Guardando…' : voiding ? 'Confirmar retiro de constancia' : 'Validar baja histórica')));
+  }
+  function SavingsRegularizationAdmin({
+    initialYear,
+    folio,
+    onSaved,
+    onDirty,
+    onOpenRefund,
+    focusSourceIds
+  }) {
+    const currentYear = Number(new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Hermosillo',
+      year: 'numeric'
+    }).format(new Date()));
+    const [year, setYear] = useState(Number(initialYear) || currentYear),
+      [draftYear, setDraftYear] = useState(String(Number(initialYear) || currentYear)),
+      [revision, setRevision] = useState(0),
+      [state, setState] = useState({
+        loading: true,
+        data: null,
+        error: null
+      });
+    const [selected, setSelected] = useState(null),
+      [voiding, setVoiding] = useState(false),
+      [period, setPeriod] = useState(null),
+      [reason, setReason] = useState(''),
+      [confirmed, setConfirmed] = useState(false),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [notice, setNotice] = useState('');
+    const sequence = useRef(0),
+      pending = useRef(null),
+      dirty = useRef(false);
+    let subject;
+    try {
+      subject = window.SavingsRefundsRepository.contextKey();
+    } catch (_) {
+      subject = 'denied';
+    }
+    const markDirty = value => {
+      dirty.current = value;
+      onDirty?.(value);
+    };
+    function mayLeave() {
+      return !dirty.current || window.confirm('Hay una captura sin guardar. ¿Quieres descartarla?');
+    }
+    function clear() {
+      setSelected(null);
+      setVoiding(false);
+      setPeriod(null);
+      setReason('');
+      setConfirmed(false);
+      setError('');
+      pending.current = null;
+      markDirty(false);
+    }
+    useEffect(() => {
+      clear();
+      setNotice('');
+    }, [subject, folio]);
+    useEffect(() => {
+      const incoming = Number(initialYear);
+      if (Number.isInteger(incoming) && incoming >= 2000 && incoming <= 2100 && incoming !== year && !dirty.current) {
+        setYear(incoming);
+        setDraftYear(String(incoming));
+      }
+    }, [initialYear]);
+    useEffect(() => {
+      const seq = ++sequence.current;
+      setState({
+        loading: true,
+        data: null,
+        error: null
+      });
+      window.SavingsRefundsRepository.regularization({
+        year,
+        folio
+      }).then(data => {
+        if (seq === sequence.current) setState({
+          loading: false,
+          data,
+          error: null
+        });
+      }).catch(error => {
+        if (seq === sequence.current) setState({
+          loading: false,
+          data: null,
+          error
+        });
+      });
+      return () => {
+        sequence.current++;
+      };
+    }, [year, folio, subject, revision]);
+    async function save(command) {
+      if (busy) return;
+      const signature = JSON.stringify(command);
+      if (!pending.current || pending.current.signature !== signature) pending.current = {
+        signature,
+        key: crypto.randomUUID()
+      };
+      const key = subject;
+      setBusy(true);
+      setError('');
+      try {
+        if (command.kind === 'CONFIRM_PERIOD') await window.SavingsRefundsRepository.save(command, pending.current.key);else await window.SavingsRefundsRepository.saveTermination(command, pending.current.key);
+        if (window.SavingsRefundsRepository.contextKey() !== key) throw Error('CONTEXT_CHANGED');
+        clear();
+        setNotice(command.kind === 'CONFIRM_PERIOD' ? 'Revisión mensual guardada.' : 'Constancia guardada. Se actualizaron los periodos afectados.');
+        setRevision(n => n + 1);
+        if (onSaved) await onSaved();
+      } catch (e) {
+        setError(errorText(e));
+      } finally {
+        setBusy(false);
+      }
+    }
+    const data = state.data,
+      canValidate = data?.permissions?.can_write && data?.permissions?.can_approve;
+    const entries = data?.terminations || [],
+      focus = new Set(focusSourceIds || []),
+      ordered = [...entries].sort((a, b) => (focus.has(b.source_record_id) ? 1 : 0) - (focus.has(a.source_record_id) ? 1 : 0));
+    return h('details', {
+      className: 'srf-card',
+      'data-savings-regularization': true,
+      open: Boolean(initialYear || focus.size) || undefined
+    }, h('summary', null, 'Bajas históricas y revisión mensual'), h('p', {
+      className: 'srf-note'
+    }, 'Completa los antecedentes del año que necesitas reportar. Los libros mensuales también contienen concentrados anuales.'), h('form', {
+      className: 'srf-bar',
+      onSubmit: e => {
+        e.preventDefault();
+        const next = Number(draftYear);
+        if (next >= 2000 && next <= 2100) {
+          if (mayLeave()) {
+            clear();
+            setYear(next);
+            setRevision(n => n + 1);
+          } else setDraftYear(String(year));
+        }
+      }
+    }, h(Field, {
+      label: 'Año de regularización',
+      type: 'number',
+      min: 2000,
+      max: 2100,
+      required: true,
+      value: draftYear,
+      disabled: busy,
+      onChange: setDraftYear
+    }), h('button', {
+      className: 'srf-btn',
+      disabled: busy || state.loading,
+      type: 'submit'
+    }, 'Consultar año')), state.loading && h('p', {
+      role: 'status',
+      className: 'srf-note'
+    }, 'Consultando periodos y bajas históricas…'), state.error && h('p', {
+      role: 'alert',
+      className: 'srf-error'
+    }, errorText(state.error)), error && h('p', {
+      role: 'alert',
+      className: 'srf-error'
+    }, error), notice && h('p', {
+      role: 'status',
+      className: 'srf-note'
+    }, notice), data && h(React.Fragment, null, h('div', {
+      className: 'srf-table'
+    }, h('table', {
+      'aria-label': 'Revisión mensual del histórico'
+    }, h('thead', null, h('tr', null, ['Mes', 'Reembolsos concluidos', 'Estado del periodo', 'Bajas por resolver', 'Acciones'].map(text => h('th', {
+      key: text
+    }, text)))), h('tbody', null, (data.months || []).map(m => h('tr', {
+      key: m.period
+    }, h('th', {
+      scope: 'row'
+    }, monthNames[Number(m.period.slice(5, 7)) - 1]), h('td', null, m.refund_count ?? 'Por determinar'), h('td', null, states[m.status] || m.status), h('td', null, m.pending_termination_count ?? 'Por determinar'), h('td', null, h('div', {
+      className: 'srf-bar'
+    }, onOpenRefund && h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      disabled: busy,
+      onClick: () => {
+        if (mayLeave()) {
+          clear();
+          onOpenRefund({
+            period: m.period
+          });
+        }
+      }
+    }, 'Ver reembolsos de ' + monthNames[Number(m.period.slice(5, 7)) - 1]), canValidate && !['CURRENT', 'FUTURE'].includes(m.status) && h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      disabled: busy,
+      onClick: () => {
+        if (mayLeave()) {
+          clear();
+          setPeriod(m.period);
+        }
+      }
+    }, 'Revisar ' + monthNames[Number(m.period.slice(5, 7)) - 1]))))))), period && h('form', {
+      className: 'srf-card',
+      onSubmit: e => {
+        e.preventDefault();
+        if (confirmed) save({
+          kind: 'CONFIRM_PERIOD',
+          period,
+          reason
+        });
+      }
+    }, h('h4', null, 'Confirmar reembolsos de ' + period.slice(0, 7)), h('p', {
+      className: 'srf-note'
+    }, 'Confirma que todos los casos concluidos de este mes están registrados, incluidos los capturados después. Un mes sin devoluciones también requiere esta revisión.'), h('label', null, 'Referencia o explicación de la revisión', h('textarea', {
+      required: true,
+      minLength: 8,
+      maxLength: 1000,
+      value: reason,
+      onChange: e => {
+        markDirty(true);
+        setReason(e.target.value);
+      }
+    })), h('label', {
+      className: 'srf-note',
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8
+      }
+    }, h('input', {
+      type: 'checkbox',
+      checked: confirmed,
+      required: true,
+      style: {
+        width: 'auto'
+      },
+      onChange: e => {
+        markDirty(true);
+        setConfirmed(e.target.checked);
+      }
+    }), 'Todos los reembolsos concluidos de este mes están registrados.'), h('div', {
+      className: 'srf-bar'
+    }, h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      disabled: busy,
+      onClick: clear
+    }, 'Cancelar revisión'), h('button', {
+      className: 'srf-btn primary',
+      type: 'submit',
+      disabled: busy || !confirmed
+    }, 'Confirmar histórico del mes'))), h('h4', null, 'Bajas históricas'), h('p', {
+      className: 'srf-note'
+    }, 'Una baja sin fecha comprobada puede afectar varios años. No se sustituye la fecha efectiva con una fecha programada o con el último descuento.'), !ordered.length && h('p', {
+      className: 'srf-note'
+    }, 'No hay antecedentes de bajas para esta consulta.'), ordered.map(entry => h('article', {
+      key: entry.source_record_id,
+      className: 'srf-card',
+      'data-termination-source': entry.source_record_id
+    }, h('div', {
+      className: 'srf-bar'
+    }, h('strong', null, (entry.name || 'Antecedente de ahorro') + ' · Control ' + entry.numero_control), h('span', {
+      className: 'srf-state'
+    }, terminationStates[entry.status] || entry.status)), h('p', {
+      className: 'srf-note'
+    }, (entry.source_sheet || 'Solicitud de Ahorro') + ' · fila ' + entry.source_row + ' · Fecha efectiva: ' + (entry.effective_on || 'Por determinar')), entry.reason && h('p', {
+      className: 'srf-note'
+    }, entry.reason), entry.evidence_reference && h('p', {
+      className: 'srf-note'
+    }, 'Respaldo: ' + entry.evidence_reference), entry.source_state && h('p', {
+      className: 'srf-note'
+    }, 'Estado del antecedente de origen: ' + entry.source_state), canValidate && !entry.can_void && entry.status !== 'VOIDED' && selected !== entry.source_record_id && h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      disabled: busy,
+      onClick: () => {
+        if (mayLeave()) {
+          clear();
+          setSelected(entry.source_record_id);
+        }
+      }
+    }, entry.version ? 'Revisar o corregir constancia' : 'Completar fecha de baja'), canValidate && entry.can_void && selected !== entry.source_record_id && h('button', {
+      className: 'srf-btn',
+      type: 'button',
+      disabled: busy,
+      onClick: () => {
+        if (mayLeave()) {
+          clear();
+          setVoiding(true);
+          setSelected(entry.source_record_id);
+        }
+      }
+    }, 'Retirar constancia histórica'), selected === entry.source_record_id && h(TerminationForm, {
+      key: entry.source_record_id + ':' + entry.version + ':' + voiding,
+      entry,
+      today: data.today,
+      busy,
+      onSave: save,
+      onCancel: clear,
+      onDirty: markDirty,
+      voiding
+    }), entry.history?.length > 0 && h('details', null, h('summary', null, 'Historial de constancias'), entry.history.map((event, i) => h('p', {
+      key: event.id || i,
+      className: 'srf-note'
+    }, 'Versión ' + event.version + ' · ' + (event.mode === 'VOID' ? 'Constancia retirada; fecha del antecedente ' : 'Baja ') + event.effective_on + ' · Capturada ' + (event.created_at || event.captured_at || '') + ' · ' + (event.reason || '')))))))));
+  }
+  window.SavingsRegularizationAdmin = SavingsRegularizationAdmin;
+})();
+})();
 /* @@file investors-model.js */
 (function(){
 /* Inversores: display-only derivations from the authenticated Supabase response. */
@@ -2976,270 +4651,809 @@
 /* @@file investors-admin.jsx */
 (function(){
 /* Isolated administration surface. Existing Admin shell and authorization remain owners. */
-(function(){
- 'use strict';
- const h=React.createElement,{useState,useEffect,useRef}=React,M=window.InvestorsModel,R=()=>window.InvestorsRepository;
- const css=`.iv{color:var(--ink,#17233b);font-size:14px;padding:20px;max-width:1500px;margin:auto}.iv *{box-sizing:border-box}.iv button,.iv input,.iv select,.iv textarea{font:inherit}.iv button{cursor:pointer;min-height:40px;border-radius:10px;padding:8px 13px;border:1px solid var(--hairline,#dce1e9);background:var(--surface,#fff);color:inherit;font-weight:700}.iv button:disabled{opacity:.5;cursor:wait}.iv button.primary{background:var(--guinda,#861e45);border-color:transparent;color:white}.iv button:focus-visible,.iv input:focus,.iv select:focus,.iv textarea:focus{outline:2px solid #a76480;outline-offset:2px}.iv .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}.iv h2{font-size:25px;letter-spacing:-.6px;margin:0 0 6px}.iv h3{font-size:17px;margin:0 0 14px}.iv p{margin:6px 0;color:var(--ink-2,#566176);line-height:1.6}.iv .tabs{display:flex;gap:5px;margin:22px 0 18px;overflow:auto;border-bottom:1px solid var(--hairline,#ddd);padding-bottom:10px}.iv .tabs button{white-space:nowrap;border:0;background:transparent}.iv .tabs button[aria-selected=true]{background:#f4e7ed;color:#861e45}.iv .card{background:var(--surface,#fff);border:1px solid var(--hairline,#dfe3e9);border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 3px 12px #15223904}.iv .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}.iv .metric small{display:block;color:var(--ink-2,#566176);margin-bottom:10px}.iv .metric strong{font-size:23px;letter-spacing:-.5px;display:block}.iv .metric span{font-size:12px;display:block;color:var(--ink-2,#566176);margin-top:8px}.iv .notice{border:1px solid #e4c98c;background:#fff8e9;color:#74571f;border-radius:12px;padding:13px 16px;margin:14px 0;line-height:1.5}.iv .error{background:#fff0ef;color:#9a3028;border:1px solid #efc1bd;border-radius:12px;padding:14px}.iv .scroll{overflow:auto}.iv table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}.iv th{text-align:left;color:var(--ink-2,#566176);font-size:11px;text-transform:uppercase;letter-spacing:.6px;background:var(--surface-2,#f7f8fb)}.iv td,.iv th{padding:12px;border-bottom:1px solid var(--hairline,#e5e7ec);vertical-align:top}.iv td.name{white-space:normal;min-width:190px}.iv td.actions{display:flex;gap:6px}.iv td small{display:block;color:var(--ink-2,#566176);margin-top:4px}.iv .pill{font-size:11px;border-radius:20px;padding:5px 9px;background:#edf1f7;display:inline-block;font-weight:700}.iv .pill.good{background:#e7f3eb;color:#276543}.iv .pill.warn{background:#fff0d9;color:#845f1e}.iv .pill.bad{background:#fde6e5;color:#9c332d}.iv input,.iv select,.iv textarea{background:var(--surface,#fff);color:inherit;width:100%;padding:10px;border:1px solid var(--hairline,#cdd3dc);border-radius:9px;min-height:42px}.iv label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}.iv .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.iv .wide{grid-column:1/-1}.iv textarea{resize:vertical;min-height:75px}.iv .overlay{position:fixed;inset:0;background:#111b36a6;z-index:22000;display:flex;justify-content:center;align-items:center;padding:18px}.iv .dialog{background:var(--surface,#fff);border-radius:20px;max-width:720px;width:100%;max-height:92dvh;overflow:auto;padding:24px;box-shadow:0 20px 80px #0004}.iv .dialog footer{display:flex;justify-content:flex-end;gap:9px;margin-top:24px}.iv .empty{text-align:center;padding:38px 18px;color:var(--ink-2,#566176)}.iv .muted{color:var(--ink-2,#566176);font-size:12px}.iv .textbutton{border:0;padding:0;color:var(--guinda,#861e45);background:none;text-align:left}.iv .search{max-width:330px}.iv .monthbar{height:8px;border-radius:8px;background:#8d3156;margin-top:8px}.iv pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f8fa;padding:12px;border-radius:8px;font-size:12px}@media(max-width:650px){.iv{padding:12px}.iv .fields{grid-template-columns:1fr}.iv .overlay{padding:8px}.iv .dialog{padding:18px}.iv .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.iv .metric strong{font-size:18px}.iv .card{padding:14px}.iv .bar>h2{width:100%}}`;
- const textDate=d=>d?new Date(d+'T12:00:00').toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'}):'Sin registro';
- const button=(text,onClick,primary=false,disabled=false)=>h('button',{type:'button',onClick,className:primary?'primary':'',disabled},text);
- function pill(text){return h('span',{className:'pill '+(/Activo|Realizado|Resuelto/.test(text)?'good':/Vencido/.test(text)?'bad':/revisar|Pendiente|conciliar/.test(text)?'warn':'')},text);}
- function table(head,rows,empty){return rows.length?h('div',{className:'scroll'},h('table',null,h('thead',null,h('tr',null,...head.map(x=>h('th',{key:x,scope:'col'},x)))),h('tbody',null,...rows))):h('div',{className:'empty'},empty||'Todavía no hay registros.');}
- const msg=e=>{const t=String(e?.message||e);if(/ACCESS_DENIED|permission denied/.test(t))return 'Tu cuenta no tiene permiso para esta operación.';if(/VERSION_CHANGED|ACTION_CONFLICT/.test(t))return 'El registro cambió. Actualiza la vista antes de volver a guardar.';if(/CONTEXT_CHANGED|AUTH_REQUIRED/.test(t))return 'La sesión cambió. Vuelve a abrir Inversores.';if(/NEGATIVE_CAPITAL/.test(t))return 'La operación dejaría capital negativo. Revisa el importe y la fecha.';if(/OVERPAYMENT/.test(t))return 'El pago excede el saldo de la obligación seleccionada.';if(/RETURN_CAPITAL_FIRST/.test(t))return 'Registra primero la devolución del capital pendiente.';if(/REVIEW_REQUIRED/.test(t))return 'Resuelve las contradicciones de este contrato en Revisión histórica antes de activarlo.';if(/FUTURE_RATE/.test(t))return 'La tasa sólo puede cambiar desde hoy y antes del vencimiento.';if(/duplicate key/.test(t))return 'Ya existe un registro con esta referencia o período. Revisa antes de duplicarlo.';if(/INVALID|MISMATCH|REQUIRED|check constraint|not-null|null value/.test(t))return 'Revisa los campos, fechas, importes y vínculos de esta operación.';return 'No fue posible completar la operación. Tus datos no se sustituyeron. Reintenta con la misma captura.';};
- function Dialog({title,children,onClose,busy}){
-  const ref=useRef();useEffect(()=>{const previous=document.activeElement,body=document.body.style.overflow;document.body.style.overflow='hidden';ref.current?.querySelector('input,select,textarea,button')?.focus();const key=e=>{if(e.key==='Escape'&&!busy)onClose();if(e.key==='Tab'){const nodes=[...ref.current.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')];const first=nodes[0],last=nodes[nodes.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}};document.addEventListener('keydown',key);return()=>{document.removeEventListener('keydown',key);document.body.style.overflow=body;previous?.focus();};},[busy]);
-  return h('div',{className:'overlay'},h('section',{ref,className:'dialog',role:'dialog','aria-modal':true,'aria-label':title},h('div',{className:'bar'},h('h3',null,title),button('Cerrar',onClose,false,busy)),children));
- }
- function Editor({spec,data,selected,onClose,onSaved}){
-  const initial={reason:'',...(spec.values||{})},[v,set]=useState(initial),[busy,setBusy]=useState(false),[error,setError]=useState(''),[file,setFile]=useState(null),request=useRef(null);
-  const change=(k,value)=>{set(x=>{const next={...x,[k]:value};
-   if(k==='contract_id'){next.movement_id='';next.obligation_id='';next.period_start='';next.period_end='';}
-   if(k==='investor_id')next.contract_id='';
-   if(k==='concept'){next.obligation_id='';if(value==='contribution')next.direction='in';if(['withdrawal','yield'].includes(value))next.direction='out';}
-   if(k==='obligation_id'){const o=data.obligations.find(o=>o.id===value);if(o){next.period_start=o.period_start;next.period_end=o.period_end;next.amount=M.round(Math.max(0,o.amount-o.paid));next.direction='out';next.concept=o.concept==='capital'?'withdrawal':o.concept;}}
-   return next;});request.current=null;};
-  const field=(name,label,type='text',options=null,extra={})=>h('div',{key:name,className:extra.wide?'wide':''},h('label',{htmlFor:'iv-'+name},label),options?h('select',{id:'iv-'+name,value:v[name]??'',required:extra.required!==false,onChange:e=>change(name,e.target.value)},h('option',{value:''},'Seleccionar…'),...options.map(o=>h('option',{key:typeof o==='string'?o:o.value,value:typeof o==='string'?o:o.value},typeof o==='string'?o:o.label))):h(type==='textarea'?'textarea':'input',{id:'iv-'+name,type:type==='textarea'?undefined:type,value:v[name]??'',required:extra.required!==false,min:extra.min,max:extra.max,step:extra.step,maxLength:extra.maxLength||200,onChange:e=>change(name,e.target.value)}));
-  const investors=data.investors.map(i=>({value:i.id,label:i.name})),contracts=data.contracts.filter(c=>(c.status==='active'||(spec.action==='movement'&&['closed','renewed'].includes(c.status)))&&(!v.investor_id||c.investor_id===v.investor_id)).map(c=>({value:c.id,label:(data.investors.find(i=>i.id===c.investor_id)?.name||'')+' · '+c.code}));
-  let fields=[];
-  if(spec.action==='investor')fields=[field('name','Nombre completo'),field('reference','Referencia / expediente','text',null,{required:false}),field('phone','Teléfono','tel',null,{required:false}),field('email','Correo electrónico','email',null,{required:false}),field('notes','Observaciones','textarea',null,{required:false,wide:true,maxLength:2000})];
-  if(['contract','activate','renew'].includes(spec.action))fields=[...(spec.action==='contract'?[field('investor_id','Inversionista','select',investors)]:[]),field('code','Referencia del contrato'),field(spec.action==='renew'?'effective_on':'starts_on',spec.action==='renew'?'Fecha de renovación':'Fecha de ingreso','date'),field('ends_on','Vencimiento','date'),field('months','Plazo en meses','number',null,{min:1,max:600,step:1}),...(spec.action==='renew'?[]:[field('principal','Monto del contrato','number',null,{min:.01,step:.01})]),field('rate_percent','Tasa mensual (%)','number',null,{min:0,max:100,step:.001}),field('payment_mode','Modalidad de rendimientos','select',['Mensual','Al vencimiento','Manual']),...(spec.action==='renew'?[]:[field('payment_method','Forma de ingreso / pago','select',['Transferencia','Efectivo','Cheque','Otro'])]),...(spec.action==='activate'?[field('opening_balance','Capital pendiente confirmado','number',null,{min:0,step:.01}),field('balance_on','Fecha efectiva de ese saldo','date')]:[]),field('notes','Observaciones','textarea',null,{wide:true,required:false,maxLength:2000})];
-  if(spec.action==='rate')fields=[field('effective_on','Vigente desde','date',null,{min:data.today}),field('rate_percent','Nueva tasa mensual (%)','number',null,{min:0,max:100,step:.001})];
-  if(spec.action==='close')fields=[field('effective_on','Fecha de terminación','date',null,{min:data.today,max:data.today})];
-  if(['close','renew'].includes(spec.action)&&data.obligations.some(o=>o.contract_id===v.contract_id&&o.concept==='yield'&&o.period_start<(v.effective_on||data.today)&&o.period_end>(v.effective_on||data.today)))fields.push(field('closing_yield','Rendimiento de cierre acordado (período parcial)','number',null,{min:0,step:.01}));
-  if(spec.action==='movement'){
-   const obligations=data.obligations.filter(o=>o.contract_id===v.contract_id&&!o.cancelled).map(o=>({value:o.id,label:`${textDate(o.due_on)} · ${M.labels[o.concept]} · Pendiente ${M.money(Math.max(0,o.amount-o.paid))}`}));
-   fields=[...(v.replaces_id?[field('voided','Estado de la corrección','select',[{value:'false',label:'Movimiento vigente'},{value:'true',label:'Anular conservando historial'}])]:[]),field('contract_id','Inversionista y contrato','select',contracts),field('effective_on','Fecha efectiva','date',null,{max:data.today}),field('concept','Concepto','select',Object.entries(M.labels).filter(([k])=>['contribution','withdrawal','yield','adjustment','other'].includes(k)).map(([value,label])=>({value,label}))),field('direction','Dirección del movimiento','select',[{value:'in',label:'Recibido'},{value:'out',label:'Pagado'}]),field('amount','Importe','number',null,{min:.01,step:.01}),field('payment_method','Forma de pago','select',['Transferencia','Efectivo','Cheque','Otro']),field('period_start','Período: desde','date',null,{required:v.concept==='yield'}),field('period_end','Período: hasta','date',null,{required:v.concept==='yield'}),field('obligation_id','Obligación a liquidar','select',obligations,{required:v.concept==='yield'}),field('reference','Referencia / comprobante','text',null,{required:false}),field('notes','Observaciones','textarea',null,{wide:true,required:false,maxLength:2000})];
+(function () {
+  'use strict';
+
+  const h = React.createElement,
+    {
+      useState,
+      useEffect,
+      useRef
+    } = React,
+    M = window.InvestorsModel,
+    R = () => window.InvestorsRepository;
+  const css = `.iv{color:var(--ink,#17233b);font-size:14px;padding:20px;max-width:1500px;margin:auto}.iv *{box-sizing:border-box}.iv button,.iv input,.iv select,.iv textarea{font:inherit}.iv button{cursor:pointer;min-height:40px;border-radius:10px;padding:8px 13px;border:1px solid var(--hairline,#dce1e9);background:var(--surface,#fff);color:inherit;font-weight:700}.iv button:disabled{opacity:.5;cursor:wait}.iv button.primary{background:var(--guinda,#861e45);border-color:transparent;color:white}.iv button:focus-visible,.iv input:focus,.iv select:focus,.iv textarea:focus{outline:2px solid #a76480;outline-offset:2px}.iv .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}.iv h2{font-size:25px;letter-spacing:-.6px;margin:0 0 6px}.iv h3{font-size:17px;margin:0 0 14px}.iv p{margin:6px 0;color:var(--ink-2,#566176);line-height:1.6}.iv .tabs{display:flex;gap:5px;margin:22px 0 18px;overflow:auto;border-bottom:1px solid var(--hairline,#ddd);padding-bottom:10px}.iv .tabs button{white-space:nowrap;border:0;background:transparent}.iv .tabs button[aria-selected=true]{background:#f4e7ed;color:#861e45}.iv .card{background:var(--surface,#fff);border:1px solid var(--hairline,#dfe3e9);border-radius:16px;padding:20px;margin-bottom:18px;box-shadow:0 3px 12px #15223904}.iv .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px}.iv .metric small{display:block;color:var(--ink-2,#566176);margin-bottom:10px}.iv .metric strong{font-size:23px;letter-spacing:-.5px;display:block}.iv .metric span{font-size:12px;display:block;color:var(--ink-2,#566176);margin-top:8px}.iv .notice{border:1px solid #e4c98c;background:#fff8e9;color:#74571f;border-radius:12px;padding:13px 16px;margin:14px 0;line-height:1.5}.iv .error{background:#fff0ef;color:#9a3028;border:1px solid #efc1bd;border-radius:12px;padding:14px}.iv .scroll{overflow:auto}.iv table{border-collapse:collapse;width:100%;font-size:13px;white-space:nowrap}.iv th{text-align:left;color:var(--ink-2,#566176);font-size:11px;text-transform:uppercase;letter-spacing:.6px;background:var(--surface-2,#f7f8fb)}.iv td,.iv th{padding:12px;border-bottom:1px solid var(--hairline,#e5e7ec);vertical-align:top}.iv td.name{white-space:normal;min-width:190px}.iv td.actions{display:flex;gap:6px}.iv td small{display:block;color:var(--ink-2,#566176);margin-top:4px}.iv .pill{font-size:11px;border-radius:20px;padding:5px 9px;background:#edf1f7;display:inline-block;font-weight:700}.iv .pill.good{background:#e7f3eb;color:#276543}.iv .pill.warn{background:#fff0d9;color:#845f1e}.iv .pill.bad{background:#fde6e5;color:#9c332d}.iv input,.iv select,.iv textarea{background:var(--surface,#fff);color:inherit;width:100%;padding:10px;border:1px solid var(--hairline,#cdd3dc);border-radius:9px;min-height:42px}.iv label{display:block;font-size:12px;font-weight:700;margin-bottom:6px}.iv .fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.iv .wide{grid-column:1/-1}.iv textarea{resize:vertical;min-height:75px}.iv .overlay{position:fixed;inset:0;background:#111b36a6;z-index:22000;display:flex;justify-content:center;align-items:center;padding:18px}.iv .dialog{background:var(--surface,#fff);border-radius:20px;max-width:720px;width:100%;max-height:92dvh;overflow:auto;padding:24px;box-shadow:0 20px 80px #0004}.iv .dialog footer{display:flex;justify-content:flex-end;gap:9px;margin-top:24px}.iv .empty{text-align:center;padding:38px 18px;color:var(--ink-2,#566176)}.iv .muted{color:var(--ink-2,#566176);font-size:12px}.iv .textbutton{border:0;padding:0;color:var(--guinda,#861e45);background:none;text-align:left}.iv .search{max-width:330px}.iv .monthbar{height:8px;border-radius:8px;background:#8d3156;margin-top:8px}.iv pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f7f8fa;padding:12px;border-radius:8px;font-size:12px}@media(max-width:650px){.iv{padding:12px}.iv .fields{grid-template-columns:1fr}.iv .overlay{padding:8px}.iv .dialog{padding:18px}.iv .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.iv .metric strong{font-size:18px}.iv .card{padding:14px}.iv .bar>h2{width:100%}}`;
+  const textDate = d => d ? new Date(d + 'T12:00:00').toLocaleDateString('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }) : 'Sin registro';
+  const button = (text, onClick, primary = false, disabled = false) => h('button', {
+    type: 'button',
+    onClick,
+    className: primary ? 'primary' : '',
+    disabled
+  }, text);
+  function pill(text) {
+    return h('span', {
+      className: 'pill ' + (/Activo|Realizado|Resuelto/.test(text) ? 'good' : /Vencido/.test(text) ? 'bad' : /revisar|Pendiente|conciliar/.test(text) ? 'warn' : '')
+    }, text);
   }
-  if(spec.action==='obligation')fields=[field('contract_id','Inversionista y contrato','select',contracts),field('concept','Concepto','select',[{value:'yield',label:'Rendimiento'},{value:'capital',label:'Capital'},{value:'other',label:'Otro'}]),field('period_start','Inicio del período','date'),field('period_end','Fin del período','date'),field('due_on','Fecha de pago','date'),field('amount','Importe programado','number',null,{min:.01,step:.01})];
-  if(spec.action==='document')fields=[field('investor_id','Inversionista','select',investors),field('contract_id','Contrato (opcional)','select',data.contracts.filter(c=>c.investor_id===v.investor_id).map(c=>({value:c.id,label:c.code})),{required:false}),field('movement_id','Movimiento (opcional)','select',data.movements.filter(m=>m.contract_id===v.contract_id&&!m.superseded&&!m.voided).map(m=>({value:m.id,label:textDate(m.effective_on)+' · '+M.labels[m.concept]+' · '+M.money(m.amount)})),{required:false}),h('div',{className:'wide',key:'file'},h('label',{htmlFor:'iv-file'},'Documento PDF, JPG o PNG · máximo 5 MB'),h('input',{id:'iv-file',type:'file',accept:'.pdf,.jpg,.jpeg,.png',required:true,onChange:e=>{setFile(e.target.files[0]);request.current=null;}}))];
-  const submit=async e=>{e.preventDefault();setBusy(true);setError('');try{
-   const values={...v};if('voided' in values)values.voided=values.voided===true||values.voided==='true';if('rate_percent'in values){values.monthly_rate=Number(values.rate_percent)/100;delete values.rate_percent;}
-   if(spec.action==='document'){
-    if(!file||file.size>5242880)throw Error('DOCUMENT_INVALID');
-    if(!request.current){const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=reject;reader.readAsDataURL(file);});request.current={id:crypto.randomUUID(),values:{...values,filename:file.name,mime:file.type,base64}};}
-    await R().upload(request.current.values,request.current.id);
-   }else{if(!request.current)request.current={id:crypto.randomUUID(),values};await R().save(spec.action,request.current.values,request.current.id);}
-   await onSaved();
-  }catch(err){setError(msg(err));}finally{setBusy(false);}};
-  return h(Dialog,{title:spec.title,onClose,busy},spec.action==='activate'&&h('div',{className:'notice'},'Confirma saldo y fecha con evidencia. El historial del Excel se conserva; este saldo no se registra como una nueva aportación ni acredita rendimientos pagados.'),['contract','activate','renew'].includes(spec.action)&&h('p',null,'El calendario usa meses completos y rendimiento simple. Los períodos parciales se programan con el importe acordado; no se aplica un prorrateo automático.'),spec.action==='rate'&&h('p',null,'La nueva tasa se aplica a períodos completos que comiencen desde la fecha indicada. Los períodos anteriores mantienen su tasa e importe.'),spec.action==='renew'&&h('p',null,'El capital pendiente se transfiere al contrato nuevo sin registrarlo como dinero recibido otra vez. Las obligaciones anteriores permanecen en su contrato.'),h('form',{onSubmit:submit},h('fieldset',{disabled:busy,style:{border:0,padding:0,margin:0}},h('div',{className:'fields'},...fields,field('reason',spec.action==='review'?'Resolución y evidencia verificada':'Motivo / respaldo de la captura','textarea',null,{wide:true,maxLength:2000}))),error&&h('p',{className:'error',role:'alert'},error),h('footer',null,button('Cancelar',onClose,false,busy),h('button',{className:'primary',type:'submit',disabled:busy},busy?'Guardando…':'Guardar'))));
- }
- function Module({app,onBack,header}){
-  const [data,setData]=useState(null),[selected,setSelected]=useState(''),[tab,setTab]=useState('overview'),[search,setSearch]=useState(''),[filter,setFilter]=useState(''),[month,setMonth]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState(''),[editor,setEditor]=useState(null),[detail,setDetail]=useState(null),[notice,setNotice]=useState('');
-  const generation=useRef(0),selection=useRef(selected);selection.current=selected;
-  const refresh=async()=>{const run=++generation.current;setLoading(true);setError('');try{const result=await R().load(selection.current);if(run===generation.current){setData(result);}}catch(e){if(run===generation.current){setData(null);setError(msg(e));}}finally{if(run===generation.current)setLoading(false);}};
-  useEffect(()=>{refresh();return()=>{generation.current++;};},[selected]);
-  useEffect(()=>{let key;try{key=R().contextKey();}catch(_){return;}const clear=()=>{let next;try{next=R().contextKey();}catch(_){next='';}if(next!==key){generation.current++;setData(null);setEditor(null);setDetail(null);setError('La sesión cambió. Vuelve a abrir Inversores.');setLoading(false);}};const a=window.AffiliateAuth?.subscribe?.(clear),b=window.AdminRepository?.subscribe?.(clear);return()=>{if(typeof a==='function')a();if(typeof b==='function')b();};},[]);
-  const open=(action,title,values={})=>setEditor({action,title,values}),saved=async()=>{setEditor(null);setNotice('Registro guardado con historial de cambios.');await refresh();};
-  const summary=data?M.summarize(data,selected):null,person=data?.investors.find(i=>i.id===selected),name=id=>data?.investors.find(i=>i.id===id)?.name||'Sin vínculo',contract=id=>data?.contracts.find(c=>c.id===id),canWrite=!!data?.can_write;
-  const personLink=id=>h('button',{className:'textbutton',onClick:()=>{setSelected(id);setTab('overview');}},name(id));
-  const contractActions=c=>h('td',{className:'actions'},button('Detalle',()=>setDetail({type:'contract',value:c})),canWrite&&c.status==='active'&&button('Movimiento',()=>open('movement','Registrar movimiento',{contract_id:c.id,effective_on:data.today,concept:'yield',direction:'out',payment_method:c.payment_method||'Transferencia'})),canWrite&&['historical','review'].includes(c.status)&&button('Conciliar',()=>open('activate','Conciliar contrato histórico',{...c,rate_percent:Number(c.monthly_rate)*100,payment_mode:c.payment_mode||'Mensual',payment_method:c.payment_method||'Transferencia',balance_on:data.today})));
-  const movementHistory=m=>{const ids=new Set([m.id]);let changed=true;while(changed){changed=false;for(const x of data.movements)if(ids.has(x.id)||ids.has(x.replaces_id)){if(x.replaces_id&&!ids.has(x.replaces_id)){ids.add(x.replaces_id);changed=true;}if(!ids.has(x.id)){ids.add(x.id);changed=true;}}}return data.movements.filter(x=>ids.has(x.id));};
-  const showSource=async(sheet,row)=>{try{const records=await R().source(sheet,row);setDetail({type:'source',value:records,title:`${sheet} · fila ${row}`});}catch(e){setError(msg(e));}};
-  const download=async d=>{setError('');try{const result=await R().document(d.id);const bytes=Uint8Array.from(atob(result.base64),c=>c.charCodeAt(0)),url=URL.createObjectURL(new Blob([bytes],{type:result.mime})),a=document.createElement('a');a.href=url;a.download=result.filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),30000);}catch(e){setError(msg(e));}};
-  const rowLabel=id=>{const c=contract(id);return c?h('span',null,name(c.investor_id),h('small',null,c.code)):'Contrato';};
-  const metric=(label,value,note)=>h('div',{className:'card metric',key:label},h('small',null,label),h('strong',null,value),note&&h('span',null,note));
-  let content=null;
-  if(data&&summary){
-   if(tab==='overview')content=h(React.Fragment,null,
-    person&&h('div',{className:'card bar'},h('div',null,h('h3',null,person.name),h('p',null,[person.reference,person.phone,person.email].filter(Boolean).join(' · ')||'Sin datos de contacto'),person.notes&&h('p',null,person.notes)),canWrite&&button('Editar inversionista',()=>open('investor','Editar inversionista',person))),
-    h('div',{className:'grid'},metric('Capital vigente',M.money(summary.capital),'Saldos registrados de contratos activos'),metric('Aportaciones registradas',M.money(summary.contributed),summary.historicalContributed?'Monto ingresado histórico + nuevas aportaciones':'Entradas de capital; excluye renovaciones'),metric('Rendimientos generados',M.money(summary.generated),'Períodos completos del calendario conciliado'),metric('Rendimientos pagados',M.money(summary.paid),'Sólo movimientos realizados'),metric('Rendimientos pendientes',M.money(summary.yieldPending),'Generados menos pagos vinculados'),metric('Próximo pago',textDate(summary.nextPayment),summary.nextMaturity?'Vencimiento: '+textDate(summary.nextMaturity):'Sin vencimientos registrados')),
-    h('div',{className:'card'},h('div',{className:'bar'},h('h3',null,'Obligaciones mensuales'),button('Ver calendario',()=>setTab('calendar'))),h('p',null,'Rendimientos programados y capital pendiente al vencimiento, exclusivamente de Inversores.'),table(['Mes','Rendimientos','Capital','Otros','Total'],summary.projection.map(p=>h('tr',{key:p.month},h('td',null,p.month),h('td',null,M.money(p.yield)),h('td',null,M.money(p.capital)),h('td',null,M.money(p.other)),h('td',null,h('strong',null,M.money(p.yield+p.capital+p.other))))),'No hay obligaciones programadas.')),
-    person&&h('div',{className:'card'},h('h3',null,'Historial de cambios'),table(['Fecha','Operación','Responsable','Motivo'],data.audit.map(a=>h('tr',{key:a.id},h('td',null,new Date(a.created_at).toLocaleString('es-MX')),h('td',null,M.labels[a.action]||a.action),h('td',null,a.actor_real||'Migración histórica'),h('td',{className:'name'},a.reason))))));
-   if(tab==='investors')content=h('div',{className:'card'},table(['Inversionista','Referencia','Contacto','Contratos','Acciones'],data.investors.filter(i=>(!selected||i.id===selected)&&(i.name+' '+i.reference).toLowerCase().includes(search.toLowerCase())).map(i=>h('tr',{key:i.id},h('td',{className:'name'},personLink(i.id)),h('td',null,i.reference||'—'),h('td',null,i.phone||i.email||'—'),h('td',null,data.contracts.filter(c=>c.investor_id===i.id).length),h('td',{className:'actions'},button('Abrir ficha',()=>{setSelected(i.id);setTab('overview');}),canWrite&&button('Editar',()=>open('investor','Editar inversionista',i)))))));
-   if(tab==='contracts')content=h('div',{className:'card'},table(['Inversionista / contrato','Vigencia','Tasa mensual','Capital','Estado','Acciones'],summary.contracts.filter(c=>(!filter||c.status===filter)&&(name(c.investor_id)+' '+c.code).toLowerCase().includes(search.toLowerCase())).map(c=>{const rate=[...(c.terms||[])].filter(t=>t.effective_on<=data.today).pop()?.monthly_rate??c.monthly_rate;return h('tr',{key:c.id},h('td',{className:'name'},personLink(c.investor_id),h('small',null,c.code)),h('td',null,textDate(c.starts_on),h('small',null,'Vence '+textDate(c.ends_on))),h('td',null,(Number(rate)*100).toLocaleString('es-MX')+'%'),h('td',null,M.money(c.status==='active'?c.balance:c.principal),h('small',null,c.status==='active'?'Pendiente de devolver':'Monto histórico del contrato')),h('td',null,pill(M.labels[c.status])),contractActions(c));})));
-   if(tab==='movements')content=h('div',{className:'card'},h('p',null,'Cada corrección conserva el movimiento anterior. Las renovaciones transfieren capital sin duplicar aportaciones.'),table(['Fecha efectiva','Inversionista / contrato','Concepto','Importe','Período','Referencia','Capturó','Acciones'],summary.movements.filter(m=>!filter||m.concept===filter).map(m=>h('tr',{key:m.id},h('td',null,textDate(m.effective_on)),h('td',{className:'name'},rowLabel(m.contract_id)),h('td',null,M.labels[m.concept]),h('td',null,(m.direction==='in'?'+ ':'− ')+M.money(m.amount),h('small',null,m.payment_method)),h('td',null,m.period_start?textDate(m.period_start)+' — '+textDate(m.period_end):'—'),h('td',{className:'name'},m.reference||'—',h('small',null,m.notes)),h('td',null,m.actor.slice(0,8),h('small',null,new Date(m.created_at).toLocaleDateString('es-MX'))),h('td',{className:'actions'},canWrite&&button('Corregir',()=>open('movement','Corregir movimiento',{...m,id:undefined,replaces_id:m.id,reason:''})),button('Historial',()=>setDetail({type:'movement',value:m})))))));
-   if(tab==='calendar')content=h('div',{className:'card'},h('div',{className:'bar'},h('h3',null,'Calendario de pagos'),h('input',{type:'month','aria-label':'Mes de obligaciones',value:month,onChange:e=>setMonth(e.target.value),style:{width:180}})),table(['Vencimiento','Inversionista / contrato','Concepto / período','Programado','Pagado','Pendiente','Estado','Acciones'],summary.obligations.filter(o=>(!month||o.due_on.startsWith(month))&&(!filter||M.status(o,data.today)===filter)).map(o=>h('tr',{key:o.id},h('td',null,textDate(o.due_on)),h('td',{className:'name'},rowLabel(o.contract_id)),h('td',null,M.labels[o.concept],h('small',null,textDate(o.period_start)+' — '+textDate(o.period_end)),o.rate_snapshot!=null&&h('small',null,(Number(o.rate_snapshot)*100)+'% mensual'),o.derived&&h('small',null,'Capital proyectado al vencimiento')),h('td',null,M.money(o.amount)),h('td',null,M.money(o.paid)),h('td',null,M.money(Math.max(0,o.amount-o.paid))),h('td',null,pill(M.status(o,data.today))),h('td',null,canWrite&&o.amount>o.paid&&button('Registrar pago',()=>open('movement','Registrar pago de obligación',{contract_id:o.contract_id,obligation_id:o.derived?'':o.id,effective_on:data.today,concept:o.concept==='capital'?'withdrawal':o.concept,direction:'out',amount:M.round(o.amount-o.paid),period_start:o.period_start,period_end:o.period_end,payment_method:'Transferencia'})))))));
-   if(tab==='documents')content=h('div',{className:'card'},h('p',null,'Expediente privado. Los reemplazos conservan todas las versiones.'),table(['Documento','Inversionista','Contrato','Fecha','Acciones'],data.documents.map(d=>h('tr',{key:d.id},h('td',{className:'name'},d.filename,d.replaces_id&&h('small',null,'Nueva versión')),h('td',null,personLink(d.investor_id)),h('td',null,contract(d.contract_id)?.code||'Expediente general'),h('td',null,new Date(d.created_at).toLocaleDateString('es-MX')),h('td',{className:'actions'},button('Descargar',()=>download(d)),canWrite&&!data.documents.some(x=>x.replaces_id===d.id)&&button('Nueva versión',()=>open('document','Agregar versión de documento',{investor_id:d.investor_id,contract_id:d.contract_id||'',replaces_id:d.id})))))));
-   if(tab==='review')content=h('div',{className:'card'},h('h3',null,'Revisión histórica'),h('p',null,'El Excel conserva sus valores originales. Resolver requiere evidencia y no genera pagos ni modifica automáticamente contratos.'),table(['Tipo','Inversionista / contrato','Evidencia','Estado','Acciones'],data.reviews.filter(r=>!filter||(filter==='pending'?!r.resolved_at:!!r.resolved_at)).map(r=>h('tr',{key:r.id},h('td',{className:'name'},M.labels[r.kind]||'Referencia por revisar'),h('td',{className:'name'},r.contract_id?rowLabel(r.contract_id):r.investor_id?personLink(r.investor_id):'Referencia histórica'),h('td',{className:'name'},r.detail?.sheet?`${r.detail.sheet} · fila ${r.detail.row} · ${r.detail.document||''}`:'Revisar la evidencia del contrato'),h('td',null,pill(r.resolved_at?'Resuelto':'Por revisar')),h('td',null,r.detail?.sheet&&button('Ver evidencia',()=>showSource(r.detail.sheet,r.detail.row)),canWrite&&!r.resolved_at&&button('Resolver',()=>open('review','Documentar resolución',{id:r.id,version:r.version})))))));
+  function table(head, rows, empty) {
+    return rows.length ? h('div', {
+      className: 'scroll'
+    }, h('table', null, h('thead', null, h('tr', null, ...head.map(x => h('th', {
+      key: x,
+      scope: 'col'
+    }, x)))), h('tbody', null, ...rows))) : h('div', {
+      className: 'empty'
+    }, empty || 'Todavía no hay registros.');
   }
-  const filters=tab==='contracts'?Object.entries(M.labels).filter(([k])=>['active','historical','review','closed','renewed'].includes(k)):tab==='movements'?Object.entries(M.labels).filter(([k])=>['contribution','withdrawal','yield','adjustment','other'].includes(k)):tab==='calendar'?['Programado','Realizado','Pendiente','Vencido'].map(x=>[x,x]):tab==='review'?[['pending','Pendientes'],['resolved','Resueltos']]:[];
-  const action=tab==='investors'?['investor','Nuevo inversionista',{name:''}]:tab==='contracts'?['contract','Nuevo contrato',{investor_id:selected,starts_on:data?.today,months:12,rate_percent:2.5,payment_mode:'Mensual',payment_method:'Transferencia'}]:tab==='movements'?['movement','Registrar movimiento',{effective_on:data?.today,concept:'yield',direction:'out',payment_method:'Transferencia'}]:tab==='calendar'?['obligation','Programar obligación',{concept:'yield'}]:tab==='documents'?['document','Agregar documento',{investor_id:selected}]:null;
-  return h(React.Fragment,null,header?header({title:'Inversores',sub:'Contratos, movimientos y obligaciones'}):null,h('div',{className:'iv','data-investors-module':true},h('style',null,css),h('div',{className:'bar'},h('div',null,h('h2',null,person?person.name:'Inversores'),h('p',null,person?'Expediente individual':'Administración de capital y rendimientos')),h('div',{className:'bar'},selected&&button('Todos los inversionistas',()=>setSelected('')),button('Actualizar',refresh,false,loading),!header&&button('Volver',onBack),canWrite&&button('Nuevo inversionista',()=>open('investor','Nuevo inversionista',{name:''}),true))),
-   h('div',{className:'tabs',role:'tablist','aria-label':'Secciones de Inversores'},...[['overview','Vista general'],['investors','Inversionistas'],['contracts','Contratos'],['movements','Movimientos'],['calendar','Calendario'],['documents','Documentos'],['review','Revisión histórica']].map(([id,label])=>h('button',{key:id,role:'tab','aria-selected':tab===id,onClick:()=>{setTab(id);setFilter('');}},label))),
-   notice&&h('p',{role:'status'},notice),error&&h('div',{className:'error',role:'alert'},error),loading&&h('div',{className:'card',role:'status'},'Consultando Inversores…'),
-   data&&!loading&&h(React.Fragment,null,summary.incomplete&&h('div',{className:'notice'},'Cobertura histórica parcial. Los importes del Excel sin fecha efectiva de pago no se consideran pagos realizados. ',summary.unreconciled,' contratos con información vigente por revisar. Los saldos históricos se observan al importar; las aportaciones históricas conservan el monto ingresado del Excel. Rendimientos y pagos anteriores sin evidencia suficiente quedan fuera de los indicadores.'),h('div',{className:'bar',style:{marginBottom:14}},['investors','contracts'].includes(tab)&&h('input',{className:'search',type:'search',placeholder:'Buscar por nombre o contrato','aria-label':'Buscar inversionista o contrato',value:search,onChange:e=>setSearch(e.target.value)}),filters.length>0&&h('select',{'aria-label':'Filtrar estado o concepto',style:{width:210},value:filter,onChange:e=>setFilter(e.target.value)},h('option',{value:''},'Todos'),...filters.map(([value,label])=>h('option',{key:value,value},label))),action&&canWrite&&button(action[1],()=>open(...action),true)),content),
-   editor&&data&&h(Editor,{key:editor.action+(editor.values.id||''),spec:editor,data,selected,onClose:()=>setEditor(null),onSaved:saved}),
-   detail&&h(Dialog,{title:detail.type==='source'?detail.title:detail.type==='contract'?'Detalle del contrato':'Historial del movimiento',onClose:()=>setDetail(null)},detail.type==='source'?table(['Celda','Valor registrado','Fórmula original'],detail.value.flatMap(r=>Object.entries(r.cells).map(([cell,v])=>h('tr',{key:r.id+cell},h('td',null,cell+r.row_number),h('td',{className:'name'},v.value==null?'Vacío':String(v.value)),h('td',{className:'name'},v.formula||'—'))))):detail.type==='contract'?h(React.Fragment,null,h('h3',null,detail.value.code),h('p',null,name(detail.value.investor_id)),h('p',null,'Monto: '+M.money(detail.value.principal)+' · Tasa original: '+(Number(detail.value.monthly_rate)*100)+'%'),h('p',null,'Rendimiento programado pendiente de vencer: '+M.money(data.obligations.filter(o=>o.contract_id===detail.value.id&&o.concept==='yield').reduce((n,o)=>n+Number(o.amount),0))),h('p',null,'Vigencia: '+textDate(detail.value.starts_on)+' — '+textDate(detail.value.ends_on)),h('p',null,detail.value.notes||''),canWrite&&detail.value.status==='active'&&h('div',{className:'bar'},button('Cambiar tasa',()=>{const c=detail.value;setDetail(null);open('rate','Cambiar tasa',{contract_id:c.id,version:c.version,effective_on:data.today,rate_percent:Number(c.monthly_rate)*100});}),button('Renovar',()=>{const c=detail.value;setDetail(null);open('renew','Renovar contrato',{contract_id:c.id,version:c.version,effective_on:data.today,rate_percent:2.5,payment_mode:c.payment_mode,months:c.months});}),button('Terminar',()=>{const c=detail.value;setDetail(null);open('close','Terminar contrato',{contract_id:c.id,version:c.version,effective_on:data.today});})),h('h3',{style:{marginTop:20}},'Tasas y vigencias'),...(detail.value.terms||[]).map(t=>h('p',{key:t.id},textDate(t.effective_on)+' · '+(Number(t.monthly_rate)*100)+'% mensual')),detail.value.source&&h(React.Fragment,null,h('h3',{style:{marginTop:20}},'Referencia histórica'),h('p',null,'Estado original: '+(detail.value.source.status||'Sin registro')),h('p',null,'Monto ingresado: '+M.money(detail.value.source.contributed)),h('p',null,'Saldo declarado: '+M.money(detail.value.source.current_capital)),h('p',null,'Rendimiento mensual declarado: '+M.money(detail.value.source.monthly)),button('Ver fila original',()=>showSource('Cartera Inicial',detail.value.source.row)),h('p',null,(detail.value.source.references||[]).join(' · ')))):table(['Fecha efectiva','Concepto','Importe','Estado','Capturó','Observaciones'],movementHistory(detail.value).map(m=>h('tr',{key:m.id},h('td',null,textDate(m.effective_on)),h('td',null,M.labels[m.concept]),h('td',null,M.money(m.amount)),h('td',null,m.superseded?'Versión anterior':m.voided?'Anulado':'Vigente'),h('td',null,m.actor),h('td',{className:'name'},m.notes)))))));
- }
- window.InvestorsAdminModule=Module;
-})();
-})();
-/* @@file savings-refunds-repository.js */
-(function(){
-/* Canonical refund cases, with context-bound reads and idempotent commands. */
-(function(){
- 'use strict';
- function context(){
-  const auth=window.AffiliateAuth?.getState(),admin=window.AdminRepository?.getState();
-  if(auth?.phase!=='authenticated'||!auth.session?.user?.id)throw Error('AUTH_REQUIRED');
-  let session=auth.session.session_id||'';
-  if(!session&&auth.session.access_token){try{session=JSON.parse(atob(auth.session.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).session_id||'';}catch(_){}}
-  return JSON.stringify([auth.session.user.id,session,auth.affiliate?.id,auth.impersonation,admin?.phase,admin?.subjectKey,admin?.assignment]);
- }
- async function rpc(name,args){const key=context(),{data,error}=await window.SutiSupabase.getClient().rpc(name,args);if(context()!==key)throw Error('CONTEXT_CHANGED');if(error)throw error;return data;}
- window.SavingsRefundsRepository=Object.freeze({
-  contextKey:context,
-  list:values=>rpc('get_admin_savings_refunds',{p_case_id:values?.case_id||null,p_folio:values?.folio||null}),
-  people:values=>rpc('get_admin_savings_refund_people',{p_search:values?.search||''}),
-  regularization:values=>rpc('get_admin_savings_regularization',{p_year:values?.year,p_folio:values?.folio||null}),
-  save:(command,key)=>{if(!key)throw Error('IDEMPOTENCY_KEY_REQUIRED');return rpc('save_admin_savings_refund',{p_command:command,p_client_action_id:key});},
-  saveTermination:(command,key)=>{if(!key)throw Error('IDEMPOTENCY_KEY_REQUIRED');return rpc('save_admin_savings_termination',{p_command:command,p_client_action_id:key});}
- });
-})();
-})();
-/* @@file savings-refunds-admin.jsx */
-(function(){
-/* Refund records belong to Caja de Ahorro. Recording a payment never executes a bank transfer. */
-(function(){
- 'use strict';
- const h=React.createElement,{useState,useEffect,useRef}=React;
- const money=n=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(Number(n||0));
- const labels={DRAFT:'En captura',SUBMITTED:'Por autorizar',APPROVED:'Autorizado',PARTIAL:'Pago parcial',PAID:'Reembolsado',REJECTED:'Rechazado',CANCELLED:'Cancelado'};
- const causes={POST_TERMINATION:'Descuento posterior a la baja · nómina enviada previamente',DUPLICATE_DISCOUNT:'Descuento duplicado',OTHER:'Otro motivo documentado'};
- const treatments={NOT_CREDITED:'El exceso no se acreditó al ahorro',ALREADY_EXCLUDED:'El exceso ya está excluido del ahorro',EXISTING_ADJUSTMENT:'Existe una corrección vinculada'};
- const css='.srf{color:var(--ink);min-width:0}.srf-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin:12px 0}.srf button{font:inherit;cursor:pointer}.srf-btn{border:1px solid var(--hairline);border-radius:10px;padding:10px 14px;background:var(--surface);color:var(--ink);font-weight:800}.srf-btn.primary{background:var(--guinda,#861e45);color:white}.srf button:disabled{opacity:.5;cursor:default}.srf label{display:grid;gap:6px;font-size:12px;font-weight:800}.srf input,.srf select,.srf textarea{min-width:0;width:100%;box-sizing:border-box;border:1px solid var(--hairline-strong);border-radius:9px;padding:10px;background:var(--surface);color:var(--ink);font:inherit}.srf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}.srf-card{background:var(--surface);border:1px solid var(--hairline);border-radius:14px;padding:16px;margin:12px 0}.srf-note{font-size:13px;line-height:1.6;color:var(--ink-2)}.srf-error{background:#fff0ed;color:#9b241b;border-radius:10px;padding:12px}.srf-state{border-radius:30px;padding:5px 10px;background:var(--surface-2);font-size:12px;font-weight:800}.srf-table{overflow:auto}.srf table{border-collapse:collapse;width:100%;font-size:13px}.srf th,.srf td{text-align:left;padding:10px;border-bottom:1px solid var(--hairline);vertical-align:top}.srf-wide{grid-column:1/-1}.srf details{margin-top:12px}.srf fieldset{border:1px solid var(--hairline);border-radius:12px;margin:15px 0;padding:14px}.srf legend{font-weight:800}.srf h3{margin:4px 0 12px}';
- const blank=()=>({source_reference:'',deduction_on:'',sent_to_rh_on:'',sent_to_rh_unknown_reason:'',rh_unknown:false,historical_payroll_code:'',historical_payroll_reference:'',expected_amount:'0',actual_amount:'',confirmed_on:'',confirmation_reference:'',balance_treatment:'',balance_note:'',adjustment_id:''});
- const blankPayment=()=>({amount:'',paid_on:'',bank_reference:'',reason:''});
- const cents=value=>Math.round(Number(value||0)*100);
- const effectivePayments=entry=>(entry.payments||[]).filter(p=>!p.is_superseded);
- const captured=value=>value?new Date(value).toLocaleString('es-MX',{timeZone:'America/Hermosillo'}):'Sin fecha de captura disponible';
- function explainHistorical(error){const messages={SAVINGS_REFUND_PAYROLL_EVIDENCE_REQUIRED:'Falta documentar el tipo de nómina que correspondía a esa quincena histórica.',SAVINGS_REFUND_PAYROLL_EVIDENCE_INVALID:'Selecciona el tipo de nómina de la quincena y su referencia documental.',SAVINGS_REFUND_PAYROLL_EVIDENCE_CONFLICT:'El tipo de nómina indicado no coincide con la inscripción vigente en esa quincena. Revisa el antecedente.',SAVINGS_REFUND_RH_DATE_REQUIRED:'Registra la fecha de envío a RH o explica por qué no se conserva en este antecedente histórico.',SAVINGS_REFUND_HISTORICAL_PAYMENTS_REQUIRED:'Registra los pagos que acreditan la devolución histórica completa.',SAVINGS_REFUND_EFFECTIVE_PAYMENT_REQUIRED:'Este pago ya tiene una corrección. Actualiza el expediente y revisa el registro vigente.',SAVINGS_REFUND_DISCOUNT_HISTORY_REQUIRED:'Documenta el descuento real, su fecha y el respaldo del antecedente.'};return messages[error?.message]||explain(error);}
- function explain(error){const code=String(error?.message||'');const meanings={CONTEXT_CHANGED:'La sesión cambió. Consulta nuevamente.',AUTH_REQUIRED:'Vuelve a iniciar sesión.',SAVINGS_REFUND_VERSION_CONFLICT:'Otra persona actualizó el expediente. Actualiza la consulta antes de continuar.',SAVINGS_REFUND_DISCOUNT_ALREADY_CLAIMED:'Ese descuento ya está vinculado a otro expediente.',SAVINGS_REFUND_DUPLICATE_DISCOUNT:'La referencia del descuento está repetida.',SAVINGS_REFUND_PAYMENT_ALREADY_RECORDED:'Este comprobante ya tiene un pago registrado en el expediente.',SAVINGS_REFUND_PAYMENT_EXCEEDED:'El importe supera el saldo pendiente de devolución.',SAVINGS_REFUND_FULL_EXCESS_REQUIRED:'La autorizaci\u00f3n debe cubrir todo el exceso confirmado.',SAVINGS_REFUND_EXCESS_EXCEEDED:'El importe autorizado supera el exceso confirmado.',SAVINGS_REFUND_CONFIRM_DISCOUNTS_FIRST:'Confirma los descuentos efectivamente realizados antes de autorizar.',SAVINGS_REFUND_DENIED:'Tu cuenta no tiene permiso para esta acción.',SAVINGS_REFUND_AMOUNT_INVALID:'Revisa los importes; utiliza como máximo dos decimales.',SAVINGS_REFUND_PAYMENT_DATE_INVALID:'Revisa la fecha real de la devolución y las fechas de sus descuentos.',SAVINGS_REFUND_DISCOUNT_DATE_INVALID:'Revisa las fechas del descuento, envío a RH y confirmación.',SAVINGS_REFUND_EXACT_IDENTITY_REQUIRED:'Selecciona una cuenta de ahorro identificada por su número de control.',SAVINGS_REFUND_ADJUSTMENT_INVALID:'La corrección vinculada no corresponde a este ahorro o ya fue utilizada.',SAVINGS_REFUND_STATE_INVALID:'El estado actual del expediente no permite esta acción. Actualiza la consulta.',SAVINGS_REFUND_PERIOD_INVALID:'Selecciona un mes anterior para confirmar su histórico.'};return meanings[code]||'No se pudo completar la operación. '+code;}
- function Field({label,value,onChange,type='text',required=false,...rest}){return h('label',null,label,h('input',{type,value:value??'',onChange:e=>onChange(e.target.value),required,...rest}));}
- function RefundEditor({entry,historical=false,today,onSave,onCancel,busy,onDirty}){
-  const [reason,setReason]=useState(entry?.reason||''),[cause,setCause]=useState(entry?.cause||'POST_TERMINATION'),[deductions,setDeductions]=useState(()=>entry?.deductions?.length?entry.deductions.map(d=>({...d,actual_amount:d.actual_amount??'',adjustment_id:d.adjustment_id||'',confirmed_on:d.confirmed_on||'',confirmation_reference:d.confirmation_reference||''})):[blank()]);
-  const [search,setSearch]=useState(''),[people,setPeople]=useState([]),[person,setPerson]=useState(entry?{participant_id:entry.participant_id,folio:entry.numero_control}:null),[searchBusy,setSearchBusy]=useState(false),[error,setError]=useState(''),[payments,setPayments]=useState(()=>[blankPayment()]);const sequence=useRef(0);
-  useEffect(()=>()=>{sequence.current++;},[]);
-  const change=(setter,val)=>{onDirty?.(true);setter(val);};
-  const edit=(i,key,val)=>{onDirty?.(true);setDeductions(ds=>ds.map((d,j)=>i===j?{...d,[key]:val}:d));};
-  async function find(){if(searchBusy||!search.trim())return;const seq=++sequence.current;setSearchBusy(true);setError('');try{const result=await window.SavingsRefundsRepository.people({search:search.trim()});if(seq===sequence.current)setPeople((result.rows||[]).filter(p=>p.participant_id&&!p.identity_conflict&&(historical||!p.is_archived)));}catch(e){if(seq===sequence.current)setError(explain(e));}finally{if(seq===sequence.current)setSearchBusy(false);}}
-  function submit(e){e.preventDefault();setError('');if(!person?.participant_id){setError('Selecciona a la persona de su cuenta de ahorro.');return;}
-   const items=deductions.map(d=>({source_reference:d.source_reference.trim(),deduction_on:d.deduction_on,sent_to_rh_on:historical&&d.rh_unknown?null:d.sent_to_rh_on,...(historical&&d.rh_unknown?{sent_to_rh_unknown_reason:d.sent_to_rh_unknown_reason}:{}),...(historical?{historical_payroll_code:Number(d.historical_payroll_code),historical_payroll_reference:d.historical_payroll_reference}:{}),expected_amount:Number(d.expected_amount),actual_amount:d.actual_amount===''?null:Number(d.actual_amount),confirmed_on:d.actual_amount===''?null:d.confirmed_on,confirmation_reference:d.actual_amount===''?null:d.confirmation_reference,balance_treatment:d.balance_treatment,balance_note:d.balance_note,adjustment_id:d.adjustment_id||null}));
-   const paid=payments.map(p=>({...p,amount:Number(p.amount),bank_reference:p.bank_reference.trim()}));
-   if(historical&&(items.some(d=>d.actual_amount===null)||paid.reduce((n,p)=>n+cents(p.amount),0)!==items.reduce((n,d)=>n+Math.max(0,cents(d.actual_amount)-cents(d.expected_amount)),0))){setError('Las devoluciones registradas deben cubrir exactamente el exceso confirmado de todas las quincenas.');return;}
-   onSave({kind:historical?'REGISTER_HISTORICAL':entry?'SAVE':'CREATE',...(entry?{case_id:entry.id,expected_version:entry.version}:{}),participant_id:person.participant_id,reason,cause,deductions:items,...(historical?{payments:paid}:{})});
+  const msg = e => {
+    const t = String(e?.message || e);
+    if (/ACCESS_DENIED|permission denied/.test(t)) return 'Tu cuenta no tiene permiso para esta operación.';
+    if (/VERSION_CHANGED|ACTION_CONFLICT/.test(t)) return 'El registro cambió. Actualiza la vista antes de volver a guardar.';
+    if (/CONTEXT_CHANGED|AUTH_REQUIRED/.test(t)) return 'La sesión cambió. Vuelve a abrir Inversores.';
+    if (/NEGATIVE_CAPITAL/.test(t)) return 'La operación dejaría capital negativo. Revisa el importe y la fecha.';
+    if (/OVERPAYMENT/.test(t)) return 'El pago excede el saldo de la obligación seleccionada.';
+    if (/RETURN_CAPITAL_FIRST/.test(t)) return 'Registra primero la devolución del capital pendiente.';
+    if (/REVIEW_REQUIRED/.test(t)) return 'Resuelve las contradicciones de este contrato en Revisión histórica antes de activarlo.';
+    if (/FUTURE_RATE/.test(t)) return 'La tasa sólo puede cambiar desde hoy y antes del vencimiento.';
+    if (/duplicate key/.test(t)) return 'Ya existe un registro con esta referencia o período. Revisa antes de duplicarlo.';
+    if (/INVALID|MISMATCH|REQUIRED|check constraint|not-null|null value/.test(t)) return 'Revisa los campos, fechas, importes y vínculos de esta operación.';
+    return 'No fue posible completar la operación. Tus datos no se sustituyeron. Reintenta con la misma captura.';
+  };
+  function Dialog({
+    title,
+    children,
+    onClose,
+    busy
+  }) {
+    const ref = useRef();
+    useEffect(() => {
+      const previous = document.activeElement,
+        body = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      ref.current?.querySelector('input,select,textarea,button')?.focus();
+      const key = e => {
+        if (e.key === 'Escape' && !busy) onClose();
+        if (e.key === 'Tab') {
+          const nodes = [...ref.current.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]')];
+          const first = nodes[0],
+            last = nodes[nodes.length - 1];
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last?.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first?.focus();
+          }
+        }
+      };
+      document.addEventListener('keydown', key);
+      return () => {
+        document.removeEventListener('keydown', key);
+        document.body.style.overflow = body;
+        previous?.focus();
+      };
+    }, [busy]);
+    return h('div', {
+      className: 'overlay'
+    }, h('section', {
+      ref,
+      className: 'dialog',
+      role: 'dialog',
+      'aria-modal': true,
+      'aria-label': title
+    }, h('div', {
+      className: 'bar'
+    }, h('h3', null, title), button('Cerrar', onClose, false, busy)), children));
   }
-  return h('form',{className:'srf-card',onSubmit:submit},h('h3',null,historical?'Registrar reembolso histórico ya pagado':entry?'Editar expediente':'Nuevo expediente de reembolso'),
-   historical&&h('p',{className:'srf-note'},'Captura devoluciones que ya se realizaron, aunque sean de años anteriores. Las fechas reales se conservan; la validación y la captura se registran hoy. Esta acción no realiza una transferencia ni altera el saldo.'),
-   !entry&&h('div',{className:'srf-card'},h('div',{className:'srf-bar'},h(Field,{label:'Buscar por número de control o nombre',value:search,onChange:v=>change(setSearch,v)}),h('button',{className:'srf-btn',type:'button',disabled:searchBusy,onClick:find},searchBusy?'Buscando…':'Buscar ahorrador')),
-    people.map(p=>h('button',{type:'button',className:'srf-btn',key:p.participant_id,onClick:()=>{change(setPerson,p);setPeople([]);}},(p.nombre||p.name||'Ahorrador')+' · '+p.folio+(p.is_archived?' · Afiliado archivado':'')))),
-   person&&h('p',{className:'srf-note'},'Número de control: '+(person.folio||person.numero_control)),
-   person?.is_archived&&h('p',{className:'srf-note'},'El vínculo se usa para documentar su antecedente. No reactiva su afiliación ni su ahorro.'),
-   h('div',{className:'srf-grid'},h('label',null,'Motivo del caso',h('select',{value:cause,onChange:e=>change(setCause,e.target.value)},Object.entries(causes).map(([v,l])=>h('option',{key:v,value:v},l)))),h('label',null,'Justificación',h('textarea',{required:true,minLength:8,maxLength:1000,rows:3,value:reason,onChange:e=>change(setReason,e.target.value)}))),
-   deductions.map((d,i)=>h('fieldset',{key:i},h('legend',null,'Descuento / quincena '+(i+1)),h('div',{className:'srf-grid'},
-    h(Field,{label:'Referencia única del descuento o recibo',value:d.source_reference,onChange:v=>edit(i,'source_reference',v),required:true,maxLength:180,readOnly:Boolean(entry)}),
-    h(Field,{label:'Fecha del descuento / quincena',type:'date',value:d.deduction_on,onChange:v=>edit(i,'deduction_on',v),required:true,...(historical?{max:today}:{})}),
-    !d.rh_unknown&&h(Field,{label:'Fecha en que se envió a RH',type:'date',value:d.sent_to_rh_on,onChange:v=>edit(i,'sent_to_rh_on',v),required:true}),
-    historical&&h('label',{className:'srf-note',style:{display:'flex',alignItems:'center',gap:10}},h('input',{type:'checkbox',checked:Boolean(d.rh_unknown),onChange:e=>edit(i,'rh_unknown',e.target.checked),style:{width:'auto'}}),'No se conserva la fecha del envío histórico a RH'),
-    historical&&d.rh_unknown&&h(Field,{label:'Explicación de la fecha de envío a RH desconocida',value:d.sent_to_rh_unknown_reason,onChange:v=>edit(i,'sent_to_rh_unknown_reason',v),required:true,minLength:3,maxLength:1000}),
-    historical&&h('label',null,'Tipo de nómina de esta quincena',h('select',{required:true,value:d.historical_payroll_code,onChange:e=>edit(i,'historical_payroll_code',e.target.value)},h('option',{value:''},'Selecciona el tipo documentado'),h('option',{value:'573'},'Personal activo · 573'),h('option',{value:'580'},'Jubilados y pensionados · 580'))),
-    historical&&h(Field,{label:'Referencia que acredita el tipo de nómina',value:d.historical_payroll_reference,onChange:v=>edit(i,'historical_payroll_reference',v),required:true,minLength:3,maxLength:180}),
-    h(Field,{label:'Importe que correspondía descontar',type:'number',step:'.01',min:'0',value:d.expected_amount,onChange:v=>edit(i,'expected_amount',v),required:true}),
-    h(Field,{label:historical?'Importe realmente descontado':'Importe realmente descontado (vacío si es futuro)',type:'number',step:'.01',min:'0',value:d.actual_amount,onChange:v=>edit(i,'actual_amount',v),required:historical}),
-    d.actual_amount!==''&&h(Field,{label:'Fecha de confirmación del descuento',type:'date',value:d.confirmed_on,onChange:v=>edit(i,'confirmed_on',v),required:true}),
-    d.actual_amount!==''&&h(Field,{label:'Referencia que acredita el descuento',value:d.confirmation_reference,onChange:v=>edit(i,'confirmation_reference',v),required:true,maxLength:180}),
-    h('label',null,'Tratamiento del importe en el ahorro',h('select',{required:true,value:d.balance_treatment,onChange:e=>edit(i,'balance_treatment',e.target.value)},h('option',{value:''},'Selecciona el tratamiento'),Object.entries(treatments).map(([v,l])=>h('option',{key:v,value:v},l)))),
-    d.balance_treatment==='EXISTING_ADJUSTMENT'&&h(Field,{label:'Identificador de la corrección existente',value:d.adjustment_id,onChange:v=>edit(i,'adjustment_id',v),required:true}),
-    h(Field,{label:'Explicación del tratamiento del saldo',value:d.balance_note,onChange:v=>edit(i,'balance_note',v),required:true,maxLength:1000})),
-    !entry&&deductions.length>1&&h('button',{type:'button',className:'srf-btn',onClick:()=>change(setDeductions,deductions.filter((_,j)=>j!==i))},'Quitar esta quincena'))),
-   h('p',{className:'srf-note'},'Este expediente conserva el descuento y su devolución. Registrar un reembolso no vuelve a descontar el dinero del saldo de ahorro.'),
-   !entry&&h('button',{type:'button',className:'srf-btn',onClick:()=>change(setDeductions,[...deductions,blank()])},'Agregar otra quincena'),
-   historical&&h(React.Fragment,null,h('h4',null,'Devoluciones ya realizadas'),payments.map((p,i)=>h('fieldset',{key:i,'data-refund-payment-editor':true},h('legend',null,'Pago histórico '+(i+1)),h('div',{className:'srf-grid'},
-    h(Field,{label:'Importe devuelto',type:'number',step:'.01',min:'.01',value:p.amount,onChange:v=>change(setPayments,payments.map((x,j)=>i===j?{...x,amount:v}:x)),required:true}),
-    h(Field,{label:'Fecha real de la devolución',type:'date',max:today,value:p.paid_on,onChange:v=>change(setPayments,payments.map((x,j)=>i===j?{...x,paid_on:v}:x)),required:true}),
-    h(Field,{label:'Referencia bancaria o comprobante del pago',value:p.bank_reference,onChange:v=>change(setPayments,payments.map((x,j)=>i===j?{...x,bank_reference:v}:x)),required:true,maxLength:180}),
-    h(Field,{label:'Justificación del pago histórico',value:p.reason,onChange:v=>change(setPayments,payments.map((x,j)=>i===j?{...x,reason:v}:x)),required:true,minLength:8,maxLength:1000})),payments.length>1&&h('button',{className:'srf-btn',type:'button',onClick:()=>change(setPayments,payments.filter((_,j)=>j!==i))},'Quitar este pago'))),
-    h('button',{className:'srf-btn',type:'button',onClick:()=>change(setPayments,[...payments,blankPayment()])},'Agregar otro pago histórico'),
-    h('p',{className:'srf-note','aria-live':'polite'},'Exceso confirmado: '+money(deductions.reduce((n,d)=>n+Math.max(0,cents(d.actual_amount)-cents(d.expected_amount)),0)/100)+' · Devoluciones registradas: '+money(payments.reduce((n,p)=>n+cents(p.amount),0)/100)+'. El reporte contará un caso en el mes del último pago que lo completó.')),
-   error&&h('p',{role:'alert',className:'srf-error'},error),h('div',{className:'srf-bar'},h('button',{type:'button',className:'srf-btn',disabled:busy,onClick:onCancel},'Cancelar captura'),h('button',{type:'submit',className:'srf-btn primary',disabled:busy},busy?'Guardando…':historical?'Guardar histórico ya pagado':'Guardar expediente')));
- }
- function ActionForm({entry,kind,payment,today,onSave,onCancel,busy,onDirty}){
-  const isPayment=['PAY','CORRECT_PAYMENT'].includes(kind);
-  const [reason,setReason]=useState(''),[amount,setAmount]=useState(payment?String(payment.amount):kind==='APPROVE'?((entry.deductions||[]).reduce((n,d)=>n+Math.max(0,Math.round(Number(d.actual_amount||0)*100)-Math.round(Number(d.expected_amount||0)*100)),0)/100).toFixed(2):String(entry.pending_amount||'')),[date,setDate]=useState(payment?.paid_on||''),[reference,setReference]=useState(payment?.bank_reference||'');
-  const title={APPROVE:'Autorizar reembolso',PAY:'Registrar devolución realizada',CORRECT_PAYMENT:'Guardar corrección del pago',SUBMIT:'Enviar a revisión',REJECT:'Rechazar expediente',CANCEL:'Cancelar expediente'}[kind];
-  const change=(setter,value)=>{onDirty?.(true);setter(value);};
-  return h('form',{className:'srf-card',onSubmit:e=>{e.preventDefault();onSave({kind,case_id:entry.id,expected_version:entry.version,reason,...(kind==='APPROVE'?{authorized_amount:Number(amount)}:{}),...(isPayment?{amount:Number(amount),paid_on:date,bank_reference:reference}:{}),...(kind==='CORRECT_PAYMENT'?{payment_id:payment.id}:{})});}},h('h3',null,title),
-   h('div',{className:'srf-grid'},(isPayment||kind==='APPROVE')&&h(Field,{label:isPayment?'Importe devuelto':'Importe autorizado',value:amount,onChange:v=>change(setAmount,v),readOnly:kind==='APPROVE',type:'number',min:'.01',step:'.01',required:true}),
-    isPayment&&h(Field,{label:'Fecha real de la devolución',value:date,onChange:v=>change(setDate,v),type:'date',max:today,required:true}),isPayment&&h(Field,{label:'Referencia bancaria o comprobante del pago',value:reference,onChange:v=>change(setReference,v),required:true,maxLength:180}),
-    h('label',null,kind==='CORRECT_PAYMENT'?'Motivo de la corrección':'Justificación'+(kind==='PAY'?' y explicación si es una devolución anterior':''),h('textarea',{required:true,minLength:8,maxLength:1000,rows:3,value:reason,onChange:e=>change(setReason,e.target.value)}))),
-   kind==='APPROVE'&&h('p',{className:'srf-note'},'Se autoriza el exceso confirmado completo. Puedes registrar la devolución en varios pagos; el caso se concluye cuando se devuelve todo el importe.'),
-   kind==='PAY'&&h('p',{className:'srf-note'},'Registra únicamente dinero que ya se devolvió. La fecha del pago se conserva separada de la fecha de captura.'),
-   kind==='CORRECT_PAYMENT'&&h('p',{className:'srf-note'},'Se conserva el pago anterior y se agrega una corrección con tu motivo y la fecha actual. Se revisarán nuevamente los meses afectados. Corregir el registro no realiza ni revierte una transferencia.'),
-   h('div',{className:'srf-bar'},h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:onCancel},'Volver'),h('button',{className:'srf-btn primary',type:'submit',disabled:busy},busy?'Guardando…':title)));
- }
- function PayrollCorrectionForm({entry,deduction,onSave,onCancel,busy,onDirty}){
-  const [code,setCode]=useState(String(deduction.effective_historical_payroll_code??deduction.historical_payroll_code??'')),[reference,setReference]=useState(deduction.effective_historical_payroll_reference??deduction.historical_payroll_reference??''),[reason,setReason]=useState('');
-  const change=(setter,value)=>{onDirty?.(true);setter(value);};
-  return h('form',{className:'srf-card','data-refund-payroll-correction':true,onSubmit:e=>{e.preventDefault();onSave({kind:'CORRECT_PAYROLL_EVIDENCE',case_id:entry.id,expected_version:entry.version,deduction_id:deduction.id,historical_payroll_code:Number(code),historical_payroll_reference:reference,reason});}},h('h3',null,'Corregir tipo de nómina'),
-   h('p',{className:'srf-note'},'Quincena '+deduction.deduction_on+' · '+deduction.source_reference+' · Descontado: '+money(deduction.actual_amount)),
-   deduction.payroll_resolution?.conflict&&h('p',{className:'srf-error',role:'alert'},'La inscripción de esta quincena identifica la nómina '+deduction.payroll_resolution.canonical_code+'. Revisa el comprobante y corrige la clasificación documentada.'),
-   h('div',{className:'srf-grid'},h('label',null,'Tipo de nómina de esta quincena',h('select',{required:true,value:code,onChange:e=>change(setCode,e.target.value)},h('option',{value:''},'Selecciona el tipo documentado'),h('option',{value:'573'},'Personal activo · 573'),h('option',{value:'580'},'Jubilados y pensionados · 580'))),
-    h(Field,{label:'Referencia que acredita el tipo de nómina',value:reference,onChange:v=>change(setReference,v),required:true,minLength:3,maxLength:180}),
-    h('label',null,'Motivo de la corrección de nómina',h('textarea',{required:true,minLength:8,maxLength:1000,rows:3,value:reason,onChange:e=>change(setReason,e.target.value)}))),
-   h('p',{className:'srf-note'},'Se conserva la clasificación anterior y se registra esta corrección con su motivo. El tipo documentado debe coincidir con la inscripción que correspondía a esa quincena. Los importes, fechas de descuento y pagos permanecen intactos; el mes del caso concluido requerirá revisión.'),
-   h('div',{className:'srf-bar'},h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:onCancel},'Volver'),h('button',{className:'srf-btn primary',type:'submit',disabled:busy},busy?'Guardando…':'Guardar corrección de nómina')));
- }
- function PayrollEvidence({deduction,canCorrect,onCorrect}){
-  const code=deduction.effective_historical_payroll_code??deduction.historical_payroll_code,reference=deduction.effective_historical_payroll_reference??deduction.historical_payroll_reference;
-  return h('div',{className:'srf-card','data-refund-payroll-evidence':true},h('strong',null,'Nómina de la quincena '+deduction.deduction_on),h('p',{className:'srf-note'},deduction.source_reference),
-   h('p',{className:'srf-note'},code?'Clasificación vigente: '+code+' · '+reference:'Sin clasificación histórica documentada.'),
-   deduction.payroll_resolution?.conflict&&h('p',{className:'srf-error',role:'alert'},'La clasificación documentada no coincide con la inscripción de esta quincena, que identifica la nómina '+deduction.payroll_resolution.canonical_code+'. Este caso requiere corregir su tipo de nómina para el reporte.'),
-   canCorrect&&h('button',{className:'srf-btn',onClick:onCorrect},'Corregir tipo de nómina'),
-   h('details',null,h('summary',null,'Historial del tipo de nómina'),h('p',{className:'srf-note'},'Original: '+(deduction.historical_payroll_code??'Sin dato')+' · '+(deduction.historical_payroll_reference||'Sin referencia original')),
-    (deduction.payroll_history||[]).map((version,i)=>h('p',{className:'srf-note',key:version.id||version.version||i},'Versión '+version.version+': '+version.historical_payroll_code+' · '+version.historical_payroll_reference+' · Capturada el '+captured(version.captured_at)+' · '+version.reason))));
- }
- function RefundCoverage({periods,onSave,busy,canConfirm,onDirty}){
-  const [period,setPeriod]=useState(''),[reason,setReason]=useState(''),[confirmed,setConfirmed]=useState(false);
-  return h('details',{className:'srf-card'},h('summary',null,'Histórico mensual de reembolsos'),
-   h('p',{className:'srf-note'},'Para informar los meses anteriores, registra primero sus devoluciones. Después confirma que están incluidos todos los casos concluidos de cada mes. Esta confirmación no cambia aportaciones ni saldos.'),
-   (periods||[]).map(p=>h('p',{key:p.period,className:'srf-note'},p.period.slice(0,7)+' · '+(p.invalidated_at||!p.confirmed_at?'Requiere actualización':'Histórico registrado')+' · '+p.confirmed_case_count+' caso(s)')),
-   canConfirm&&h('form',{onSubmit:e=>{e.preventDefault();if(confirmed&&period)onSave({kind:'CONFIRM_PERIOD',period:period+'-01',reason});}},h('div',{className:'srf-grid'},
-    h(Field,{label:'Mes del histórico',type:'month',value:period,onChange:v=>{onDirty?.(true);setPeriod(v);setConfirmed(false);},required:true}),
-    h('label',null,'Referencia o explicación de la revisión',h('textarea',{required:true,minLength:8,maxLength:1000,value:reason,onChange:e=>{onDirty?.(true);setReason(e.target.value);}}))),
-    h('label',{className:'srf-note',style:{display:'flex',alignItems:'center',gap:10}},h('input',{type:'checkbox',required:true,checked:confirmed,onChange:e=>{onDirty?.(true);setConfirmed(e.target.checked);},style:{width:'auto'}}),'Todos los casos de reembolso concluidos de este mes están registrados.'),
-    h('button',{className:'srf-btn',type:'submit',disabled:busy||!confirmed},busy?'Guardando…':'Confirmar histórico del mes')));
- }
- function SavingsRefundsAdmin({folio,initialYear,focusSourceIds,onSaved,onDirty}){
-  const [state,setState]=useState({loading:true,data:null,error:null}),[revision,setRevision]=useState(0),[selected,setSelected]=useState(null),[editor,setEditor]=useState(null),[action,setAction]=useState(null),[busy,setBusy]=useState(false),[error,setError]=useState(''),[filter,setFilter]=useState('ALL'),[query,setQuery]=useState('');
-  const [year,setYear]=useState(initialYear?String(initialYear):''),[month,setMonth]=useState('');
-  const [detail,setDetail]=useState({loading:false,entry:null,error:null});
-  const sequence=useRef(0),detailSequence=useRef(0),pending=useRef(null),dirty=useRef(false),subjectRef=useRef(null);let subject;try{subject=window.SavingsRefundsRepository.contextKey();}catch(_){subject='denied';}subjectRef.current=subject;
-  const markDirty=value=>{dirty.current=value;onDirty?.(value);};
-  const mayLeave=()=>!dirty.current||window.confirm('Hay cambios sin guardar. ¿Deseas descartarlos?');
-  useEffect(()=>{const warn=e=>{if(dirty.current){e.preventDefault();e.returnValue='';}};window.addEventListener('beforeunload',warn);return()=>window.removeEventListener('beforeunload',warn);},[]);
-  useEffect(()=>{const seq=++sequence.current;setState({loading:true,data:null,error:null});window.SavingsRefundsRepository.list({folio}).then(data=>{if(seq===sequence.current)setState({loading:false,data,error:null});}).catch(e=>{if(seq===sequence.current)setState({loading:false,data:null,error:e});});return()=>{sequence.current++;};},[revision,folio,subject]);
-  useEffect(()=>{setEditor(null);setAction(null);setSelected(null);setBusy(false);setError('');pending.current=null;markDirty(false);},[subject,folio]);
-  useEffect(()=>{const seq=++detailSequence.current;setDetail({loading:Boolean(selected),entry:null,error:null});if(selected)window.SavingsRefundsRepository.list({case_id:selected,folio}).then(data=>{if(seq===detailSequence.current)setDetail({loading:false,entry:(data.cases||[]).find(c=>c.id===selected)||null,error:null});}).catch(e=>{if(seq===detailSequence.current)setDetail({loading:false,entry:null,error:e});});return()=>{detailSequence.current++;};},[selected,revision,folio,subject]);
-  async function refresh(){setRevision(r=>r+1);if(onSaved)await onSaved();}
-  async function save(command){if(busy)return;const requestSubject=subject,signature=JSON.stringify(command);if(!pending.current||pending.current.signature!==signature)pending.current={signature,key:crypto.randomUUID()};setBusy(true);setError('');try{const result=await window.SavingsRefundsRepository.save(command,pending.current.key);if(subjectRef.current!==requestSubject)return;pending.current=null;setEditor(null);setAction(null);setSelected(result.case_id||result.id||null);markDirty(false);await refresh();}catch(e){if(subjectRef.current===requestSubject)setError(explainHistorical(e));}finally{if(subjectRef.current===requestSubject)setBusy(false);}}
-  function cancel(){if(busy||!mayLeave())return;setEditor(null);setAction(null);setError('');markDirty(false);}
-  function openEditor(value){if(!mayLeave())return;markDirty(false);setEditor(value);setAction(null);if(!value.id)setSelected(null);}
-  function openAction(value){if(!mayLeave())return;markDirty(false);setAction(value);}
-  function openRefund({period,case_id}={}){if(!mayLeave())return;markDirty(false);if(period){setYear(String(period).slice(0,4));setMonth(String(period).slice(5,7));}setQuery('');setFilter('ALL');setSelected(case_id||null);}
-  const data=state.data,permissions=data?.permissions||{},cases=(data?.cases||[]).map(c=>c.id===selected&&detail.entry?.id===c.id?detail.entry:c),entry=cases.find(c=>c.id===selected),shown=cases.filter(c=>{
-   const dates=[c.paid_at,...effectivePayments(c).map(p=>p.paid_on)].filter(Boolean).map(String),inPeriod=c.status!=='PAID'||!year||dates.some(d=>d.slice(0,4)===year&&(!month||d.slice(5,7)===month));
-   return inPeriod&&(filter==='ALL'||c.status===filter)&&(!query||[c.folio,c.numero_control,c.reason].some(v=>String(v||'').toLowerCase().includes(query.toLowerCase())));
-  }),actionKind=typeof action==='string'?action:action?.kind;
-  return h('section',{className:'srf','data-savings-refunds':true},h('style',null,css),h('div',{className:'srf-bar'},h('div',null,h('h3',null,'Reembolsos'),h('p',{className:'srf-note'},'Descuentos enviados previamente a RH, importes por devolver y casos concluidos.')),permissions.can_write&&h('button',{className:'srf-btn primary',disabled:busy||Boolean(editor)||Boolean(action),onClick:()=>openEditor({})},'Nuevo expediente'),permissions.can_write&&permissions.can_approve&&h('button',{className:'srf-btn',disabled:busy||Boolean(editor)||Boolean(action),onClick:()=>openEditor({historical:true})},'Registrar reembolso histórico ya pagado')),
-   state.loading&&h('p',{role:'status'},'Consultando expedientes…'),state.error&&h('div',{role:'alert',className:'srf-error'},explain(state.error),h('button',{className:'srf-btn',onClick:()=>setRevision(r=>r+1)},'Reintentar')),error&&h('p',{role:'alert',className:'srf-error'},error),
-   editor&&h(RefundEditor,{key:editor.id||(editor.historical?'historical':'new'),entry:editor.id?editor:null,historical:!!editor.historical,today:data?.today,busy,onSave:save,onCancel:cancel,onDirty:markDirty}),
-   action&&entry&&(actionKind==='CORRECT_PAYROLL_EVIDENCE'?h(PayrollCorrectionForm,{key:entry.id+actionKind+action.deduction.id,entry,deduction:action.deduction,busy,onSave:save,onCancel:cancel,onDirty:markDirty}):h(ActionForm,{key:entry.id+actionKind+(action?.payment?.id||''),entry,kind:actionKind,payment:action?.payment,today:data?.today,busy,onSave:save,onCancel:cancel,onDirty:markDirty})),
-   data&&!editor&&!action&&h(React.Fragment,null,
-    window.SavingsRegularizationAdmin?h(window.SavingsRegularizationAdmin,{key:revision,initialYear:/^\d{4}$/.test(year)&&Number(year)>=2000&&Number(year)<=2100?Number(year):initialYear,folio,onSaved:refresh,onDirty:markDirty,onOpenRefund:openRefund,focusSourceIds}):h(RefundCoverage,{key:revision,periods:data.coveragePeriods,onSave:save,busy,canConfirm:permissions.can_write&&permissions.can_approve,onDirty:markDirty}),
-    h('div',{className:'srf-bar'},h(Field,{label:'Buscar expediente o número de control',value:query,onChange:setQuery}),h('label',null,'Estado',h('select',{value:filter,onChange:e=>setFilter(e.target.value)},h('option',{value:'ALL'},'Todos'),Object.entries(labels).map(([v,l])=>h('option',{key:v,value:v},l)))),h(Field,{label:'Año de las devoluciones (vacío: todos)',type:'number',min:'2000',max:'2100',value:year,onChange:value=>{if(mayLeave()){markDirty(false);setYear(value);setMonth('');}}}),h('label',null,'Mes de las devoluciones',h('select',{value:month,disabled:!year,onChange:e=>setMonth(e.target.value)},h('option',{value:''},'Todos'),Array.from({length:12},(_,i)=>h('option',{key:i,value:String(i+1).padStart(2,'0')},String(i+1).padStart(2,'0'))))),h('button',{className:'srf-btn',disabled:busy,onClick:()=>{if(mayLeave()){markDirty(false);setRevision(r=>r+1);}}},'Actualizar')),
-    h('p',{className:'srf-note'},'El periodo usa las fechas reales de devolución y conclusión, no la fecha de captura. Los expedientes pendientes permanecen visibles.'),
-    !shown.length&&h('p',{className:'srf-note'},'No hay expedientes registrados para esta consulta. Un cero en el historial de ahorro no acredita por sí solo una devolución.'),
-    shown.map(c=>h('article',{className:'srf-card',key:c.id},h('div',{className:'srf-bar'},h('strong',null,c.folio+' · Control '+c.numero_control),h('span',{className:'srf-state'},labels[c.status]||c.status)),h('p',{className:'srf-note'},c.reason),h('div',{className:'srf-bar'},h('span',null,'Autorizado: '+money(c.authorized_amount)),h('span',null,'Devuelto: '+money(c.paid_amount)),h('span',null,'Pendiente: '+money(c.pending_amount)),h('button',{className:'srf-btn','aria-expanded':selected===c.id,onClick:()=>setSelected(selected===c.id?null:c.id)},selected===c.id?'Cerrar detalle':'Ver expediente')),
-     selected===c.id&&h(React.Fragment,null,
-      detail.loading&&h('p',{role:'status',className:'srf-note'},'Consultando historial del expediente…'),detail.error&&h('p',{role:'alert',className:'srf-error'},explain(detail.error)),
-      c.origin==='HISTORICAL'&&h('p',{className:'srf-note'},'Antecedente histórico · Validado el '+captured(c.approved_at)+' · Capturado el '+captured(c.created_at)),
-      h('div',{className:'srf-table'},h('table',null,h('thead',null,h('tr',null,['Quincena','Enviado a RH','Esperado','Descontado','Tratamiento'].map(l=>h('th',{key:l},l)))),h('tbody',null,(c.deductions||[]).map(d=>h('tr',{key:d.id||d.source_reference},h('td',null,d.deduction_on,h('div',{className:'srf-note'},d.source_reference),d.historical_payroll_code&&h('div',{className:'srf-note'},'Nómina documentada vigente '+(d.effective_historical_payroll_code??d.historical_payroll_code)+' · '+(d.effective_historical_payroll_reference??d.historical_payroll_reference))),h('td',null,d.sent_to_rh_on||'Fecha histórica desconocida',!d.sent_to_rh_on&&h('div',{className:'srf-note'},d.sent_to_rh_unknown_reason)),h('td',null,money(d.expected_amount)),h('td',null,d.actual_amount==null?'Por confirmar':money(d.actual_amount)),h('td',null,treatments[d.balance_treatment],h('div',{className:'srf-note'},d.balance_note))))))),
-      c.origin==='HISTORICAL'&&(c.deductions||[]).map(d=>h(PayrollEvidence,{key:d.id||d.source_reference,deduction:d,canCorrect:permissions.can_write&&permissions.can_approve,onCorrect:()=>openAction({kind:'CORRECT_PAYROLL_EVIDENCE',deduction:d})})),
-      h('h4',null,'Devoluciones registradas'),effectivePayments(c).map(p=>h('div',{key:p.id,className:'srf-card'},h('p',{className:'srf-note'},p.paid_on+' · '+money(p.amount)+' · '+p.bank_reference),h('p',{className:'srf-note'},'Capturado el '+captured(p.captured_at)+(p.supersedes_payment_id?' · Corrección de un registro anterior':'')),h('p',{className:'srf-note'},p.reason),permissions.can_write&&permissions.can_approve&&h('button',{className:'srf-btn',onClick:()=>openAction({kind:'CORRECT_PAYMENT',payment:p})},'Corregir registro del pago'))),!effectivePayments(c).length&&h('p',{className:'srf-note'},'Todavía no hay pagos registrados.'),
-      (c.payments||[]).some(p=>p.is_superseded)&&h('details',null,h('summary',null,'Versiones anteriores de los pagos'),(c.payments||[]).filter(p=>p.is_superseded).map(p=>h('p',{key:p.id,className:'srf-note'},p.paid_on+' · '+money(p.amount)+' · '+p.bank_reference+' · Sustituido por corrección · Capturado el '+captured(p.captured_at)+' · '+(p.reason||'')))),
-      h('div',{className:'srf-bar'},permissions.can_write&&['DRAFT','SUBMITTED','REJECTED'].includes(c.status)&&h('button',{className:'srf-btn',onClick:()=>openEditor(c)},'Editar captura'),permissions.can_write&&c.status==='DRAFT'&&h('button',{className:'srf-btn',onClick:()=>openAction('SUBMIT')},'Enviar a revisión'),permissions.can_approve&&c.status==='SUBMITTED'&&h('button',{className:'srf-btn primary',onClick:()=>openAction('APPROVE')},'Autorizar'),permissions.can_approve&&c.status==='SUBMITTED'&&h('button',{className:'srf-btn',onClick:()=>openAction('REJECT')},'Rechazar'),permissions.can_approve&&['APPROVED','PARTIAL'].includes(c.status)&&h('button',{className:'srf-btn primary',onClick:()=>openAction('PAY')},'Registrar devolución'),permissions.can_approve&&['DRAFT','SUBMITTED','APPROVED'].includes(c.status)&&h('button',{className:'srf-btn',onClick:()=>openAction('CANCEL')},'Cancelar expediente')),
-      h('details',null,h('summary',null,'Historial del expediente'),(c.events||[]).map(event=>h('p',{key:event.id,className:'srf-note'},new Date(event.created_at).toLocaleString('es-MX')+' · '+(event.action||event.kind||'Registro')+' · '+(event.reason||'')))))))));
- }
- window.SavingsRefundsAdmin=SavingsRefundsAdmin;
+  function Editor({
+    spec,
+    data,
+    selected,
+    onClose,
+    onSaved
+  }) {
+    const initial = {
+        reason: '',
+        ...(spec.values || {})
+      },
+      [v, set] = useState(initial),
+      [busy, setBusy] = useState(false),
+      [error, setError] = useState(''),
+      [file, setFile] = useState(null),
+      request = useRef(null);
+    const change = (k, value) => {
+      set(x => {
+        const next = {
+          ...x,
+          [k]: value
+        };
+        if (k === 'contract_id') {
+          next.movement_id = '';
+          next.obligation_id = '';
+          next.period_start = '';
+          next.period_end = '';
+        }
+        if (k === 'investor_id') next.contract_id = '';
+        if (k === 'concept') {
+          next.obligation_id = '';
+          if (value === 'contribution') next.direction = 'in';
+          if (['withdrawal', 'yield'].includes(value)) next.direction = 'out';
+        }
+        if (k === 'obligation_id') {
+          const o = data.obligations.find(o => o.id === value);
+          if (o) {
+            next.period_start = o.period_start;
+            next.period_end = o.period_end;
+            next.amount = M.round(Math.max(0, o.amount - o.paid));
+            next.direction = 'out';
+            next.concept = o.concept === 'capital' ? 'withdrawal' : o.concept;
+          }
+        }
+        return next;
+      });
+      request.current = null;
+    };
+    const field = (name, label, type = 'text', options = null, extra = {}) => h('div', {
+      key: name,
+      className: extra.wide ? 'wide' : ''
+    }, h('label', {
+      htmlFor: 'iv-' + name
+    }, label), options ? h('select', {
+      id: 'iv-' + name,
+      value: v[name] ?? '',
+      required: extra.required !== false,
+      onChange: e => change(name, e.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Seleccionar…'), ...options.map(o => h('option', {
+      key: typeof o === 'string' ? o : o.value,
+      value: typeof o === 'string' ? o : o.value
+    }, typeof o === 'string' ? o : o.label))) : h(type === 'textarea' ? 'textarea' : 'input', {
+      id: 'iv-' + name,
+      type: type === 'textarea' ? undefined : type,
+      value: v[name] ?? '',
+      required: extra.required !== false,
+      min: extra.min,
+      max: extra.max,
+      step: extra.step,
+      maxLength: extra.maxLength || 200,
+      onChange: e => change(name, e.target.value)
+    }));
+    const investors = data.investors.map(i => ({
+        value: i.id,
+        label: i.name
+      })),
+      contracts = data.contracts.filter(c => (c.status === 'active' || spec.action === 'movement' && ['closed', 'renewed'].includes(c.status)) && (!v.investor_id || c.investor_id === v.investor_id)).map(c => ({
+        value: c.id,
+        label: (data.investors.find(i => i.id === c.investor_id)?.name || '') + ' · ' + c.code
+      }));
+    let fields = [];
+    if (spec.action === 'investor') fields = [field('name', 'Nombre completo'), field('reference', 'Referencia / expediente', 'text', null, {
+      required: false
+    }), field('phone', 'Teléfono', 'tel', null, {
+      required: false
+    }), field('email', 'Correo electrónico', 'email', null, {
+      required: false
+    }), field('notes', 'Observaciones', 'textarea', null, {
+      required: false,
+      wide: true,
+      maxLength: 2000
+    })];
+    if (['contract', 'activate', 'renew'].includes(spec.action)) fields = [...(spec.action === 'contract' ? [field('investor_id', 'Inversionista', 'select', investors)] : []), field('code', 'Referencia del contrato'), field(spec.action === 'renew' ? 'effective_on' : 'starts_on', spec.action === 'renew' ? 'Fecha de renovación' : 'Fecha de ingreso', 'date'), field('ends_on', 'Vencimiento', 'date'), field('months', 'Plazo en meses', 'number', null, {
+      min: 1,
+      max: 600,
+      step: 1
+    }), ...(spec.action === 'renew' ? [] : [field('principal', 'Monto del contrato', 'number', null, {
+      min: .01,
+      step: .01
+    })]), field('rate_percent', 'Tasa mensual (%)', 'number', null, {
+      min: 0,
+      max: 100,
+      step: .001
+    }), field('payment_mode', 'Modalidad de rendimientos', 'select', ['Mensual', 'Al vencimiento', 'Manual']), ...(spec.action === 'renew' ? [] : [field('payment_method', 'Forma de ingreso / pago', 'select', ['Transferencia', 'Efectivo', 'Cheque', 'Otro'])]), ...(spec.action === 'activate' ? [field('opening_balance', 'Capital pendiente confirmado', 'number', null, {
+      min: 0,
+      step: .01
+    }), field('balance_on', 'Fecha efectiva de ese saldo', 'date')] : []), field('notes', 'Observaciones', 'textarea', null, {
+      wide: true,
+      required: false,
+      maxLength: 2000
+    })];
+    if (spec.action === 'rate') fields = [field('effective_on', 'Vigente desde', 'date', null, {
+      min: data.today
+    }), field('rate_percent', 'Nueva tasa mensual (%)', 'number', null, {
+      min: 0,
+      max: 100,
+      step: .001
+    })];
+    if (spec.action === 'close') fields = [field('effective_on', 'Fecha de terminación', 'date', null, {
+      min: data.today,
+      max: data.today
+    })];
+    if (['close', 'renew'].includes(spec.action) && data.obligations.some(o => o.contract_id === v.contract_id && o.concept === 'yield' && o.period_start < (v.effective_on || data.today) && o.period_end > (v.effective_on || data.today))) fields.push(field('closing_yield', 'Rendimiento de cierre acordado (período parcial)', 'number', null, {
+      min: 0,
+      step: .01
+    }));
+    if (spec.action === 'movement') {
+      const obligations = data.obligations.filter(o => o.contract_id === v.contract_id && !o.cancelled).map(o => ({
+        value: o.id,
+        label: `${textDate(o.due_on)} · ${M.labels[o.concept]} · Pendiente ${M.money(Math.max(0, o.amount - o.paid))}`
+      }));
+      fields = [...(v.replaces_id ? [field('voided', 'Estado de la corrección', 'select', [{
+        value: 'false',
+        label: 'Movimiento vigente'
+      }, {
+        value: 'true',
+        label: 'Anular conservando historial'
+      }])] : []), field('contract_id', 'Inversionista y contrato', 'select', contracts), field('effective_on', 'Fecha efectiva', 'date', null, {
+        max: data.today
+      }), field('concept', 'Concepto', 'select', Object.entries(M.labels).filter(([k]) => ['contribution', 'withdrawal', 'yield', 'adjustment', 'other'].includes(k)).map(([value, label]) => ({
+        value,
+        label
+      }))), field('direction', 'Dirección del movimiento', 'select', [{
+        value: 'in',
+        label: 'Recibido'
+      }, {
+        value: 'out',
+        label: 'Pagado'
+      }]), field('amount', 'Importe', 'number', null, {
+        min: .01,
+        step: .01
+      }), field('payment_method', 'Forma de pago', 'select', ['Transferencia', 'Efectivo', 'Cheque', 'Otro']), field('period_start', 'Período: desde', 'date', null, {
+        required: v.concept === 'yield'
+      }), field('period_end', 'Período: hasta', 'date', null, {
+        required: v.concept === 'yield'
+      }), field('obligation_id', 'Obligación a liquidar', 'select', obligations, {
+        required: v.concept === 'yield'
+      }), field('reference', 'Referencia / comprobante', 'text', null, {
+        required: false
+      }), field('notes', 'Observaciones', 'textarea', null, {
+        wide: true,
+        required: false,
+        maxLength: 2000
+      })];
+    }
+    if (spec.action === 'obligation') fields = [field('contract_id', 'Inversionista y contrato', 'select', contracts), field('concept', 'Concepto', 'select', [{
+      value: 'yield',
+      label: 'Rendimiento'
+    }, {
+      value: 'capital',
+      label: 'Capital'
+    }, {
+      value: 'other',
+      label: 'Otro'
+    }]), field('period_start', 'Inicio del período', 'date'), field('period_end', 'Fin del período', 'date'), field('due_on', 'Fecha de pago', 'date'), field('amount', 'Importe programado', 'number', null, {
+      min: .01,
+      step: .01
+    })];
+    if (spec.action === 'document') fields = [field('investor_id', 'Inversionista', 'select', investors), field('contract_id', 'Contrato (opcional)', 'select', data.contracts.filter(c => c.investor_id === v.investor_id).map(c => ({
+      value: c.id,
+      label: c.code
+    })), {
+      required: false
+    }), field('movement_id', 'Movimiento (opcional)', 'select', data.movements.filter(m => m.contract_id === v.contract_id && !m.superseded && !m.voided).map(m => ({
+      value: m.id,
+      label: textDate(m.effective_on) + ' · ' + M.labels[m.concept] + ' · ' + M.money(m.amount)
+    })), {
+      required: false
+    }), h('div', {
+      className: 'wide',
+      key: 'file'
+    }, h('label', {
+      htmlFor: 'iv-file'
+    }, 'Documento PDF, JPG o PNG · máximo 5 MB'), h('input', {
+      id: 'iv-file',
+      type: 'file',
+      accept: '.pdf,.jpg,.jpeg,.png',
+      required: true,
+      onChange: e => {
+        setFile(e.target.files[0]);
+        request.current = null;
+      }
+    }))];
+    const submit = async e => {
+      e.preventDefault();
+      setBusy(true);
+      setError('');
+      try {
+        const values = {
+          ...v
+        };
+        if ('voided' in values) values.voided = values.voided === true || values.voided === 'true';
+        if ('rate_percent' in values) {
+          values.monthly_rate = Number(values.rate_percent) / 100;
+          delete values.rate_percent;
+        }
+        if (spec.action === 'document') {
+          if (!file || file.size > 5242880) throw Error('DOCUMENT_INVALID');
+          if (!request.current) {
+            const base64 = await new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(String(reader.result).split(',')[1]);
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            request.current = {
+              id: crypto.randomUUID(),
+              values: {
+                ...values,
+                filename: file.name,
+                mime: file.type,
+                base64
+              }
+            };
+          }
+          await R().upload(request.current.values, request.current.id);
+        } else {
+          if (!request.current) request.current = {
+            id: crypto.randomUUID(),
+            values
+          };
+          await R().save(spec.action, request.current.values, request.current.id);
+        }
+        await onSaved();
+      } catch (err) {
+        setError(msg(err));
+      } finally {
+        setBusy(false);
+      }
+    };
+    return h(Dialog, {
+      title: spec.title,
+      onClose,
+      busy
+    }, spec.action === 'activate' && h('div', {
+      className: 'notice'
+    }, 'Confirma saldo y fecha con evidencia. El historial del Excel se conserva; este saldo no se registra como una nueva aportación ni acredita rendimientos pagados.'), ['contract', 'activate', 'renew'].includes(spec.action) && h('p', null, 'El calendario usa meses completos y rendimiento simple. Los períodos parciales se programan con el importe acordado; no se aplica un prorrateo automático.'), spec.action === 'rate' && h('p', null, 'La nueva tasa se aplica a períodos completos que comiencen desde la fecha indicada. Los períodos anteriores mantienen su tasa e importe.'), spec.action === 'renew' && h('p', null, 'El capital pendiente se transfiere al contrato nuevo sin registrarlo como dinero recibido otra vez. Las obligaciones anteriores permanecen en su contrato.'), h('form', {
+      onSubmit: submit
+    }, h('fieldset', {
+      disabled: busy,
+      style: {
+        border: 0,
+        padding: 0,
+        margin: 0
+      }
+    }, h('div', {
+      className: 'fields'
+    }, ...fields, field('reason', spec.action === 'review' ? 'Resolución y evidencia verificada' : 'Motivo / respaldo de la captura', 'textarea', null, {
+      wide: true,
+      maxLength: 2000
+    }))), error && h('p', {
+      className: 'error',
+      role: 'alert'
+    }, error), h('footer', null, button('Cancelar', onClose, false, busy), h('button', {
+      className: 'primary',
+      type: 'submit',
+      disabled: busy
+    }, busy ? 'Guardando…' : 'Guardar'))));
+  }
+  function Module({
+    app,
+    onBack,
+    header
+  }) {
+    const [data, setData] = useState(null),
+      [selected, setSelected] = useState(''),
+      [tab, setTab] = useState('overview'),
+      [search, setSearch] = useState(''),
+      [filter, setFilter] = useState(''),
+      [month, setMonth] = useState(''),
+      [loading, setLoading] = useState(true),
+      [error, setError] = useState(''),
+      [editor, setEditor] = useState(null),
+      [detail, setDetail] = useState(null),
+      [notice, setNotice] = useState('');
+    const generation = useRef(0),
+      selection = useRef(selected);
+    selection.current = selected;
+    const refresh = async () => {
+      const run = ++generation.current;
+      setLoading(true);
+      setError('');
+      try {
+        const result = await R().load(selection.current);
+        if (run === generation.current) {
+          setData(result);
+        }
+      } catch (e) {
+        if (run === generation.current) {
+          setData(null);
+          setError(msg(e));
+        }
+      } finally {
+        if (run === generation.current) setLoading(false);
+      }
+    };
+    useEffect(() => {
+      refresh();
+      return () => {
+        generation.current++;
+      };
+    }, [selected]);
+    useEffect(() => {
+      let key;
+      try {
+        key = R().contextKey();
+      } catch (_) {
+        return;
+      }
+      const clear = () => {
+        let next;
+        try {
+          next = R().contextKey();
+        } catch (_) {
+          next = '';
+        }
+        if (next !== key) {
+          generation.current++;
+          setData(null);
+          setEditor(null);
+          setDetail(null);
+          setError('La sesión cambió. Vuelve a abrir Inversores.');
+          setLoading(false);
+        }
+      };
+      const a = window.AffiliateAuth?.subscribe?.(clear),
+        b = window.AdminRepository?.subscribe?.(clear);
+      return () => {
+        if (typeof a === 'function') a();
+        if (typeof b === 'function') b();
+      };
+    }, []);
+    const open = (action, title, values = {}) => setEditor({
+        action,
+        title,
+        values
+      }),
+      saved = async () => {
+        setEditor(null);
+        setNotice('Registro guardado con historial de cambios.');
+        await refresh();
+      };
+    const summary = data ? M.summarize(data, selected) : null,
+      person = data?.investors.find(i => i.id === selected),
+      name = id => data?.investors.find(i => i.id === id)?.name || 'Sin vínculo',
+      contract = id => data?.contracts.find(c => c.id === id),
+      canWrite = !!data?.can_write;
+    const personLink = id => h('button', {
+      className: 'textbutton',
+      onClick: () => {
+        setSelected(id);
+        setTab('overview');
+      }
+    }, name(id));
+    const contractActions = c => h('td', {
+      className: 'actions'
+    }, button('Detalle', () => setDetail({
+      type: 'contract',
+      value: c
+    })), canWrite && c.status === 'active' && button('Movimiento', () => open('movement', 'Registrar movimiento', {
+      contract_id: c.id,
+      effective_on: data.today,
+      concept: 'yield',
+      direction: 'out',
+      payment_method: c.payment_method || 'Transferencia'
+    })), canWrite && ['historical', 'review'].includes(c.status) && button('Conciliar', () => open('activate', 'Conciliar contrato histórico', {
+      ...c,
+      rate_percent: Number(c.monthly_rate) * 100,
+      payment_mode: c.payment_mode || 'Mensual',
+      payment_method: c.payment_method || 'Transferencia',
+      balance_on: data.today
+    })));
+    const movementHistory = m => {
+      const ids = new Set([m.id]);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        for (const x of data.movements) if (ids.has(x.id) || ids.has(x.replaces_id)) {
+          if (x.replaces_id && !ids.has(x.replaces_id)) {
+            ids.add(x.replaces_id);
+            changed = true;
+          }
+          if (!ids.has(x.id)) {
+            ids.add(x.id);
+            changed = true;
+          }
+        }
+      }
+      return data.movements.filter(x => ids.has(x.id));
+    };
+    const showSource = async (sheet, row) => {
+      try {
+        const records = await R().source(sheet, row);
+        setDetail({
+          type: 'source',
+          value: records,
+          title: `${sheet} · fila ${row}`
+        });
+      } catch (e) {
+        setError(msg(e));
+      }
+    };
+    const download = async d => {
+      setError('');
+      try {
+        const result = await R().document(d.id);
+        const bytes = Uint8Array.from(atob(result.base64), c => c.charCodeAt(0)),
+          url = URL.createObjectURL(new Blob([bytes], {
+            type: result.mime
+          })),
+          a = document.createElement('a');
+        a.href = url;
+        a.download = result.filename;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      } catch (e) {
+        setError(msg(e));
+      }
+    };
+    const rowLabel = id => {
+      const c = contract(id);
+      return c ? h('span', null, name(c.investor_id), h('small', null, c.code)) : 'Contrato';
+    };
+    const metric = (label, value, note) => h('div', {
+      className: 'card metric',
+      key: label
+    }, h('small', null, label), h('strong', null, value), note && h('span', null, note));
+    let content = null;
+    if (data && summary) {
+      if (tab === 'overview') content = h(React.Fragment, null, person && h('div', {
+        className: 'card bar'
+      }, h('div', null, h('h3', null, person.name), h('p', null, [person.reference, person.phone, person.email].filter(Boolean).join(' · ') || 'Sin datos de contacto'), person.notes && h('p', null, person.notes)), canWrite && button('Editar inversionista', () => open('investor', 'Editar inversionista', person))), h('div', {
+        className: 'grid'
+      }, metric('Capital vigente', M.money(summary.capital), 'Saldos registrados de contratos activos'), metric('Aportaciones registradas', M.money(summary.contributed), summary.historicalContributed ? 'Monto ingresado histórico + nuevas aportaciones' : 'Entradas de capital; excluye renovaciones'), metric('Rendimientos generados', M.money(summary.generated), 'Períodos completos del calendario conciliado'), metric('Rendimientos pagados', M.money(summary.paid), 'Sólo movimientos realizados'), metric('Rendimientos pendientes', M.money(summary.yieldPending), 'Generados menos pagos vinculados'), metric('Próximo pago', textDate(summary.nextPayment), summary.nextMaturity ? 'Vencimiento: ' + textDate(summary.nextMaturity) : 'Sin vencimientos registrados')), h('div', {
+        className: 'card'
+      }, h('div', {
+        className: 'bar'
+      }, h('h3', null, 'Obligaciones mensuales'), button('Ver calendario', () => setTab('calendar'))), h('p', null, 'Rendimientos programados y capital pendiente al vencimiento, exclusivamente de Inversores.'), table(['Mes', 'Rendimientos', 'Capital', 'Otros', 'Total'], summary.projection.map(p => h('tr', {
+        key: p.month
+      }, h('td', null, p.month), h('td', null, M.money(p.yield)), h('td', null, M.money(p.capital)), h('td', null, M.money(p.other)), h('td', null, h('strong', null, M.money(p.yield + p.capital + p.other))))), 'No hay obligaciones programadas.')), person && h('div', {
+        className: 'card'
+      }, h('h3', null, 'Historial de cambios'), table(['Fecha', 'Operación', 'Responsable', 'Motivo'], data.audit.map(a => h('tr', {
+        key: a.id
+      }, h('td', null, new Date(a.created_at).toLocaleString('es-MX')), h('td', null, M.labels[a.action] || a.action), h('td', null, a.actor_real || 'Migración histórica'), h('td', {
+        className: 'name'
+      }, a.reason))))));
+      if (tab === 'investors') content = h('div', {
+        className: 'card'
+      }, table(['Inversionista', 'Referencia', 'Contacto', 'Contratos', 'Acciones'], data.investors.filter(i => (!selected || i.id === selected) && (i.name + ' ' + i.reference).toLowerCase().includes(search.toLowerCase())).map(i => h('tr', {
+        key: i.id
+      }, h('td', {
+        className: 'name'
+      }, personLink(i.id)), h('td', null, i.reference || '—'), h('td', null, i.phone || i.email || '—'), h('td', null, data.contracts.filter(c => c.investor_id === i.id).length), h('td', {
+        className: 'actions'
+      }, button('Abrir ficha', () => {
+        setSelected(i.id);
+        setTab('overview');
+      }), canWrite && button('Editar', () => open('investor', 'Editar inversionista', i)))))));
+      if (tab === 'contracts') content = h('div', {
+        className: 'card'
+      }, table(['Inversionista / contrato', 'Vigencia', 'Tasa mensual', 'Capital', 'Estado', 'Acciones'], summary.contracts.filter(c => (!filter || c.status === filter) && (name(c.investor_id) + ' ' + c.code).toLowerCase().includes(search.toLowerCase())).map(c => {
+        const rate = [...(c.terms || [])].filter(t => t.effective_on <= data.today).pop()?.monthly_rate ?? c.monthly_rate;
+        return h('tr', {
+          key: c.id
+        }, h('td', {
+          className: 'name'
+        }, personLink(c.investor_id), h('small', null, c.code)), h('td', null, textDate(c.starts_on), h('small', null, 'Vence ' + textDate(c.ends_on))), h('td', null, (Number(rate) * 100).toLocaleString('es-MX') + '%'), h('td', null, M.money(c.status === 'active' ? c.balance : c.principal), h('small', null, c.status === 'active' ? 'Pendiente de devolver' : 'Monto histórico del contrato')), h('td', null, pill(M.labels[c.status])), contractActions(c));
+      })));
+      if (tab === 'movements') content = h('div', {
+        className: 'card'
+      }, h('p', null, 'Cada corrección conserva el movimiento anterior. Las renovaciones transfieren capital sin duplicar aportaciones.'), table(['Fecha efectiva', 'Inversionista / contrato', 'Concepto', 'Importe', 'Período', 'Referencia', 'Capturó', 'Acciones'], summary.movements.filter(m => !filter || m.concept === filter).map(m => h('tr', {
+        key: m.id
+      }, h('td', null, textDate(m.effective_on)), h('td', {
+        className: 'name'
+      }, rowLabel(m.contract_id)), h('td', null, M.labels[m.concept]), h('td', null, (m.direction === 'in' ? '+ ' : '− ') + M.money(m.amount), h('small', null, m.payment_method)), h('td', null, m.period_start ? textDate(m.period_start) + ' — ' + textDate(m.period_end) : '—'), h('td', {
+        className: 'name'
+      }, m.reference || '—', h('small', null, m.notes)), h('td', null, m.actor.slice(0, 8), h('small', null, new Date(m.created_at).toLocaleDateString('es-MX'))), h('td', {
+        className: 'actions'
+      }, canWrite && button('Corregir', () => open('movement', 'Corregir movimiento', {
+        ...m,
+        id: undefined,
+        replaces_id: m.id,
+        reason: ''
+      })), button('Historial', () => setDetail({
+        type: 'movement',
+        value: m
+      })))))));
+      if (tab === 'calendar') content = h('div', {
+        className: 'card'
+      }, h('div', {
+        className: 'bar'
+      }, h('h3', null, 'Calendario de pagos'), h('input', {
+        type: 'month',
+        'aria-label': 'Mes de obligaciones',
+        value: month,
+        onChange: e => setMonth(e.target.value),
+        style: {
+          width: 180
+        }
+      })), table(['Vencimiento', 'Inversionista / contrato', 'Concepto / período', 'Programado', 'Pagado', 'Pendiente', 'Estado', 'Acciones'], summary.obligations.filter(o => (!month || o.due_on.startsWith(month)) && (!filter || M.status(o, data.today) === filter)).map(o => h('tr', {
+        key: o.id
+      }, h('td', null, textDate(o.due_on)), h('td', {
+        className: 'name'
+      }, rowLabel(o.contract_id)), h('td', null, M.labels[o.concept], h('small', null, textDate(o.period_start) + ' — ' + textDate(o.period_end)), o.rate_snapshot != null && h('small', null, Number(o.rate_snapshot) * 100 + '% mensual'), o.derived && h('small', null, 'Capital proyectado al vencimiento')), h('td', null, M.money(o.amount)), h('td', null, M.money(o.paid)), h('td', null, M.money(Math.max(0, o.amount - o.paid))), h('td', null, pill(M.status(o, data.today))), h('td', null, canWrite && o.amount > o.paid && button('Registrar pago', () => open('movement', 'Registrar pago de obligación', {
+        contract_id: o.contract_id,
+        obligation_id: o.derived ? '' : o.id,
+        effective_on: data.today,
+        concept: o.concept === 'capital' ? 'withdrawal' : o.concept,
+        direction: 'out',
+        amount: M.round(o.amount - o.paid),
+        period_start: o.period_start,
+        period_end: o.period_end,
+        payment_method: 'Transferencia'
+      })))))));
+      if (tab === 'documents') content = h('div', {
+        className: 'card'
+      }, h('p', null, 'Expediente privado. Los reemplazos conservan todas las versiones.'), table(['Documento', 'Inversionista', 'Contrato', 'Fecha', 'Acciones'], data.documents.map(d => h('tr', {
+        key: d.id
+      }, h('td', {
+        className: 'name'
+      }, d.filename, d.replaces_id && h('small', null, 'Nueva versión')), h('td', null, personLink(d.investor_id)), h('td', null, contract(d.contract_id)?.code || 'Expediente general'), h('td', null, new Date(d.created_at).toLocaleDateString('es-MX')), h('td', {
+        className: 'actions'
+      }, button('Descargar', () => download(d)), canWrite && !data.documents.some(x => x.replaces_id === d.id) && button('Nueva versión', () => open('document', 'Agregar versión de documento', {
+        investor_id: d.investor_id,
+        contract_id: d.contract_id || '',
+        replaces_id: d.id
+      })))))));
+      if (tab === 'review') content = h('div', {
+        className: 'card'
+      }, h('h3', null, 'Revisión histórica'), h('p', null, 'El Excel conserva sus valores originales. Resolver requiere evidencia y no genera pagos ni modifica automáticamente contratos.'), table(['Tipo', 'Inversionista / contrato', 'Evidencia', 'Estado', 'Acciones'], data.reviews.filter(r => !filter || (filter === 'pending' ? !r.resolved_at : !!r.resolved_at)).map(r => h('tr', {
+        key: r.id
+      }, h('td', {
+        className: 'name'
+      }, M.labels[r.kind] || 'Referencia por revisar'), h('td', {
+        className: 'name'
+      }, r.contract_id ? rowLabel(r.contract_id) : r.investor_id ? personLink(r.investor_id) : 'Referencia histórica'), h('td', {
+        className: 'name'
+      }, r.detail?.sheet ? `${r.detail.sheet} · fila ${r.detail.row} · ${r.detail.document || ''}` : 'Revisar la evidencia del contrato'), h('td', null, pill(r.resolved_at ? 'Resuelto' : 'Por revisar')), h('td', null, r.detail?.sheet && button('Ver evidencia', () => showSource(r.detail.sheet, r.detail.row)), canWrite && !r.resolved_at && button('Resolver', () => open('review', 'Documentar resolución', {
+        id: r.id,
+        version: r.version
+      })))))));
+    }
+    const filters = tab === 'contracts' ? Object.entries(M.labels).filter(([k]) => ['active', 'historical', 'review', 'closed', 'renewed'].includes(k)) : tab === 'movements' ? Object.entries(M.labels).filter(([k]) => ['contribution', 'withdrawal', 'yield', 'adjustment', 'other'].includes(k)) : tab === 'calendar' ? ['Programado', 'Realizado', 'Pendiente', 'Vencido'].map(x => [x, x]) : tab === 'review' ? [['pending', 'Pendientes'], ['resolved', 'Resueltos']] : [];
+    const action = tab === 'investors' ? ['investor', 'Nuevo inversionista', {
+      name: ''
+    }] : tab === 'contracts' ? ['contract', 'Nuevo contrato', {
+      investor_id: selected,
+      starts_on: data?.today,
+      months: 12,
+      rate_percent: 2.5,
+      payment_mode: 'Mensual',
+      payment_method: 'Transferencia'
+    }] : tab === 'movements' ? ['movement', 'Registrar movimiento', {
+      effective_on: data?.today,
+      concept: 'yield',
+      direction: 'out',
+      payment_method: 'Transferencia'
+    }] : tab === 'calendar' ? ['obligation', 'Programar obligación', {
+      concept: 'yield'
+    }] : tab === 'documents' ? ['document', 'Agregar documento', {
+      investor_id: selected
+    }] : null;
+    return h(React.Fragment, null, header ? header({
+      title: 'Inversores',
+      sub: 'Contratos, movimientos y obligaciones'
+    }) : null, h('div', {
+      className: 'iv',
+      'data-investors-module': true
+    }, h('style', null, css), h('div', {
+      className: 'bar'
+    }, h('div', null, h('h2', null, person ? person.name : 'Inversores'), h('p', null, person ? 'Expediente individual' : 'Administración de capital y rendimientos')), h('div', {
+      className: 'bar'
+    }, selected && button('Todos los inversionistas', () => setSelected('')), button('Actualizar', refresh, false, loading), !header && button('Volver', onBack), canWrite && button('Nuevo inversionista', () => open('investor', 'Nuevo inversionista', {
+      name: ''
+    }), true))), h('div', {
+      className: 'tabs',
+      role: 'tablist',
+      'aria-label': 'Secciones de Inversores'
+    }, ...[['overview', 'Vista general'], ['investors', 'Inversionistas'], ['contracts', 'Contratos'], ['movements', 'Movimientos'], ['calendar', 'Calendario'], ['documents', 'Documentos'], ['review', 'Revisión histórica']].map(([id, label]) => h('button', {
+      key: id,
+      role: 'tab',
+      'aria-selected': tab === id,
+      onClick: () => {
+        setTab(id);
+        setFilter('');
+      }
+    }, label))), notice && h('p', {
+      role: 'status'
+    }, notice), error && h('div', {
+      className: 'error',
+      role: 'alert'
+    }, error), loading && h('div', {
+      className: 'card',
+      role: 'status'
+    }, 'Consultando Inversores…'), data && !loading && h(React.Fragment, null, summary.incomplete && h('div', {
+      className: 'notice'
+    }, 'Cobertura histórica parcial. Los importes del Excel sin fecha efectiva de pago no se consideran pagos realizados. ', summary.unreconciled, ' contratos con información vigente por revisar. Los saldos históricos se observan al importar; las aportaciones históricas conservan el monto ingresado del Excel. Rendimientos y pagos anteriores sin evidencia suficiente quedan fuera de los indicadores.'), h('div', {
+      className: 'bar',
+      style: {
+        marginBottom: 14
+      }
+    }, ['investors', 'contracts'].includes(tab) && h('input', {
+      className: 'search',
+      type: 'search',
+      placeholder: 'Buscar por nombre o contrato',
+      'aria-label': 'Buscar inversionista o contrato',
+      value: search,
+      onChange: e => setSearch(e.target.value)
+    }), filters.length > 0 && h('select', {
+      'aria-label': 'Filtrar estado o concepto',
+      style: {
+        width: 210
+      },
+      value: filter,
+      onChange: e => setFilter(e.target.value)
+    }, h('option', {
+      value: ''
+    }, 'Todos'), ...filters.map(([value, label]) => h('option', {
+      key: value,
+      value
+    }, label))), action && canWrite && button(action[1], () => open(...action), true)), content), editor && data && h(Editor, {
+      key: editor.action + (editor.values.id || ''),
+      spec: editor,
+      data,
+      selected,
+      onClose: () => setEditor(null),
+      onSaved: saved
+    }), detail && h(Dialog, {
+      title: detail.type === 'source' ? detail.title : detail.type === 'contract' ? 'Detalle del contrato' : 'Historial del movimiento',
+      onClose: () => setDetail(null)
+    }, detail.type === 'source' ? table(['Celda', 'Valor registrado', 'Fórmula original'], detail.value.flatMap(r => Object.entries(r.cells).map(([cell, v]) => h('tr', {
+      key: r.id + cell
+    }, h('td', null, cell + r.row_number), h('td', {
+      className: 'name'
+    }, v.value == null ? 'Vacío' : String(v.value)), h('td', {
+      className: 'name'
+    }, v.formula || '—'))))) : detail.type === 'contract' ? h(React.Fragment, null, h('h3', null, detail.value.code), h('p', null, name(detail.value.investor_id)), h('p', null, 'Monto: ' + M.money(detail.value.principal) + ' · Tasa original: ' + Number(detail.value.monthly_rate) * 100 + '%'), h('p', null, 'Rendimiento programado pendiente de vencer: ' + M.money(data.obligations.filter(o => o.contract_id === detail.value.id && o.concept === 'yield').reduce((n, o) => n + Number(o.amount), 0))), h('p', null, 'Vigencia: ' + textDate(detail.value.starts_on) + ' — ' + textDate(detail.value.ends_on)), h('p', null, detail.value.notes || ''), canWrite && detail.value.status === 'active' && h('div', {
+      className: 'bar'
+    }, button('Cambiar tasa', () => {
+      const c = detail.value;
+      setDetail(null);
+      open('rate', 'Cambiar tasa', {
+        contract_id: c.id,
+        version: c.version,
+        effective_on: data.today,
+        rate_percent: Number(c.monthly_rate) * 100
+      });
+    }), button('Renovar', () => {
+      const c = detail.value;
+      setDetail(null);
+      open('renew', 'Renovar contrato', {
+        contract_id: c.id,
+        version: c.version,
+        effective_on: data.today,
+        rate_percent: 2.5,
+        payment_mode: c.payment_mode,
+        months: c.months
+      });
+    }), button('Terminar', () => {
+      const c = detail.value;
+      setDetail(null);
+      open('close', 'Terminar contrato', {
+        contract_id: c.id,
+        version: c.version,
+        effective_on: data.today
+      });
+    })), h('h3', {
+      style: {
+        marginTop: 20
+      }
+    }, 'Tasas y vigencias'), ...(detail.value.terms || []).map(t => h('p', {
+      key: t.id
+    }, textDate(t.effective_on) + ' · ' + Number(t.monthly_rate) * 100 + '% mensual')), detail.value.source && h(React.Fragment, null, h('h3', {
+      style: {
+        marginTop: 20
+      }
+    }, 'Referencia histórica'), h('p', null, 'Estado original: ' + (detail.value.source.status || 'Sin registro')), h('p', null, 'Monto ingresado: ' + M.money(detail.value.source.contributed)), h('p', null, 'Saldo declarado: ' + M.money(detail.value.source.current_capital)), h('p', null, 'Rendimiento mensual declarado: ' + M.money(detail.value.source.monthly)), button('Ver fila original', () => showSource('Cartera Inicial', detail.value.source.row)), h('p', null, (detail.value.source.references || []).join(' · ')))) : table(['Fecha efectiva', 'Concepto', 'Importe', 'Estado', 'Capturó', 'Observaciones'], movementHistory(detail.value).map(m => h('tr', {
+      key: m.id
+    }, h('td', null, textDate(m.effective_on)), h('td', null, M.labels[m.concept]), h('td', null, M.money(m.amount)), h('td', null, m.superseded ? 'Versión anterior' : m.voided ? 'Anulado' : 'Vigente'), h('td', null, m.actor), h('td', {
+      className: 'name'
+    }, m.notes)))))));
+  }
+  window.InvestorsAdminModule = Module;
 })();
 })();
 /* @@file sicof-repository.js */
@@ -7284,7 +9498,7 @@ window.DocumentGenerationDesign=Object.freeze({"css": "\n/* ====================
  async function command(action,data={}){const before=context(),r=await db().rpc('document_generation_command',{p_action:action,p_data:data});if(before!==context())throw Error('DOCUMENT_CONTEXT_CHANGED');if(r.error)throw r.error;return r.data;}
  async function edge(action,data){const before=context(),r=await db().functions.invoke('document-generation',{body:{action,...data}});if(before!==context())throw Error('DOCUMENT_CONTEXT_CHANGED');if(r.error){let code;try{code=(await r.error.context.json()).error;}catch(_){}throw Error(code||'DOCUMENT_SERVICE_UNAVAILABLE');}return r.data;}
  async function upload(kind,file){if(!file||file.size>8388608)throw Error('DOCUMENT_UPLOAD_TOO_LARGE');const bytes=new Uint8Array(await file.arrayBuffer());let text='';for(let n=0;n<bytes.length;n+=8192)text+=String.fromCharCode(...bytes.subarray(n,n+8192));return edge('UPLOAD',{kind,base64:btoa(text)});}
- window.DocumentGenerationRepository=Object.freeze({context,command,upload,dashboard:()=>command('DASHBOARD'),list:(data)=>command('LIST',data),retry:(id)=>command('RETRY',{id,admin:true}),access:(id,admin=false)=>edge('ACCESS',{data:{id,admin}}),asset:(id)=>edge('ASSET_ACCESS',{data:{id}}),preview:(program,document_type,config)=>edge('PREVIEW',{program,document_type,config})});
+ window.DocumentGenerationRepository=Object.freeze({context,command,upload,dashboard:()=>command('DASHBOARD'),list:(data)=>window.DocumentIntegration&&window.DocumentIntegration.enabled()&&data?.operation_id?window.DocumentIntegration.generated(data.operation_id,data.domain||'program',data.admin?'ADMIN':'SELF_SERVICE'):command('LIST',data),retry:(id)=>command('RETRY',{id,admin:true}),access:(id,admin=false)=>window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentIntegration.access('GENERATED',id,admin?'ADMIN':'SELF_SERVICE').then(r=>Object.assign({},r,{url:r.signedUrl})):edge('ACCESS',{data:{id,admin}}),asset:(id)=>edge('ASSET_ACCESS',{data:{id}}),preview:(program,document_type,config)=>edge('PREVIEW',{program,document_type,config})});
 })();
 })();
 /* @@file document-layout-repository.js */
@@ -20737,9 +22951,10 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
       const prior=new Map((data.documents||[]).map((row)=>[row.id,row]));
       const versions=new Map();
       canonical.slice().sort((a,b)=>String(a.created_at).localeCompare(String(b.created_at))).forEach((row)=>{const next=(versions.get(row.document_type_id)||0)+1;versions.set(row.document_type_id,next);versions.set(row.id,next);});
+      let ordinals=null;if(window.DocumentIntegration&&window.DocumentIntegration.enabled()){const result=await db().rpc('list_document_version_ordinals',{p_affiliate:id});if(result.error)throw result.error;ordinals=new Map((result.data||[]).map(r=>[r.document_id,Number(r.version)]));}
       data.documents=canonical.map((row)=>Object.freeze(Object.assign({},prior.get(row.id)||{},row,{
         type_id:row.document_type_id,type_code:row.document_type.code,type_label:row.document_type.label,
-        type_description:row.document_type.description,mime_type:row.mimeType,version:versions.get(row.id)||1
+        type_description:row.document_type.description,mime_type:row.mimeType,version:ordinals?ordinals.get(row.id):versions.get(row.id)||1
       })));
     }
     return Object.freeze(data);
@@ -20768,6 +22983,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const accepted=Array.isArray(type.accepted_mime_types)?type.accepted_mime_types:[];
     const limit=Math.min(MAX_DOCUMENT_SIZE,Number(type.max_file_size_bytes)||MAX_DOCUMENT_SIZE);
     if(file.size<1||file.size>limit||!accepted.includes(file.type))throw new Error('INVALID_DOCUMENT_FILE');
+    if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.upload(type,file,{mode:'ADMIN',affiliateId,reason:reason||''});
     const digest=hex(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()));
     const path='affiliate-documents/'+affiliateId+'/'+crypto.randomUUID()+extension(file);
     const stored=await db().storage.from('private-assets').upload(path,file,{contentType:file.type,upsert:false});if(stored.error)throw stored.error;
@@ -20785,7 +23001,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(result.error)throw result.error;if(!result.data)throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }
   async function deleteDocument(body){
-    requirePermission('affiliates.read');const result=await db().functions.invoke('affiliate-document-delete',{body});
+    requirePermission('affiliates.read');if(window.DocumentIntegration&&window.DocumentIntegration.enabled()&&body.action==='DELETE')return window.DocumentIntegration.withdraw(body.document_id,body.operation_id,body.reason);const result=await db().functions.invoke('affiliate-document-delete',{body});
     if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
     if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }
@@ -20843,13 +23059,13 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function create(values){
     const v=values||{};
     if(v.programItemId)await window.FinanceBlocksRepository.assertAllowed();
-    const r=await db().rpc('create_program_request_with_documents',{
+    const r=await (window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentIntegration.submission:db().rpc.bind(db()))('create_program_request_with_documents',{
       p_program_item_id:v.programItemId||null,p_product_id:v.productId||null,p_quantity:Number(v.quantity)||1,
       p_notes:v.notes||'',p_signature_data:v.signature||null,p_terms_accepted:Boolean(v.terms),p_idempotency_key:v.idempotencyKey||key(),p_document_ids:v.documentIds||[]
     });
     if(r.error)await window.FinanceBlocksRepository.handle(r.error);await refreshRequest(r.data.id);return withWorkflow(r.data);
   }
-  async function createMembership(values){const v=values||{};if(!/^[a-f0-9]{64}$/.test(v.paymentQuoteHash||''))throw new Error('MEMBERSHIP_PAYMENT_QUOTE_REQUIRED');await window.FinanceBlocksRepository.assertAllowed();const r=await db().rpc('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key(),p_expected_payment_quote_hash:v.paymentQuoteHash});if(r.error)await window.FinanceBlocksRepository.handle(r.error);await refreshRequest(r.data.id);return withWorkflow(r.data);}
+  async function createMembership(values){const v=values||{};if(!/^[a-f0-9]{64}$/.test(v.paymentQuoteHash||''))throw new Error('MEMBERSHIP_PAYMENT_QUOTE_REQUIRED');await window.FinanceBlocksRepository.assertAllowed();const r=await (window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentIntegration.submission:db().rpc.bind(db()))('create_membership_request',{p_membership_offering_id:v.membershipOfferingId,p_document_ids:v.documentIds||[],p_phone:v.phone,p_rfc:v.rfc,p_curp:v.curp,p_terms_version_id:v.termsVersionId,p_idempotency_key:v.idempotencyKey||key(),p_expected_payment_quote_hash:v.paymentQuoteHash});if(r.error)await window.FinanceBlocksRepository.handle(r.error);await refreshRequest(r.data.id);return withWorkflow(r.data);}
   async function list(filters){
     const f=filters||{};let q=db().from('program_requests').select(fields).order('created_at',{ascending:false});
     if(f.programId)q=q.eq('program_id',f.programId);if(f.companyId)q=q.eq('company_id',f.companyId);if(f.requestType)q=q.eq('request_type',f.requestType);
@@ -20882,10 +23098,11 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(r.error)throw r.error;return Object.freeze((r.data||[]).map(project));
   }
   async function detail(id){
-    const base=moduleScoped()?{data:(await moduleGeneralRows(id))[0]||null}:await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
+    const integrated=window.DocumentIntegration&&window.DocumentIntegration.enabled();
+    const base=moduleScoped()?{data:(await moduleGeneralRows(id))[0]||null}:integrated?await db().rpc('get_admin_finance_request_flow_detail',{p_request_id:id}):await db().from('program_requests').select(detailFields).eq('id',id).is('financial_processing_status',null).single();
     if(base.error)throw base.error;
-    if(!base.data)throw new Error('REQUEST_NOT_FOUND_OR_FORBIDDEN');
-    const row=base.data,documents=db().from('request_documents').select('id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
+    if(!base.data||base.data.financial_processing_status)throw new Error('REQUEST_NOT_FOUND_OR_FORBIDDEN');
+    const row=base.data,documents=window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentIntegration.evidence(id,'REQUEST','ADMIN').then(data=>({data,error:null}),error=>({data:[],error})):db().from('request_documents').select('id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const requirements=Promise.resolve({data:row.document_requirements_snapshot||[],error:null});
     const workflow=db().rpc('get_self_request_workflow_state',{p_request_id:id});
     const parts=await Promise.all([documents,requirements,workflow]),workflowState=parts[2].error?{available:false,message:'Seguimiento no disponible'}:parts[2].data;
@@ -20893,7 +23110,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function hydrateAdminDetail(row){
     const id=row.id;
-    const documents=db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
+    const documents=window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentIntegration.evidence(id,'REQUEST','ADMIN').then(data=>({data,error:null}),error=>({data:[],error})):db().from('request_documents').select('id,affiliate_document_id,status_at_submission,created_at,document_type:document_types!document_type_id(id,code,label)').eq('request_id',id).order('created_at',{ascending:true});
     const terms=row.terms_version_id?db().from('program_terms_versions').select('id,program_id,version,title,published_at,created_at').eq('id',row.terms_version_id).maybeSingle():Promise.resolve({data:null,error:null});
     const currentDocuments=window.DocumentWorkflowRepository.listAdminDocuments(row.affiliate_id,'ADMIN_FINANCIAL_REQUEST').then((data)=>({data,error:null}),(error)=>({data:[],error}));
     const adminEvents=db().rpc('get_program_request_admin_events',{p_request_id:id});
@@ -20901,7 +23118,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const parts=await Promise.all([documents,terms,currentDocuments,adminEvents,sync]);
     const currentRows=parts[2].error?[]:parts[2].data||[],superseded=new Set(currentRows.map((document)=>document.replaces_document_id).filter(Boolean));
     const currentById=new Map(currentRows.map((document)=>[document.id,document]));
-    const requestRows=(parts[0].error?[]:parts[0].data||[]).map((document)=>{const current=currentById.get(document.affiliate_document_id);return Object.freeze(Object.assign({},document,{mimeType:current&&current.mimeType||'',available:current?current.available!==false:true}));});
+    const requestRows=(parts[0].error?[]:parts[0].data||[]).map((document)=>{if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return Object.freeze(document);const current=currentById.get(document.affiliate_document_id);return Object.freeze(Object.assign({},document,{mimeType:current&&current.mimeType||'',available:current?current.available!==false:true}));});
     return Object.freeze(Object.assign({},project(row),{
       request_documents:Object.freeze(requestRows),
       documents_available:!parts[0].error,
@@ -20916,7 +23133,15 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function financialDetail(id){const base=await db().rpc('get_admin_financial_request_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
   async function adminFlowDetail(id){const base=await db().rpc('get_admin_finance_request_flow_detail',{p_request_id:id});if(base.error)throw base.error;return hydrateAdminDetail(base.data);}
-  async function update(id,status,notes){const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
+  async function update(id,status,notes,requestDetail){
+    if(window.DocumentIntegration&&window.DocumentIntegration.enabled()&&status==='approved'&&requestDetail?.program_id==='membership'&&requestDetail.workflow_state?.available){
+      const state=await getWorkflowState(id),current=state.current_stage;
+      const next=(state.stages||[]).filter(stage=>current&&stage.sort_order>current.sort_order&&stage.outcome!=='failure').sort((a,b)=>a.sort_order-b.sort_order||a.id.localeCompare(b.id))[0];
+      if(!state.available||!next||!(next.status_references||[]).includes('approved'))throw new Error('REQUEST_WORKFLOW_TRANSITION_INVALID');
+      await transitionWorkflow(id,'ADVANCE',notes||'');
+      return detail(id);
+    }
+    const r=await db().rpc('update_program_request',{p_request_id:id,p_status:status,p_notes:notes||''});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
   async function recordAdminAction(id,action,comment,actionId){const r=await db().rpc('record_program_request_admin_action',{p_request_id:id,p_action:action,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;await refreshRequest(id);return Object.freeze(r.data);}
   async function respondQuote(id,amount,note,validUntil){const r=await db().rpc('respond_program_request_quote',{p_request_id:id,p_amount:Number(amount),p_note:note||'',p_valid_until:validUntil||null});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
   async function approveProductPayment(id,comment,actionId){const r=await db().rpc('approve_program_product_payment_request',{p_request_id:id,p_comment:comment||'',p_client_action_id:actionId||key()});if(r.error)throw r.error;await refreshRequest(id);return project(r.data);}
@@ -21070,14 +23295,17 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function listAdminDocuments(affiliateId,purpose){if(!affiliateId)throw failure('TARGET_AFFILIATE_REQUIRED');const r=await db().rpc('list_admin_affiliate_documents',{p_target_affiliate_id:affiliateId,p_purpose:purpose});if(r.error)throw r.error;const rows=(r.data||[]).map(projectDocument);if(rows.some((row)=>row.affiliate_id!==affiliateId))throw failure('DOCUMENT_CONTEXT_MISMATCH');return Object.freeze(rows);}
   async function preview(body){const result=await db().functions.invoke('document-access',{body});if(result.error){let code=result.data&&result.data.error;try{if(!code&&result.error.context){const payload=await result.error.context.clone().json();code=payload&&payload.error;}}catch(_){}throw failure(code||'DOCUMENT_PREVIEW_UNAVAILABLE');}if(!result.data||!result.data.signedUrl)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return Object.freeze(result.data);}
   function coordinatedPreview(body){return window.PrivateResourceDemand.run(JSON.stringify(['document-preview',body]),()=>preview(body));}
-  async function selfPreview(document,purpose){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return coordinatedPreview({mode:'SELF_SERVICE',purpose,document_id:document.id});}
-  async function adminPreview(documentId,targetAffiliateId,purpose){if(!documentId||!targetAffiliateId)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');return coordinatedPreview({mode:'ADMIN',purpose,document_id:documentId,target_affiliate_id:targetAffiliateId});}
+  async function selfPreview(document,purpose){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.access('EXPEDIENTE',document.id,'SELF_SERVICE');return coordinatedPreview({mode:'SELF_SERVICE',purpose,document_id:document.id});}
+  async function adminPreview(documentId,targetAffiliateId,purpose){if(!documentId||!targetAffiliateId)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.access('EXPEDIENTE',documentId,'ADMIN');return coordinatedPreview({mode:'ADMIN',purpose,document_id:documentId,target_affiliate_id:targetAffiliateId});}
   async function compressImage(file,type,onProgress){if(!String(file.type||'').startsWith('image/')||typeof createImageBitmap!=='function'||!type.accepted_mime_types.includes('image/jpeg'))return file;if(file.size<=IMAGE_TARGET)return file;onProgress('preparing');let bitmap;try{bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});const scale=Math.min(1,IMAGE_MAX_DIMENSION/Math.max(bitmap.width,bitmap.height)),width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale)),canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d',{alpha:false});context.fillStyle='#fff';context.fillRect(0,0,width,height);context.drawImage(bitmap,0,0,width,height);const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/jpeg',.86));if(!blob)throw failure('IMAGE_COMPRESSION_FAILED');const base=String(file.name||'documento').replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9._-]+/g,'_')||'documento';return new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:file.lastModified||Date.now()});}finally{if(bitmap&&bitmap.close)bitmap.close();}}
   async function prepareFile(type,file,onProgress,source){if(!type||!file)throw failure('DOCUMENT_FILE_REQUIRED');const origin=source==='camera'?'camera':'file',limit=Math.min(MAX,Number(type.max_file_size_bytes)||MAX);if(origin==='camera'&&type.camera_allowed===false||origin==='file'&&type.file_upload_allowed===false)throw failure('DOCUMENT_SOURCE_NOT_ALLOWED');if(origin==='camera'&&!String(file.type||'').startsWith('image/'))throw failure('INVALID_DOCUMENT_FILE');if(file.size<1||file.size>MAX_SOURCE||!String(file.type||'').startsWith('image/')&&!type.accepted_mime_types.includes(file.type))throw failure('INVALID_DOCUMENT_FILE');const prepared=await compressImage(file,type,onProgress||(()=>{}));if(prepared.size<1||prepared.size>limit||!type.accepted_mime_types.includes(prepared.type))throw failure('INVALID_DOCUMENT_FILE');return prepared;}
-  async function upload(type,file,options){const settings=options||{},source=settings.source==='camera'?'camera':'file',progress=typeof settings.onProgress==='function'?settings.onProgress:()=>{},prepared=await prepareFile(type,file,progress,source);progress('uploading');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||failure('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await prepared.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(prepared);const stored=await db().storage.from('private-assets').upload(path,prepared,{contentType:prepared.type,upsert:false});if(stored.error)throw stored.error;try{progress('registering');const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:prepared.type,p_file_size:prepared.size,p_sha256:sha,p_source:source.toUpperCase()});if(r.error)throw r.error;const asset=await db().from('private_assets').select('storage_path').eq('id',r.data.private_asset_id).maybeSingle();if(!asset.error&&asset.data&&asset.data.storage_path!==path)await db().storage.from('private-assets').remove([path]);return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
+  async function upload(type,file,options){const settings=options||{},source=settings.source==='camera'?'camera':'file',progress=typeof settings.onProgress==='function'?settings.onProgress:()=>{},prepared=await prepareFile(type,file,progress,source);if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.upload(type,prepared,Object.assign({},settings,{source}));progress('uploading');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||failure('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await prepared.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(prepared);const stored=await db().storage.from('private-assets').upload(path,prepared,{contentType:prepared.type,upsert:false});if(stored.error)throw stored.error;try{progress('registering');const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:prepared.type,p_file_size:prepared.size,p_sha256:sha,p_source:source.toUpperCase()});if(r.error)throw r.error;const asset=await db().from('private_assets').select('storage_path').eq('id',r.data.private_asset_id).maybeSingle();if(!asset.error&&asset.data&&asset.data.storage_path!==path)await db().storage.from('private-assets').remove([path]);return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
+  function historicalPreview(associationId,source,mode){if(!window.DocumentIntegration||!window.DocumentIntegration.enabled())throw failure('HISTORICAL_ACCESS_NOT_ACTIVATED');return window.DocumentIntegration.access(source||'REQUEST',associationId,mode||'SELF_SERVICE');}
+  function withdraw(id,operationId,reason){if(!window.DocumentIntegration||!window.DocumentIntegration.enabled())throw failure('LOGICAL_WITHDRAWAL_NOT_ACTIVATED');return window.DocumentIntegration.withdraw(id,operationId,reason);}
   async function review(id,status,observation){const r=await db().rpc('review_affiliate_document',{p_document_id:id,p_status:status,p_observation:observation||null});if(r.error)throw r.error;return r.data;}
   const reviewFields='id,affiliate_id,document_type_id,status,review_observation,reviewed_at,created_at,updated_at,document_type:document_types(id,code,label,icon),affiliate:affiliates(display_name,full_name,numero_control),affiliate_file:affiliate_files(id,private_asset_id,mime_type),private_asset:private_assets(id,mime_type)';
   async function reviewQueue(){
+    if(window.DocumentIntegration&&window.DocumentIntegration.enabled()){const r=await db().rpc('list_current_document_reviews');if(r.error)throw r.error;return Object.freeze(r.data||[]);}
     const r=await db().from('affiliate_documents').select(reviewFields).in('status',['PENDING_REVIEW','UNDER_REVIEW','REUPLOAD_REQUIRED']).order('created_at',{ascending:true}).limit(100);
     if(r.error)throw r.error;
     return Object.freeze((r.data||[]).map((row)=>Object.freeze(Object.assign({},row,{signedUrl:null,mimeType:(row.private_asset||row.affiliate_file||{}).mime_type||null}))));
@@ -21088,8 +23316,8 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function restoreRequirement(scopeType,scopeKey,documentTypeId,reason){const r=await db().rpc('restore_document_requirement_rule',{p_scope_type:scopeType,p_scope_key:scopeKey,p_document_type_id:documentTypeId,p_reason:reason||'Restauración de herencia documental'});if(r.error)throw r.error;return r.data;}
   async function saveType(row,reason){const values={id:row.id||null,code:String(row.code||'').trim().toLowerCase(),label:String(row.label||'').trim(),description:String(row.description||''),icon:row.icon||'doc',required_by_default:!!row.required_by_default,accepted_mime_types:row.accepted_mime_types||[],camera_allowed:row.camera_allowed!==false,file_upload_allowed:row.file_upload_allowed!==false,max_file_size_bytes:Number(row.max_file_size_bytes)||MAX,enabled:row.enabled!==false,sort_order:Number(row.sort_order),system_type:!!row.system_type};const r=await db().rpc('save_document_type_configuration',{p_value:values,p_reason:reason||'Configuración de tipo documental'});if(r.error)throw r.error;return r.data;}
   async function removeType(id,reason){const rows=await catalog({includeDisabled:true}),type=rows.find((row)=>row.id===id);if(!type)throw failure('DOCUMENT_TYPE_NOT_FOUND');return saveType(Object.assign({},type,{enabled:false}),reason||'Desactivación reversible del tipo documental');}
-  async function attach(requestId,ids){const r=await db().rpc('attach_request_documents',{p_request_id:requestId,p_affiliate_document_ids:ids});if(r.error)throw r.error;return r.data;}
-  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,resolveRequirements,requirementTargets,requirementConfiguration,listSelfDocuments,listAdminDocuments,selfPreview,adminPreview,prepareFile,upload,review,reviewQueue,saveType,removeType,saveRequirement,restoreRequirement,attach,MAX_FILE_SIZE:MAX,MAX_SOURCE_FILE_SIZE:MAX_SOURCE});
+  async function attach(requestId,ids){const r=await (window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentIntegration.submission:db().rpc.bind(db()))('attach_request_documents',{p_request_id:requestId,p_affiliate_document_ids:ids});if(r.error)throw r.error;return r.data;}
+  window.DocumentWorkflowRepository=Object.freeze({catalog,requirements,resolveRequirements,requirementTargets,requirementConfiguration,listSelfDocuments,listAdminDocuments,selfPreview,adminPreview,historicalPreview,withdraw,prepareFile,upload,review,reviewQueue,saveType,removeType,saveRequirement,restoreRequirement,attach,MAX_FILE_SIZE:MAX,MAX_SOURCE_FILE_SIZE:MAX_SOURCE});
 })();
 })();
 /* @@file bank-account-repository.js */
@@ -21554,12 +23782,15 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
 
   async function rpc(name, values) {
     const writing = !/^(get_|preview_)/.test(name);
-    if (writing) invalidateSelf(true);
+    const localDocumentSubmit=name==='submit_self_savings_request'&&window.DocumentIntegration&&window.DocumentIntegration.enabled();
+    // Keep the local pending/result form mounted. It refreshes on dismissal;
+    // identity changes still invalidate and notify immediately.
+    if (writing) invalidateSelf(!localDocumentSubmit);
     try {
-      const result = await db().rpc(name, values || {});
+      const result = await (name==='submit_self_savings_request'&&window.DocumentIntegration&&window.DocumentIntegration.enabled()?window.DocumentIntegration.submission:db().rpc.bind(db()))(name, values || {});
       if (result.error) throw result.error;
       return result.data;
-    } finally { if (writing) invalidateSelf(true); }
+    } finally { if (writing) invalidateSelf(!localDocumentSubmit); }
   }
 
   async function submitJoin(input) {
@@ -25013,6 +27244,14 @@ Object.assign(window, {
       [busy, setBusy] = useState(false),
       [error, setError] = useState(''),
       [done, setDone] = useState(null);
+    const [supportingDocumentId, setSupportingDocumentId] = useState(null);
+    // Keep the confirmed result mounted until the user dismisses it. Reloading
+    // the parent immediately would replace this form with its loading state.
+    const deferRefresh = type !== 'JOIN' && window.DocumentIntegration && window.DocumentIntegration.enabled();
+    function dismissConfirmed() {
+      onClose();
+      if (deferRefresh) onSaved();
+    }
     const attempt = useRef(),
       lock = useRef(false),
       available = dashboard.balances && dashboard.balances.available;
@@ -25068,7 +27307,10 @@ Object.assign(window, {
         newContributionAmount: !isWithdrawal && !isStop ? number : null,
         component: isWithdrawal ? 'BOTH' : null,
         continueSaving: isStop ? false : isWithdrawal ? number < available ? true : continuing : true,
-        reason
+        reason,
+        ...(window.DocumentIntegration && window.DocumentIntegration.enabled() ? {
+          supportingDocumentId
+        } : {})
       };
       const serial = JSON.stringify(payload);
       if (!attempt.current || attempt.current.serial !== serial) attempt.current = {
@@ -25084,7 +27326,7 @@ Object.assign(window, {
           idempotencyKey: attempt.current.key
         });
         setDone(result);
-        await onSaved();
+        if (!deferRefresh) await onSaved();
       } catch (e) {
         const raw = String(e && e.message || '');
         setError(/CLOSED|DISABLED|NOT_AVAILABLE|ACTION/.test(raw) ? 'Esta opción ya no está habilitada. Actualiza tu ahorro.' : /BALANCE|AMOUNT|AVAILABLE/.test(raw) ? 'Revisa el importe y el saldo disponible antes de enviar.' : /PRIVATE|PUBLISHED/.test(raw) ? 'El programa está en revisión. Aún no se reciben solicitudes desde esta pantalla.' : /PENDING|EXISTS/.test(raw) ? 'Ya tienes una solicitud pendiente de este tipo. Revisa su estado.' : 'No se pudo confirmar el envío. Conservamos tu captura para que puedas reintentar.');
@@ -25097,7 +27339,7 @@ Object.assign(window, {
       role: 'status'
     }, h('p', null, type === 'JOIN' && done.automatic_join === true ? 'Ya formas parte de Caja de Ahorro. Tu plan quedó registrado.' : 'Solicitud registrada. Puedes consultar su estado en tu ahorro.'), type === 'JOIN' && h('p', null, 'Primer descuento previsto: ' + joinDate(done.effective_from) + '.' + (done.automatic_join === true ? ' No necesitas esperar una aprobación administrativa.' : ' Consulta el seguimiento de tu ingreso.')), h('p', null, done.folio || done.request && done.request.folio || ''), h('button', {
       className: 'sav-primary',
-      onClick: onClose
+      onClick: dismissConfirmed
     }, 'Entendido'));
     return h('form', {
       onSubmit: submit
@@ -25163,7 +27405,11 @@ Object.assign(window, {
         borderRadius: 12,
         font: 'inherit'
       }
-    })), reviewed && h('p', {
+    })), window.DocumentIntegration && window.DocumentIntegration.enabled() && type !== 'JOIN' && h(window.DocumentSupportSelector, {
+      value: supportingDocumentId,
+      onChange: id => change(setSupportingDocumentId, id),
+      disabled: busy
+    }), reviewed && h('p', {
       role: 'status'
     }, automaticJoin ? 'Revisa tu aportación y las fechas. Al confirmar quedará registrado tu ingreso y su plan de descuentos. Las fechas previstas no son dinero recibido.' : 'Revisa los datos. Al confirmar se registrará la solicitud; no se reserva ni se entrega dinero en este paso.'), error && h('p', {
       role: 'alert'
@@ -25200,6 +27446,9 @@ Object.assign(window, {
     }, h('div', null, h('b', null, names[r.request_type] || 'Solicitud de ahorro'), h(window.GeneratedDocuments, {
       domain: 'savings',
       operationId: r.id
+    }), window.DocumentIntegration && window.DocumentIntegration.enabled() && h(window.DocumentEvidencePanel, {
+      contextId: r.id,
+      source: 'SAVINGS'
     }), h('span', null, r.folio + ' ? ' + (states[r.status] || 'Por confirmar')), r.effective_from && h('span', null, 'Fecha prevista: ' + new Date(r.effective_from + 'T12:00:00').toLocaleDateString('es-MX'))), h('strong', null, r.new_contribution_amount || r.requested_amount ? new Intl.NumberFormat('es-MX', {
       style: 'currency',
       currency: 'MXN'
@@ -27575,12 +29824,13 @@ Object.assign(window, {
 (function () {
   const I = window.Icon;
   const dash = '—';
-  const moneyOrDash = (value) => typeof value === 'number' && Number.isFinite(value) ? window.money(value) : dash;
-  const exactMoneyOrDash = (value) => typeof value === 'number' && Number.isFinite(value) ? window.money(value, { dec: 2 }) : dash;
-  const availableAmountOf = (program) => program && typeof program.available_amount === 'number' &&
-    Number.isFinite(program.available_amount) && program.available_amount >= 0 ? program.available_amount : null;
-  const availableMoney = (value) => exactMoneyOrDash(value).replace(/\.00$/, '');
-  const textOrDash = (value) => typeof value === 'string' && value.trim() ? value.trim() : dash;
+  const moneyOrDash = value => typeof value === 'number' && Number.isFinite(value) ? window.money(value) : dash;
+  const exactMoneyOrDash = value => typeof value === 'number' && Number.isFinite(value) ? window.money(value, {
+    dec: 2
+  }) : dash;
+  const availableAmountOf = program => program && typeof program.available_amount === 'number' && Number.isFinite(program.available_amount) && program.available_amount >= 0 ? program.available_amount : null;
+  const availableMoney = value => exactMoneyOrDash(value).replace(/\.00$/, '');
+  const textOrDash = value => typeof value === 'string' && value.trim() ? value.trim() : dash;
 
   // Fondo fijo por pantalla (Equipos Móviles → Caja Chica). Suti Préstamo NO
   // recibe `fundName`: sin él este filtro no existe y la pantalla sigue
@@ -27591,57 +29841,124 @@ Object.assign(window, {
   // el transpilado deja marcas diacríticas sueltas dentro de la expresión
   // regular del bundle y cualquier normalización del archivo la rompería.
   const DIACRITICS = new RegExp('[\\u0300-\\u036f]', 'g');
-  const fundKey = (value) => String(value == null ? '' : value).normalize('NFD')
-    .replace(DIACRITICS, '').replace(/\s+/g, ' ').trim().toUpperCase();
-  const programsForFund = (programs, fundName) => (fundName
-    ? programs.filter((item) => fundKey(item.fund || item.label) === fundKey(fundName))
-    : programs);
+  const fundKey = value => String(value == null ? '' : value).normalize('NFD').replace(DIACRITICS, '').replace(/\s+/g, ' ').trim().toUpperCase();
+  const programsForFund = (programs, fundName) => fundName ? programs.filter(item => fundKey(item.fund || item.label) === fundKey(fundName)) : programs;
 
   // Pista MODULAR: `cycle + 1` glifos donde el último repite el primero. Las
   // vueltas las produce `MOTION.spinSlot` reiniciando el traslado sobre esa
   // repetición, así que un dígito cuesta 11 nodos y no ~65. Los estilos son
   // constantes hoisted: cero objetos nuevos por render.
   const ODOMETER_CYCLE = 10;
-  const digitBoxStyle = { position: 'relative', display: 'inline-block', width: '.62em', height: '1em', overflow: 'hidden', verticalAlign: '-.08em' };
-  const digitTrackStyle = { position: 'absolute', inset: '0 auto auto 0', display: 'flex', flexDirection: 'column', width: '100%', lineHeight: '1em', willChange: 'transform', transform: 'translateY(0)' };
-  const digitGlyphStyle = { display: 'block', flex: '0 0 1em', height: '1em', lineHeight: '1em', textAlign: 'center' };
-  const currencyGlyphStyle = { display: 'inline-block', transform: 'translateY(-.20em)' };
-  const odometerBaseStyle = { display: 'inline-flex', alignItems: 'baseline', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' };
-  const cellMoneyStyle = { whiteSpace: 'nowrap', letterSpacing: '-.02em' };
-  const trackGlyphs = (start) => {
+  const digitBoxStyle = {
+    position: 'relative',
+    display: 'inline-block',
+    width: '.62em',
+    height: '1em',
+    overflow: 'hidden',
+    verticalAlign: '-.08em'
+  };
+  const digitTrackStyle = {
+    position: 'absolute',
+    inset: '0 auto auto 0',
+    display: 'flex',
+    flexDirection: 'column',
+    width: '100%',
+    lineHeight: '1em',
+    willChange: 'transform',
+    transform: 'translateY(0)'
+  };
+  const digitGlyphStyle = {
+    display: 'block',
+    flex: '0 0 1em',
+    height: '1em',
+    lineHeight: '1em',
+    textAlign: 'center'
+  };
+  const currencyGlyphStyle = {
+    display: 'inline-block',
+    transform: 'translateY(-.20em)'
+  };
+  const odometerBaseStyle = {
+    display: 'inline-flex',
+    alignItems: 'baseline',
+    fontVariantNumeric: 'tabular-nums',
+    whiteSpace: 'nowrap'
+  };
+  const cellMoneyStyle = {
+    whiteSpace: 'nowrap',
+    letterSpacing: '-.02em'
+  };
+  const trackGlyphs = start => {
     const glyphs = [];
     for (let offset = 0; offset <= ODOMETER_CYCLE; offset += 1) glyphs.push(String((start + offset) % 10));
     return glyphs;
   };
-
-  const OdometerDigit = React.memo(function OdometerDigit({ target, previous, index, loading, motionEpoch, cycleKey }) {
+  const OdometerDigit = React.memo(function OdometerDigit({
+    target,
+    previous,
+    index,
+    loading,
+    motionEpoch,
+    cycleKey
+  }) {
     const track = React.useRef(null);
     const completedFor = React.useRef(null);
-    const start = /^[0-9]$/.test(previous || '') ? Number(previous) : ((index * 3) + 7) % 10;
+    const start = /^[0-9]$/.test(previous || '') ? Number(previous) : (index * 3 + 7) % 10;
     const end = /^[0-9]$/.test(target || '') ? Number(target) : start;
     const delta = (end - start + ODOMETER_CYCLE) % ODOMETER_CYCLE;
     const glyphs = trackGlyphs(start);
     React.useLayoutEffect(() => {
       const completionKey = String(cycleKey || '') + ':' + target;
-      const animation = window.MOTION && window.MOTION.spinSlot
-        ? window.MOTION.spinSlot(track.current, { delta, index, loading, immediate: !loading && completedFor.current === completionKey })
-        : null;
-      const markComplete = () => { if (!loading) completedFor.current = completionKey; };
-      if (animation) animation.addEventListener('finish', markComplete, { once: true }); else markComplete();
-      return () => { if (animation) { animation.removeEventListener('finish', markComplete); animation.cancel(); } };
+      const animation = window.MOTION && window.MOTION.spinSlot ? window.MOTION.spinSlot(track.current, {
+        delta,
+        index,
+        loading,
+        immediate: !loading && completedFor.current === completionKey
+      }) : null;
+      const markComplete = () => {
+        if (!loading) completedFor.current = completionKey;
+      };
+      if (animation) animation.addEventListener('finish', markComplete, {
+        once: true
+      });else markComplete();
+      return () => {
+        if (animation) {
+          animation.removeEventListener('finish', markComplete);
+          animation.cancel();
+        }
+      };
     }, [target, previous, index, loading, motionEpoch, cycleKey, delta]);
-    return React.createElement('span', { className: 'su-odometer-digit', 'data-odometer-digit': '', style: digitBoxStyle },
-      React.createElement('span', { ref: track, className: 'su-odometer-track', 'data-odometer-track': loading ? 'loading' : 'settling', style: digitTrackStyle },
-        glyphs.map((digit, offset) => React.createElement('span', { key: offset, style: digitGlyphStyle }, digit))));
+    return React.createElement('span', {
+      className: 'su-odometer-digit',
+      'data-odometer-digit': '',
+      style: digitBoxStyle
+    }, React.createElement('span', {
+      ref: track,
+      className: 'su-odometer-track',
+      'data-odometer-track': loading ? 'loading' : 'settling',
+      style: digitTrackStyle
+    }, glyphs.map((digit, offset) => React.createElement('span', {
+      key: offset,
+      style: digitGlyphStyle
+    }, digit))));
   });
-
-  function OdometerText({ text, previousText, loading, style, ariaLabel, cycleKey }) {
+  function OdometerText({
+    text,
+    previousText,
+    loading,
+    style,
+    ariaLabel,
+    cycleKey
+  }) {
     const [motionEpoch, setMotionEpoch] = React.useState(0);
     React.useEffect(() => {
-      const refresh = () => setMotionEpoch((value) => value + 1);
+      const refresh = () => setMotionEpoch(value => value + 1);
       document.addEventListener('visibilitychange', refresh);
       const offReduced = window.MOTION && window.MOTION.onReduced ? window.MOTION.onReduced(refresh) : null;
-      return () => { document.removeEventListener('visibilitychange', refresh); if (offReduced) offReduced(); };
+      return () => {
+        document.removeEventListener('visibilitychange', refresh);
+        if (offReduced) offReduced();
+      };
     }, []);
     let digitIndex = -1;
     const previousDigits = String(previousText || '').replace(/[^0-9]/g, '');
@@ -27660,17 +29977,28 @@ Object.assign(window, {
       role: loading ? undefined : 'img',
       'aria-label': loading ? undefined : ariaLabel,
       'aria-hidden': loading ? 'true' : undefined,
-      style: style ? { ...odometerBaseStyle, ...style } : odometerBaseStyle,
+      style: style ? {
+        ...odometerBaseStyle,
+        ...style
+      } : odometerBaseStyle
     }, Array.from(text).map((char, characterIndex) => {
       if (!/^[0-9]$/.test(char)) return React.createElement('span', {
         key: characterIndex,
         'aria-hidden': 'true',
         'data-odometer-currency': char === '$' ? '' : undefined,
-        style: char === '$' ? currencyGlyphStyle : undefined,
+        style: char === '$' ? currencyGlyphStyle : undefined
       }, char);
       digitIndex += 1;
       const place = digitCount - 1 - digitIndex;
-      return React.createElement(OdometerDigit, { key: 'p' + place, target: char, previous: previousDigits[previousDigits.length - 1 - place], index: digitIndex, loading, motionEpoch, cycleKey });
+      return React.createElement(OdometerDigit, {
+        key: 'p' + place,
+        target: char,
+        previous: previousDigits[previousDigits.length - 1 - place],
+        index: digitIndex,
+        loading,
+        motionEpoch,
+        cycleKey
+      });
     }));
   }
 
@@ -27680,42 +30008,101 @@ Object.assign(window, {
   // crearse. El valor anterior nunca se presenta como vigente: mientras
   // `loading` está activo el nodo va `aria-hidden` y sin `aria-label`, y los
   // dígitos están girando — no hay importe legible hasta que asienta.
-  function SmoothMoney({ value, loading = false, compact = false, style, cycleKey, hideZeroCents = false }) {
+  function SmoothMoney({
+    value,
+    loading = false,
+    compact = false,
+    style,
+    cycleKey,
+    hideZeroCents = false
+  }) {
     const valid = typeof value === 'number' && Number.isFinite(value);
-    const label = valid ? (hideZeroCents ? exactMoneyOrDash(value).replace(/\.00$/, '') : exactMoneyOrDash(value)) : null;
+    const label = valid ? hideZeroCents ? exactMoneyOrDash(value).replace(/\.00$/, '') : exactMoneyOrDash(value) : null;
     const previous = React.useRef(null);
     const previousLabel = previous.current;
-    React.useEffect(() => { if (label) previous.current = label; }, [label]);
+    React.useEffect(() => {
+      if (label) previous.current = label;
+    }, [label]);
     const placeholder = compact ? '$8888' : '$8,888.88';
     return React.createElement(OdometerText, {
-      text: valid ? label : (previousLabel || placeholder),
+      text: valid ? label : previousLabel || placeholder,
       previousText: previousLabel,
       loading: loading || !valid,
       ariaLabel: label,
       cycleKey,
-      style,
+      style
     });
   }
-
-  function LoadingReels({ columns = 2, cycleKey }) {
-    return React.createElement(OdometerText, { text: '8'.repeat(columns), previousText: '', loading: true, cycleKey });
+  function LoadingReels({
+    columns = 2,
+    cycleKey
+  }) {
+    return React.createElement(OdometerText, {
+      text: '8'.repeat(columns),
+      previousText: '',
+      loading: true,
+      cycleKey
+    });
   }
-
-  function Shell({ app, children, onBack, title }) {
-    return React.createElement('div', { style: { position: 'absolute', inset: 0, background: 'var(--bg)', display: 'flex', flexDirection: 'column' } },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', background: 'var(--surface)', borderBottom: '1px solid var(--hairline)' } },
-        React.createElement('button', { onClick: onBack || app.back, 'aria-label': 'Volver', 'data-press': 'subtle', style: { width: 40, height: 40, borderRadius: 12, border: 'none', background: 'transparent', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' } }, React.createElement(I, { name: 'arrowL', size: 22, stroke: 2 })),
-        React.createElement('span', { style: { fontSize: 'var(--text-16-5, 16.5px)', fontWeight: 800, color: 'var(--ink)' } }, title || 'Suti Préstamo')),
-      children);
+  function Shell({
+    app,
+    children,
+    onBack,
+    title
+  }) {
+    return React.createElement('div', {
+      style: {
+        position: 'absolute',
+        inset: 0,
+        background: 'var(--bg)',
+        display: 'flex',
+        flexDirection: 'column'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '8px 12px',
+        background: 'var(--surface)',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, React.createElement('button', {
+      onClick: onBack || app.back,
+      'aria-label': 'Volver',
+      'data-press': 'subtle',
+      style: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        border: 'none',
+        background: 'transparent',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        color: 'var(--ink)'
+      }
+    }, React.createElement(I, {
+      name: 'arrowL',
+      size: 22,
+      stroke: 2
+    })), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-16-5, 16.5px)',
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, title || 'Suti Préstamo')), children);
   }
-
   function eligibilityDenied(value) {
     if (value === false) return true;
     if (typeof value === 'string') return ['NOT_ELIGIBLE', 'NO_ELEGIBLE', 'DENIED'].includes(value.toUpperCase());
     return !!(value && typeof value === 'object' && (value.eligible === false || value.status === 'NOT_ELIGIBLE'));
   }
-
-  function StatusNotice({ state, onRetry }) {
+  function StatusNotice({
+    state,
+    onRetry
+  }) {
     const notices = {
       LOADING: ['clock', 'Estamos consultando tus condiciones', 'Esto puede tomar unos segundos.'],
       NOT_ELIGIBLE: ['info', 'Este programa no está disponible para tu perfil', 'Puedes revisar otros programas o volver más tarde.'],
@@ -27725,221 +30112,873 @@ Object.assign(window, {
       UNAVAILABLE: ['clock', 'Simulador no disponible por el momento', 'Tus pasos y datos permanecen sin cambios.'],
       NO_AVAILABLE_BALANCE: ['info', 'Sin saldo disponible en este fondo', 'Las cuotas pendientes ocupan el límite disponible. Puedes revisar otro fondo.'],
       HISTORICAL_LOAN_MAPPING_REQUIRED: ['info', 'Necesitamos revisar un dato de tu historial antes de calcular correctamente tu crédito.', 'Tu información está registrada y será revisada por Finanzas.'],
-      HISTORICAL_LOAN_DATA_REVIEW_REQUIRED: ['info', 'Necesitamos revisar un préstamo de tu historial', 'Solicita apoyo para verificar sus datos antes de continuar. Esto no significa que no tengas saldo disponible.'],
+      HISTORICAL_LOAN_DATA_REVIEW_REQUIRED: ['info', 'Necesitamos revisar un préstamo de tu historial', 'Solicita apoyo para verificar sus datos antes de continuar. Esto no significa que no tengas saldo disponible.']
     };
     const item = notices[state];
     if (!item) return null;
     const needsReview = state === 'HISTORICAL_LOAN_MAPPING_REQUIRED' || state === 'HISTORICAL_LOAN_DATA_REVIEW_REQUIRED';
-    return React.createElement('div', { role: state === 'ERROR' || needsReview ? 'alert' : 'status', 'data-simulator-state': state, 'data-credit-state': state === 'NO_AVAILABLE_BALANCE' ? 'NO_CREDIT_AVAILABLE' : state, style: { display: 'flex', gap: 11, alignItems: 'flex-start', padding: '13px 14px', borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
-      React.createElement(window.IconTile, { icon: item[0], size: 38 }),
-      React.createElement('div', { style: { flex: 1, minWidth: 0 } },
-        React.createElement('div', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink)' } }, item[1]),
-        React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)', lineHeight: 1.45, marginTop: 2 } }, item[2])),
-      (state === 'ERROR' || state === 'UNAVAILABLE' || needsReview) && React.createElement('button', { onClick: onRetry, style: { border: 'none', background: 'transparent', color: 'var(--guinda)', font: '700 12px var(--font)', cursor: 'pointer', padding: '3px 0' } }, 'Reintentar'));
+    return React.createElement('div', {
+      role: state === 'ERROR' || needsReview ? 'alert' : 'status',
+      'data-simulator-state': state,
+      'data-credit-state': state === 'NO_AVAILABLE_BALANCE' ? 'NO_CREDIT_AVAILABLE' : state,
+      style: {
+        display: 'flex',
+        gap: 11,
+        alignItems: 'flex-start',
+        padding: '13px 14px',
+        borderRadius: 16,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement(window.IconTile, {
+      icon: item[0],
+      size: 38
+    }), React.createElement('div', {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-13-5, 13.5px)',
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, item[1]), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 600,
+        color: 'var(--ink-3)',
+        lineHeight: 1.45,
+        marginTop: 2
+      }
+    }, item[2])), (state === 'ERROR' || state === 'UNAVAILABLE' || needsReview) && React.createElement('button', {
+      onClick: onRetry,
+      style: {
+        border: 'none',
+        background: 'transparent',
+        color: 'var(--guinda)',
+        font: '700 12px var(--font)',
+        cursor: 'pointer',
+        padding: '3px 0'
+      }
+    }, 'Reintentar'));
   }
-
-  function FundPicker({ programs, selected, setSelected, disabled, onSelect }) {
+  function FundPicker({
+    programs,
+    selected,
+    setSelected,
+    disabled,
+    onSelect
+  }) {
     if (!programs.length) return null;
     // Display priority only; keep server objects, eligibility and selection intact.
-    const priority = (item) => ({ 'caja-chica': 0, 'caja-de-ahorro': 1 }[String(item.id || '').split('--')[1]] ?? 2);
+    const priority = item => ({
+      'caja-chica': 0,
+      'caja-de-ahorro': 1
+    })[String(item.id || '').split('--')[1]] ?? 2;
     const orderedPrograms = programs.slice().sort((a, b) => priority(a) - priority(b));
-    return React.createElement('div', { 'data-loan-funds': '' },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 9 } },
-        React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)' } }, programs.length > 1 ? 'Fondos disponibles' : 'Fondo aplicable'),
-        programs.length > 1 && React.createElement('span', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } }, programs.length + ' opciones')),
-      React.createElement('div', { style: { display: 'flex', gap: 9, overflowX: 'auto', padding: '2px 20px 6px', margin: '0 -20px', scrollbarWidth: 'none' } },
-        orderedPrograms.map((item) => {
-          const rate = Number(item.rate);
-          const ratePeriod = textOrDash(item.rate_period);
-          const rateLabel = Number.isFinite(rate) && ratePeriod !== dash
-            ? rate.toLocaleString('es-MX', { maximumFractionDigits: 4 }) + '% ' + ratePeriod
-            : 'Tasa no disponible';
-          return React.createElement('button', { key: item.id, disabled, onClick: () => setSelected(item.id), 'data-on': selected === item.id ? '1' : '0', 'data-press': 'subtle', style: { minWidth: 145, flexShrink: 0, borderRadius: 16, border: selected === item.id ? '1.5px solid var(--guinda)' : '1.5px solid transparent', background: selected === item.id ? 'var(--guinda-50)' : 'var(--surface)', boxShadow: selected === item.id ? 'none' : 'var(--neo-sm)', color: selected === item.id ? 'var(--guinda)' : 'var(--ink)', padding: '11px 12px', textAlign: 'left', fontFamily: 'inherit', cursor: disabled ? 'default' : 'pointer', transition: 'border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease' } },
-          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 6 } },
-            React.createElement(I, { name: 'wallet', size: 15, stroke: 2.2, style: { color: selected === item.id ? 'var(--guinda)' : 'var(--ink-3)' } }),
-            React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800 } }, item.label || item.fund)),
-          React.createElement('div', { 'data-fund-available': availableAmountOf(item) == null ? 'unavailable' : String(availableAmountOf(item)), style: { fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 5 } }, 'Hasta ' + availableMoney(availableAmountOf(item))),
-          React.createElement('div', { 'data-fund-rate': '', style: { fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)', marginTop: 2 } }, rateLabel));
-        })));
+    return React.createElement('div', {
+      'data-loan-funds': ''
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        marginBottom: 9
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, programs.length > 1 ? 'Fondos disponibles' : 'Fondo aplicable'), programs.length > 1 && React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, programs.length + ' opciones')), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 9,
+        overflowX: 'auto',
+        padding: '2px 20px 6px',
+        margin: '0 -20px',
+        scrollbarWidth: 'none'
+      }
+    }, orderedPrograms.map(item => {
+      const rate = Number(item.rate);
+      const ratePeriod = textOrDash(item.rate_period);
+      const rateLabel = Number.isFinite(rate) && ratePeriod !== dash ? rate.toLocaleString('es-MX', {
+        maximumFractionDigits: 4
+      }) + '% ' + ratePeriod : 'Tasa no disponible';
+      return React.createElement('button', {
+        key: item.id,
+        disabled,
+        onClick: () => setSelected(item.id),
+        'data-on': selected === item.id ? '1' : '0',
+        'data-press': 'subtle',
+        style: {
+          minWidth: 145,
+          flexShrink: 0,
+          borderRadius: 16,
+          border: selected === item.id ? '1.5px solid var(--guinda)' : '1.5px solid transparent',
+          background: selected === item.id ? 'var(--guinda-50)' : 'var(--surface)',
+          boxShadow: selected === item.id ? 'none' : 'var(--neo-sm)',
+          color: selected === item.id ? 'var(--guinda)' : 'var(--ink)',
+          padding: '11px 12px',
+          textAlign: 'left',
+          fontFamily: 'inherit',
+          cursor: disabled ? 'default' : 'pointer',
+          transition: 'border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease'
+        }
+      }, React.createElement('div', {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6
+        }
+      }, React.createElement(I, {
+        name: 'wallet',
+        size: 15,
+        stroke: 2.2,
+        style: {
+          color: selected === item.id ? 'var(--guinda)' : 'var(--ink-3)'
+        }
+      }), React.createElement('span', {
+        style: {
+          fontSize: 'var(--text-13-5, 13.5px)',
+          fontWeight: 800
+        }
+      }, item.label || item.fund)), React.createElement('div', {
+        'data-fund-available': availableAmountOf(item) == null ? 'unavailable' : String(availableAmountOf(item)),
+        style: {
+          fontSize: 'var(--text-11, 11px)',
+          fontWeight: 600,
+          color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)',
+          marginTop: 5
+        }
+      }, 'Hasta ' + availableMoney(availableAmountOf(item))), React.createElement('div', {
+        'data-fund-rate': '',
+        style: {
+          fontSize: 'var(--text-11, 11px)',
+          fontWeight: 600,
+          color: selected === item.id ? 'rgba(145,0,34,.68)' : 'var(--ink-3)',
+          marginTop: 2
+        }
+      }, rateLabel));
+    })));
   }
 
   // Fit presentation text to its assigned column; never change the quote value.
-  function ResultFit({ children, className, style }) {
-    const box = React.useRef(null), text = React.useRef(null);
+  function ResultFit({
+    children,
+    className,
+    style
+  }) {
+    const box = React.useRef(null),
+      text = React.useRef(null);
     React.useLayoutEffect(() => {
       const fit = () => {
         if (!box.current || !text.current || !box.current.clientWidth) return;
         const size = parseFloat(getComputedStyle(box.current).fontSize);
         text.current.style.fontSize = size + 'px';
         const width = text.current.getBoundingClientRect().width;
-        text.current.style.fontSize = (size * Math.min(1, box.current.clientWidth / Math.max(1, width))) + 'px';
+        text.current.style.fontSize = size * Math.min(1, box.current.clientWidth / Math.max(1, width)) + 'px';
       };
       fit();
       const observer = new ResizeObserver(fit);
       observer.observe(box.current);
       let active = true;
-      if (document.fonts) document.fonts.ready.then(() => { if (active) fit(); });
-      return () => { active = false; observer.disconnect(); };
+      if (document.fonts) document.fonts.ready.then(() => {
+        if (active) fit();
+      });
+      return () => {
+        active = false;
+        observer.disconnect();
+      };
     }, [children]);
-    return React.createElement('div', { ref: box, className: 'su-result-fit ' + (className || ''), style },
-      React.createElement('span', { ref: text, className: 'su-result-fit-text' }, children));
+    return React.createElement('div', {
+      ref: box,
+      className: 'su-result-fit ' + (className || ''),
+      style
+    }, React.createElement('span', {
+      ref: text,
+      className: 'su-result-fit-text'
+    }, children));
   }
-
-  function ResultCard({ result, periodLabel, initialLoading, updating, failed, inactive, animationCycle, loadingCycle }) {
-    const cells = [
-      ['Recibes', result && result.amount],
-      ['Interés', result && result.interest],
-      ['Gto. admin.', result && result.administrativeFeeTotal],
-      ['Total', result && result.total],
-    ];
+  function ResultCard({
+    result,
+    periodLabel,
+    initialLoading,
+    updating,
+    failed,
+    inactive,
+    animationCycle,
+    loadingCycle
+  }) {
+    const cells = [['Recibes', result && result.amount], ['Interés', result && result.interest], ['Gto. admin.', result && result.administrativeFeeTotal], ['Total', result && result.total]];
     const loadingMotion = initialLoading || updating;
     // Error/empty values are not a pending quote: stop the wheels and show no amount.
-    const hideValues = inactive || failed || (!result && !loadingMotion);
+    const hideValues = inactive || failed || !result && !loadingMotion;
     const placeholderCycle = loadingCycle + ':' + (failed ? 'error' : loadingMotion ? 'loading' : 'idle');
     const resultState = inactive ? 'unavailable' : initialLoading ? 'initial-loading' : failed ? 'error' : updating ? 'recalculating' : 'ready';
-    return React.createElement('div', { style: { position: 'sticky', top: -8, zIndex: 3, margin: '0 -20px', padding: '0 20px 10px', background: 'linear-gradient(var(--bg) 78%, transparent)' } },
-      React.createElement('div', { className: 'su-result-card', 'data-simulator-result': resultState, 'aria-busy': initialLoading || updating ? 'true' : 'false', 'aria-label': 'Resultado de la simulación', style: { minHeight: 142, boxSizing: 'border-box', background: 'var(--grad-guinda)', color: '#fff', borderRadius: 24, padding: '16px 18px 14px', boxShadow: 'var(--glow-guinda)', position: 'relative', overflow: 'hidden' } },
-        React.createElement('style', null, `
+    return React.createElement('div', {
+      style: {
+        position: 'sticky',
+        top: -8,
+        zIndex: 3,
+        margin: '0 -20px',
+        padding: '0 20px 10px',
+        background: 'linear-gradient(var(--bg) 78%, transparent)'
+      }
+    }, React.createElement('div', {
+      className: 'su-result-card',
+      'data-simulator-result': resultState,
+      'aria-busy': initialLoading || updating ? 'true' : 'false',
+      'aria-label': 'Resultado de la simulación',
+      style: {
+        minHeight: 142,
+        boxSizing: 'border-box',
+        background: 'var(--grad-guinda)',
+        color: '#fff',
+        borderRadius: 24,
+        padding: '16px 18px 14px',
+        boxShadow: 'var(--glow-guinda)',
+        position: 'relative',
+        overflow: 'hidden'
+      }
+    }, React.createElement('style', null, `
           [data-simulator-result].su-result-card .su-result-top{display:grid!important;grid-template-columns:minmax(0,1.65fr) minmax(0,1fr)!important;gap:10px!important;align-items:center!important}
           [data-simulator-result].su-result-card .su-result-meta,[data-text-size] [data-simulator-result].su-result-card > div > .su-result-top > .su-result-meta{text-align:right!important;min-width:0}
           [data-simulator-result].su-result-card .su-result-cells{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:8px!important}
           [data-simulator-result].su-result-card .su-result-fit{min-width:0;white-space:nowrap;line-height:1.2}
           [data-simulator-result].su-result-card .su-result-fit-text{display:inline-block;white-space:nowrap;max-width:none}
           [data-simulator-result].su-result-card .su-odometer{flex-wrap:nowrap!important;max-width:none!important}
-        `),
-        React.createElement('div', { 'aria-hidden': 'true', style: { position: 'absolute', width: 150, height: 150, borderRadius: '50%', right: -60, top: -82, background: 'rgba(255,255,255,.10)' } }),
-        React.createElement('div', { style: { opacity: updating ? .66 : 1 } },
-        React.createElement('div', { className: 'su-result-top' },
-          React.createElement('div', { style: { minWidth: 0 } },
-            React.createElement(ResultFit, { style: { fontSize: 'var(--text-12, 12px)', opacity: .8, fontWeight: 700, letterSpacing: '.02em' } }, 'Cada pago será de'),
-            React.createElement(ResultFit, { className: 'su-result-payment', style: { borderRadius: 9, fontSize: 'var(--text-40, 40px)', fontWeight: 800, letterSpacing: '-.035em', lineHeight: 1.05, marginTop: 1, whiteSpace: 'nowrap' } },
-              hideValues ? dash : React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? result.paymentPerPeriod : null, loading: loadingMotion || !result, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle }))),
-          React.createElement('div', { className: 'su-result-meta', style: { textAlign: 'right', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, opacity: .85, lineHeight: 1.45, paddingBottom: 5 } },
-            updating && React.createElement(ResultFit, { style: { fontSize: 'var(--text-10-5, 10.5px)' } }, React.createElement('div', { role: 'status', 'aria-live': 'polite', style: { display: 'inline-flex', alignItems: 'center', gap: 5, marginBottom: 2, padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,.14)', fontSize: 'var(--text-10-5, 10.5px)' } },
-              React.createElement('span', { className: 'su-spinner', 'aria-hidden': 'true', style: { width: 10, height: 10 } }), 'Actualizando…')),
-            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, hideValues ? dash : !result
-              ? React.createElement(LoadingReels, { columns: 2, cycleKey: placeholderCycle })
-              : result.paymentCount + (result.paymentCount === 1 ? ' pago' : ' pagos')),
-            React.createElement(ResultFit, { style: { minHeight: '1.45em' } }, hideValues ? dash : !result
-              ? React.createElement(LoadingReels, { columns: 3, cycleKey: placeholderCycle })
-              : result.rate + '% ' + result.ratePeriod))),
-        React.createElement('div', { className: 'su-result-cells', style: { marginTop: 13, paddingTop: 11, borderTop: '1px solid rgba(255,255,255,.18)' } }, cells.map((cell) => React.createElement('div', { key: cell[0], style: { minWidth: 0 } },
-          React.createElement(ResultFit, { style: { opacity: .72, fontWeight: 600, fontSize: 'var(--text-10-5, 10.5px)', whiteSpace: 'nowrap' } }, cell[0]),
-          React.createElement(ResultFit, { style: { minHeight: '1.2em', fontWeight: 800, marginTop: 2, fontSize: 'var(--text-13, 13px)', letterSpacing: '-.02em', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' } },
-            hideValues ? dash : React.createElement(SmoothMoney, { hideZeroCents: true, value: result ? cell[1] : null, loading: loadingMotion || !result, compact: true, cycleKey: (loadingMotion || !result) ? placeholderCycle : animationCycle, style: cellMoneyStyle }))))))));
+        `), React.createElement('div', {
+      'aria-hidden': 'true',
+      style: {
+        position: 'absolute',
+        width: 150,
+        height: 150,
+        borderRadius: '50%',
+        right: -60,
+        top: -82,
+        background: 'rgba(255,255,255,.10)'
+      }
+    }), React.createElement('div', {
+      style: {
+        opacity: updating ? .66 : 1
+      }
+    }, React.createElement('div', {
+      className: 'su-result-top'
+    }, React.createElement('div', {
+      style: {
+        minWidth: 0
+      }
+    }, React.createElement(ResultFit, {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        opacity: .8,
+        fontWeight: 700,
+        letterSpacing: '.02em'
+      }
+    }, 'Cada pago será de'), React.createElement(ResultFit, {
+      className: 'su-result-payment',
+      style: {
+        borderRadius: 9,
+        fontSize: 'var(--text-40, 40px)',
+        fontWeight: 800,
+        letterSpacing: '-.035em',
+        lineHeight: 1.05,
+        marginTop: 1,
+        whiteSpace: 'nowrap'
+      }
+    }, hideValues ? dash : React.createElement(SmoothMoney, {
+      hideZeroCents: true,
+      value: result ? result.paymentPerPeriod : null,
+      loading: loadingMotion || !result,
+      cycleKey: loadingMotion || !result ? placeholderCycle : animationCycle
+    }))), React.createElement('div', {
+      className: 'su-result-meta',
+      style: {
+        textAlign: 'right',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 700,
+        opacity: .85,
+        lineHeight: 1.45,
+        paddingBottom: 5
+      }
+    }, updating && React.createElement(ResultFit, {
+      style: {
+        fontSize: 'var(--text-10-5, 10.5px)'
+      }
+    }, React.createElement('div', {
+      role: 'status',
+      'aria-live': 'polite',
+      style: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 5,
+        marginBottom: 2,
+        padding: '3px 7px',
+        borderRadius: 999,
+        background: 'rgba(255,255,255,.14)',
+        fontSize: 'var(--text-10-5, 10.5px)'
+      }
+    }, React.createElement('span', {
+      className: 'su-spinner',
+      'aria-hidden': 'true',
+      style: {
+        width: 10,
+        height: 10
+      }
+    }), 'Actualizando…')), React.createElement(ResultFit, {
+      style: {
+        minHeight: '1.45em'
+      }
+    }, hideValues ? dash : !result ? React.createElement(LoadingReels, {
+      columns: 2,
+      cycleKey: placeholderCycle
+    }) : result.paymentCount + (result.paymentCount === 1 ? ' pago' : ' pagos')), React.createElement(ResultFit, {
+      style: {
+        minHeight: '1.45em'
+      }
+    }, hideValues ? dash : !result ? React.createElement(LoadingReels, {
+      columns: 3,
+      cycleKey: placeholderCycle
+    }) : result.rate + '% ' + result.ratePeriod))), React.createElement('div', {
+      className: 'su-result-cells',
+      style: {
+        marginTop: 13,
+        paddingTop: 11,
+        borderTop: '1px solid rgba(255,255,255,.18)'
+      }
+    }, cells.map(cell => React.createElement('div', {
+      key: cell[0],
+      style: {
+        minWidth: 0
+      }
+    }, React.createElement(ResultFit, {
+      style: {
+        opacity: .72,
+        fontWeight: 600,
+        fontSize: 'var(--text-10-5, 10.5px)',
+        whiteSpace: 'nowrap'
+      }
+    }, cell[0]), React.createElement(ResultFit, {
+      style: {
+        minHeight: '1.2em',
+        fontWeight: 800,
+        marginTop: 2,
+        fontSize: 'var(--text-13, 13px)',
+        letterSpacing: '-.02em',
+        fontVariantNumeric: 'tabular-nums',
+        whiteSpace: 'nowrap'
+      }
+    }, hideValues ? dash : React.createElement(SmoothMoney, {
+      hideZeroCents: true,
+      value: result ? cell[1] : null,
+      loading: loadingMotion || !result,
+      compact: true,
+      cycleKey: loadingMotion || !result ? placeholderCycle : animationCycle,
+      style: cellMoneyStyle
+    }))))))));
   }
-
-  function AmountField({ amount, setAmount, commitAmount, min, max, disabled }) {
+  function AmountField({
+    amount,
+    setAmount,
+    commitAmount,
+    min,
+    max,
+    disabled
+  }) {
     const [editing, setEditing] = React.useState(false);
     const inputRef = React.useRef(null);
-    React.useEffect(() => { if (editing && inputRef.current) { inputRef.current.focus(); inputRef.current.select(); } }, [editing]);
+    React.useEffect(() => {
+      if (editing && inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    }, [editing]);
     const bounded = typeof min === 'number' && typeof max === 'number' && Number.isFinite(min) && Number.isFinite(max) && max >= min;
     const settle = commitAmount || setAmount;
     // Arrastre y tecleo: valor continuo, entra al debounce.
-    const change = (value) => {
+    const change = value => {
       setAmount(Number(value));
     };
     // Fin de gesto o de edición: intención discreta, cotiza de inmediato.
-    const commit = (value) => {
+    const commit = value => {
       const next = Number(value);
       if (!Number.isFinite(next) || !bounded) return;
       settle(Math.min(max, Math.max(min, next)));
     };
-    return React.createElement('div', { className: 'su-card', 'data-loan-amount-card': '', style: { background: 'var(--surface)', boxShadow: 'var(--neo-sm)', borderRadius: 20, padding: '16px 16px 14px', opacity: disabled ? .62 : 1 } },
-      React.createElement('style', null, `
+    return React.createElement('div', {
+      className: 'su-card',
+      'data-loan-amount-card': '',
+      style: {
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)',
+        borderRadius: 20,
+        padding: '16px 16px 14px',
+        opacity: disabled ? .62 : 1
+      }
+    }, React.createElement('style', null, `
         [data-loan-amount-card] .su-loan-amount{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-width:0;border:0;background:transparent;padding:0;margin:6px 0 10px;font-family:Nunito,system-ui,-apple-system,sans-serif;font-size:44px!important;line-height:1.15!important;font-weight:900;letter-spacing:-.03em;color:#910022;font-variant-numeric:tabular-nums;text-align:center;white-space:nowrap;cursor:text}
         [data-loan-amount-card] input.su-loan-amount{outline:0;border-bottom:2px solid #910022}
         [data-loan-amount-card] .su-loan-amount-pen{flex:0 0 auto;display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:#fbeef1;color:#910022;box-shadow:inset 2px 2px 5px rgba(170,182,204,.3),inset -2px -2px 5px rgba(255,255,255,.9)}
         @media(max-width:400px){[data-loan-amount-card] .su-loan-amount{font-size:40px!important}[data-loan-amount-card] .su-loan-amount-pen{width:30px;height:30px;border-radius:11px}}
-      `),
-      React.createElement('div', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)', letterSpacing: '.01em' } }, '¿Cuánto necesitas?'),
-      editing
-        ? React.createElement('input', { ref: inputRef, className: 'su-loan-amount', type: 'number', inputMode: 'decimal', step: '0.01', value: amount || '', min: bounded ? min : undefined, max: bounded ? max : undefined, disabled: disabled || !bounded, onChange: (event) => change(event.target.value), onBlur: (event) => { commit(event.target.value); setEditing(false); }, onKeyDown: (event) => { if (event.key === 'Enter') event.target.blur(); }, 'aria-label': 'Monto solicitado' })
-        : React.createElement('button', { type: 'button', className: 'su-loan-amount', disabled: disabled || !bounded, onClick: () => setEditing(true), 'aria-label': 'Editar monto solicitado' }, bounded ? availableMoney(amount) : dash, React.createElement('span', { className: 'su-loan-amount-pen', 'aria-hidden': true }, React.createElement(I, { name: 'pencil', size: 19 }))),
-      React.createElement('div', { style: { display: 'flex', justifyContent: 'flex-end', fontSize: 'var(--text-11-5, 11.5px)', color: 'var(--ink-3)', fontWeight: 600, marginTop: 6 } },
-        React.createElement('span', null, 'Máximo ', availableMoney(max))));
+      `), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        fontWeight: 700,
+        color: 'var(--ink-3)',
+        letterSpacing: '.01em'
+      }
+    }, '¿Cuánto necesitas?'), editing ? React.createElement('input', {
+      ref: inputRef,
+      className: 'su-loan-amount',
+      type: 'number',
+      inputMode: 'decimal',
+      step: '0.01',
+      value: amount || '',
+      min: bounded ? min : undefined,
+      max: bounded ? max : undefined,
+      disabled: disabled || !bounded,
+      onChange: event => change(event.target.value),
+      onBlur: event => {
+        commit(event.target.value);
+        setEditing(false);
+      },
+      onKeyDown: event => {
+        if (event.key === 'Enter') event.target.blur();
+      },
+      'aria-label': 'Monto solicitado'
+    }) : React.createElement('button', {
+      type: 'button',
+      className: 'su-loan-amount',
+      disabled: disabled || !bounded,
+      onClick: () => setEditing(true),
+      'aria-label': 'Editar monto solicitado'
+    }, bounded ? availableMoney(amount) : dash, React.createElement('span', {
+      className: 'su-loan-amount-pen',
+      'aria-hidden': true
+    }, React.createElement(I, {
+      name: 'pencil',
+      size: 19
+    }))), React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 6
+      }
+    }, React.createElement('span', null, 'Máximo ', availableMoney(max))));
   }
-
-  function TermPicker({ terms, selected, setSelected, disabled, inactive, result, customTerm, presetsOnly }) {
-    const min = Number(customTerm && customTerm.min), max = Number(customTerm && customTerm.max);
+  function TermPicker({
+    terms,
+    selected,
+    setSelected,
+    disabled,
+    inactive,
+    result,
+    customTerm,
+    presetsOnly
+  }) {
+    const min = Number(customTerm && customTerm.min),
+      max = Number(customTerm && customTerm.max);
     const stepSize = Number(customTerm && customTerm.step) || 1;
     const hasCustomRange = !presetsOnly && !!customTerm && Number.isFinite(min) && min > 0 && Number.isFinite(max) && max >= min;
     const [free, setFree] = React.useState(!terms.includes(selected));
     const [draft, setDraft] = React.useState(String(selected || ''));
     React.useEffect(() => {
       setDraft(String(selected || ''));
-      if (presetsOnly) setFree(false);
-      else if (!terms.includes(selected)) setFree(true);
+      if (presetsOnly) setFree(false);else if (!terms.includes(selected)) setFree(true);
     }, [selected, terms.join('|'), presetsOnly]);
     const quotes = result && Array.isArray(result.termOptions) ? result.termOptions : [];
-    const paymentFor = (value) => {
+    const paymentFor = value => {
       if (result && result.paymentCount === value) return result.paymentPerPeriod;
-      const option = quotes.find((item) => item.term === value);
+      const option = quotes.find(item => item.term === value);
       return option && option.paymentPerPeriod;
     };
-    const clamp = (value) => Math.max(min, Math.min(max, value));
-    const commit = (raw) => {
+    const clamp = value => Math.max(min, Math.min(max, value));
+    const commit = raw => {
       const parsed = parseInt(String(raw).replace(/[^0-9]/g, ''), 10);
-      if (!Number.isFinite(parsed)) { setDraft(String(selected)); return; }
-      const value = clamp(parsed); setDraft(String(value)); setSelected(value);
+      if (!Number.isFinite(parsed)) {
+        setDraft(String(selected));
+        return;
+      }
+      const value = clamp(parsed);
+      setDraft(String(value));
+      setSelected(value);
     };
-    const choosePreset = (value) => { setFree(false); setSelected(value); };
-    const chooseFree = () => { setFree(true); if (!selected) setSelected(min); };
+    const choosePreset = value => {
+      setFree(false);
+      setSelected(value);
+    };
+    const chooseFree = () => {
+      setFree(true);
+      if (!selected) setSelected(min);
+    };
     const selectedIsPreset = terms.includes(selected);
-    const monthLabel = selected ? ((selected % 2 ? (selected / 2).toFixed(1) : selected / 2) + ' meses') : dash;
-    return React.createElement('div', { 'data-loan-terms': '', style: { opacity: disabled ? .62 : 1 } },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '0 0 9px' } },
-        React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)' } }, 'Plazo'),
-        React.createElement('span', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: 'var(--ink-3)' } }, monthLabel)),
-      React.createElement('div', { style: { display: 'flex', gap: 9, overflowX: 'auto', scrollbarWidth: 'none', padding: '2px 20px 6px', margin: '0 -20px' } },
-        terms.length || hasCustomRange ? terms.map((value) => {
-          const active = value === selected && (presetsOnly || !free), payment = paymentFor(value);
-          return React.createElement('button', { key: value, disabled, onClick: () => choosePreset(value), 'data-term-card': value, 'data-on': active ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px solid ' + (active ? 'var(--guinda)' : 'transparent'), background: active ? 'var(--guinda-50)' : 'var(--surface)', boxShadow: active ? 'none' : 'var(--neo-sm)', transition: 'border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease' } },
-            React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink)' } }, value + ' pagos'),
-            React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: active ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3, fontVariantNumeric: 'tabular-nums' } }, payment ? exactMoneyOrDash(payment) : inactive ? dash : 'Cotizando…'),
-            React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: active ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, 'por quincena'));
-        }).concat(presetsOnly ? [] : React.createElement('button', { key: 'other', type: 'button', disabled, onClick: chooseFree, 'data-term-card': 'other', 'data-on': free ? '1' : '0', 'data-press': 'subtle', style: { flexShrink: 0, width: 96, padding: '11px 10px 10px', borderRadius: 16, cursor: disabled ? 'default' : 'pointer', textAlign: 'left', fontFamily: 'inherit', border: '1.5px ' + (free ? 'solid var(--guinda)' : 'dashed var(--ink-3)'), background: free ? 'var(--guinda-50)' : 'transparent', boxShadow: 'none' } },
-          React.createElement('div', { style: { fontSize: 'var(--text-15, 15px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink)' } }, free ? selected + (selected === 1 ? ' pago' : ' pagos') : 'Otro'),
-          React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: free ? 'var(--guinda)' : 'var(--ink-3)', marginTop: 3 } }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : (free ? (inactive ? dash : 'Cotizando…') : 'a tu medida')),
-          React.createElement('div', { style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 600, color: free ? 'rgba(145,0,34,.65)' : 'var(--ink-3)', marginTop: 1 } }, free ? 'por quincena' : 'elige quincenas'))) : React.createElement('div', { style: { width: '100%', padding: 14, borderRadius: 16, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 600 } }, 'Los plazos aparecerán al consultar tus condiciones.')),
-      !presetsOnly && free && hasCustomRange && React.createElement('div', { 'data-custom-term-editor': '', style: { marginTop: 4, padding: 12, borderRadius: 16, background: 'var(--surface)', boxShadow: 'var(--neo-sm)' } },
-        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-          React.createElement('button', { type: 'button', disabled: disabled || selected <= min, onClick: () => commit(selected - stepSize), 'aria-label': 'Reducir plazo', style: { width: 40, height: 40, border: 'none', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', fontSize: 'var(--text-20, 20px)', fontWeight: 800 } }, '−'),
-          React.createElement('div', { style: { flex: 1, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 6 } },
-            React.createElement('input', { value: draft, inputMode: 'numeric', disabled, 'aria-label': 'Plazo en quincenas', onChange: (event) => setDraft(event.target.value.replace(/[^0-9]/g, '').slice(0, 3)), onBlur: (event) => commit(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') { commit(event.target.value); event.target.blur(); } }, style: { width: 62, border: 'none', background: 'transparent', textAlign: 'right', outline: 'none', fontFamily: 'inherit', fontSize: 'var(--text-26, 26px)', fontWeight: 800, color: 'var(--ink)' } }),
-            React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700, color: 'var(--ink-3)' } }, selected === 1 ? 'quincena' : 'quincenas')),
-          React.createElement('button', { type: 'button', disabled: disabled || selected >= max, onClick: () => commit(selected + stepSize), 'aria-label': 'Aumentar plazo', style: { width: 40, height: 40, border: 'none', borderRadius: 13, background: 'var(--guinda-50)', color: 'var(--guinda)', fontSize: 'var(--text-20, 20px)', fontWeight: 800 } }, '+')),
-        React.createElement('div', { style: { marginTop: 8, display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)' } },
-          React.createElement('span', null, 'Entre ' + min + ' y ' + max + ' quincenas'),
-          terms.length > 0 && React.createElement('button', { type: 'button', onClick: () => { setFree(false); if (!selectedIsPreset) setSelected(terms.reduce((a, b) => Math.abs(b - selected) < Math.abs(a - selected) ? b : a)); }, style: { border: 'none', background: 'transparent', color: 'var(--guinda)', fontFamily: 'inherit', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700 } }, 'Usar plazos sugeridos'))));
+    const monthLabel = selected ? (selected % 2 ? (selected / 2).toFixed(1) : selected / 2) + ' meses' : dash;
+    return React.createElement('div', {
+      'data-loan-terms': '',
+      style: {
+        opacity: disabled ? .62 : 1
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        margin: '0 0 9px'
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, 'Plazo'), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, monthLabel)), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 9,
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        padding: '2px 20px 6px',
+        margin: '0 -20px'
+      }
+    }, terms.length || hasCustomRange ? terms.map(value => {
+      const active = value === selected && (presetsOnly || !free),
+        payment = paymentFor(value);
+      return React.createElement('button', {
+        key: value,
+        disabled,
+        onClick: () => choosePreset(value),
+        'data-term-card': value,
+        'data-on': active ? '1' : '0',
+        'data-press': 'subtle',
+        style: {
+          flexShrink: 0,
+          width: 96,
+          padding: '11px 10px 10px',
+          borderRadius: 16,
+          cursor: disabled ? 'default' : 'pointer',
+          textAlign: 'left',
+          fontFamily: 'inherit',
+          border: '1.5px solid ' + (active ? 'var(--guinda)' : 'transparent'),
+          background: active ? 'var(--guinda-50)' : 'var(--surface)',
+          boxShadow: active ? 'none' : 'var(--neo-sm)',
+          transition: 'border-color .18s ease, background .18s ease, color .18s ease, box-shadow .18s ease'
+        }
+      }, React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-15, 15px)',
+          fontWeight: 800,
+          color: active ? 'var(--guinda)' : 'var(--ink)'
+        }
+      }, value + ' pagos'), React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-12-5, 12.5px)',
+          fontWeight: 800,
+          color: active ? 'var(--guinda)' : 'var(--ink-3)',
+          marginTop: 3,
+          fontVariantNumeric: 'tabular-nums'
+        }
+      }, payment ? exactMoneyOrDash(payment) : inactive ? dash : 'Cotizando…'), React.createElement('div', {
+        style: {
+          fontSize: 'var(--text-10-5, 10.5px)',
+          fontWeight: 600,
+          color: active ? 'rgba(145,0,34,.65)' : 'var(--ink-3)',
+          marginTop: 1
+        }
+      }, 'por quincena'));
+    }).concat(presetsOnly ? [] : React.createElement('button', {
+      key: 'other',
+      type: 'button',
+      disabled,
+      onClick: chooseFree,
+      'data-term-card': 'other',
+      'data-on': free ? '1' : '0',
+      'data-press': 'subtle',
+      style: {
+        flexShrink: 0,
+        width: 96,
+        padding: '11px 10px 10px',
+        borderRadius: 16,
+        cursor: disabled ? 'default' : 'pointer',
+        textAlign: 'left',
+        fontFamily: 'inherit',
+        border: '1.5px ' + (free ? 'solid var(--guinda)' : 'dashed var(--ink-3)'),
+        background: free ? 'var(--guinda-50)' : 'transparent',
+        boxShadow: 'none'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-15, 15px)',
+        fontWeight: 800,
+        color: free ? 'var(--guinda)' : 'var(--ink)'
+      }
+    }, free ? selected + (selected === 1 ? ' pago' : ' pagos') : 'Otro'), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12-5, 12.5px)',
+        fontWeight: 800,
+        color: free ? 'var(--guinda)' : 'var(--ink-3)',
+        marginTop: 3
+      }
+    }, free && paymentFor(selected) ? exactMoneyOrDash(paymentFor(selected)) : free ? inactive ? dash : 'Cotizando…' : 'a tu medida'), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-10-5, 10.5px)',
+        fontWeight: 600,
+        color: free ? 'rgba(145,0,34,.65)' : 'var(--ink-3)',
+        marginTop: 1
+      }
+    }, free ? 'por quincena' : 'elige quincenas'))) : React.createElement('div', {
+      style: {
+        width: '100%',
+        padding: 14,
+        borderRadius: 16,
+        background: 'var(--surface)',
+        color: 'var(--ink-3)',
+        fontSize: 'var(--text-12-5, 12.5px)',
+        fontWeight: 600
+      }
+    }, 'Los plazos aparecerán al consultar tus condiciones.')), !presetsOnly && free && hasCustomRange && React.createElement('div', {
+      'data-custom-term-editor': '',
+      style: {
+        marginTop: 4,
+        padding: 12,
+        borderRadius: 16,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, React.createElement('button', {
+      type: 'button',
+      disabled: disabled || selected <= min,
+      onClick: () => commit(selected - stepSize),
+      'aria-label': 'Reducir plazo',
+      style: {
+        width: 40,
+        height: 40,
+        border: 'none',
+        borderRadius: 13,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        fontSize: 'var(--text-20, 20px)',
+        fontWeight: 800
+      }
+    }, '−'), React.createElement('div', {
+      style: {
+        flex: 1,
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'center',
+        gap: 6
+      }
+    }, React.createElement('input', {
+      value: draft,
+      inputMode: 'numeric',
+      disabled,
+      'aria-label': 'Plazo en quincenas',
+      onChange: event => setDraft(event.target.value.replace(/[^0-9]/g, '').slice(0, 3)),
+      onBlur: event => commit(event.target.value),
+      onKeyDown: event => {
+        if (event.key === 'Enter') {
+          commit(event.target.value);
+          event.target.blur();
+        }
+      },
+      style: {
+        width: 62,
+        border: 'none',
+        background: 'transparent',
+        textAlign: 'right',
+        outline: 'none',
+        fontFamily: 'inherit',
+        fontSize: 'var(--text-26, 26px)',
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        fontWeight: 700,
+        color: 'var(--ink-3)'
+      }
+    }, selected === 1 ? 'quincena' : 'quincenas')), React.createElement('button', {
+      type: 'button',
+      disabled: disabled || selected >= max,
+      onClick: () => commit(selected + stepSize),
+      'aria-label': 'Aumentar plazo',
+      style: {
+        width: 40,
+        height: 40,
+        border: 'none',
+        borderRadius: 13,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        fontSize: 'var(--text-20, 20px)',
+        fontWeight: 800
+      }
+    }, '+')), React.createElement('div', {
+      style: {
+        marginTop: 8,
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 10,
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 600,
+        color: 'var(--ink-3)'
+      }
+    }, React.createElement('span', null, 'Entre ' + min + ' y ' + max + ' quincenas'), terms.length > 0 && React.createElement('button', {
+      type: 'button',
+      onClick: () => {
+        setFree(false);
+        if (!selectedIsPreset) setSelected(terms.reduce((a, b) => Math.abs(b - selected) < Math.abs(a - selected) ? b : a));
+      },
+      style: {
+        border: 'none',
+        background: 'transparent',
+        color: 'var(--guinda)',
+        fontFamily: 'inherit',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 700
+      }
+    }, 'Usar plazos sugeridos'))));
   }
-
-  function Breakdown({ result }) {
+  function Breakdown({
+    result
+  }) {
     const [open, setOpen] = React.useState(false);
     if (!result) return null;
     const adminDetail = moneyOrDash(result.administrativeFeePerPayment) + ' por ' + result.paymentPeriod;
-    const rows = [
-      ['Recibes', moneyOrDash(result.amount), null],
-      ['Tasa', result.rate + '% ' + result.ratePeriod, null],
-      ['Interés total', moneyOrDash(result.interest), null],
-      ['Gasto administrativo', moneyOrDash(result.administrativeFeeTotal), adminDetail],
-      ['Pagos', result.paymentCount + ' ' + result.paymentPeriod, null],
-    ];
-    return React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, boxShadow: 'var(--neo-sm)', overflow: 'hidden' } },
-      React.createElement('button', { onClick: () => setOpen(!open), 'aria-expanded': open, 'data-press': 'subtle', style: { width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, border: 'none', background: 'transparent', padding: '15px 16px', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--ink)', textAlign: 'left' } },
-        React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800 } }, open ? 'Desglose del préstamo' : 'Ver desglose completo'),
-        React.createElement('span', { style: { width: 26, height: 26, borderRadius: 9, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform .22s cubic-bezier(.32,.72,0,1)' } }, React.createElement(I, { name: 'chevR', size: 15, stroke: 2.4 }))),
-      open && React.createElement('div', { style: { padding: '0 16px 14px' } },
-        rows.map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 14, padding: '11px 0', borderTop: '1px solid var(--hairline)' } },
-          React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', color: 'var(--ink-2)', fontWeight: 600 } }, row[0]),
-          React.createElement('span', { style: { textAlign: 'right' } },
-            React.createElement('span', { style: { display: 'block', fontSize: 'var(--text-14, 14px)', fontWeight: 800, color: 'var(--ink)' } }, row[1]),
-            row[2] && React.createElement('span', { style: { display: 'block', fontSize: 'var(--text-11, 11px)', fontWeight: 600, color: 'var(--ink-3)', marginTop: 1 } }, row[2])))),
-        React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 12, padding: '13px 15px', borderRadius: 15, background: 'var(--guinda-50)' } },
-          React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 800 } }, 'Total a pagar'),
-          React.createElement('span', { style: { fontSize: 'var(--text-20, 20px)', fontWeight: 800, color: 'var(--guinda)', fontVariantNumeric: 'tabular-nums' } }, moneyOrDash(result.total)))));
+    const rows = [['Recibes', moneyOrDash(result.amount), null], ['Tasa', result.rate + '% ' + result.ratePeriod, null], ['Interés total', moneyOrDash(result.interest), null], ['Gasto administrativo', moneyOrDash(result.administrativeFeeTotal), adminDetail], ['Pagos', result.paymentCount + ' ' + result.paymentPeriod, null]];
+    return React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 20,
+        boxShadow: 'var(--neo-sm)',
+        overflow: 'hidden'
+      }
+    }, React.createElement('button', {
+      onClick: () => setOpen(!open),
+      'aria-expanded': open,
+      'data-press': 'subtle',
+      style: {
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 10,
+        border: 'none',
+        background: 'transparent',
+        padding: '15px 16px',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        color: 'var(--ink)',
+        textAlign: 'left'
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-13-5, 13.5px)',
+        fontWeight: 800
+      }
+    }, open ? 'Desglose del préstamo' : 'Ver desglose completo'), React.createElement('span', {
+      style: {
+        width: 26,
+        height: 26,
+        borderRadius: 9,
+        background: 'var(--surface-2)',
+        display: 'grid',
+        placeItems: 'center',
+        transform: open ? 'rotate(90deg)' : 'none',
+        transition: 'transform .22s cubic-bezier(.32,.72,0,1)'
+      }
+    }, React.createElement(I, {
+      name: 'chevR',
+      size: 15,
+      stroke: 2.4
+    }))), open && React.createElement('div', {
+      style: {
+        padding: '0 16px 14px'
+      }
+    }, rows.map(row => React.createElement('div', {
+      key: row[0],
+      style: {
+        display: 'flex',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: 14,
+        padding: '11px 0',
+        borderTop: '1px solid var(--hairline)'
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        color: 'var(--ink-2)',
+        fontWeight: 600
+      }
+    }, row[0]), React.createElement('span', {
+      style: {
+        textAlign: 'right'
+      }
+    }, React.createElement('span', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-14, 14px)',
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, row[1]), row[2] && React.createElement('span', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-11, 11px)',
+        fontWeight: 600,
+        color: 'var(--ink-3)',
+        marginTop: 1
+      }
+    }, row[2])))), React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        marginTop: 12,
+        padding: '13px 15px',
+        borderRadius: 15,
+        background: 'var(--guinda-50)'
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        fontWeight: 800
+      }
+    }, 'Total a pagar'), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-20, 20px)',
+        fontWeight: 800,
+        color: 'var(--guinda)',
+        fontVariantNumeric: 'tabular-nums'
+      }
+    }, moneyOrDash(result.total)))));
   }
-
   function quoteMatchesSelection(result, program, amount, term) {
     if (!result || !program || result.amount !== amount || result.paymentCount !== term) return false;
     return result.program === program.program_id || result.program === program.id || result.fund === program.fund;
@@ -27949,10 +30988,7 @@ Object.assign(window, {
   // Function: se clasifican fallos de transporte del navegador y códigos
   // transitorios reales de PostgREST/PostgreSQL. SNAPSHOT_INVALID queda fuera a
   // propósito — tiene su propia recuperación silenciosa en el repositorio.
-  const RETRYABLE_TRANSPORT = [
-    'failed to fetch', 'network request failed', 'networkerror', 'load failed',
-    'connection closed', 'socket hang up', 'err_network', 'err_connection',
-  ];
+  const RETRYABLE_TRANSPORT = ['failed to fetch', 'network request failed', 'networkerror', 'load failed', 'connection closed', 'socket hang up', 'err_network', 'err_connection'];
   // 57014 statement_timeout · 40001 serialization_failure · 40p01 deadlock
   // 55p03 lock_not_available · 08006 connection_failure · 53300 too_many_connections
   const RETRYABLE_POSTGRES = ['57014', '40001', '40p01', '55p03', '08006', '53300'];
@@ -27960,22 +30996,19 @@ Object.assign(window, {
   function isRetryableQuoteTransportError(error) {
     const message = String(error || '').toLowerCase();
     if (!message || message.includes('snapshot_invalid')) return false;
-    return RETRYABLE_TRANSPORT.some((token) => message.includes(token)) ||
-      RETRYABLE_POSTGRES.some((code) => message.includes(code)) ||
-      RETRYABLE_GATEWAY.some((token) => message.includes(token));
+    return RETRYABLE_TRANSPORT.some(token => message.includes(token)) || RETRYABLE_POSTGRES.some(code => message.includes(code)) || RETRYABLE_GATEWAY.some(token => message.includes(token));
   }
 
   // Restricción de presentación autorizada: sólo recorta opciones del servidor.
-  const hasShortTerms = (program) => !!program && ['CAJA CHICA', 'CAJA DE AHORRO', 'SUTIEXPRESS'].includes(fundKey(program.fund || program.label));
-  const allowedTermsOf = (program) => (program && Array.isArray(program.allowed_terms)
-    ? program.allowed_terms.filter((value) => typeof value === 'number' && value > 0 && (!hasShortTerms(program) || value === 6 || value === 12)) : []);
-
+  const hasShortTerms = program => !!program && ['CAJA CHICA', 'CAJA DE AHORRO', 'SUTIEXPRESS'].includes(fundKey(program.fund || program.label));
+  const allowedTermsOf = program => program && Array.isArray(program.allowed_terms) ? program.allowed_terms.filter(value => typeof value === 'number' && value > 0 && (!hasShortTerms(program) || value === 6 || value === 12)) : [];
   function customTermAccepts(program, term) {
     if (hasShortTerms(program)) return false;
-    const custom = (program && program.custom_term) || {};
-    const min = Number(custom.min), max = Number(custom.max), step = Number(custom.step);
-    return Number.isInteger(term) && Number.isFinite(min) && Number.isFinite(max) && Number.isFinite(step) &&
-      step > 0 && term >= min && term <= max && (term - min) % step === 0;
+    const custom = program && program.custom_term || {};
+    const min = Number(custom.min),
+      max = Number(custom.max),
+      step = Number(custom.step);
+    return Number.isInteger(term) && Number.isFinite(min) && Number.isFinite(max) && Number.isFinite(step) && step > 0 && term >= min && term <= max && (term - min) % step === 0;
   }
 
   // SELECCIÓN ATÓMICA: fondo, monto y plazo se derivan juntos, así `selectionKey`
@@ -27983,24 +31016,28 @@ Object.assign(window, {
   // render y el ajuste de monto/plazo en el siguiente: ese estado intermedio
   // disparaba una cotización que se desechaba y empujaba la real al debounce.
   function deriveSelection(program, previous) {
-    if (!program) return { programId: '', amount: 0, term: 0 };
+    if (!program) return {
+      programId: '',
+      amount: 0,
+      term: 0
+    };
     const terms = allowedTermsOf(program);
-    const min = Number(program.min_amount), max = availableAmountOf(program);
+    const min = Number(program.min_amount),
+      max = availableAmountOf(program);
     const suggested = Number(program.suggested_amount || program.min_amount);
     const previousAmount = previous && Number(previous.amount);
     const candidate = Number.isFinite(previousAmount) && previousAmount > 0 ? previousAmount : suggested;
-    const amount = Number.isFinite(min) && typeof max === 'number' && Number.isFinite(max)
-      ? max < min ? 0 : Math.min(max, Math.max(min, Number.isFinite(candidate) ? candidate : min))
-      : 0;
+    const amount = Number.isFinite(min) && typeof max === 'number' && Number.isFinite(max) ? max < min ? 0 : Math.min(max, Math.max(min, Number.isFinite(candidate) ? candidate : min)) : 0;
     const previousTerm = previous && previous.term;
     // Un plazo personalizado válido para el fondo nuevo se conserva: reiniciarlo
     // a `terms[0]` cambiaba la selección a espaldas del afiliado.
-    const term = terms.includes(previousTerm) || customTermAccepts(program, previousTerm)
-      ? previousTerm
-      : (terms[0] || (hasShortTerms(program) ? 0 : Number(program.custom_term && program.custom_term.min)) || 0);
-    return { programId: program.id, amount, term };
+    const term = terms.includes(previousTerm) || customTermAccepts(program, previousTerm) ? previousTerm : terms[0] || (hasShortTerms(program) ? 0 : Number(program.custom_term && program.custom_term.min)) || 0;
+    return {
+      programId: program.id,
+      amount,
+      term
+    };
   }
-
   const sameSelection = (a, b) => !!a && !!b && a.programId === b.programId && a.amount === b.amount && a.term === b.term;
 
   // Proyección de un plazo sugerido a partir de `termOptions`, que el servidor
@@ -28008,34 +31045,44 @@ Object.assign(window, {
   // aritmética en el navegador: cada importe se copia tal cual del servidor.
   function projectTermOption(base, term) {
     if (!base || !Array.isArray(base.termOptions)) return null;
-    const option = base.termOptions.find((item) => item && item.term === term);
+    const option = base.termOptions.find(item => item && item.term === term);
     if (!option) return null;
-    return Object.freeze({ ...base,
+    return Object.freeze({
+      ...base,
       paymentCount: option.paymentCount,
       interest: option.interest,
       administrativeFeePerPayment: option.administrativeFeePerPayment,
       administrativeFeeTotal: option.administrativeFeeTotal,
       total: option.total,
       paymentPerPeriod: option.paymentPerPeriod,
-      projectedFromTermOptions: true });
+      projectedFromTermOptions: true
+    });
   }
-
-  function StepSimulatorV2({ financial, onSimulationChange, fundName }) {
+  function StepSimulatorV2({
+    financial,
+    onSimulationChange,
+    fundName
+  }) {
     const overview = financial.overview || {};
     // La elegibilidad la sigue resolviendo el servidor (sindicato + categoría
     // de empleado). `fundName` sólo recorta lo ya autorizado; nunca amplía.
-    const programs = programsForFund(
-      Array.isArray(overview.programs) ? overview.programs.filter((item) => item.status === 'AVAILABLE') : [],
-      fundName);
+    const programs = programsForFund(Array.isArray(overview.programs) ? overview.programs.filter(item => item.status === 'AVAILABLE') : [], fundName);
     // Estado compuesto: una sola transición por intención del afiliado.
     // `immediate` viaja DENTRO de la selección para que no pueda consumirse
     // sobre una selección intermedia que el mismo commit ya invalidó.
-    const [selection, setSelection] = React.useState(() => ({ ...deriveSelection(programs[0] || null, null), immediate: true }));
-    const program = programs.find((item) => item.id === selection.programId) || programs[0] || null;
+    const [selection, setSelection] = React.useState(() => ({
+      ...deriveSelection(programs[0] || null, null),
+      immediate: true
+    }));
+    const program = programs.find(item => item.id === selection.programId) || programs[0] || null;
     const terms = allowedTermsOf(program);
     const amount = selection.amount;
     const term = selection.term;
-    const [confirmed, setConfirmed] = React.useState({ key: '', quote: null, revision: 0 });
+    const [confirmed, setConfirmed] = React.useState({
+      key: '',
+      quote: null,
+      revision: 0
+    });
     const [requestError, setRequestError] = React.useState(null);
     const timer = React.useRef(null);
     const queued = React.useRef(null);
@@ -28057,12 +31104,14 @@ Object.assign(window, {
     // desaparece o sus límites cambian, la selección se re-deriva ENTERA.
     React.useEffect(() => {
       if (!program) return;
-      setSelection((current) => {
+      setSelection(current => {
         const next = deriveSelection(program, current);
-        return sameSelection(current, next) ? current : { ...next, immediate: true };
+        return sameSelection(current, next) ? current : {
+          ...next,
+          immediate: true
+        };
       });
     }, [program && program.id, program && program.available_amount, program && program.min_amount]);
-
     React.useEffect(() => () => {
       mounted.current = false;
       clearTimeout(timer.current);
@@ -28072,20 +31121,18 @@ Object.assign(window, {
         activeRequest.current.controller.abort();
       }
     }, []);
-
     const minAmount = program && Number(program.min_amount);
     const maxAmount = availableAmountOf(program);
     const capacityUnknown = !!program && maxAmount == null;
     const capacityExhausted = !!program && !capacityUnknown && Number.isFinite(minAmount) && maxAmount < minAmount;
     const customTerm = program && program.custom_term || {};
-    const customMin = Number(customTerm.min), customMax = Number(customTerm.max), customStep = Number(customTerm.step);
-    const validTerm = (!hasShortTerms(program) || terms.includes(term)) && Number.isInteger(term) && Number.isFinite(customMin) && Number.isFinite(customMax) && Number.isFinite(customStep) &&
-      term >= customMin && term <= customMax && (term - customMin) % customStep === 0;
-    const validSelection = !!(program && Number.isFinite(amount) && amount > 0 &&
-      Number.isFinite(minAmount) && Number.isFinite(maxAmount) && amount >= minAmount && amount <= maxAmount && validTerm);
+    const customMin = Number(customTerm.min),
+      customMax = Number(customTerm.max),
+      customStep = Number(customTerm.step);
+    const validTerm = (!hasShortTerms(program) || terms.includes(term)) && Number.isInteger(term) && Number.isFinite(customMin) && Number.isFinite(customMax) && Number.isFinite(customStep) && term >= customMin && term <= customMax && (term - customMin) % customStep === 0;
+    const validSelection = !!(program && Number.isFinite(amount) && amount > 0 && Number.isFinite(minAmount) && Number.isFinite(maxAmount) && amount >= minAmount && amount <= maxAmount && validTerm);
     const selectionKey = validSelection ? [program.id, amount, term].join('|') : '';
     latestSelection.current = selectionKey;
-
     const drainQueue = async () => {
       if (running.current) return;
       running.current = true;
@@ -28095,31 +31142,36 @@ Object.assign(window, {
           queued.current = null;
           let snapshot = null;
           for (let attempt = 0; attempt < maxQuoteAttempts && mounted.current && latestSelection.current === request.key; attempt += 1) {
-            const active = { controller: new AbortController(), reason: '', key: request.key };
+            const active = {
+              controller: new AbortController(),
+              reason: '',
+              key: request.key
+            };
             activeRequest.current = active;
             const timeoutId = setTimeout(() => {
               active.reason = 'timeout';
               active.controller.abort();
             }, quoteTimeoutMs);
             try {
-              snapshot = await window.financialLegacyStore.requestLoanSessionQuote(
-                request.programId, request.amount, request.term, { signal: active.controller.signal });
-              if (snapshot && snapshot.status === 'error' && isRetryableQuoteTransportError(snapshot.error) &&
-                attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
+              snapshot = await window.financialLegacyStore.requestLoanSessionQuote(request.programId, request.amount, request.term, {
+                signal: active.controller.signal
+              });
+              if (snapshot && snapshot.status === 'error' && isRetryableQuoteTransportError(snapshot.error) && attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
                 snapshot = null;
-                await new Promise((resolve) => setTimeout(resolve, quoteRetryDelayMs));
+                await new Promise(resolve => setTimeout(resolve, quoteRetryDelayMs));
                 continue;
               }
               break;
             } catch (error) {
               if (active.controller.signal.aborted && active.reason !== 'timeout') break;
               if (active.reason === 'timeout' && attempt < maxQuoteAttempts - 1 && latestSelection.current === request.key) {
-                await new Promise((resolve) => setTimeout(resolve, quoteRetryDelayMs));
+                await new Promise(resolve => setTimeout(resolve, quoteRetryDelayMs));
                 continue;
               }
-              snapshot = { status: 'error', error: active.reason === 'timeout'
-                ? 'SIMULATION_TIMEOUT'
-                : error && (error.code || error.message) || 'SIMULATION_UNAVAILABLE' };
+              snapshot = {
+                status: 'error',
+                error: active.reason === 'timeout' ? 'SIMULATION_TIMEOUT' : error && (error.code || error.message) || 'SIMULATION_UNAVAILABLE'
+              };
             } finally {
               clearTimeout(timeoutId);
               if (activeRequest.current === active) activeRequest.current = null;
@@ -28127,10 +31179,13 @@ Object.assign(window, {
           }
           if (!snapshot) continue;
           if (!mounted.current) break;
-          if (latestSelection.current === request.key && snapshot.status === 'ready' &&
-            quoteMatchesSelection(snapshot.quote, request.program, request.amount, request.term)) {
+          if (latestSelection.current === request.key && snapshot.status === 'ready' && quoteMatchesSelection(snapshot.quote, request.program, request.amount, request.term)) {
             quoteRevision.current += 1;
-            setConfirmed({ key: request.key, quote: snapshot.quote, revision: quoteRevision.current });
+            setConfirmed({
+              key: request.key,
+              quote: snapshot.quote,
+              revision: quoteRevision.current
+            });
             setRequestError(null);
           } else if (latestSelection.current === request.key && snapshot.status === 'ready') {
             setRequestError('SIMULATION_RESPONSE_MISMATCH');
@@ -28143,8 +31198,7 @@ Object.assign(window, {
         if (mounted.current && queued.current) drainQueue();
       }
     };
-
-    const enqueueCurrent = (delay) => {
+    const enqueueCurrent = delay => {
       clearTimeout(timer.current);
       if (activeRequest.current) {
         activeRequest.current.reason = 'superseded';
@@ -28152,7 +31206,13 @@ Object.assign(window, {
       }
       if (!validSelection) return;
       setRequestError(null);
-      const request = { key: selectionKey, programId: program.id, program, amount, term };
+      const request = {
+        key: selectionKey,
+        programId: program.id,
+        program,
+        amount,
+        term
+      };
       if (delay === 0) {
         queued.current = request;
         drainQueue();
@@ -28163,9 +31223,11 @@ Object.assign(window, {
         drainQueue();
       }, delay);
     };
-
     React.useEffect(() => {
-      if (!validSelection) { clearTimeout(timer.current); return undefined; }
+      if (!validSelection) {
+        clearTimeout(timer.current);
+        return undefined;
+      }
       if (confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)) {
         return undefined;
       }
@@ -28181,24 +31243,17 @@ Object.assign(window, {
     // already accepted the server quote. Reuse it only when it matches the exact
     // current selection; financial values are never recomputed in the browser.
     const storedQuote = financial && financial.quote;
-    const authoritative = validSelection && confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term)
-      ? confirmed.quote
-      : validSelection && quoteMatchesSelection(storedQuote, program, amount, term) ? storedQuote : null;
+    const authoritative = validSelection && confirmed.key === selectionKey && quoteMatchesSelection(confirmed.quote, program, amount, term) ? confirmed.quote : validSelection && quoteMatchesSelection(storedQuote, program, amount, term) ? storedQuote : null;
     // PLAZO SUGERIDO INSTANTÁNEO: la respuesta vigente para este fondo y este
     // monto ya trae `termOptions` con los importes de cada plazo estándar
     // resueltos por Supabase. Al tocar un plazo se proyecta ese renglón de
     // inmediato mientras la confirmación autoritativa viaja en segundo plano.
-    const projectionBase = !authoritative && validSelection && confirmed.quote &&
-      confirmed.quote.amount === amount &&
-      (confirmed.quote.program === program.program_id || confirmed.quote.program === program.id || confirmed.quote.fund === program.fund)
-      ? confirmed.quote : null;
+    const projectionBase = !authoritative && validSelection && confirmed.quote && confirmed.quote.amount === amount && (confirmed.quote.program === program.program_id || confirmed.quote.program === program.id || confirmed.quote.fund === program.fund) ? confirmed.quote : null;
     // Memoizado a propósito: `projectTermOption` fabrica un objeto nuevo, y el
     // efecto que publica la simulación al padre depende de la IDENTIDAD de
     // `result`. Sin esto cada commit produce un `result` distinto y el par
     // efecto → setState del padre → render se realimenta sin fin.
-    const projected = React.useMemo(
-      () => (projectionBase ? projectTermOption(projectionBase, term) : null),
-      [projectionBase, term]);
+    const projected = React.useMemo(() => projectionBase ? projectTermOption(projectionBase, term) : null, [projectionBase, term]);
     const overviewLoading = !financial.overview && (financial.status === 'idle' || financial.status === 'loading');
     const effectiveError = financial.error || (capacityUnknown ? 'LOAN_CAPACITY_UNAVAILABLE' : validSelection ? requestError : null);
     const historicalMappingRequired = effectiveError === 'HISTORICAL_LOAN_MAPPING_REQUIRED' || effectiveError === 'LOAN_CAPACITY_FUND_UNRESOLVED';
@@ -28209,26 +31264,17 @@ Object.assign(window, {
     const initialLoading = !capacityExhausted && !result && !confirmed.quote && !effectiveError && (overviewLoading || validSelection);
     const updating = validSelection && !!confirmed.quote && !result && !effectiveError && !overviewLoading;
     const displayedResult = result;
-    const state = historicalMappingRequired ? 'HISTORICAL_LOAN_MAPPING_REQUIRED'
-      : historicalDataReviewRequired ? 'HISTORICAL_LOAN_DATA_REVIEW_REQUIRED'
-      : capacityExhausted ? 'NO_AVAILABLE_BALANCE' : initialLoading ? 'LOADING'
-      : requestError ? 'ERROR'
-      : effectiveError ? (unavailableError ? 'UNAVAILABLE' : 'ERROR')
-      : result && eligibilityDenied(result.eligibility) ? 'NOT_ELIGIBLE'
-      : overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'INCOMPLETE'
-      : overview.status === 'SCHEDULED' ? 'SCHEDULED'
-      : overview.status === 'NOT_ELIGIBLE' ? 'NOT_ELIGIBLE'
-      // Con fondo fijo, quedarse sin programa NO es una falla del simulador:
-      // el afiliado puede tener otros fondos y no éste. Sin `fundName` esta
-      // rama no existe y Suti Préstamo conserva su 'UNAVAILABLE' de siempre.
-      : !program && fundName && !overviewLoading ? 'NOT_ELIGIBLE'
-      : !program ? 'UNAVAILABLE' : 'READY';
+    const state = historicalMappingRequired ? 'HISTORICAL_LOAN_MAPPING_REQUIRED' : historicalDataReviewRequired ? 'HISTORICAL_LOAN_DATA_REVIEW_REQUIRED' : capacityExhausted ? 'NO_AVAILABLE_BALANCE' : initialLoading ? 'LOADING' : requestError ? 'ERROR' : effectiveError ? unavailableError ? 'UNAVAILABLE' : 'ERROR' : result && eligibilityDenied(result.eligibility) ? 'NOT_ELIGIBLE' : overview.reason === 'INCOMPLETE_FINANCIAL_PROFILE' ? 'INCOMPLETE' : overview.status === 'SCHEDULED' ? 'SCHEDULED' : overview.status === 'NOT_ELIGIBLE' ? 'NOT_ELIGIBLE'
+    // Con fondo fijo, quedarse sin programa NO es una falla del simulador:
+    // el afiliado puede tener otros fondos y no éste. Sin `fundName` esta
+    // rama no existe y Suti Préstamo conserva su 'UNAVAILABLE' de siempre.
+    : !program && fundName && !overviewLoading ? 'NOT_ELIGIBLE' : !program ? 'UNAVAILABLE' : 'READY';
     const paymentPeriod = result ? result.paymentPeriod : textOrDash(program && program.payment_period) === dash ? 'periodo' : program.payment_period;
     const retry = () => {
       if (!validSelection) return window.financialLegacyStore.openLoanSession();
       if (requestError === 'SNAPSHOT_INVALID') {
         setRequestError(null);
-        return window.financialLegacyStore.openLoanSession(true).then((next) => {
+        return window.financialLegacyStore.openLoanSession(true).then(next => {
           if (next.status === 'ready' && next.loanSession) enqueueCurrent(0);
         });
       }
@@ -28237,18 +31283,30 @@ Object.assign(window, {
     // Toque discreto sobre una card = una transición atómica y cotización
     // inmediata. Sólo el arrastre del slider y el tecleo del monto piden
     // debounce, y lo piden explícitamente.
-    const selectProgram = (value) => setSelection((current) => {
-      const next = deriveSelection(programs.find((item) => item.id === value) || program, current);
-      return { ...next, immediate: true };
+    const selectProgram = value => setSelection(current => {
+      const next = deriveSelection(programs.find(item => item.id === value) || program, current);
+      return {
+        ...next,
+        immediate: true
+      };
     });
-    const selectTerm = (value) => setSelection((current) => (current.term === value && current.immediate
-      ? current : { ...current, term: value, immediate: true }));
-    const selectAmount = (value) => setSelection((current) => (current.amount === value && !current.immediate
-      ? current : { ...current, amount: value, immediate: false }));
+    const selectTerm = value => setSelection(current => current.term === value && current.immediate ? current : {
+      ...current,
+      term: value,
+      immediate: true
+    });
+    const selectAmount = value => setSelection(current => current.amount === value && !current.immediate ? current : {
+      ...current,
+      amount: value,
+      immediate: false
+    });
     // Fin del arrastre / monto rápido / salida del campo: la intención ya es
     // discreta, así que se cotiza sin esperar el debounce.
-    const commitAmount = (value) => setSelection((current) => (current.amount === value && current.immediate
-      ? current : { ...current, amount: value, immediate: true }));
+    const commitAmount = value => setSelection(current => current.amount === value && current.immediate ? current : {
+      ...current,
+      amount: value,
+      immediate: true
+    });
 
     // useLayoutEffect: el padre deriva `canContinue` de esta simulación. Con un
     // efecto normal el botón se habilitaba un frame DESPUÉS de que los importes
@@ -28265,73 +31323,199 @@ Object.assign(window, {
         pending: initialLoading || updating,
         // Nunca continuar con una cotización de otra selección: `result` sólo
         // existe si coincide con el fondo, monto y plazo vigentes.
-        current: validSelection && state === 'READY' && !!result && !updating && quoteMatchesSelection(result, program, amount, term),
+        current: validSelection && state === 'READY' && !!result && !updating && quoteMatchesSelection(result, program, amount, term)
       });
     }, [selectionKey, result, initialLoading, updating, state]);
-
-    return React.createElement('div', { 'data-step-simulator-v2': '', 'data-state': state, 'data-credit-state': state === 'NO_AVAILABLE_BALANCE' ? 'NO_CREDIT_AVAILABLE' : state, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      React.createElement(ResultCard, { result: displayedResult, periodLabel: paymentPeriod, initialLoading, updating, failed: state === 'ERROR' || state === 'UNAVAILABLE' || historicalReviewRequired, inactive: capacityExhausted || capacityUnknown, animationCycle: confirmed.revision, loadingCycle: selectionKey }),
-      state !== 'READY' && React.createElement(StatusNotice, { state, onRetry: retry }),
-      React.createElement(FundPicker, { programs, selected: program && program.id, setSelected: selectProgram, disabled: overviewLoading || historicalReviewRequired }),
-      React.createElement(AmountField, { amount, setAmount: selectAmount, commitAmount, min: minAmount, max: maxAmount, disabled: !program || overviewLoading || capacityExhausted || capacityUnknown || historicalReviewRequired }),
-      React.createElement(TermPicker, { terms, selected: term, setSelected: selectTerm, disabled: !program || overviewLoading || capacityExhausted || capacityUnknown || historicalReviewRequired, inactive: capacityExhausted || capacityUnknown || historicalReviewRequired, result, customTerm: program && program.custom_term, presetsOnly: hasShortTerms(program) }),
-      React.createElement(Breakdown, { result }),
-      React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, lineHeight: 1.5, padding: '0 2px' } },
-        React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),
-        React.createElement('span', null, result ? ('Programa: ' + result.program + ' · Fondo: ' + result.fund) : 'El programa y fondo aplicables aparecerán con el resultado.')));
+    return React.createElement('div', {
+      'data-step-simulator-v2': '',
+      'data-state': state,
+      'data-credit-state': state === 'NO_AVAILABLE_BALANCE' ? 'NO_CREDIT_AVAILABLE' : state,
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14
+      }
+    }, React.createElement(ResultCard, {
+      result: displayedResult,
+      periodLabel: paymentPeriod,
+      initialLoading,
+      updating,
+      failed: state === 'ERROR' || state === 'UNAVAILABLE' || historicalReviewRequired,
+      inactive: capacityExhausted || capacityUnknown,
+      animationCycle: confirmed.revision,
+      loadingCycle: selectionKey
+    }), state !== 'READY' && React.createElement(StatusNotice, {
+      state,
+      onRetry: retry
+    }), React.createElement(FundPicker, {
+      programs,
+      selected: program && program.id,
+      setSelected: selectProgram,
+      disabled: overviewLoading || historicalReviewRequired
+    }), React.createElement(AmountField, {
+      amount,
+      setAmount: selectAmount,
+      commitAmount,
+      min: minAmount,
+      max: maxAmount,
+      disabled: !program || overviewLoading || capacityExhausted || capacityUnknown || historicalReviewRequired
+    }), React.createElement(TermPicker, {
+      terms,
+      selected: term,
+      setSelected: selectTerm,
+      disabled: !program || overviewLoading || capacityExhausted || capacityUnknown || historicalReviewRequired,
+      inactive: capacityExhausted || capacityUnknown || historicalReviewRequired,
+      result,
+      customTerm: program && program.custom_term,
+      presetsOnly: hasShortTerms(program)
+    }), React.createElement(Breakdown, {
+      result
+    }), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        alignItems: 'flex-start',
+        color: 'var(--ink-3)',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 600,
+        lineHeight: 1.5,
+        padding: '0 2px'
+      }
+    }, React.createElement(I, {
+      name: 'info',
+      size: 14,
+      stroke: 2,
+      style: {
+        flexShrink: 0,
+        marginTop: 1
+      }
+    }), React.createElement('span', null, result ? 'Programa: ' + result.program + ' · Fondo: ' + result.fund : 'El programa y fondo aplicables aparecerán con el resultado.')));
   }
-
-  const onlyDigits = (value) => String(value || '').replace(/\D/g, '');
-  const validCardNumber = (value) => /^[0-9]{16}$/.test(onlyDigits(value));
-  const validNotificationPhone = (value) => /^[0-9]{10}$/.test(onlyDigits(value));
-  const validDepositBank = (value) => String(value || '').trim().length >= 2;
+  const onlyDigits = value => String(value || '').replace(/\D/g, '');
+  const validCardNumber = value => /^[0-9]{16}$/.test(onlyDigits(value));
+  const validNotificationPhone = value => /^[0-9]{10}$/.test(onlyDigits(value));
+  const validDepositBank = value => String(value || '').trim().length >= 2;
   function validClabe(value) {
     const normalized = onlyDigits(value);
     if (!/^[0-9]{18}$/.test(normalized)) return false;
     const weights = [3, 7, 1];
     const sum = normalized.slice(0, 17).split('').reduce((total, digit, index) => total + Number(digit) * weights[index % 3], 0);
-    return (10 - (sum % 10)) % 10 === Number(normalized[17]);
+    return (10 - sum % 10) % 10 === Number(normalized[17]);
   }
-  const depositEligible = (account) => !!(account && validDepositBank(account.bank_name) && (validCardNumber(account.card_number) || validClabe(account.clabe)));
+  const depositEligible = account => !!(account && validDepositBank(account.bank_name) && (validCardNumber(account.card_number) || validClabe(account.clabe)));
   const spaced = (value, groups) => {
-    let remaining = onlyDigits(value), result = [];
-    groups.forEach((size) => { if (remaining) { result.push(remaining.slice(0, size)); remaining = remaining.slice(size); } });
+    let remaining = onlyDigits(value),
+      result = [];
+    groups.forEach(size => {
+      if (remaining) {
+        result.push(remaining.slice(0, size));
+        remaining = remaining.slice(size);
+      }
+    });
     return result.join(' ');
   };
-
-  function DepositField({ label, value, onChange, inputMode, maxLength, hint, valid, autoComplete = 'off', field }) {
-    return React.createElement('label', { 'data-deposit-field': field, style: { display: 'block', fontSize: 'var(--text-12, 12px)', fontWeight: 800, color: 'var(--ink)' } }, label,
-      React.createElement('input', {
-        value, onChange, inputMode, maxLength, autoComplete, spellCheck: false,
-        'aria-invalid': value && !valid ? 'true' : undefined,
-        style: { width: '100%', border: '1.5px solid ' + (value && !valid ? '#C0341D' : 'var(--hairline)'), background: 'var(--surface-2)', borderRadius: 13, padding: '12px 13px', font: '700 14px var(--font)', color: 'var(--ink)', marginTop: 6 },
-      }), hint && React.createElement('span', { style: { display: 'block', fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 650, color: value && !valid ? '#C0341D' : 'var(--ink-3)', marginTop: 5 } }, hint));
+  function DepositField({
+    label,
+    value,
+    onChange,
+    inputMode,
+    maxLength,
+    hint,
+    valid,
+    autoComplete = 'off',
+    field
+  }) {
+    return React.createElement('label', {
+      'data-deposit-field': field,
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, label, React.createElement('input', {
+      value,
+      onChange,
+      inputMode,
+      maxLength,
+      autoComplete,
+      spellCheck: false,
+      'aria-invalid': value && !valid ? 'true' : undefined,
+      style: {
+        width: '100%',
+        border: '1.5px solid ' + (value && !valid ? '#C0341D' : 'var(--hairline)'),
+        background: 'var(--surface-2)',
+        borderRadius: 13,
+        padding: '12px 13px',
+        font: '700 14px var(--font)',
+        color: 'var(--ink)',
+        marginTop: 6
+      }
+    }), hint && React.createElement('span', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-10-5, 10.5px)',
+        fontWeight: 650,
+        color: value && !valid ? '#C0341D' : 'var(--ink-3)',
+        marginTop: 5
+      }
+    }, hint));
   }
-
-  function StepDeposit({ value, setValue, reload }) {
-    const update = (patch) => setValue((current) => Object.assign({}, current, patch));
-    const selectAccount = (account) => {
+  function StepDeposit({
+    value,
+    setValue,
+    reload
+  }) {
+    const update = patch => setValue(current => Object.assign({}, current, patch));
+    const selectAccount = account => {
       if (!depositEligible(account)) {
-        update({ selectedId: '', adding: true, draft: { id: account.id, bank_name: account.bank_name || '', card_number: account.card_number || '', clabe: account.clabe || '' }, error: '' });
+        update({
+          selectedId: '',
+          adding: true,
+          draft: {
+            id: account.id,
+            bank_name: account.bank_name || '',
+            card_number: account.card_number || '',
+            clabe: account.clabe || ''
+          },
+          error: ''
+        });
         return;
       }
-      update({ selectedId: account.id, adding: false, draft: null, error: '' });
+      update({
+        selectedId: account.id,
+        adding: false,
+        draft: null,
+        error: ''
+      });
     };
-    const startAdd = () => update({ selectedId: '', adding: true, draft: { bank_name: '', card_number: '', clabe: '' }, error: '' });
-    const setDraft = (key, next) => setValue((current) => Object.assign({}, current, { draft: Object.assign({}, current.draft, { [key]: next }) }));
-    const draft = value.draft || { bank_name: '', card_number: '', clabe: '' };
+    const startAdd = () => update({
+      selectedId: '',
+      adding: true,
+      draft: {
+        bank_name: '',
+        card_number: '',
+        clabe: ''
+      },
+      error: ''
+    });
+    const setDraft = (key, next) => setValue(current => Object.assign({}, current, {
+      draft: Object.assign({}, current.draft, {
+        [key]: next
+      })
+    }));
+    const draft = value.draft || {
+      bank_name: '',
+      card_number: '',
+      clabe: ''
+    };
     const hasCard = onlyDigits(draft.card_number).length > 0;
     const hasClabe = onlyDigits(draft.clabe).length > 0;
     const cardValid = validCardNumber(draft.card_number);
     const clabeValid = validClabe(draft.clabe);
-    const draftValid = validDepositBank(draft.bank_name)
-      && (cardValid || clabeValid)
-      && (!hasCard || cardValid)
-      && (!hasClabe || clabeValid);
-    const saveErrorMessage = (error) => {
-      const code = [error && error.code, error && error.message, error && error.details, error && error.hint]
-        .filter(Boolean)
-        .join(' ');
+    const draftValid = validDepositBank(draft.bank_name) && (cardValid || clabeValid) && (!hasCard || cardValid) && (!hasClabe || clabeValid);
+    const saveErrorMessage = error => {
+      const code = [error && error.code, error && error.message, error && error.details, error && error.hint].filter(Boolean).join(' ');
       if (code.includes('INVALID_DEPOSIT_BANK')) return 'Ingresa el nombre del banco.';
       if (code.includes('DEPOSIT_INSTRUMENT_REQUIRED')) return 'Ingresa una tarjeta o una CLABE válida.';
       if (code.includes('INVALID_DEPOSIT_CARD')) return 'La tarjeta debe tener exactamente 16 dígitos.';
@@ -28342,131 +31526,573 @@ Object.assign(window, {
     };
     const saveAccount = async () => {
       if (!draftValid || value.saving) return;
-      update({ saving: true, error: '' });
+      update({
+        saving: true,
+        error: ''
+      });
       try {
         const saved = await window.BankAccountRepository.saveDeposit(draft);
         await reload(saved.id);
       } catch (error) {
-        update({ saving: false, error: saveErrorMessage(error) });
+        update({
+          saving: false,
+          error: saveErrorMessage(error)
+        });
       }
     };
-    const accountCard = (account) => {
-      const ready = depositEligible(account), selected = value.selectedId === account.id;
+    const accountCard = account => {
+      const ready = depositEligible(account),
+        selected = value.selectedId === account.id;
       return React.createElement('button', {
-        key: account.id, type: 'button', onClick: () => selectAccount(account),
-        'data-deposit-account': ready ? 'ready' : 'incomplete', 'aria-pressed': selected,
-        style: { width: '100%', border: '1.5px solid ' + (selected ? 'var(--guinda)' : 'var(--hairline)'), borderRadius: 16, background: selected ? 'var(--guinda-50)' : 'var(--surface)', padding: 14, textAlign: 'left', color: 'var(--ink)', boxShadow: selected ? '0 0 0 2px var(--guinda-100)' : 'var(--neo-sm)' },
-      },
-      React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' } },
-        React.createElement('strong', { style: { fontSize: 'var(--text-14, 14px)' } }, account.bank_name || 'Banco pendiente'),
-        account.is_primary && React.createElement('span', { style: { fontSize: 'var(--text-9-5, 9.5px)', fontWeight: 900, letterSpacing: '.04em', color: 'var(--guinda)' } }, 'PRINCIPAL')),
-      ready ? React.createElement(React.Fragment, null,
-        validCardNumber(account.card_number) && React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 'var(--text-12, 12px)', fontWeight: 700, marginTop: 7 } }, account.maskedCard),
-        validClabe(account.clabe) && React.createElement('div', { 'data-bank-masked': 'true', style: { fontFamily: 'var(--mono)', fontSize: 'var(--text-11, 11px)', color: 'var(--ink-2)', marginTop: 4 } }, 'CLABE · ' + account.maskedClabe))
-        : React.createElement('div', { style: { color: 'var(--guinda)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 800, marginTop: 7 } }, 'Completar para depósito'));
+        key: account.id,
+        type: 'button',
+        onClick: () => selectAccount(account),
+        'data-deposit-account': ready ? 'ready' : 'incomplete',
+        'aria-pressed': selected,
+        style: {
+          width: '100%',
+          border: '1.5px solid ' + (selected ? 'var(--guinda)' : 'var(--hairline)'),
+          borderRadius: 16,
+          background: selected ? 'var(--guinda-50)' : 'var(--surface)',
+          padding: 14,
+          textAlign: 'left',
+          color: 'var(--ink)',
+          boxShadow: selected ? '0 0 0 2px var(--guinda-100)' : 'var(--neo-sm)'
+        }
+      }, React.createElement('div', {
+        style: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 8,
+          alignItems: 'center'
+        }
+      }, React.createElement('strong', {
+        style: {
+          fontSize: 'var(--text-14, 14px)'
+        }
+      }, account.bank_name || 'Banco pendiente'), account.is_primary && React.createElement('span', {
+        style: {
+          fontSize: 'var(--text-9-5, 9.5px)',
+          fontWeight: 900,
+          letterSpacing: '.04em',
+          color: 'var(--guinda)'
+        }
+      }, 'PRINCIPAL')), ready ? React.createElement(React.Fragment, null, validCardNumber(account.card_number) && React.createElement('div', {
+        'data-bank-masked': 'true',
+        style: {
+          fontFamily: 'var(--mono)',
+          fontSize: 'var(--text-12, 12px)',
+          fontWeight: 700,
+          marginTop: 7
+        }
+      }, account.maskedCard), validClabe(account.clabe) && React.createElement('div', {
+        'data-bank-masked': 'true',
+        style: {
+          fontFamily: 'var(--mono)',
+          fontSize: 'var(--text-11, 11px)',
+          color: 'var(--ink-2)',
+          marginTop: 4
+        }
+      }, 'CLABE · ' + account.maskedClabe)) : React.createElement('div', {
+        style: {
+          color: 'var(--guinda)',
+          fontSize: 'var(--text-11-5, 11.5px)',
+          fontWeight: 800,
+          marginTop: 7
+        }
+      }, 'Completar para depósito'));
     };
-    return React.createElement('div', { className: 'su-route', 'data-loan-deposit-step': value.phase, style: { display: 'flex', flexDirection: 'column', gap: 14 } },
-      React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: '17px 16px', boxShadow: 'var(--neo-sm)' } },
-        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-          React.createElement(window.IconTile, { icon: 'card', size: 40 }),
-          React.createElement('div', null,
-            React.createElement('div', { style: { fontSize: 'var(--text-14, 14px)', fontWeight: 850 } }, '¿Dónde quieres recibir tu préstamo?'),
-            React.createElement('div', { style: { fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, color: 'var(--ink-3)', marginTop: 2 } }, 'Elige una cuenta registrada o agrega una nueva.')))),
-      value.phase === 'loading' && React.createElement('div', { role: 'status', style: { padding: 18, borderRadius: 18, background: 'var(--surface)', color: 'var(--ink-3)', fontSize: 'var(--text-12, 12px)', fontWeight: 700 } }, 'Consultando tus cuentas bancarias…'),
-      value.phase === 'error' && React.createElement('div', { role: 'alert', className: 'su-err', style: { padding: 14, borderRadius: 15, background: '#FCE9EE', color: '#9B1C31', fontSize: 'var(--text-12, 12px)', fontWeight: 750 } }, value.error,
-        React.createElement('button', { type: 'button', onClick: () => reload(), style: { display: 'block', border: 0, padding: '8px 0 0', background: 'transparent', color: 'var(--guinda)', fontWeight: 850 } }, 'Reintentar')),
-      value.phase === 'ready' && React.createElement(React.Fragment, null,
-        value.accounts.length > 0 && React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } }, value.accounts.map(accountCard)),
-        !value.adding && React.createElement(window.Btn, { full: true, variant: 'secondary', icon: 'plus', onClick: startAdd }, value.accounts.length ? 'Agregar nueva cuenta' : 'Agregar cuenta bancaria'),
-        value.adding && React.createElement('div', { 'data-deposit-account-form': '', style: { background: 'var(--surface)', borderRadius: 20, padding: 16, boxShadow: 'var(--neo-sm)', display: 'flex', flexDirection: 'column', gap: 13 } },
-          React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 } },
-            React.createElement('strong', { style: { fontSize: 'var(--text-14, 14px)' } }, draft.id ? 'Completa tu cuenta' : 'Nueva cuenta bancaria'),
-            value.accounts.length > 0 && React.createElement('button', { type: 'button', onClick: () => update({ adding: false, draft: null, error: '' }), style: { border: 0, background: 'transparent', color: 'var(--ink-3)', fontWeight: 800 } }, 'Cancelar')),
-          React.createElement('div', { 'data-deposit-account-rule': '', style: { color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 650, lineHeight: 1.4 } }, 'Para guardar, indica el banco y al menos una opción válida: tarjeta o CLABE.'),
-          React.createElement(DepositField, { field: 'bank', label: 'Banco', value: draft.bank_name || '', valid: validDepositBank(draft.bank_name), hint: 'Obligatorio', onChange: (event) => setDraft('bank_name', event.target.value.slice(0, 100)), autoComplete: 'organization' }),
-          React.createElement(DepositField, { field: 'card', label: 'Número de tarjeta bancaria', value: spaced(draft.card_number, [4, 4, 4, 4]), valid: cardValid, inputMode: 'numeric', maxLength: 19, hint: 'Opcional si proporcionas CLABE · 16 dígitos', onChange: (event) => setDraft('card_number', onlyDigits(event.target.value).slice(0, 16)) }),
-          React.createElement(DepositField, { field: 'clabe', label: 'CLABE interbancaria', value: spaced(draft.clabe, [4, 4, 4, 4, 2]), valid: clabeValid, inputMode: 'numeric', maxLength: 22, hint: 'Opcional si proporcionas tarjeta · 18 dígitos y dígito verificador válido', onChange: (event) => setDraft('clabe', onlyDigits(event.target.value).slice(0, 18)) }),
-          React.createElement(window.Btn, { full: true, 'data-deposit-save': '', disabled: !draftValid || value.saving, loading: value.saving, onClick: saveAccount }, value.saving ? 'Guardando…' : 'Guardar cuenta')),
-        React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: 16, boxShadow: 'var(--neo-sm)' } },
-          React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 9, marginBottom: 12 } }, React.createElement(I, { name: 'phone', size: 18, stroke: 2 }), React.createElement('strong', { style: { fontSize: 'var(--text-14, 14px)' } }, 'Celular para notificaciones')),
-          React.createElement(DepositField, { field: 'phone', label: 'Número celular', value: spaced(value.phone, [3, 3, 4]), valid: validNotificationPhone(value.phone), inputMode: 'tel', maxLength: 12, autoComplete: 'tel-national', hint: value.phoneSource === 'HISTORICAL_SUGGESTION' ? 'Confirma o actualiza el número sugerido.' : '10 dígitos, sin +52.', onChange: (event) => update({ phone: onlyDigits(event.target.value).slice(0, 10), error: '' }) })),
-        (!depositEligible(value.accounts.find((account) => account.id === value.selectedId)) || !validNotificationPhone(value.phone)) && React.createElement('div', { 'data-deposit-continue-help': '', role: 'status', style: { padding: '11px 13px', borderRadius: 13, background: 'var(--surface-2)', color: 'var(--ink-2)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 700, lineHeight: 1.45 } },
-          !depositEligible(value.accounts.find((account) => account.id === value.selectedId)) ? 'Selecciona una cuenta válida para recibir tu préstamo.' : 'Captura un celular válido de 10 dígitos.'),
-        value.error && React.createElement('div', { role: 'alert', className: 'su-err', style: { color: '#C0341D', fontSize: 'var(--text-12, 12px)', fontWeight: 750 } }, value.error)));
+    return React.createElement('div', {
+      className: 'su-route',
+      'data-loan-deposit-step': value.phase,
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 14
+      }
+    }, React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 20,
+        padding: '17px 16px',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, React.createElement(window.IconTile, {
+      icon: 'card',
+      size: 40
+    }), React.createElement('div', null, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-14, 14px)',
+        fontWeight: 850
+      }
+    }, '¿Dónde quieres recibir tu préstamo?'), React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 600,
+        color: 'var(--ink-3)',
+        marginTop: 2
+      }
+    }, 'Elige una cuenta registrada o agrega una nueva.')))), value.phase === 'loading' && React.createElement('div', {
+      role: 'status',
+      style: {
+        padding: 18,
+        borderRadius: 18,
+        background: 'var(--surface)',
+        color: 'var(--ink-3)',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700
+      }
+    }, 'Consultando tus cuentas bancarias…'), value.phase === 'error' && React.createElement('div', {
+      role: 'alert',
+      className: 'su-err',
+      style: {
+        padding: 14,
+        borderRadius: 15,
+        background: '#FCE9EE',
+        color: '#9B1C31',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 750
+      }
+    }, value.error, React.createElement('button', {
+      type: 'button',
+      onClick: () => reload(),
+      style: {
+        display: 'block',
+        border: 0,
+        padding: '8px 0 0',
+        background: 'transparent',
+        color: 'var(--guinda)',
+        fontWeight: 850
+      }
+    }, 'Reintentar')), value.phase === 'ready' && React.createElement(React.Fragment, null, value.accounts.length > 0 && React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, value.accounts.map(accountCard)), !value.adding && React.createElement(window.Btn, {
+      full: true,
+      variant: 'secondary',
+      icon: 'plus',
+      onClick: startAdd
+    }, value.accounts.length ? 'Agregar nueva cuenta' : 'Agregar cuenta bancaria'), value.adding && React.createElement('div', {
+      'data-deposit-account-form': '',
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 20,
+        padding: 16,
+        boxShadow: 'var(--neo-sm)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 13
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 10
+      }
+    }, React.createElement('strong', {
+      style: {
+        fontSize: 'var(--text-14, 14px)'
+      }
+    }, draft.id ? 'Completa tu cuenta' : 'Nueva cuenta bancaria'), value.accounts.length > 0 && React.createElement('button', {
+      type: 'button',
+      onClick: () => update({
+        adding: false,
+        draft: null,
+        error: ''
+      }),
+      style: {
+        border: 0,
+        background: 'transparent',
+        color: 'var(--ink-3)',
+        fontWeight: 800
+      }
+    }, 'Cancelar')), React.createElement('div', {
+      'data-deposit-account-rule': '',
+      style: {
+        color: 'var(--ink-3)',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 650,
+        lineHeight: 1.4
+      }
+    }, 'Para guardar, indica el banco y al menos una opción válida: tarjeta o CLABE.'), React.createElement(DepositField, {
+      field: 'bank',
+      label: 'Banco',
+      value: draft.bank_name || '',
+      valid: validDepositBank(draft.bank_name),
+      hint: 'Obligatorio',
+      onChange: event => setDraft('bank_name', event.target.value.slice(0, 100)),
+      autoComplete: 'organization'
+    }), React.createElement(DepositField, {
+      field: 'card',
+      label: 'Número de tarjeta bancaria',
+      value: spaced(draft.card_number, [4, 4, 4, 4]),
+      valid: cardValid,
+      inputMode: 'numeric',
+      maxLength: 19,
+      hint: 'Opcional si proporcionas CLABE · 16 dígitos',
+      onChange: event => setDraft('card_number', onlyDigits(event.target.value).slice(0, 16))
+    }), React.createElement(DepositField, {
+      field: 'clabe',
+      label: 'CLABE interbancaria',
+      value: spaced(draft.clabe, [4, 4, 4, 4, 2]),
+      valid: clabeValid,
+      inputMode: 'numeric',
+      maxLength: 22,
+      hint: 'Opcional si proporcionas tarjeta · 18 dígitos y dígito verificador válido',
+      onChange: event => setDraft('clabe', onlyDigits(event.target.value).slice(0, 18))
+    }), React.createElement(window.Btn, {
+      full: true,
+      'data-deposit-save': '',
+      disabled: !draftValid || value.saving,
+      loading: value.saving,
+      onClick: saveAccount
+    }, value.saving ? 'Guardando…' : 'Guardar cuenta')), React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 20,
+        padding: 16,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 9,
+        marginBottom: 12
+      }
+    }, React.createElement(I, {
+      name: 'phone',
+      size: 18,
+      stroke: 2
+    }), React.createElement('strong', {
+      style: {
+        fontSize: 'var(--text-14, 14px)'
+      }
+    }, 'Celular para notificaciones')), React.createElement(DepositField, {
+      field: 'phone',
+      label: 'Número celular',
+      value: spaced(value.phone, [3, 3, 4]),
+      valid: validNotificationPhone(value.phone),
+      inputMode: 'tel',
+      maxLength: 12,
+      autoComplete: 'tel-national',
+      hint: value.phoneSource === 'HISTORICAL_SUGGESTION' ? 'Confirma o actualiza el número sugerido.' : '10 dígitos, sin +52.',
+      onChange: event => update({
+        phone: onlyDigits(event.target.value).slice(0, 10),
+        error: ''
+      })
+    })), (!depositEligible(value.accounts.find(account => account.id === value.selectedId)) || !validNotificationPhone(value.phone)) && React.createElement('div', {
+      'data-deposit-continue-help': '',
+      role: 'status',
+      style: {
+        padding: '11px 13px',
+        borderRadius: 13,
+        background: 'var(--surface-2)',
+        color: 'var(--ink-2)',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 700,
+        lineHeight: 1.45
+      }
+    }, !depositEligible(value.accounts.find(account => account.id === value.selectedId)) ? 'Selecciona una cuenta válida para recibir tu préstamo.' : 'Captura un celular válido de 10 dígitos.'), value.error && React.createElement('div', {
+      role: 'alert',
+      className: 'su-err',
+      style: {
+        color: '#C0341D',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 750
+      }
+    }, value.error)));
   }
-
-  function MissingDocumentsNotice({ missing, onCorrect }) {
+  function MissingDocumentsNotice({
+    missing,
+    onCorrect
+  }) {
     if (!missing || !missing.length) return null;
-    return React.createElement('div', { role: 'alert', 'data-loan-missing-documents': '', style: { padding: 13, borderRadius: 14, background: '#FCE9EE', color: '#9B1C31', fontSize: 'var(--text-12, 12px)', fontWeight: 700, lineHeight: 1.45 } },
-      React.createElement('div', { style: { fontWeight: 850 } }, 'Necesitamos actualizar algunos documentos antes de continuar.'),
-      React.createElement('div', { style: { marginTop: 7 } }, 'Faltan:'),
-      React.createElement('ul', { style: { margin: '4px 0 0', paddingLeft: 19 } }, missing.map((entry) => React.createElement('li', { key: entry.requirement.document_type_id }, entry.requirement.document_type && entry.requirement.document_type.label || 'Documento requerido'))),
-      onCorrect && React.createElement('button', { type: 'button', onClick: onCorrect, style: { marginTop: 10, minHeight: 38, border: 0, borderRadius: 10, padding: '0 13px', background: 'var(--guinda)', color: '#fff', fontSize: 'var(--text-12, 12px)', fontWeight: 850 } }, 'Corregir documentos'));
+    return React.createElement('div', {
+      role: 'alert',
+      'data-loan-missing-documents': '',
+      style: {
+        padding: 13,
+        borderRadius: 14,
+        background: '#FCE9EE',
+        color: '#9B1C31',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700,
+        lineHeight: 1.45
+      }
+    }, React.createElement('div', {
+      style: {
+        fontWeight: 850
+      }
+    }, 'Necesitamos actualizar algunos documentos antes de continuar.'), React.createElement('div', {
+      style: {
+        marginTop: 7
+      }
+    }, 'Faltan:'), React.createElement('ul', {
+      style: {
+        margin: '4px 0 0',
+        paddingLeft: 19
+      }
+    }, missing.map(entry => React.createElement('li', {
+      key: entry.requirement.document_type_id
+    }, entry.requirement.document_type && entry.requirement.document_type.label || 'Documento requerido'))), onCorrect && React.createElement('button', {
+      type: 'button',
+      onClick: onCorrect,
+      style: {
+        marginTop: 10,
+        minHeight: 38,
+        border: 0,
+        borderRadius: 10,
+        padding: '0 13px',
+        background: 'var(--guinda)',
+        color: '#fff',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 850
+      }
+    }, 'Corregir documentos'));
   }
-
-  function StepDocuments({ requirements, documents, onChanged, phase, missing }) {
-    return React.createElement('div', { className: 'su-route', style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-      React.createElement(window.UnifiedDocumentPhase,{requirements,documents,onChanged,phase,error:'No fue posible consultar los requisitos autorizados.',onRetry:onChanged,accessPurpose:'SELF_SERVICE_LOAN',title:'Verifica tus documentos'}),
-      React.createElement('div', { style: { display: 'flex', gap: 8, alignItems: 'flex-start', color: 'var(--ink-3)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 600, lineHeight: 1.5, padding: '5px 2px 0' } },
-        React.createElement(I, { name: 'info', size: 14, stroke: 2, style: { flexShrink: 0, marginTop: 1 } }),
-        React.createElement('span', null, 'La disponibilidad final se confirma durante la revisión de la solicitud.')));
+  function StepDocuments({
+    requirements,
+    documents,
+    onChanged,
+    phase,
+    missing
+  }) {
+    return React.createElement('div', {
+      className: 'su-route',
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, React.createElement(window.UnifiedDocumentPhase, {
+      requirements,
+      documents,
+      onChanged,
+      phase,
+      error: 'No fue posible consultar los requisitos autorizados.',
+      onRetry: onChanged,
+      accessPurpose: 'SELF_SERVICE_LOAN',
+      title: 'Verifica tus documentos'
+    }), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 8,
+        alignItems: 'flex-start',
+        color: 'var(--ink-3)',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 600,
+        lineHeight: 1.5,
+        padding: '5px 2px 0'
+      }
+    }, React.createElement(I, {
+      name: 'info',
+      size: 14,
+      stroke: 2,
+      style: {
+        flexShrink: 0,
+        marginTop: 1
+      }
+    }), React.createElement('span', null, 'La disponibilidad final se confirma durante la revisión de la solicitud.')));
   }
-
-  function StepSummary({ simulation, deposit, signature, setSignature, accepted, setAccepted, terms, missingDocuments, onCorrectDocuments, onCorrectDeposit }) {
+  function StepSummary({
+    simulation,
+    deposit,
+    signature,
+    setSignature,
+    accepted,
+    setAccepted,
+    terms,
+    missingDocuments,
+    onCorrectDocuments,
+    onCorrectDeposit
+  }) {
     const result = simulation && simulation.result;
-    if (!result) return React.createElement(StatusNotice, { state: 'UNAVAILABLE' });
-    const rows = [
-      ['Fondo', result.fund],
-      ['Monto solicitado', moneyOrDash(result.amount)],
-      ['Plazo', result.paymentCount + ' ' + result.paymentPeriod],
-      ['Pago por ' + result.paymentPeriod, moneyOrDash(result.paymentPerPeriod)],
-      ['Interés', moneyOrDash(result.interest)],
-      ['Gasto administrativo', moneyOrDash(result.administrativeFeeTotal)],
-    ];
-    return React.createElement('div', { className: 'su-route' },
-      React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 20, padding: '5px 16px 15px', boxShadow: 'var(--neo-sm)' } },
-        rows.map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 14, padding: '12px 0', borderBottom: '1px solid var(--hairline)' } },
-          React.createElement('span', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 600, color: 'var(--ink-3)' } }, row[0]),
-          React.createElement('span', { style: { fontSize: 'var(--text-13-5, 13.5px)', fontWeight: 800, color: 'var(--ink)', textAlign: 'right' } }, row[1]))),
-        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 14, padding: '14px 15px', marginTop: 12, borderRadius: 15, background: 'var(--guinda-50)' } },
-          React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 800 } }, 'Total a pagar'),
-          React.createElement('span', { style: { fontSize: 'var(--text-20, 20px)', fontWeight: 900, color: 'var(--guinda)' } }, moneyOrDash(result.total))),
-        React.createElement('div', { 'data-loan-deposit-summary': '', style: { marginTop: 13, padding: '12px 13px', borderRadius: 14, background: 'var(--surface-2)' } },
-          React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 } },
-            React.createElement('div', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 850 } }, 'Depósito'),
-            React.createElement('button', { type: 'button', onClick: onCorrectDeposit, style: { border: 0, background: 'transparent', color: 'var(--guinda)', fontSize: 'var(--text-11-5, 11.5px)', fontWeight: 850 } }, 'Cambiar')),
-          (deposit.account ? [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe]] : [['Cuenta bancaria', 'No registrada (opcional)']]).concat([['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]]).map((row) => React.createElement('div', { key: row[0], style: { display: 'flex', justifyContent: 'space-between', gap: 12, marginTop: 7, fontSize: 'var(--text-11-5, 11.5px)' } },
-            React.createElement('span', { style: { color: 'var(--ink-3)', fontWeight: 700 } }, row[0]), React.createElement('span', { style: { color: 'var(--ink)', fontWeight: 800, fontFamily: row[0] === 'Banco' ? undefined : 'var(--mono)', textAlign: 'right' } }, row[1]))))),
-      !terms&&React.createElement('div',{role:'alert',style:{marginTop:14,padding:13,borderRadius:13,background:'#FFF4D9',color:'#805100',fontSize: 'var(--text-12, 12px)',fontWeight:700}},'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'),
-      React.createElement(MissingDocumentsNotice,{missing:missingDocuments,onCorrect:onCorrectDocuments}),
-      React.createElement(window.SignBlock, { programa: 'prestamo', subtitulo: 'Suti Préstamo', firma: signature, setFirma: setSignature, accept: accepted, setAccept: setAccepted, termsVersion: terms, texto: 'Autorizo el trámite de esta solicitud y acepto los ' }));
+    if (!result) return React.createElement(StatusNotice, {
+      state: 'UNAVAILABLE'
+    });
+    const rows = [['Fondo', result.fund], ['Monto solicitado', moneyOrDash(result.amount)], ['Plazo', result.paymentCount + ' ' + result.paymentPeriod], ['Pago por ' + result.paymentPeriod, moneyOrDash(result.paymentPerPeriod)], ['Interés', moneyOrDash(result.interest)], ['Gasto administrativo', moneyOrDash(result.administrativeFeeTotal)]];
+    return React.createElement('div', {
+      className: 'su-route'
+    }, React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 20,
+        padding: '5px 16px 15px',
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, rows.map(row => React.createElement('div', {
+      key: row[0],
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'baseline',
+        gap: 14,
+        padding: '12px 0',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-12-5, 12.5px)',
+        fontWeight: 600,
+        color: 'var(--ink-3)'
+      }
+    }, row[0]), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-13-5, 13.5px)',
+        fontWeight: 800,
+        color: 'var(--ink)',
+        textAlign: 'right'
+      }
+    }, row[1]))), React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 14,
+        padding: '14px 15px',
+        marginTop: 12,
+        borderRadius: 15,
+        background: 'var(--guinda-50)'
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-13, 13px)',
+        fontWeight: 800
+      }
+    }, 'Total a pagar'), React.createElement('span', {
+      style: {
+        fontSize: 'var(--text-20, 20px)',
+        fontWeight: 900,
+        color: 'var(--guinda)'
+      }
+    }, moneyOrDash(result.total))), React.createElement('div', {
+      'data-loan-deposit-summary': '',
+      style: {
+        marginTop: 13,
+        padding: '12px 13px',
+        borderRadius: 14,
+        background: 'var(--surface-2)'
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 850
+      }
+    }, 'Depósito'), React.createElement('button', {
+      type: 'button',
+      onClick: onCorrectDeposit,
+      style: {
+        border: 0,
+        background: 'transparent',
+        color: 'var(--guinda)',
+        fontSize: 'var(--text-11-5, 11.5px)',
+        fontWeight: 850
+      }
+    }, 'Cambiar')), (deposit.account ? [['Banco', deposit.account.bank_name], ['Tarjeta', deposit.account.maskedCard], ['CLABE', deposit.account.maskedClabe]] : [['Cuenta bancaria', 'No registrada (opcional)']]).concat([['Celular', '••• ••• ' + onlyDigits(deposit.phone).slice(-4)]]).map(row => React.createElement('div', {
+      key: row[0],
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 12,
+        marginTop: 7,
+        fontSize: 'var(--text-11-5, 11.5px)'
+      }
+    }, React.createElement('span', {
+      style: {
+        color: 'var(--ink-3)',
+        fontWeight: 700
+      }
+    }, row[0]), React.createElement('span', {
+      style: {
+        color: 'var(--ink)',
+        fontWeight: 800,
+        fontFamily: row[0] === 'Banco' ? undefined : 'var(--mono)',
+        textAlign: 'right'
+      }
+    }, row[1]))))), !terms && React.createElement('div', {
+      role: 'alert',
+      style: {
+        marginTop: 14,
+        padding: 13,
+        borderRadius: 13,
+        background: '#FFF4D9',
+        color: '#805100',
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700
+      }
+    }, 'El programa aún no tiene términos publicados. No es posible confirmar hasta que Admin publique una versión.'), React.createElement(MissingDocumentsNotice, {
+      missing: missingDocuments,
+      onCorrect: onCorrectDocuments
+    }), React.createElement(window.SignBlock, {
+      programa: 'prestamo',
+      subtitulo: 'Suti Préstamo',
+      firma: signature,
+      setFirma: setSignature,
+      accept: accepted,
+      setAccept: setAccepted,
+      termsVersion: terms,
+      texto: 'Autorizo el trámite de esta solicitud y acepto los '
+    }));
   }
-
-  function Success({ app, folio, amount, workflowState }) {
+  function Success({
+    app,
+    folio,
+    amount,
+    workflowState
+  }) {
     return React.createElement(window.RequestSubmissionSuccess, {
-      app, folio, amount, kind: 'loan', workflowState,
-      destination: 'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.',
+      app,
+      folio,
+      amount,
+      kind: 'loan',
+      workflowState,
+      destination: 'Tu solicitud fue enviada al Área de Finanzas del sindicato para su revisión.'
     });
   }
-
   const ACCEPTED_LOAN_DOCUMENT_STATUSES = new Set(['PENDING_REVIEW', 'UNDER_REVIEW', 'VERIFIED']);
   function newestLoanDocument(documents, documentTypeId) {
-    return (documents || []).filter((document) => document.document_type_id === documentTypeId)
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)))[0] || null;
+    return (documents || []).filter(document => document.document_type_id === documentTypeId).sort((a, b) => new Date(b.created_at) - new Date(a.created_at) || String(b.id).localeCompare(String(a.id)))[0] || null;
   }
   function resolveLoanDocuments(requirements, documents) {
-    const required = (requirements || []).filter((requirement) => requirement.required !== false);
-    const resolved = (requirements || []).map((requirement) => {
+    const required = (requirements || []).filter(requirement => requirement.required !== false);
+    const resolved = (requirements || []).map(requirement => {
       const document = newestLoanDocument(documents, requirement.document_type_id);
       const physicallyAvailable = !!(document && document.available === true && document.availability === 'AVAILABLE');
-      return { requirement, document, valid: !!(document && ACCEPTED_LOAN_DOCUMENT_STATUSES.has(document.status) && physicallyAvailable) };
+      return {
+        requirement,
+        document,
+        valid: !!(document && ACCEPTED_LOAN_DOCUMENT_STATUSES.has(document.status) && physicallyAvailable)
+      };
     });
-    const selected = resolved.filter((entry) => entry.valid).map((entry) => entry.document);
-    const missing = resolved.filter((entry) => entry.requirement.required !== false && !entry.valid);
-    return { selected, missing };
+    const selected = resolved.filter(entry => entry.valid).map(entry => entry.document);
+    const missing = resolved.filter(entry => entry.requirement.required !== false && !entry.valid);
+    return {
+      selected,
+      missing
+    };
   }
   function missingLoanDocumentsMessage(requirements) {
-    const labels = (requirements || []).map((entry) => { const requirement=entry.requirement||entry; return requirement.document_type && requirement.document_type.label || 'documento requerido'; });
+    const labels = (requirements || []).map(entry => {
+      const requirement = entry.requirement || entry;
+      return requirement.document_type && requirement.document_type.label || 'documento requerido';
+    });
     if (!labels.length) return 'Te faltan documentos obligatorios para continuar. Revisa tu expediente y completa los pendientes.';
     return 'Te faltan documentos obligatorios para continuar. Pendientes: ' + labels.join(', ') + '.';
   }
@@ -28474,50 +32100,180 @@ Object.assign(window, {
   // `params` opcional: `{ fund, title, notes }`. Suti Préstamo entra sin
   // parámetros (`push('loan')`) y se comporta exactamente igual que antes:
   // todos los fondos, título 'Suti Préstamo' y notas vacías.
-  function LoanScreen({ app, params }) {
+  function LoanScreen({
+    app,
+    params
+  }) {
     const options = params || {};
-    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : { status: 'error', overview: null, quote: null, error: 'UNAVAILABLE' };
+    const financial = window.useFinancialLegacy ? window.useFinancialLegacy() : {
+      status: 'error',
+      overview: null,
+      quote: null,
+      error: 'UNAVAILABLE'
+    };
     const [step, setStep] = React.useState(0);
     const [simulation, setSimulation] = React.useState(null);
-    const [deposit, setDeposit] = React.useState({ phase: 'loading', accounts: [], selectedId: '', phone: '', persistedPhone: '', phoneSource: 'NONE', adding: false, draft: null, saving: false, error: '' });
+    const [deposit, setDeposit] = React.useState({
+      phase: 'loading',
+      accounts: [],
+      selectedId: '',
+      phone: '',
+      persistedPhone: '',
+      phoneSource: 'NONE',
+      adding: false,
+      draft: null,
+      saving: false,
+      error: ''
+    });
     const [signature, setSignature] = React.useState('');
     const [accepted, setAccepted] = React.useState(false);
     const [submitting, setSubmitting] = React.useState(false);
     const [submitError, setSubmitError] = React.useState('');
-    const [documentRecovery,setDocumentRecovery]=React.useState([]);
+    const [documentRecovery, setDocumentRecovery] = React.useState([]);
     const [submission, setSubmission] = React.useState(null);
-    const [documentState,setDocumentState]=React.useState({requirements:[],documents:[],terms:null,phase:'loading'});
+    const [documentState, setDocumentState] = React.useState({
+      requirements: [],
+      documents: [],
+      terms: null,
+      phase: 'loading'
+    });
     const idempotencyKey = React.useRef(window.ProgramRequestRepository && window.ProgramRequestRepository.newIdempotencyKey());
     const scroller = React.useRef(null);
-    React.useEffect(() => { if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession(); }, []);
-    const loadDeposit=React.useCallback(async(preferredId)=>{setDeposit((current)=>Object.assign({},current,{phase:'loading',saving:false,error:''}));try{const[accounts,phoneState]=await Promise.all([window.BankAccountRepository.listDeposit(),window.BankAccountRepository.getNotificationPhone()]);setDeposit((current)=>{const eligible=accounts.filter(depositEligible);const requested=preferredId||current.selectedId;const selected=eligible.find((account)=>account.id===requested)||eligible.find((account)=>account.is_primary)||eligible[0]||null;return Object.assign({},current,{phase:'ready',accounts:accounts.slice(),selectedId:selected?selected.id:'',phone:current.phone||phoneState.notification_phone||'',persistedPhone:phoneState.source==='CURRENT_NOTIFICATION_PHONE'?(phoneState.notification_phone||''):'',phoneSource:phoneState.source||'NONE',adding:preferredId?false:eligible.length===0,draft:null,saving:false,error:''});});}catch(_){setDeposit((current)=>Object.assign({},current,{phase:'error',accounts:[],selectedId:'',saving:false,error:'No fue posible consultar tus cuentas bancarias. Intenta nuevamente.'}));}},[]);
-    React.useEffect(()=>{loadDeposit();},[loadDeposit]);
-    const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);if(resolveLoanDocuments(next.requirements,next.documents).missing.length===0)setDocumentRecovery([]);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
-    React.useEffect(()=>{loadDocuments();},[loadDocuments]);
-    React.useEffect(() => { if (scroller.current) scroller.current.scrollTop = 0; }, [step]);
+    React.useEffect(() => {
+      if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession();
+    }, []);
+    const loadDeposit = React.useCallback(async preferredId => {
+      setDeposit(current => Object.assign({}, current, {
+        phase: 'loading',
+        saving: false,
+        error: ''
+      }));
+      try {
+        const [accounts, phoneState] = await Promise.all([window.BankAccountRepository.listDeposit(), window.BankAccountRepository.getNotificationPhone()]);
+        setDeposit(current => {
+          const eligible = accounts.filter(depositEligible);
+          const requested = preferredId || current.selectedId;
+          const selected = eligible.find(account => account.id === requested) || eligible.find(account => account.is_primary) || eligible[0] || null;
+          return Object.assign({}, current, {
+            phase: 'ready',
+            accounts: accounts.slice(),
+            selectedId: selected ? selected.id : '',
+            phone: current.phone || phoneState.notification_phone || '',
+            persistedPhone: phoneState.source === 'CURRENT_NOTIFICATION_PHONE' ? phoneState.notification_phone || '' : '',
+            phoneSource: phoneState.source || 'NONE',
+            adding: preferredId ? false : eligible.length === 0,
+            draft: null,
+            saving: false,
+            error: ''
+          });
+        });
+      } catch (_) {
+        setDeposit(current => Object.assign({}, current, {
+          phase: 'error',
+          accounts: [],
+          selectedId: '',
+          saving: false,
+          error: 'No fue posible consultar tus cuentas bancarias. Intenta nuevamente.'
+        }));
+      }
+    }, []);
+    React.useEffect(() => {
+      loadDeposit();
+    }, [loadDeposit]);
+    const loadDocuments = React.useCallback(async () => {
+      setDocumentState(s => Object.assign({}, s, {
+        phase: 'loading'
+      }));
+      try {
+        const r = await window.DocumentWorkflowRepository.requirements('prestamo');
+        const [dResult, tResult] = await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'), window.ProgramTermsRepository.current('prestamo')]);
+        if (dResult.status !== 'fulfilled') throw dResult.reason || new Error('DOCUMENTS_UNAVAILABLE');
+        const next = {
+          requirements: r.slice(),
+          documents: dResult.value.slice(),
+          terms: tResult.status === 'fulfilled' ? tResult.value : null,
+          phase: 'ready'
+        };
+        setDocumentState(next);
+        if (resolveLoanDocuments(next.requirements, next.documents).missing.length === 0) setDocumentRecovery([]);
+        return next;
+      } catch (_) {
+        const failed = {
+          requirements: [],
+          documents: [],
+          terms: null,
+          phase: 'error'
+        };
+        setDocumentState(failed);
+        return null;
+      }
+    }, []);
+    React.useEffect(() => {
+      loadDocuments();
+    }, [loadDocuments]);
+    React.useEffect(() => {
+      if (scroller.current) scroller.current.scrollTop = 0;
+    }, [step]);
     const steps = ['Monto', 'Depósito', 'Documentos', 'Resumen'];
     const titles = ['Simula tu préstamo', 'Elige dónde recibir tu dinero', 'Verifica tus documentos', 'Confirma tu solicitud'];
-    const loanDocumentSelection=resolveLoanDocuments(documentState.requirements,documentState.documents);
-    const documentsReady=documentState.phase==='ready'&&loanDocumentSelection.missing.length===0;
-    const selectedDepositAccount=deposit.accounts.find((account)=>account.id===deposit.selectedId);
-    const depositReady=deposit.phase==='ready'&&depositEligible(selectedDepositAccount)&&validNotificationPhone(deposit.phone)&&!deposit.saving;
-    const canContinue = step === 0 ? !!(simulation && simulation.current)
-      : step === 1 ? depositReady
-      : step === 2 ? documentsReady
-      : !!(simulation && simulation.current && depositReady && signature && accepted && documentState.terms && documentsReady && !documentRecovery.length && !submitting);
+    const loanDocumentSelection = resolveLoanDocuments(documentState.requirements, documentState.documents);
+    const documentsReady = documentState.phase === 'ready' && loanDocumentSelection.missing.length === 0;
+    const selectedDepositAccount = deposit.accounts.find(account => account.id === deposit.selectedId);
+    const depositReady = deposit.phase === 'ready' && depositEligible(selectedDepositAccount) && validNotificationPhone(deposit.phone) && !deposit.saving;
+    const canContinue = step === 0 ? !!(simulation && simulation.current) : step === 1 ? depositReady : step === 2 ? documentsReady : !!(simulation && simulation.current && depositReady && signature && accepted && documentState.terms && documentsReady && !documentRecovery.length && !submitting);
     const goBack = () => step ? setStep(step - 1) : app.back();
-    const continueFlow=async()=>{if(step!==1){setStep(step+1);return;}if(!depositReady||!depositEligible(selectedDepositAccount))return;setDeposit((current)=>Object.assign({},current,{saving:true,error:''}));try{if(onlyDigits(deposit.phone)!==onlyDigits(deposit.persistedPhone))await window.BankAccountRepository.saveNotificationPhone(deposit.phone);setDeposit((current)=>Object.assign({},current,{saving:false,persistedPhone:onlyDigits(current.phone),phoneSource:'CURRENT_NOTIFICATION_PHONE'}));setStep(2);}catch(_){setDeposit((current)=>Object.assign({},current,{saving:false,error:'No pudimos confirmar el celular para notificaciones. Intenta nuevamente.'}));}};
+    const continueFlow = async () => {
+      if (step !== 1) {
+        setStep(step + 1);
+        return;
+      }
+      if (!depositReady || !depositEligible(selectedDepositAccount)) return;
+      setDeposit(current => Object.assign({}, current, {
+        saving: true,
+        error: ''
+      }));
+      try {
+        if (onlyDigits(deposit.phone) !== onlyDigits(deposit.persistedPhone)) await window.BankAccountRepository.saveNotificationPhone(deposit.phone);
+        setDeposit(current => Object.assign({}, current, {
+          saving: false,
+          persistedPhone: onlyDigits(current.phone),
+          phoneSource: 'CURRENT_NOTIFICATION_PHONE'
+        }));
+        setStep(2);
+      } catch (_) {
+        setDeposit(current => Object.assign({}, current, {
+          saving: false,
+          error: 'No pudimos confirmar el celular para notificaciones. Intenta nuevamente.'
+        }));
+      }
+    };
     const submit = async () => {
       if (!canContinue || !window.ProgramCatalogRepository || !window.ProgramRequestRepository || !window.financialLegacyStore) return;
-      setSubmitting(true); setSubmitError('');
+      setSubmitting(true);
+      setSubmitError('');
       try {
-        const freshDocumentState=await loadDocuments();
-        if(!freshDocumentState){setStep(2);setSubmitError('No fue posible verificar tu expediente. Intenta consultar los documentos nuevamente.');return;}
-        const freshDocuments=resolveLoanDocuments(freshDocumentState.requirements,freshDocumentState.documents);
-        if(freshDocuments.missing.length){setDocumentRecovery(freshDocuments.missing);setSubmitError('');return;}
-        if(!freshDocumentState.terms){setStep(3);setSubmitError('Los términos vigentes no están disponibles. Intenta nuevamente más tarde.');return;}
-        const items = await window.ProgramCatalogRepository.listItems({programKey:'prestamo',includeAssets:false});
-        const item = items.find((value) => value.program_key === 'prestamo' && value.requestMode === 'supabase');
+        const freshDocumentState = await loadDocuments();
+        if (!freshDocumentState) {
+          setStep(2);
+          setSubmitError('No fue posible verificar tu expediente. Intenta consultar los documentos nuevamente.');
+          return;
+        }
+        const freshDocuments = resolveLoanDocuments(freshDocumentState.requirements, freshDocumentState.documents);
+        if (freshDocuments.missing.length) {
+          setDocumentRecovery(freshDocuments.missing);
+          setSubmitError('');
+          return;
+        }
+        if (!freshDocumentState.terms) {
+          setStep(3);
+          setSubmitError('Los términos vigentes no están disponibles. Intenta nuevamente más tarde.');
+          return;
+        }
+        const items = await window.ProgramCatalogRepository.listItems({
+          programKey: 'prestamo',
+          includeAssets: false
+        });
+        const item = items.find(value => value.program_key === 'prestamo' && value.requestMode === 'supabase');
         if (!item) throw new Error('PROGRAM_NOT_REQUESTABLE');
         const result = simulation.result;
         const request = await window.financialLegacyStore.confirmLoanSession({
@@ -28533,19 +32289,24 @@ Object.assign(window, {
           amount: result.amount,
           term: result.paymentCount,
           termsVersionId: freshDocumentState.terms.id,
-          documentIds: freshDocuments.selected.map((document) => document.id),
+          documentIds: freshDocuments.selected.map(document => document.id),
           bankAccountId: selectedDepositAccount ? selectedDepositAccount.id : null,
-          notificationPhone: deposit.phone,
+          notificationPhone: deposit.phone
         });
-        setSubmission({folio:request.folio||request.request_id,amount:result.amount,workflowState:request.workflow_state});
+        setSubmission({
+          folio: request.folio || request.request_id,
+          amount: result.amount,
+          workflowState: request.workflow_state
+        });
       } catch (error) {
         const code = error && (error.code || error.message);
         if (code === 'CONDITIONS_CHANGED' || code === 'SNAPSHOT_INVALID') {
-          setStep(0); setSimulation(null);
+          setStep(0);
+          setSimulation(null);
           setSubmitError('Las condiciones de tu simulación cambiaron. Revisa los valores actualizados antes de continuar.');
         } else if (code === 'REQUIRED_DOCUMENTS_MISSING') {
-          const refreshed=await loadDocuments();
-          const missing=refreshed?resolveLoanDocuments(refreshed.requirements,refreshed.documents).missing:[];
+          const refreshed = await loadDocuments();
+          const missing = refreshed ? resolveLoanDocuments(refreshed.requirements, refreshed.documents).missing : [];
           setDocumentRecovery(missing);
           setSubmitError(missingLoanDocumentsMessage(missing));
         } else if (code === 'PROGRAM_NOT_REQUESTABLE') {
@@ -28557,29 +32318,130 @@ Object.assign(window, {
         } else if (code === 'AFFILIATE_CONTEXT_DENIED' || code === 'IMPERSONATION_CONTEXT_INVALID') {
           setSubmitError('Tu sesión de afiliado cambió. Vuelve al inicio e ingresa nuevamente a la solicitud.');
         } else if (code === 'DEPOSIT_ACCOUNT_UNAVAILABLE' || code === 'INVALID_DEPOSIT_ACCOUNT' || code === 'INVALID_NOTIFICATION_PHONE') {
-          await loadDeposit(); setStep(1);
+          await loadDeposit();
+          setStep(1);
           setSubmitError('La cuenta o el celular cambiaron antes de confirmar. Revisa nuevamente el depósito.');
         } else {
-          const reference=error&&error.correlationId?' Referencia: '+String(error.correlationId).slice(0,8).toUpperCase()+'.':'';
-          setSubmitError('No pudimos completar el envío por una falla temporal del servicio. Intenta nuevamente.'+reference);
+          const reference = error && error.correlationId ? ' Referencia: ' + String(error.correlationId).slice(0, 8).toUpperCase() + '.' : '';
+          setSubmitError('No pudimos completar el envío por una falla temporal del servicio. Intenta nuevamente.' + reference);
         }
-      } finally { setSubmitting(false); }
+      } finally {
+        setSubmitting(false);
+      }
     };
-    if (submission) return React.createElement(Shell, { app, title: 'Listo', onBack: app.back }, React.createElement(Success, { app, folio:submission.folio, amount:submission.amount, workflowState:submission.workflowState }));
-    return React.createElement(Shell, { app, onBack: goBack, title: options.title },
-      React.createElement('div', { 'data-loan-flow-step': step, style: { padding: '4px 20px 12px' } }, React.createElement(window.Stepper, { step, total: 4 }),
-        React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginTop: 8 } }, steps.map((label, index) => React.createElement('span', { key: label, style: { fontSize: 'var(--text-10-5, 10.5px)', fontWeight: 700, color: index <= step ? 'var(--guinda)' : 'var(--ink-3)' } }, label)))),
-      React.createElement('div', { ref: scroller, className: 'su-app-scroll', style: { flex: 1, overflowY: 'auto', padding: '8px 20px 18px' } },
-        step !== 2 && React.createElement('h2', { className: 'su-route', style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, letterSpacing: '-.02em', margin: '0 0 14px' } }, titles[step]),
-        step === 0 && React.createElement(StepSimulatorV2, { financial, onSimulationChange: setSimulation, fundName: options.fund }),
-        step === 1 && React.createElement(StepDeposit, { value: deposit, setValue: setDeposit, reload: loadDeposit }),
-        step === 2 && React.createElement(StepDocuments,{requirements:documentState.requirements,documents:documentState.documents,onChanged:loadDocuments,phase:documentState.phase,missing:loanDocumentSelection.missing}),
-        step === 3 && React.createElement(StepSummary, { simulation, deposit:{account:selectedDepositAccount,phone:deposit.phone}, signature, setSignature, accepted, setAccepted,terms:documentState.terms,missingDocuments:documentRecovery,onCorrectDocuments:()=>{setStep(2);setSubmitError('');},onCorrectDeposit:()=>{setStep(1);setSubmitError('');} })),
-      React.createElement('div', { 'data-loan-flow-footer': '', style: { padding: '12px 20px calc(12px + env(safe-area-inset-bottom))', borderTop: '1px solid var(--hairline)', background: 'var(--surface)', boxShadow: '0 -8px 24px rgba(20,33,61,.05)' } },
-        submitError && React.createElement('div', { role: 'alert', className: 'su-err', 'data-loan-submission-error': '', style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, color: '#C0341D', lineHeight: 1.4, marginBottom: 9 } }, submitError),
-        React.createElement(window.Btn, { full: true, size: 'lg', loading: submitting||deposit.saving, disabled: !canContinue, iconRight: step === 3 ? 'shield' : 'arrowR', onClick: () => step === 3 ? submit() : continueFlow() }, step === 3 ? 'Confirmar solicitud' : (step === 0 && simulation && simulation.pending ? 'Actualizando…' : step === 0 && simulation && /^HISTORICAL_LOAN_/.test(simulation.state) ? 'Revisión requerida' : 'Continuar'))));
+    if (submission) return React.createElement(Shell, {
+      app,
+      title: 'Listo',
+      onBack: app.back
+    }, React.createElement(Success, {
+      app,
+      folio: submission.folio,
+      amount: submission.amount,
+      workflowState: submission.workflowState
+    }));
+    return React.createElement(Shell, {
+      app,
+      onBack: goBack,
+      title: options.title
+    }, React.createElement('div', {
+      'data-loan-flow-step': step,
+      style: {
+        padding: '4px 20px 12px'
+      }
+    }, React.createElement(window.Stepper, {
+      step,
+      total: 4
+    }), React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        marginTop: 8
+      }
+    }, steps.map((label, index) => React.createElement('span', {
+      key: label,
+      style: {
+        fontSize: 'var(--text-10-5, 10.5px)',
+        fontWeight: 700,
+        color: index <= step ? 'var(--guinda)' : 'var(--ink-3)'
+      }
+    }, label)))), React.createElement('div', {
+      ref: scroller,
+      className: 'su-app-scroll',
+      style: {
+        flex: 1,
+        overflowY: 'auto',
+        padding: '8px 20px 18px'
+      }
+    }, step !== 2 && React.createElement('h2', {
+      className: 'su-route',
+      style: {
+        fontSize: 'var(--text-21, 21px)',
+        fontWeight: 800,
+        letterSpacing: '-.02em',
+        margin: '0 0 14px'
+      }
+    }, titles[step]), step === 0 && React.createElement(StepSimulatorV2, {
+      financial,
+      onSimulationChange: setSimulation,
+      fundName: options.fund
+    }), step === 1 && React.createElement(StepDeposit, {
+      value: deposit,
+      setValue: setDeposit,
+      reload: loadDeposit
+    }), step === 2 && React.createElement(StepDocuments, {
+      requirements: documentState.requirements,
+      documents: documentState.documents,
+      onChanged: loadDocuments,
+      phase: documentState.phase,
+      missing: loanDocumentSelection.missing
+    }), step === 3 && React.createElement(StepSummary, {
+      simulation,
+      deposit: {
+        account: selectedDepositAccount,
+        phone: deposit.phone
+      },
+      signature,
+      setSignature,
+      accepted,
+      setAccepted,
+      terms: documentState.terms,
+      missingDocuments: documentRecovery,
+      onCorrectDocuments: () => {
+        setStep(2);
+        setSubmitError('');
+      },
+      onCorrectDeposit: () => {
+        setStep(1);
+        setSubmitError('');
+      }
+    })), React.createElement('div', {
+      'data-loan-flow-footer': '',
+      style: {
+        padding: '12px 20px calc(12px + env(safe-area-inset-bottom))',
+        borderTop: '1px solid var(--hairline)',
+        background: 'var(--surface)',
+        boxShadow: '0 -8px 24px rgba(20,33,61,.05)'
+      }
+    }, submitError && React.createElement('div', {
+      role: 'alert',
+      className: 'su-err',
+      'data-loan-submission-error': '',
+      style: {
+        fontSize: 'var(--text-12, 12px)',
+        fontWeight: 700,
+        color: '#C0341D',
+        lineHeight: 1.4,
+        marginBottom: 9
+      }
+    }, submitError), React.createElement(window.Btn, {
+      full: true,
+      size: 'lg',
+      loading: submitting || deposit.saving,
+      disabled: !canContinue,
+      iconRight: step === 3 ? 'shield' : 'arrowR',
+      onClick: () => step === 3 ? submit() : continueFlow()
+    }, step === 3 ? 'Confirmar solicitud' : step === 0 && simulation && simulation.pending ? 'Actualizando…' : step === 0 && simulation && /^HISTORICAL_LOAN_/.test(simulation.state) ? 'Revisión requerida' : 'Continuar')));
   }
-
   window.StepSimulatorV2 = StepSimulatorV2;
   window.LoanScreen = LoanScreen;
 })();
@@ -34759,7 +38621,7 @@ Object.assign(window, {
     }), React.createElement(window.RequestAuthorizationNotice, {
       app,
       requests: operations.all()
-    }), React.createElement(window.FarmaHistory, {
+    }), window.DocumentIntegration && window.DocumentIntegration.enabled() && React.createElement(window.ArchivedDocumentEvidence), React.createElement(window.FarmaHistory, {
       app
     }),
     // active tracker hero
@@ -35167,6 +39029,8 @@ Object.assign(window, {
         }
       },
       showApplicant: false
+    }), window.DocumentIntegration && window.DocumentIntegration.enabled() && React.createElement(window.DocumentEvidencePanel, {
+      contextId: requestId
     }),
     // rejection reason
     s.motivo && React.createElement('div', {
@@ -37029,8 +40893,24 @@ Object.assign(window, {
         });
       } catch (e) {
         const code = e && (e.code || e.message);
-        setError(type.label + ': ' + (code === 'DOCUMENT_OBJECT_MISSING' ? 'este documento ya no está disponible. Puedes cargarlo nuevamente.' : 'no fue posible autorizar la vista. Intenta nuevamente.'));
+        setError(type.label + ': ' + (code === 'DOCUMENT_OBJECT_MISSING' ? 'este documento ya no está disponible. Puedes cargarlo nuevamente.' : 'no fue posible abrir el documento. Intenta nuevamente.'));
         await onChanged();
+      } finally {
+        setBusy(null);
+      }
+    };
+    const retire = async (doc, type) => {
+      if (!window.confirm('¿Retirar ' + type.label + ' del expediente? Las solicitudes anteriores conservarán su documento.')) return;
+      setBusy({
+        id: type.id,
+        phase: 'retiring'
+      });
+      setError('');
+      try {
+        await window.DocumentWorkflowRepository.withdraw(doc.id, crypto.randomUUID(), 'Retiro solicitado desde el expediente');
+        await onChanged();
+      } catch (e) {
+        setError(type.label + ': no se pudo retirar el documento. Intenta nuevamente.');
       } finally {
         setBusy(null);
       }
@@ -37179,7 +41059,7 @@ Object.assign(window, {
     }, 'Capturar foto'))));
     const phaseLabel = type => {
       if (!busy || busy.id !== type.id) return '';
-      return busy.phase === 'preparing' ? 'Preparando imagen…' : busy.phase === 'authorizing' ? 'Autorizando vista…' : busy.phase === 'registering' ? 'Registrando…' : 'Subiendo…';
+      return busy.phase === 'preparing' ? 'Preparando imagen…' : busy.phase === 'authorizing' ? 'Abriendo…' : busy.phase === 'verifying' ? 'Verificando archivo…' : busy.phase === 'retiring' ? 'Retirando…' : busy.phase === 'registering' ? 'Registrando…' : 'Subiendo…';
     };
     const actionButton = (label, icon, onClick, disabled, kind) => h('button', {
       type: 'button',
@@ -37316,7 +41196,22 @@ Object.assign(window, {
           stroke: 2
         }), 'Reemplazar'), accepted && available && h('span', {
           className: 'mr-doc-status'
-        }, state.label), doc && doc.review_observation && h('p', {
+        }, state.label), doc && editable && window.DocumentIntegration && window.DocumentIntegration.enabled() && h('button', {
+          type: 'button',
+          'data-document-action': 'retire',
+          'aria-label': 'Retirar ' + type.label,
+          disabled: isBusy,
+          onClick: () => retire(doc, type),
+          style: {
+            position: 'relative',
+            width: '100%',
+            minHeight: 32,
+            border: 0,
+            background: '#fff',
+            color: 'var(--guinda)',
+            fontWeight: 750
+          }
+        }, 'Retirar'), doc && doc.review_observation && h('p', {
           className: 'mr-doc-observation'
         }, doc.review_observation));
       })), originSheet, cameraSheet, viewer && viewer.context === resourceContext && h(window.DocumentViewer, {
@@ -37446,7 +41341,7 @@ Object.assign(window, {
       }, actionButton(doc ? 'Reemplazar' : 'Adjuntar', 'upload', () => setOrigin({
         type,
         replacing: !!doc
-      }), isBusy, doc ? 'replace' : 'upload')));
+      }), isBusy, doc ? 'replace' : 'upload'), doc && editable && window.DocumentIntegration && window.DocumentIntegration.enabled() && actionButton('Retirar', 'trash', () => retire(doc, type), isBusy, 'retire')));
     })), originSheet, cameraSheet, viewer && viewer.context === resourceContext && h(window.DocumentViewer, {
       source: viewer.source,
       mimeType: viewer.mimeType,
@@ -37797,6 +41692,201 @@ Object.assign(window, {
   window.DocumentRequirementList = DocumentRequirementList;
   window.UnifiedDocumentPhase = UnifiedDocumentPhase;
   window.DocumentRequestGate = DocumentRequestGate;
+  function DocumentEvidencePanel({
+    contextId,
+    source = 'REQUEST',
+    mode = 'SELF_SERVICE',
+    rows: provided
+  }) {
+    const [rows, setRows] = useState(provided || null),
+      [error, setError] = useState(''),
+      [viewer, setViewer] = useState(null),
+      [busy, setBusy] = useState(null);
+    const identity = window.PrivateResourceDemand.useContext();
+    useEffect(() => {
+      let alive = true;
+      setViewer(null);
+      setError('');
+      setRows(provided || null);
+      if (!provided) window.DocumentIntegration.evidence(contextId, source, mode).then(r => {
+        if (alive) setRows(r);
+      }).catch(() => {
+        if (alive) setError('No fue posible consultar la evidencia documental.');
+      });
+      return () => {
+        alive = false;
+      };
+    }, [contextId, source, mode, identity, provided]);
+    const open = async row => {
+      const before = window.PrivateResourceDemand.context();
+      setBusy(row.id);
+      setError('');
+      try {
+        const result = await window.DocumentWorkflowRepository.historicalPreview(row.id, source, mode);
+        if (before === window.PrivateResourceDemand.context()) setViewer({
+          source: result.signedUrl,
+          mimeType: result.mimeType || row.mimeType,
+          title: row.document_type?.label || 'Documento',
+          context: before
+        });
+      } catch (_) {
+        if (before === window.PrivateResourceDemand.context()) setError('No fue posible abrir el archivo original. Reintenta.');
+      } finally {
+        setBusy(null);
+      }
+    };
+    return h('section', {
+      'data-document-evidence': source,
+      style: {
+        marginTop: 18
+      }
+    }, h(window.SectionHead, {
+      title: 'Documentos de la solicitud',
+      icon: 'folder'
+    }), error && h('p', {
+      role: 'alert'
+    }, error), !rows && !error && h('p', {
+      role: 'status'
+    }, 'Cargando documentos…'), rows && rows.length === 0 && h('p', null, 'Sin documentos asociados.'), (rows || []).map(row => h('button', {
+      key: row.id,
+      type: 'button',
+      'data-association-id': row.id,
+      onClick: () => open(row),
+      disabled: busy === row.id,
+      style: {
+        display: 'flex',
+        gap: 10,
+        alignItems: 'center',
+        width: '100%',
+        padding: 14,
+        border: '1px solid var(--hairline)',
+        borderRadius: 12,
+        background: 'var(--surface)',
+        color: 'var(--ink)',
+        marginBottom: 8
+      }
+    }, h(I, {
+      name: row.mimeType === 'application/pdf' ? 'doc' : 'image',
+      size: 20
+    }), row.document_type?.label || 'Documento', busy === row.id ? ' · Abriendo…' : '')), viewer && viewer.context === identity && h(window.DocumentViewer, {
+      ...viewer,
+      onClose: () => setViewer(null)
+    }));
+  }
+  function DocumentSupportSelector({
+    value,
+    onChange,
+    disabled
+  }) {
+    const identity = window.PrivateResourceDemand.useContext(),
+      [state, setState] = useState({
+        phase: 'loading',
+        rows: []
+      });
+    useEffect(() => {
+      let alive = true;
+      setState({
+        phase: 'loading',
+        rows: []
+      });
+      Promise.all([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE'), window.DocumentWorkflowRepository.catalog()]).then(([rows, types]) => {
+        if (alive) setState({
+          phase: 'ready',
+          rows: rows.filter(d => ACCEPTED.has(d.status) && physicalAvailable(d)).map(d => ({
+            ...d,
+            label: types.find(t => t.id === d.document_type_id)?.label || 'Documento'
+          }))
+        });
+      }).catch(() => {
+        if (alive) setState({
+          phase: 'error',
+          rows: []
+        });
+      });
+      return () => {
+        alive = false;
+      };
+    }, [identity]);
+    return h('label', {
+      style: {
+        display: 'grid',
+        gap: 8,
+        margin: '12px 0'
+      }
+    }, 'Documento de soporte (opcional)', state.phase === 'error' ? h('span', {
+      role: 'alert'
+    }, 'No fue posible consultar los documentos de tu expediente.') : h('select', {
+      'aria-label': 'Documento de soporte',
+      value: value || '',
+      disabled: disabled || state.phase !== 'ready',
+      onChange: e => onChange(e.target.value || null)
+    }, h('option', {
+      value: ''
+    }, state.phase === 'loading' ? 'Cargando…' : 'Sin documento de soporte'), state.rows.map(d => h('option', {
+      key: d.id,
+      value: d.id
+    }, d.label))));
+  }
+  window.DocumentSupportSelector = DocumentSupportSelector;
+  function ArchivedDocumentEvidence({
+    mode = 'SELF_SERVICE'
+  }) {
+    const identity = window.PrivateResourceDemand.useContext(),
+      [rows, setRows] = useState(null),
+      [error, setError] = useState(''),
+      [selected, setSelected] = useState(null);
+    useEffect(() => {
+      let alive = true;
+      setSelected(null);
+      setRows(null);
+      setError('');
+      window.SutiSupabase.getClient().rpc('list_archived_document_contexts', {
+        p_mode: mode
+      }).then(r => {
+        if (!alive) return;
+        if (r.error) setError('No fue posible consultar los documentos archivados.');else setRows(r.data || []);
+      });
+      return () => {
+        alive = false;
+      };
+    }, [identity, mode]);
+    if (!error && (!rows || !rows.length)) return null;
+    return h('section', {
+      'data-archived-document-evidence': '',
+      style: {
+        marginTop: 18
+      }
+    }, h(window.SectionHead, {
+      title: 'Solicitudes archivadas',
+      icon: 'folder'
+    }), error && h('p', {
+      role: 'alert'
+    }, error), (rows || []).map(row => h('div', {
+      key: row.id
+    }, h('button', {
+      type: 'button',
+      onClick: () => setSelected(selected === row.id ? null : row.id),
+      style: {
+        padding: 12,
+        width: '100%',
+        borderRadius: 12,
+        background: 'var(--surface)',
+        border: '1px solid var(--hairline)',
+        color: 'var(--ink)',
+        textAlign: 'left'
+      }
+    }, row.label), selected === row.id && h(DocumentEvidencePanel, {
+      contextId: row.id,
+      source: row.source,
+      mode
+    }), selected === row.id && (mode === 'ADMIN' || row.source === 'SAVINGS') && h(window.GeneratedDocuments, {
+      domain: row.source === 'SAVINGS' ? 'savings' : 'program',
+      operationId: row.id,
+      admin: mode === 'ADMIN'
+    }))));
+  }
+  window.ArchivedDocumentEvidence = ArchivedDocumentEvidence;
+  window.DocumentEvidencePanel = DocumentEvidencePanel;
   window.DocumentosScreen = DocumentosScreen;
 })();
 })();
@@ -53384,71 +57474,260 @@ Object.assign(window, {
    programa/convenio, producto y simulación. Visualizar, administrar y dar
    seguimiento. Exporta window.FinanzasModule. */
 (function () {
-  const { useState, useEffect } = React;
+  const {
+    useState,
+    useEffect
+  } = React;
   const h = React.createElement;
   const I = window.Icon;
   const F = () => window.financeStore;
-  const money = (n) => (window.money ? window.money(n) : '$' + n);
-
+  const money = n => window.money ? window.money(n) : '$' + n;
   const REQUEST_STATUS = Object.freeze({
-    submitted: { label: 'Enviada', tone: 'amber' },
-    requires_financial_processing: { label: 'Pendiente de revisión', tone: 'amber' },
-    in_review: { label: 'En revisión', tone: 'blue' },
-    approved: { label: 'Aprobada', tone: 'green' },
-    rejected: { label: 'Rechazada', tone: 'red' },
-    cancelled: { label: 'Cancelada', tone: 'gray' },
+    submitted: {
+      label: 'Enviada',
+      tone: 'amber'
+    },
+    requires_financial_processing: {
+      label: 'Pendiente de revisión',
+      tone: 'amber'
+    },
+    in_review: {
+      label: 'En revisión',
+      tone: 'blue'
+    },
+    approved: {
+      label: 'Aprobada',
+      tone: 'green'
+    },
+    rejected: {
+      label: 'Rechazada',
+      tone: 'red'
+    },
+    cancelled: {
+      label: 'Cancelada',
+      tone: 'gray'
+    }
   });
   const FINANCIAL_PROCESSING = Object.freeze({
-    pending: { label: 'Validación financiera', tone: 'amber' },
-    ready_for_handoff: { label: 'Pendiente de envío', tone: 'blue' },
-    in_progress: { label: 'Enviando a gestión', tone: 'blue' },
-    handed_off: { label: 'Entregada a gestión', tone: 'green' },
-    completed: { label: 'Aprobada en Supabase', tone: 'green' },
-    failed: { label: 'Envío con error', tone: 'red' },
+    pending: {
+      label: 'Validación financiera',
+      tone: 'amber'
+    },
+    ready_for_handoff: {
+      label: 'Pendiente de envío',
+      tone: 'blue'
+    },
+    in_progress: {
+      label: 'Enviando a gestión',
+      tone: 'blue'
+    },
+    handed_off: {
+      label: 'Entregada a gestión',
+      tone: 'green'
+    },
+    completed: {
+      label: 'Aprobada en Supabase',
+      tone: 'green'
+    },
+    failed: {
+      label: 'Envío con error',
+      tone: 'red'
+    }
   });
-  const PROGRAM_LABELS = Object.freeze({ prestamo: 'Suti Préstamo', caja: 'Caja de ahorro', nomina: 'Financiamiento vía nómina' });
-  const TONES = Object.freeze({ amber: ['#FFF4D6', '#8A5A00'], blue: ['#E8F0FF', '#2456C7'], green: ['#E5F7EF', '#087A50'], red: ['#FCE9EE', '#A00027'], gray: ['#EEF0F4', '#596273'] });
-  const ADMIN_EVENT_LABELS = Object.freeze({ COMMENT: 'Observación administrativa', MARK_IN_REVIEW: 'Revisión iniciada', REJECT: 'Etapa rechazada', CANCEL: 'Solicitud cancelada', APPROVE: 'Etapa aprobada', ADVANCE_STAGE: 'Avance de etapa' });
-  const programLabel = (row) => row && row.program_item && row.program_item.name || row && row.product && row.product.name || row && row.membership && [row.membership.company_raw, row.membership.concept].filter(Boolean).join(' · ') || row && row.company && row.company.display_name || PROGRAM_LABELS[row && row.program_id] || row && row.program_id || 'Solicitud';
-  const requestTypeLabel = (row) => row && row.program_id === 'prestamo' ? 'Préstamo' : row && row.membership_offering_id ? 'Membresía' : row && row.request_type === 'quote' ? 'Cotización' : 'Programa / producto';
-  const queueProgramLabel = (row) => row.program_id === 'prestamo' ? row.requested_fund || 'Fondo no registrado' : programLabel(row);
-  const statusMeta = (status) => REQUEST_STATUS[status] || { label: 'Estado no reconocido', tone: 'gray' };
-  const processingMeta = (stage) => FINANCIAL_PROCESSING[stage] || { label: 'Sin procesamiento financiero', tone: 'gray' };
-  const workflowOf = (row) => row && row.workflow_state || {};
-  const currentStage = (row) => workflowOf(row).current_stage || null;
-  const nextStage = (row) => (workflowOf(row).stages || []).find((stage) => stage.state === 'upcoming') || null;
-  const stageLabel = (row) => currentStage(row) && currentStage(row).label || 'Seguimiento no disponible';
-  const numberValue = (value) => value == null || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
-  const moneyValue = (value) => numberValue(value) == null ? '—' : money(Number(value)).replace(/\.00$/, '');
-  const dateValue = (value) => value ? new Date(value).toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) : '—';
-  const dayKey = (value) => value ? new Date(value).toISOString().slice(0, 10) : '';
-  const ageDays = (value) => Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86400000));
-  const ageLabel = (value) => { const days = ageDays(value); if (!days) { const minutes = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 60000)); return minutes < 60 ? minutes + ' min' : Math.floor(minutes / 60) + ' h'; } return days + ' d'; };
-  const maskedControl = (value) => { const text = String(value || ''); return text ? '••••' + text.slice(-4) : 'Sin control'; };
-  const snapshotResult = (detail, approved) => { const snapshot = approved ? detail && detail.financial_approval_snapshot : detail && detail.financial_submission_snapshot; return snapshot && snapshot.financialResult || null; };
-  const detailFullName = (row) => String(row && row.affiliate && row.affiliate.full_name || '').trim() || 'Nombre completo no registrado';
-  const detailProgramLabel = (row) => row && row.program_id === 'prestamo' ? (snapshotResult(row, false) || {}).fund || row.requested_fund || 'Fondo no registrado' : programLabel(row);
+  const PROGRAM_LABELS = Object.freeze({
+    prestamo: 'Suti Préstamo',
+    caja: 'Caja de ahorro',
+    nomina: 'Financiamiento vía nómina'
+  });
+  const TONES = Object.freeze({
+    amber: ['#FFF4D6', '#8A5A00'],
+    blue: ['#E8F0FF', '#2456C7'],
+    green: ['#E5F7EF', '#087A50'],
+    red: ['#FCE9EE', '#A00027'],
+    gray: ['#EEF0F4', '#596273']
+  });
+  const ADMIN_EVENT_LABELS = Object.freeze({
+    COMMENT: 'Observación administrativa',
+    MARK_IN_REVIEW: 'Revisión iniciada',
+    REJECT: 'Etapa rechazada',
+    CANCEL: 'Solicitud cancelada',
+    APPROVE: 'Etapa aprobada',
+    ADVANCE_STAGE: 'Avance de etapa'
+  });
+  const programLabel = row => row && row.program_item && row.program_item.name || row && row.product && row.product.name || row && row.membership && [row.membership.company_raw, row.membership.concept].filter(Boolean).join(' · ') || row && row.company && row.company.display_name || PROGRAM_LABELS[row && row.program_id] || row && row.program_id || 'Solicitud';
+  const requestTypeLabel = row => row && row.program_id === 'prestamo' ? 'Préstamo' : row && row.membership_offering_id ? 'Membresía' : row && row.request_type === 'quote' ? 'Cotización' : 'Programa / producto';
+  const queueProgramLabel = row => row.program_id === 'prestamo' ? row.requested_fund || 'Fondo no registrado' : programLabel(row);
+  const statusMeta = status => REQUEST_STATUS[status] || {
+    label: 'Estado no reconocido',
+    tone: 'gray'
+  };
+  const processingMeta = stage => FINANCIAL_PROCESSING[stage] || {
+    label: 'Sin procesamiento financiero',
+    tone: 'gray'
+  };
+  const workflowOf = row => row && row.workflow_state || {};
+  const currentStage = row => workflowOf(row).current_stage || null;
+  const nextStage = row => (workflowOf(row).stages || []).find(stage => stage.state === 'upcoming') || null;
+  const stageLabel = row => currentStage(row) && currentStage(row).label || 'Seguimiento no disponible';
+  const numberValue = value => value == null || value === '' || !Number.isFinite(Number(value)) ? null : Number(value);
+  const moneyValue = value => numberValue(value) == null ? '—' : money(Number(value)).replace(/\.00$/, '');
+  const dateValue = value => value ? new Date(value).toLocaleString('es-MX', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }) : '—';
+  const dayKey = value => value ? new Date(value).toISOString().slice(0, 10) : '';
+  const ageDays = value => Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 86400000));
+  const ageLabel = value => {
+    const days = ageDays(value);
+    if (!days) {
+      const minutes = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 60000));
+      return minutes < 60 ? minutes + ' min' : Math.floor(minutes / 60) + ' h';
+    }
+    return days + ' d';
+  };
+  const maskedControl = value => {
+    const text = String(value || '');
+    return text ? '••••' + text.slice(-4) : 'Sin control';
+  };
+  const snapshotResult = (detail, approved) => {
+    const snapshot = approved ? detail && detail.financial_approval_snapshot : detail && detail.financial_submission_snapshot;
+    return snapshot && snapshot.financialResult || null;
+  };
+  const detailFullName = row => String(row && row.affiliate && row.affiliate.full_name || '').trim() || 'Nombre completo no registrado';
+  const detailProgramLabel = row => row && row.program_id === 'prestamo' ? (snapshotResult(row, false) || {}).fund || row.requested_fund || 'Fondo no registrado' : programLabel(row);
   const DOCUMENT_STATUS = Object.freeze({
-    PENDING_REVIEW: { label: 'Pendiente de revisión', tone: 'amber' },
-    UNDER_REVIEW: { label: 'En revisión', tone: 'blue' },
-    VERIFIED: { label: 'Verificado', tone: 'green' },
-    REJECTED: { label: 'Rechazado', tone: 'red' },
-    REUPLOAD_REQUIRED: { label: 'Requiere nuevo archivo', tone: 'amber' },
+    PENDING_REVIEW: {
+      label: 'Pendiente de revisión',
+      tone: 'amber'
+    },
+    UNDER_REVIEW: {
+      label: 'En revisión',
+      tone: 'blue'
+    },
+    VERIFIED: {
+      label: 'Verificado',
+      tone: 'green'
+    },
+    REJECTED: {
+      label: 'Rechazado',
+      tone: 'red'
+    },
+    REUPLOAD_REQUIRED: {
+      label: 'Requiere nuevo archivo',
+      tone: 'amber'
+    }
   });
-  const badge = (meta, attr, value) => { const tone = TONES[meta.tone] || TONES.gray; return h('span', { className: 'finwb-badge', style: { background: tone[0], color: tone[1] }, [attr]: value }, meta.label); };
-
+  const badge = (meta, attr, value) => {
+    const tone = TONES[meta.tone] || TONES.gray;
+    return h('span', {
+      className: 'finwb-badge',
+      style: {
+        background: tone[0],
+        color: tone[1]
+      },
+      [attr]: value
+    }, meta.label);
+  };
 
   // Request-local entry point; the document repository and backend remain authoritative.
-  function RowAuthorizationPdf({row}){
-    const [busy,setBusy]=React.useState(false),[message,setMessage]=React.useState(''),[viewer,setViewer]=React.useState(null),generation=React.useRef(0);
-    React.useEffect(()=>{const initial=window.DocumentGenerationRepository?.context();const changed=()=>{if(window.DocumentGenerationRepository?.context()!==initial){generation.current++;setViewer(null);setBusy(false);setMessage('La sesión cambió. Vuelve a consultar el documento.');}};const a=window.AffiliateAuth?.subscribe?.(changed),b=window.AdminRepository?.subscribe?.(changed);return()=>{generation.current++;a?.();b?.();};},[row.id]);
-    async function open(){if(busy)return;const seq=++generation.current;setBusy(true);setMessage('');try{const repository=window.DocumentGenerationRepository;if(!repository)throw Error();const records=await repository.list({domain:'program',operation_id:row.id,admin:true});if(seq!==generation.current)return;const newest=records.slice().sort((a,b)=>(b.business_version||1)-(a.business_version||1))[0];if(!newest){setMessage('Esta solicitud aún no tiene una autorización PDF emitida.');return;}if(newest.status!=='READY'){setMessage(newest.status==='FAILED'?'La generación del PDF falló. Revisa Documentos y Firmas para reintentar.':'La autorización PDF se está preparando. Vuelve a consultar en un momento.');return;}const access=await repository.access(newest.id,true);if(seq===generation.current)setViewer(access.url);}catch(_){if(seq===generation.current)setMessage('No se pudo abrir la autorización PDF. Revisa tu acceso e inténtalo de nuevo.');}finally{if(seq===generation.current)setBusy(false);}}
-    if(row.status!=='approved')return null;
-    return h('span',{onClick:e=>e.stopPropagation(),onKeyDown:e=>e.stopPropagation(),style:{display:'block',marginTop:7}},h('button',{type:'button','data-authorization-pdf':row.id,disabled:busy,onClick:open,style:{border:'1px solid var(--guinda-100)',borderRadius:9,padding:'6px 9px',background:'var(--guinda-50)',color:'var(--guinda)',fontFamily:'inherit',fontSize:11,fontWeight:800,cursor:'pointer'}},busy?'Abriendo autorización…':'Ver autorización PDF'),message&&h('span',{role:'status',style:{display:'block',fontSize:11,marginTop:4}},message),viewer&&h(window.DocumentViewer,{source:viewer,mimeType:'application/pdf',title:'Autorización PDF · '+(row.folio||''),onClose:()=>setViewer(null)}));
+  function RowAuthorizationPdf({
+    row
+  }) {
+    const [busy, setBusy] = React.useState(false),
+      [message, setMessage] = React.useState(''),
+      [viewer, setViewer] = React.useState(null),
+      generation = React.useRef(0);
+    React.useEffect(() => {
+      const initial = window.DocumentGenerationRepository?.context();
+      const changed = () => {
+        if (window.DocumentGenerationRepository?.context() !== initial) {
+          generation.current++;
+          setViewer(null);
+          setBusy(false);
+          setMessage('La sesión cambió. Vuelve a consultar el documento.');
+        }
+      };
+      const a = window.AffiliateAuth?.subscribe?.(changed),
+        b = window.AdminRepository?.subscribe?.(changed);
+      return () => {
+        generation.current++;
+        a?.();
+        b?.();
+      };
+    }, [row.id]);
+    async function open() {
+      if (busy) return;
+      const seq = ++generation.current;
+      setBusy(true);
+      setMessage('');
+      try {
+        const repository = window.DocumentGenerationRepository;
+        if (!repository) throw Error();
+        const records = await repository.list({
+          domain: 'program',
+          operation_id: row.id,
+          admin: true
+        });
+        if (seq !== generation.current) return;
+        const newest = records.slice().sort((a, b) => (b.business_version || 1) - (a.business_version || 1))[0];
+        if (!newest) {
+          setMessage('Esta solicitud aún no tiene una autorización PDF emitida.');
+          return;
+        }
+        if (newest.status !== 'READY') {
+          setMessage(newest.status === 'FAILED' ? 'La generación del PDF falló. Revisa Documentos y Firmas para reintentar.' : 'La autorización PDF se está preparando. Vuelve a consultar en un momento.');
+          return;
+        }
+        const access = await repository.access(newest.id, true);
+        if (seq === generation.current) setViewer(access.url);
+      } catch (_) {
+        if (seq === generation.current) setMessage('No se pudo abrir la autorización PDF. Revisa tu acceso e inténtalo de nuevo.');
+      } finally {
+        if (seq === generation.current) setBusy(false);
+      }
+    }
+    if (row.status !== 'approved') return null;
+    return h('span', {
+      onClick: e => e.stopPropagation(),
+      onKeyDown: e => e.stopPropagation(),
+      style: {
+        display: 'block',
+        marginTop: 7
+      }
+    }, h('button', {
+      type: 'button',
+      'data-authorization-pdf': row.id,
+      disabled: busy,
+      onClick: open,
+      style: {
+        border: '1px solid var(--guinda-100)',
+        borderRadius: 9,
+        padding: '6px 9px',
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        fontFamily: 'inherit',
+        fontSize: 11,
+        fontWeight: 800,
+        cursor: 'pointer'
+      }
+    }, busy ? 'Abriendo autorización…' : 'Ver autorización PDF'), message && h('span', {
+      role: 'status',
+      style: {
+        display: 'block',
+        fontSize: 11,
+        marginTop: 4
+      }
+    }, message), viewer && h(window.DocumentViewer, {
+      source: viewer,
+      mimeType: 'application/pdf',
+      title: 'Autorización PDF · ' + (row.folio || ''),
+      onClose: () => setViewer(null)
+    }));
   }
   function ensureWorkbenchStyles() {
     if (document.getElementById('admin-financial-workbench-css')) return;
-    const style = document.createElement('style'); style.id = 'admin-financial-workbench-css';
+    const style = document.createElement('style');
+    style.id = 'admin-financial-workbench-css';
     style.textContent = `
       .finwb-root{display:flex;flex-direction:column;min-height:0;gap:12px;outline:none}
       .finwb-toolbar{background:var(--surface);border-radius:16px;padding:12px;box-shadow:var(--neo-sm)}
@@ -53553,38 +57832,66 @@ Object.assign(window, {
     `;
     document.head.appendChild(style);
   }
-
   function useDesktop() {
     const query = () => window.matchMedia && window.matchMedia('(min-width: 1024px)').matches;
     const [desktop, setDesktop] = useState(query());
-    useEffect(() => { const media = window.matchMedia('(min-width: 1024px)'); const change = () => setDesktop(media.matches); change(); media.addEventListener ? media.addEventListener('change', change) : media.addListener(change); return () => media.removeEventListener ? media.removeEventListener('change', change) : media.removeListener(change); }, []);
+    useEffect(() => {
+      const media = window.matchMedia('(min-width: 1024px)');
+      const change = () => setDesktop(media.matches);
+      change();
+      media.addEventListener ? media.addEventListener('change', change) : media.addListener(change);
+      return () => media.removeEventListener ? media.removeEventListener('change', change) : media.removeListener(change);
+    }, []);
     return desktop;
   }
-
   function useStore(enabled) {
     const [, force] = useState(0);
-    useEffect(() => F().subscribe(() => force((n) => n + 1)), []);
-    useEffect(() => { if (enabled) F().bootstrap(); }, [enabled]);
+    useEffect(() => F().subscribe(() => force(n => n + 1)), []);
+    useEffect(() => {
+      if (enabled) F().bootstrap();
+    }, [enabled]);
     return F();
   }
-
   function timelineEvents(detail) {
     if (!detail) return [];
-    const events = [{ at: detail.created_at, title: 'Solicitud registrada', text: 'Alta confirmada en la bandeja financiera.' }];
+    const events = [{
+      at: detail.created_at,
+      title: 'Solicitud registrada',
+      text: 'Alta confirmada en la bandeja financiera.'
+    }];
     const confirmed = detail.financial_submission_snapshot && detail.financial_submission_snapshot.confirmed_at;
-    if (confirmed) events.push({ at: confirmed, title: 'Condiciones confirmadas', text: 'Snapshot contractual de la solicitud guardado.' });
-    (detail.request_documents || []).forEach((document) => events.push({ at: document.created_at, title: 'Documento incorporado', text: document.document_type && document.document_type.label || 'Documento del expediente' }));
+    if (confirmed) events.push({
+      at: confirmed,
+      title: 'Condiciones confirmadas',
+      text: 'Snapshot contractual de la solicitud guardado.'
+    });
+    (detail.request_documents || []).forEach(document => events.push({
+      at: document.created_at,
+      title: 'Documento incorporado',
+      text: document.document_type && document.document_type.label || 'Documento del expediente'
+    }));
     const adminEvents = detail.admin_events || [];
-    adminEvents.forEach((event) => events.push({ at: event.created_at, title: ADMIN_EVENT_LABELS[event.action] || 'Acción administrativa', text: [event.from_stage_label && event.to_stage_label ? event.from_stage_label + ' → ' + event.to_stage_label : '', event.actor_label || 'Personal autorizado', event.comment].filter(Boolean).join(' · ') }));
+    adminEvents.forEach(event => events.push({
+      at: event.created_at,
+      title: ADMIN_EVENT_LABELS[event.action] || 'Acción administrativa',
+      text: [event.from_stage_label && event.to_stage_label ? event.from_stage_label + ' → ' + event.to_stage_label : '', event.actor_label || 'Personal autorizado', event.comment].filter(Boolean).join(' · ')
+    }));
     const approvedAt = detail.financial_approved_at || detail.financial_approval_snapshot && detail.financial_approval_snapshot.approved_at;
-    if (approvedAt && !adminEvents.some((event) => event.action === 'APPROVE')) events.push({ at: approvedAt, title: 'Financiamiento aprobado', text: 'Condiciones aprobadas guardadas en snapshot inmutable.' });
+    if (approvedAt && !adminEvents.some(event => event.action === 'APPROVE')) events.push({
+      at: approvedAt,
+      title: 'Financiamiento aprobado',
+      text: 'Condiciones aprobadas guardadas en snapshot inmutable.'
+    });
     const exportState = detail.financial_export;
-    if (exportState && exportState.updated_at) events.push({ at: exportState.updated_at, title: processingMeta(detail.financial_processing_status).label, text: exportState.export_status === 'failed' ? 'La entrega puede reintentarse sin duplicar la solicitud.' : 'Estado confirmado por el contrato de exportación.' });
-    return events.filter((event) => event.at).sort((a, b) => new Date(a.at) - new Date(b.at));
+    if (exportState && exportState.updated_at) events.push({
+      at: exportState.updated_at,
+      title: processingMeta(detail.financial_processing_status).label,
+      text: exportState.export_status === 'failed' ? 'La entrega puede reintentarse sin duplicar la solicitud.' : 'Estado confirmado por el contrato de exportación.'
+    });
+    return events.filter(event => event.at).sort((a, b) => new Date(a.at) - new Date(b.at));
   }
-
   function humanActionError(error) {
-    if (/RENTA_|23P01/.test(String(error?.message||'')+' '+String(error?.code||''))) return window.rentaCarError(error);
+    if (/RENTA_|23P01/.test(String(error?.message || '') + ' ' + String(error?.code || ''))) return window.rentaCarError(error);
     const code = String(error && (error.code || error.message) || '');
     if (/ADMIN_APPROVAL_REQUIRED|REQUEST_DENIED|PROGRAM_REQUEST_(?:READ|WRITE)_DENIED|42501/.test(code)) return 'No tienes permiso para realizar esta acción.';
     if (/PROGRAM_REQUEST_COMMENT_(?:REQUIRED|INVALID)/.test(code)) return 'La observación debe tener entre 3 y 2,000 caracteres.';
@@ -53607,57 +57914,106 @@ Object.assign(window, {
   function useFinancialDocumentPreviews(detail, enabled, onOpen) {
     const epoch = window.PrivateResourceDemand.useContext();
     const documents = [];
-    [['request', detail && detail.request_documents || []], ['affiliate', detail && detail.current_affiliate_documents || []]].forEach(([scope, rows]) => rows.forEach((row) => documents.push({
-      id: row.affiliate_document_id || row.id, key: scope + ':' + row.id,
-      mime: String(row.mimeType || '').toLowerCase(), version: row.updated_at || row.created_at || '',
+    [['request', detail && detail.request_documents || []], ['affiliate', detail && detail.current_affiliate_documents || []]].forEach(([scope, rows]) => rows.forEach(row => documents.push({
+      id: window.DocumentIntegration && window.DocumentIntegration.enabled() && scope === 'request' ? row.id : row.affiliate_document_id || row.id,
+      source: scope === 'request' ? 'REQUEST' : 'EXPEDIENTE',
+      key: scope + ':' + row.id,
+      mime: String(row.mimeType || '').toLowerCase(),
+      version: row.updated_at || row.created_at || '',
       title: row.document_type && row.document_type.label || 'Documento'
     })));
     const identity = JSON.stringify([epoch, enabled, detail && detail.id, detail && detail.affiliate_id, documents]);
-    const current = React.useRef(identity), controller = React.useRef(null), opener = React.useRef(onOpen);
-    current.current = identity; opener.current = onOpen;
-    const [state, setState] = useState({ identity: '', views: {} });
+    const current = React.useRef(identity),
+      controller = React.useRef(null),
+      opener = React.useRef(onOpen);
+    current.current = identity;
+    opener.current = onOpen;
+    const [state, setState] = useState({
+      identity: '',
+      views: {}
+    });
     useEffect(() => {
       if (!enabled || epoch === null || !detail) return;
-      const abort = new AbortController(), groups = new Map(), queue = [];
+      const abort = new AbortController(),
+        groups = new Map(),
+        queue = [];
       let running = 0;
       const valid = () => !abort.signal.aborted && current.current === identity && window.PrivateResourceDemand.context() === epoch;
-      documents.forEach((row) => {
-        if (!groups.has(row.id)) groups.set(row.id, { ...row, keys: [], view: { phase: 'loading' }, retries: 0 });
+      documents.forEach(row => {
+        if (!groups.has(row.id)) groups.set(row.id, {
+          ...row,
+          keys: [],
+          view: {
+            phase: 'loading'
+          },
+          retries: 0
+        });
         groups.get(row.id).keys.push(row.key);
       });
       const publish = (entry, view) => {
         if (!valid()) return;
         entry.view = view;
-        setState((previous) => {
-          const views = previous.identity === identity ? { ...previous.views } : {};
-          entry.keys.forEach((key) => { views[key] = view; });
-          return { identity, views };
+        setState(previous => {
+          const views = previous.identity === identity ? {
+            ...previous.views
+          } : {};
+          entry.keys.forEach(key => {
+            views[key] = view;
+          });
+          return {
+            identity,
+            views
+          };
         });
       };
       // Each wait is bounded and detached on navigation. A late backend response cannot change the new selection.
       const bounded = (start, milliseconds, imageLoad) => new Promise((resolve, reject) => {
-        let cancel = () => {}, finished = false;
+        let cancel = () => {},
+          finished = false;
         const finish = (error, value) => {
-          if (finished) return; finished = true; clearTimeout(timer); abort.signal.removeEventListener('abort', stopped); cancel();
-          if (error) reject(error); else resolve(value);
+          if (finished) return;
+          finished = true;
+          clearTimeout(timer);
+          abort.signal.removeEventListener('abort', stopped);
+          cancel();
+          if (error) reject(error);else resolve(value);
         };
         const stopped = () => finish(new Error('PREVIEW_CONTEXT_CHANGED'));
-        const timer = setTimeout(() => finish(Object.assign(new Error('PREVIEW_TIMEOUT'), { imageLoad })), milliseconds);
-        abort.signal.addEventListener('abort', stopped, { once: true });
-        if (!valid()) { stopped(); return; }
-        cancel = start((value) => finish(null, value), (error) => finish(error)) || cancel;
+        const timer = setTimeout(() => finish(Object.assign(new Error('PREVIEW_TIMEOUT'), {
+          imageLoad
+        })), milliseconds);
+        abort.signal.addEventListener('abort', stopped, {
+          once: true
+        });
+        if (!valid()) {
+          stopped();
+          return;
+        }
+        cancel = start(value => finish(null, value), error => finish(error)) || cancel;
       });
-      const imageReady = (url) => bounded((resolve, reject) => {
+      const imageReady = url => bounded((resolve, reject) => {
         const image = new Image();
-        image.onload = () => image.naturalWidth > 0 ? resolve() : reject(Object.assign(new Error('IMAGE_EMPTY'), { imageLoad: true }));
-        image.onerror = () => reject(Object.assign(new Error('IMAGE_DOWNLOAD_FAILED'), { imageLoad: true }));
+        image.onload = () => image.naturalWidth > 0 ? resolve() : reject(Object.assign(new Error('IMAGE_EMPTY'), {
+          imageLoad: true
+        }));
+        image.onerror = () => reject(Object.assign(new Error('IMAGE_DOWNLOAD_FAILED'), {
+          imageLoad: true
+        }));
         image.src = url;
-        return () => { image.onload = null; image.onerror = null; image.removeAttribute('src'); };
+        return () => {
+          image.onload = null;
+          image.onerror = null;
+          image.removeAttribute('src');
+        };
       }, 20000, true);
       const pump = () => {
         while (valid() && running < 3 && queue.length) {
-          const job = queue.shift(); running++;
-          job().finally(() => { running--; pump(); });
+          const job = queue.shift();
+          running++;
+          job().finally(() => {
+            running--;
+            pump();
+          });
         }
       };
       const request = (entry, force) => {
@@ -53665,249 +58021,781 @@ Object.assign(window, {
         if (entry.pending) return entry.pending;
         if (!force && entry.view.phase === 'ready' && entry.view.expiresAt > Date.now()) return Promise.resolve(entry.view);
         clearTimeout(entry.renew);
-        publish(entry, entry.view.phase === 'ready' && entry.view.expiresAt > Date.now() ? { ...entry.view, busy: true } : { phase: 'loading', busy: true });
-        entry.pending = new Promise((resolve) => queue.push(async () => {
+        publish(entry, entry.view.phase === 'ready' && entry.view.expiresAt > Date.now() ? {
+          ...entry.view,
+          busy: true
+        } : {
+          phase: 'loading',
+          busy: true
+        });
+        entry.pending = new Promise(resolve => queue.push(async () => {
           let result = null;
           try {
             for (;;) {
               if (!valid()) break;
               const started = Date.now();
               const preview = await bounded((done, fail) => {
-                window.DocumentWorkflowRepository.adminPreview(entry.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST').then(done, fail);
+                (window.DocumentIntegration && window.DocumentIntegration.enabled() ? window.DocumentWorkflowRepository.historicalPreview(entry.id, entry.source, 'ADMIN') : window.DocumentWorkflowRepository.adminPreview(entry.id, detail.affiliate_id, 'ADMIN_FINANCIAL_REQUEST')).then(done, fail);
               }, 25000, false);
               const expiresAt = started + Math.min(300, Number(preview.expiresIn) || 300) * 1000;
               if (!preview.signedUrl || expiresAt <= Date.now()) throw new Error('PREVIEW_EXPIRED');
-              try { if (entry.mime.startsWith('image/')) await imageReady(preview.signedUrl); }
-              catch (error) {
+              try {
+                if (entry.mime.startsWith('image/')) await imageReady(preview.signedUrl);
+              } catch (error) {
                 if (!error.imageLoad || entry.retries >= 1 || !valid()) throw error;
                 entry.retries++;
-                await bounded((done) => { const timer = setTimeout(done, 1200); return () => clearTimeout(timer); }, 2000, false);
+                await bounded(done => {
+                  const timer = setTimeout(done, 1200);
+                  return () => clearTimeout(timer);
+                }, 2000, false);
                 continue;
               }
               if (!valid() || expiresAt <= Date.now()) throw new Error('PREVIEW_EXPIRED');
               clearTimeout(entry.expire);
-              result = { phase: 'ready', url: preview.signedUrl, expiresAt };
+              result = {
+                phase: 'ready',
+                url: preview.signedUrl,
+                expiresAt
+              };
               publish(entry, result);
               const remaining = expiresAt - Date.now();
-              entry.renew = setTimeout(() => { if (!document.hidden) request(entry, true); }, Math.max(1000, remaining - Math.min(30000, remaining / 5)));
+              entry.renew = setTimeout(() => {
+                if (!document.hidden) request(entry, true);
+              }, Math.max(1000, remaining - Math.min(30000, remaining / 5)));
               entry.expire = setTimeout(() => {
                 if (!valid() || entry.view.expiresAt !== expiresAt) return;
-                publish(entry, { phase: 'loading' });
+                publish(entry, {
+                  phase: 'loading'
+                });
                 if (!document.hidden) request(entry, true);
               }, remaining);
               break;
             }
-          } catch (_) { publish(entry, { phase: 'error' }); }
-          finally { entry.pending = null; resolve(valid() ? result : null); }
+          } catch (_) {
+            publish(entry, {
+              phase: 'error'
+            });
+          } finally {
+            entry.pending = null;
+            resolve(valid() ? result : null);
+          }
         }));
-        pump(); return entry.pending;
+        pump();
+        return entry.pending;
       };
-      const find = (key) => [...groups.values()].find((entry) => entry.keys.includes(key));
+      const find = key => [...groups.values()].find(entry => entry.keys.includes(key));
       controller.current = {
         identity,
-        retry(key) { const entry = find(key); if (entry) { entry.retries = 0; request(entry, true); } },
+        retry(key) {
+          const entry = find(key);
+          if (entry) {
+            entry.retries = 0;
+            request(entry, true);
+          }
+        },
         failed(key, url) {
           const entry = find(key);
           if (!entry || entry.pending || entry.view.url !== url) return;
-          clearTimeout(entry.renew); clearTimeout(entry.expire);
-          publish(entry, { phase: 'error' });
-          if (entry.retries < 1) { entry.retries++; request(entry, true); }
+          clearTimeout(entry.renew);
+          clearTimeout(entry.expire);
+          publish(entry, {
+            phase: 'error'
+          });
+          if (entry.retries < 1) {
+            entry.retries++;
+            request(entry, true);
+          }
         },
         async open(key) {
-          const entry = find(key); if (!entry) return;
+          const entry = find(key);
+          if (!entry) return;
           const result = await request(entry, true);
-          if (result && valid()) opener.current({ source: result.url, mimeType: entry.mime, title: entry.title, context: identity });
+          if (result && valid()) opener.current({
+            source: result.url,
+            mimeType: entry.mime,
+            title: entry.title,
+            context: identity
+          });
         }
       };
-      groups.forEach((entry) => request(entry, false));
+      groups.forEach(entry => request(entry, false));
       const foreground = () => {
         if (document.hidden) return;
-        groups.forEach((entry) => { if (entry.view.phase !== 'error' && (!entry.view.expiresAt || entry.view.expiresAt <= Date.now() + 30000)) request(entry, true); });
+        groups.forEach(entry => {
+          if (entry.view.phase !== 'error' && (!entry.view.expiresAt || entry.view.expiresAt <= Date.now() + 30000)) request(entry, true);
+        });
       };
       document.addEventListener('visibilitychange', foreground);
       return () => {
-        abort.abort(); queue.length = 0;
-        groups.forEach((entry) => { clearTimeout(entry.renew); clearTimeout(entry.expire); });
+        abort.abort();
+        queue.length = 0;
+        groups.forEach(entry => {
+          clearTimeout(entry.renew);
+          clearTimeout(entry.expire);
+        });
         document.removeEventListener('visibilitychange', foreground);
       };
     }, [identity]);
-    const act = (name, ...args) => { if (controller.current && controller.current.identity === identity) return controller.current[name](...args); };
-    return { identity, views: state.identity === identity ? state.views : {}, retry: (key) => act('retry', key), open: (key) => act('open', key), failed: (key, url) => act('failed', key, url) };
+    const act = (name, ...args) => {
+      if (controller.current && controller.current.identity === identity) return controller.current[name](...args);
+    };
+    return {
+      identity,
+      views: state.identity === identity ? state.views : {},
+      retry: key => act('retry', key),
+      open: key => act('open', key),
+      failed: (key, url) => act('failed', key, url)
+    };
   }
-
-  function RequestBankReference({ reference }) {
+  function RequestBankReference({
+    reference
+  }) {
     const available = reference && reference.status === 'available';
-    const messages = { forbidden: 'Requiere permiso para consultar datos bancarios.', not_selected: 'La solicitud se envió sin seleccionar una cuenta bancaria.', not_recorded: 'Esta solicitud no conserva una cuenta bancaria registrada.' };
-    const fields = available ? [['Banco', reference.bank_name], ['Titular', reference.account_holder], ['Tarjeta', reference.card_number], ['CLABE', reference.clabe]].filter((item) => item[1]) : [];
-    return h('div', { 'data-financial-bank-reference': reference && reference.status || 'unavailable', style: { borderTop: '1px solid var(--hairline)', marginTop: 12, paddingTop: 12 } },
-      h('h4', { style: { margin: '0 0 8px', fontSize: 12, color: 'var(--ink)' } }, 'Cuenta elegida al enviar'),
-      available ? h('div', { className: 'finwb-kv' }, fields.map(([label, value]) => h('div', { key: label }, h('span', null, label), h('strong', { style: label === 'Tarjeta' || label === 'CLABE' ? { fontFamily: 'var(--mono)', fontVariantNumeric: 'tabular-nums', userSelect: 'text', overflowWrap: 'anywhere' } : null }, value)))) :
-        h('p', { style: { margin: 0, color: 'var(--ink-3)', fontSize: 12, lineHeight: 1.5 } }, messages[reference && reference.status] || 'No fue posible consultar la referencia bancaria.'));
+    const messages = {
+      forbidden: 'Requiere permiso para consultar datos bancarios.',
+      not_selected: 'La solicitud se envió sin seleccionar una cuenta bancaria.',
+      not_recorded: 'Esta solicitud no conserva una cuenta bancaria registrada.'
+    };
+    const fields = available ? [['Banco', reference.bank_name], ['Titular', reference.account_holder], ['Tarjeta', reference.card_number], ['CLABE', reference.clabe]].filter(item => item[1]) : [];
+    return h('div', {
+      'data-financial-bank-reference': reference && reference.status || 'unavailable',
+      style: {
+        borderTop: '1px solid var(--hairline)',
+        marginTop: 12,
+        paddingTop: 12
+      }
+    }, h('h4', {
+      style: {
+        margin: '0 0 8px',
+        fontSize: 12,
+        color: 'var(--ink)'
+      }
+    }, 'Cuenta elegida al enviar'), available ? h('div', {
+      className: 'finwb-kv'
+    }, fields.map(([label, value]) => h('div', {
+      key: label
+    }, h('span', null, label), h('strong', {
+      style: label === 'Tarjeta' || label === 'CLABE' ? {
+        fontFamily: 'var(--mono)',
+        fontVariantNumeric: 'tabular-nums',
+        userSelect: 'text',
+        overflowWrap: 'anywhere'
+      } : null
+    }, value)))) : h('p', {
+      style: {
+        margin: 0,
+        color: 'var(--ink-3)',
+        fontSize: 12,
+        lineHeight: 1.5
+      }
+    }, messages[reference && reference.status] || 'No fue posible consultar la referencia bancaria.'));
   }
 
   // Presentation only: native modal focus containment and a reversible page scroll lock.
-  function FinancialRequestDetailModal({ header, children, onClose, onEscape, titleId }) {
-    const dialogRef = React.useRef(null), closeRef = React.useRef(null);
+  function FinancialRequestDetailModal({
+    header,
+    children,
+    onClose,
+    onEscape,
+    titleId
+  }) {
+    const dialogRef = React.useRef(null),
+      closeRef = React.useRef(null);
     useEffect(() => {
-      const dialog = dialogRef.current, opener = document.activeElement;
-      const bodyOverflow = document.body.style.overflow, htmlOverflow = document.documentElement.style.overflow;
-      document.body.style.overflow = 'hidden'; document.documentElement.style.overflow = 'hidden';
-      dialog.showModal(); closeRef.current.focus({ preventScroll: true });
+      const dialog = dialogRef.current,
+        opener = document.activeElement;
+      const bodyOverflow = document.body.style.overflow,
+        htmlOverflow = document.documentElement.style.overflow;
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+      dialog.showModal();
+      closeRef.current.focus({
+        preventScroll: true
+      });
       return () => {
-        dialog.close(); document.body.style.overflow = bodyOverflow; document.documentElement.style.overflow = htmlOverflow;
-        if (opener && opener.isConnected) opener.focus({ preventScroll: true });
+        dialog.close();
+        document.body.style.overflow = bodyOverflow;
+        document.documentElement.style.overflow = htmlOverflow;
+        if (opener && opener.isConnected) opener.focus({
+          preventScroll: true
+        });
       };
     }, []);
-    return h('dialog', { ref: dialogRef, className: 'finwb-modal', 'data-financial-request-detail': 'true', 'aria-modal': 'true', 'aria-labelledby': titleId,
-      onCancel: (event) => { event.preventDefault(); onEscape(); },
-      onKeyDown: (event) => {
-        if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onEscape(); }
+    return h('dialog', {
+      ref: dialogRef,
+      className: 'finwb-modal',
+      'data-financial-request-detail': 'true',
+      'aria-modal': 'true',
+      'aria-labelledby': titleId,
+      onCancel: event => {
+        event.preventDefault();
+        onEscape();
+      },
+      onKeyDown: event => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          onEscape();
+        }
         if (event.key === 'Tab') {
           const root = dialogRef.current.querySelector('[data-image-viewer],[data-document-viewer]') || dialogRef.current;
-          const controls = Array.from(root.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex="0"]')).filter((node) => node.getClientRects().length);
-          const first = controls[0], last = controls[controls.length - 1];
-          if (first && (event.shiftKey && document.activeElement === first || !event.shiftKey && document.activeElement === last)) { event.preventDefault(); (event.shiftKey ? last : first).focus(); }
+          const controls = Array.from(root.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex="0"]')).filter(node => node.getClientRects().length);
+          const first = controls[0],
+            last = controls[controls.length - 1];
+          if (first && (event.shiftKey && document.activeElement === first || !event.shiftKey && document.activeElement === last)) {
+            event.preventDefault();
+            (event.shiftKey ? last : first).focus();
+          }
         }
       }
-    }, h('header', { className: 'finwb-detail-head' }, header,
-      h('button', { ref: closeRef, type: 'button', className: 'finwb-modal-close', onClick: onClose, 'aria-label': 'Cerrar detalle de solicitud' }, '×')), children);
+    }, h('header', {
+      className: 'finwb-detail-head'
+    }, header, h('button', {
+      ref: closeRef,
+      type: 'button',
+      className: 'finwb-modal-close',
+      onClick: onClose,
+      'aria-label': 'Cerrar detalle de solicitud'
+    }, '×')), children);
   }
-
   function approvalRecovery(error) {
     const code = String(error && (error.code || error.message) || '');
-    if (/CONDITIONS_CHANGED|FINANCIAL_PROGRAM_NOT_ELIGIBLE/.test(code)) return { phase: 'NEW_REQUEST_REQUIRED', code, message: 'Las condiciones de esta solicitud ya no están vigentes. Es necesario cancelarla y presentar una nueva con las condiciones actuales.' };
-    if (/SIGNATURE_AND_TERMS_REQUIRED|REQUESTED_AMOUNT_TERM_CONTRACT_REQUIRED|FINANCIAL_SUBMISSION|REQUIRED_PRIVATE_DOCUMENT_MISSING|GUARANTOR_DOCUMENTS_NOT_AVAILABLE|REQUIRED_DOCUMENTS_MISSING/.test(code)) return { phase: 'NEW_REQUEST_REQUIRED', code, message: 'La solicitud enviada no contiene todos los requisitos válidos. Sus documentos, firma y condiciones se conservan como historial; una nueva solicitud permitirá completarlos y validarlos nuevamente.' };
-    if (/ADMIN_APPROVAL_REQUIRED|DENIED|42501|AUTH_/.test(code)) return { phase: 'BLOCKED', code, message: 'Tu sesión no tiene autorización para continuar. Un administrador con permisos de Finanzas debe realizar esta acción.' };
-    if (/NOT_APPROVABLE|TRANSITION_INVALID|IMMUTABLE|WORKFLOW_|READBACK/.test(code)) return { phase: 'REFRESH', code, message: 'El estado pudo cambiar. Actualiza la solicitud para comprobar el resultado antes de realizar otra acción.' };
-    if (/AFFILIATE_/.test(code)) return { phase: 'BLOCKED', code, message: 'El perfil del afiliado requiere revisión en Administración → Afiliados. Corrige allí los datos indicados antes de volver a verificar esta solicitud.' };
-    return { phase: 'RETRY', code, message: 'No se pudo verificar la solicitud. Comprueba la conexión y vuelve a revisar. Esta revisión no autoriza ni cancela solicitudes.' };
+    if (/CONDITIONS_CHANGED|FINANCIAL_PROGRAM_NOT_ELIGIBLE/.test(code)) return {
+      phase: 'NEW_REQUEST_REQUIRED',
+      code,
+      message: 'Las condiciones de esta solicitud ya no están vigentes. Es necesario cancelarla y presentar una nueva con las condiciones actuales.'
+    };
+    if (/SIGNATURE_AND_TERMS_REQUIRED|REQUESTED_AMOUNT_TERM_CONTRACT_REQUIRED|FINANCIAL_SUBMISSION|REQUIRED_PRIVATE_DOCUMENT_MISSING|GUARANTOR_DOCUMENTS_NOT_AVAILABLE|REQUIRED_DOCUMENTS_MISSING/.test(code)) return {
+      phase: 'NEW_REQUEST_REQUIRED',
+      code,
+      message: 'La solicitud enviada no contiene todos los requisitos válidos. Sus documentos, firma y condiciones se conservan como historial; una nueva solicitud permitirá completarlos y validarlos nuevamente.'
+    };
+    if (/ADMIN_APPROVAL_REQUIRED|DENIED|42501|AUTH_/.test(code)) return {
+      phase: 'BLOCKED',
+      code,
+      message: 'Tu sesión no tiene autorización para continuar. Un administrador con permisos de Finanzas debe realizar esta acción.'
+    };
+    if (/NOT_APPROVABLE|TRANSITION_INVALID|IMMUTABLE|WORKFLOW_|READBACK/.test(code)) return {
+      phase: 'REFRESH',
+      code,
+      message: 'El estado pudo cambiar. Actualiza la solicitud para comprobar el resultado antes de realizar otra acción.'
+    };
+    if (/AFFILIATE_/.test(code)) return {
+      phase: 'BLOCKED',
+      code,
+      message: 'El perfil del afiliado requiere revisión en Administración → Afiliados. Corrige allí los datos indicados antes de volver a verificar esta solicitud.'
+    };
+    return {
+      phase: 'RETRY',
+      code,
+      message: 'No se pudo verificar la solicitud. Comprueba la conexión y vuelve a revisar. Esta revisión no autoriza ni cancela solicitudes.'
+    };
   }
-
-  function FinancialActionDialog({ model, busy, error, onConfirm, onClose, resolution, onReview, onRenew, onAssist, onRefresh, canAssist }) {
-    const ref = React.useRef(null), titleId = React.useId();
+  function FinancialActionDialog({
+    model,
+    busy,
+    error,
+    onConfirm,
+    onClose,
+    resolution,
+    onReview,
+    onRenew,
+    onAssist,
+    onRefresh,
+    canAssist
+  }) {
+    const ref = React.useRef(null),
+      titleId = React.useId();
     useEffect(() => {
-      const opener = document.activeElement, dialog = ref.current;
+      const opener = document.activeElement,
+        dialog = ref.current;
       dialog.showModal();
-      return () => { dialog.close(); if (opener && opener.isConnected) opener.focus({ preventScroll: true }); };
+      return () => {
+        dialog.close();
+        if (opener && opener.isConnected) opener.focus({
+          preventScroll: true
+        });
+      };
     }, []);
-    return h('dialog', { ref, className: 'finwb-action-dialog', 'data-financial-confirmation': model.action, 'aria-labelledby': titleId, 'aria-modal': 'true', 'aria-busy': busy,
-      onCancel: event => { event.preventDefault(); if (!busy) onClose(); },
+    return h('dialog', {
+      ref,
+      className: 'finwb-action-dialog',
+      'data-financial-confirmation': model.action,
+      'aria-labelledby': titleId,
+      'aria-modal': 'true',
+      'aria-busy': busy,
+      onCancel: event => {
+        event.preventDefault();
+        if (!busy) onClose();
+      },
       onKeyDown: event => {
         event.stopPropagation();
         if (event.key === 'Tab') {
           const controls = Array.from(ref.current.querySelectorAll('button:not(:disabled)'));
-          const first = controls[0], last = controls[controls.length - 1];
-          if (!first) { event.preventDefault(); return; }
-          if (event.shiftKey && document.activeElement === first || !event.shiftKey && document.activeElement === last) { event.preventDefault(); (event.shiftKey ? last : first).focus(); }
+          const first = controls[0],
+            last = controls[controls.length - 1];
+          if (!first) {
+            event.preventDefault();
+            return;
+          }
+          if (event.shiftKey && document.activeElement === first || !event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            (event.shiftKey ? last : first).focus();
+          }
         }
       },
-      style: { width: 'min(520px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', border: '1px solid var(--hairline)', borderRadius: 22, padding: 24, background: 'var(--surface)', color: 'var(--ink)', boxShadow: '0 24px 80px #0005' } },
-      h('style', null, '.finwb-action-dialog::backdrop{background:#17203366}.finwb-action-dialog button{min-height:44px;border:0;border-radius:12px;padding:10px 18px;font:750 14px var(--font, sans-serif);cursor:pointer}.finwb-action-dialog button:disabled{opacity:.55;cursor:wait}.finwb-action-dialog button:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}'),
-      h('h2', { id: titleId, style: { margin: '0 0 18px', fontSize: 23 } }, resolution && resolution.phase === 'CANCELLED' ? 'Solicitud cancelada' : resolution && resolution.phase === 'NEW_REQUEST_REQUIRED' ? 'Resolver solicitud' : model.title),
-      h('dl', { className: 'finwb-kv' }, model.fields.map(([label, value]) => h('div', { key: label, style: { overflowWrap: 'anywhere' } }, h('dt', { style: { color: 'var(--ink-3)', fontSize: 12 } }, label), h('dd', { style: { margin: '4px 0 12px', fontWeight: 750 } }, label === 'Estado / etapa resultante' && resolution && ['NEW_REQUEST_REQUIRED','CANCELLED'].includes(resolution.phase) ? 'Cancelada · requiere nueva solicitud' : value)))),
-      (!resolution || resolution.phase === 'READY') && h('p', { style: { padding: 14, borderRadius: 14, background: model.warning ? '#FFF3DC' : 'var(--surface-2)', lineHeight: 1.5 } }, model.message),
-      error && h('p', { role: 'alert', style: { color: '#A32921', lineHeight: 1.5 } }, error),
-      resolution && h('section', { 'data-approval-resolution': resolution.phase, role: 'status', style: { padding: 14, borderRadius: 14, background: '#FFF3DC', lineHeight: 1.5 } },
-        h('strong', null, resolution.phase === 'READY' ? 'Revisión completada' : resolution.phase === 'CANCELLED' ? 'Continúa con una nueva solicitud' : 'Cómo resolverlo'),
-        h('p', null, resolution.message || (resolution.phase === 'READY' ? 'Los requisitos comprobados permiten continuar. Se volverán a validar al autorizar.' : 'Las condiciones cambiaron. Debes cancelar esta solicitud y presentar una nueva con las condiciones actuales.')),
-        resolution.current && h('dl', { className: 'finwb-kv' }, [['Monto solicitado', moneyValue(resolution.submitted && resolution.submitted.amount)], ['Límite vigente', moneyValue(resolution.current.maxAmount)], ['Tasa vigente por periodo', resolution.current.rate + '%'], ['Plazo máximo vigente', resolution.current.maxTerm + ' pagos']].map(([label,value]) => h('div', { key: label }, h('dt', null, label), h('dd', { style: { margin: '3px 0 8px', fontWeight: 750 } }, value)))),
-        resolution.phase === 'NEW_REQUEST_REQUIRED' && h('p', null, 'Al confirmar la cancelación, se registrará el motivo y se conservarán el folio, los documentos y el historial. No se enviará una nueva solicitud automáticamente.'),
-        resolution.phase === 'CANCELLED' && h('p', null, canAssist ? 'Abre la atención asistida y selecciona Suti Préstamo. Elige un monto permitido y completa documentos, términos y firma para enviar una nueva solicitud.' : 'El afiliado puede entrar a Suti Préstamo y enviar una nueva solicitud. La atención asistida requiere el permiso correspondiente.')),
-      h('div', { style: { display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: 10, marginTop: 20 } },
-        h('button', { type: 'button', className: 'finwb-secondary', autoFocus: true, disabled: busy, onClick: onClose }, 'Volver'),
-        model.action === 'approveLoan' && (!resolution || ['READY','RETRY','BLOCKED'].includes(resolution.phase)) && h('button', { type: 'button', className: 'finwb-secondary', disabled: busy, onClick: onReview }, error ? 'Resolver solicitud' : 'Revisar solicitud'),
-        resolution && resolution.phase === 'NEW_REQUEST_REQUIRED' ? h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onRenew }, busy ? 'Verificando…' : 'Confirmar cancelación para nueva solicitud') :
-        resolution && resolution.phase === 'CANCELLED' ? canAssist && h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onAssist }, busy ? 'Abriendo…' : 'Abrir atención asistida') :
-        resolution && resolution.phase === 'REFRESH' ? h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onRefresh }, 'Actualizar solicitud') :
-        (!resolution || resolution.phase === 'READY') && h('button', { type: 'button', className: 'finwb-primary', disabled: busy, onClick: onConfirm, style: model.warning ? { background: '#A32921' } : undefined }, busy ? 'Procesando…' : model.label)));
+      style: {
+        width: 'min(520px, calc(100vw - 24px))',
+        maxHeight: 'calc(100dvh - 24px)',
+        overflowY: 'auto',
+        border: '1px solid var(--hairline)',
+        borderRadius: 22,
+        padding: 24,
+        background: 'var(--surface)',
+        color: 'var(--ink)',
+        boxShadow: '0 24px 80px #0005'
+      }
+    }, h('style', null, '.finwb-action-dialog::backdrop{background:#17203366}.finwb-action-dialog button{min-height:44px;border:0;border-radius:12px;padding:10px 18px;font:750 14px var(--font, sans-serif);cursor:pointer}.finwb-action-dialog button:disabled{opacity:.55;cursor:wait}.finwb-action-dialog button:focus-visible{outline:3px solid var(--guinda);outline-offset:3px}'), h('h2', {
+      id: titleId,
+      style: {
+        margin: '0 0 18px',
+        fontSize: 23
+      }
+    }, resolution && resolution.phase === 'CANCELLED' ? 'Solicitud cancelada' : resolution && resolution.phase === 'NEW_REQUEST_REQUIRED' ? 'Resolver solicitud' : model.title), h('dl', {
+      className: 'finwb-kv'
+    }, model.fields.map(([label, value]) => h('div', {
+      key: label,
+      style: {
+        overflowWrap: 'anywhere'
+      }
+    }, h('dt', {
+      style: {
+        color: 'var(--ink-3)',
+        fontSize: 12
+      }
+    }, label), h('dd', {
+      style: {
+        margin: '4px 0 12px',
+        fontWeight: 750
+      }
+    }, label === 'Estado / etapa resultante' && resolution && ['NEW_REQUEST_REQUIRED', 'CANCELLED'].includes(resolution.phase) ? 'Cancelada · requiere nueva solicitud' : value)))), (!resolution || resolution.phase === 'READY') && h('p', {
+      style: {
+        padding: 14,
+        borderRadius: 14,
+        background: model.warning ? '#FFF3DC' : 'var(--surface-2)',
+        lineHeight: 1.5
+      }
+    }, model.message), error && h('p', {
+      role: 'alert',
+      style: {
+        color: '#A32921',
+        lineHeight: 1.5
+      }
+    }, error), resolution && h('section', {
+      'data-approval-resolution': resolution.phase,
+      role: 'status',
+      style: {
+        padding: 14,
+        borderRadius: 14,
+        background: '#FFF3DC',
+        lineHeight: 1.5
+      }
+    }, h('strong', null, resolution.phase === 'READY' ? 'Revisión completada' : resolution.phase === 'CANCELLED' ? 'Continúa con una nueva solicitud' : 'Cómo resolverlo'), h('p', null, resolution.message || (resolution.phase === 'READY' ? 'Los requisitos comprobados permiten continuar. Se volverán a validar al autorizar.' : 'Las condiciones cambiaron. Debes cancelar esta solicitud y presentar una nueva con las condiciones actuales.')), resolution.current && h('dl', {
+      className: 'finwb-kv'
+    }, [['Monto solicitado', moneyValue(resolution.submitted && resolution.submitted.amount)], ['Límite vigente', moneyValue(resolution.current.maxAmount)], ['Tasa vigente por periodo', resolution.current.rate + '%'], ['Plazo máximo vigente', resolution.current.maxTerm + ' pagos']].map(([label, value]) => h('div', {
+      key: label
+    }, h('dt', null, label), h('dd', {
+      style: {
+        margin: '3px 0 8px',
+        fontWeight: 750
+      }
+    }, value)))), resolution.phase === 'NEW_REQUEST_REQUIRED' && h('p', null, 'Al confirmar la cancelación, se registrará el motivo y se conservarán el folio, los documentos y el historial. No se enviará una nueva solicitud automáticamente.'), resolution.phase === 'CANCELLED' && h('p', null, canAssist ? 'Abre la atención asistida y selecciona Suti Préstamo. Elige un monto permitido y completa documentos, términos y firma para enviar una nueva solicitud.' : 'El afiliado puede entrar a Suti Préstamo y enviar una nueva solicitud. La atención asistida requiere el permiso correspondiente.')), h('div', {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end',
+        gap: 10,
+        marginTop: 20
+      }
+    }, h('button', {
+      type: 'button',
+      className: 'finwb-secondary',
+      autoFocus: true,
+      disabled: busy,
+      onClick: onClose
+    }, 'Volver'), model.action === 'approveLoan' && (!resolution || ['READY', 'RETRY', 'BLOCKED'].includes(resolution.phase)) && h('button', {
+      type: 'button',
+      className: 'finwb-secondary',
+      disabled: busy,
+      onClick: onReview
+    }, error ? 'Resolver solicitud' : 'Revisar solicitud'), resolution && resolution.phase === 'NEW_REQUEST_REQUIRED' ? h('button', {
+      type: 'button',
+      className: 'finwb-primary',
+      disabled: busy,
+      onClick: onRenew
+    }, busy ? 'Verificando…' : 'Confirmar cancelación para nueva solicitud') : resolution && resolution.phase === 'CANCELLED' ? canAssist && h('button', {
+      type: 'button',
+      className: 'finwb-primary',
+      disabled: busy,
+      onClick: onAssist
+    }, busy ? 'Abriendo…' : 'Abrir atención asistida') : resolution && resolution.phase === 'REFRESH' ? h('button', {
+      type: 'button',
+      className: 'finwb-primary',
+      disabled: busy,
+      onClick: onRefresh
+    }, 'Actualizar solicitud') : (!resolution || resolution.phase === 'READY') && h('button', {
+      type: 'button',
+      className: 'finwb-primary',
+      disabled: busy,
+      onClick: onConfirm,
+      style: model.warning ? {
+        background: '#A32921'
+      } : undefined
+    }, busy ? 'Procesando…' : model.label)));
   }
-
-  function FinancialAuthorizationResult({ result, onClose }) {
+  function FinancialAuthorizationResult({
+    result,
+    onClose
+  }) {
     const ref = React.useRef(null);
     const titleId = React.useId();
     useEffect(() => {
-      const dialog = ref.current, opener = document.activeElement;
+      const dialog = ref.current,
+        opener = document.activeElement;
       dialog.showModal();
-      return () => { dialog.close(); if (opener && opener.isConnected) opener.focus({ preventScroll: true }); };
+      return () => {
+        dialog.close();
+        if (opener && opener.isConnected) opener.focus({
+          preventScroll: true
+        });
+      };
     }, []);
     useEffect(() => {
       if (!result.celebrate || window.matchMedia('(prefers-reduced-motion: reduce)').matches || window.MOTION && (window.MOTION.reduced() || window.MOTION.frozen())) return;
-      const animations = Array.from(ref.current.querySelectorAll('i')).map((piece, i) => piece.animate([
-        { transform: 'translateY(-20px) rotate(0)', opacity: 0 }, { opacity: 1, offset: .1 },
-        { transform: 'translateY(230px) rotate(420deg)', opacity: 0 }
-      ], { duration: 1300, delay: i * 17, fill: 'both' }));
+      const animations = Array.from(ref.current.querySelectorAll('i')).map((piece, i) => piece.animate([{
+        transform: 'translateY(-20px) rotate(0)',
+        opacity: 0
+      }, {
+        opacity: 1,
+        offset: .1
+      }, {
+        transform: 'translateY(230px) rotate(420deg)',
+        opacity: 0
+      }], {
+        duration: 1300,
+        delay: i * 17,
+        fill: 'both'
+      }));
       return () => animations.forEach(animation => animation.cancel());
     }, [result]);
-    return h('dialog', { ref, 'aria-labelledby': titleId, 'aria-modal': 'true', onCancel: event => { event.preventDefault(); onClose(); }, onKeyDown: event => { event.stopPropagation(); if (event.key === 'Tab') { event.preventDefault(); ref.current.querySelector('button').focus(); } }, 'data-financial-result': result.kind, style: { width: 'min(480px, calc(100vw - 24px))', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', padding: 24, border: 0, borderRadius: 20, background: result.warning ? '#FFF3DC' : '#E7F6ED', color: result.warning ? '#704D13' : '#13794A' } },
-      result.celebrate && h('div', { 'aria-hidden': 'true', 'data-authorization-confetti': 'true', style: { position: 'absolute', inset: 0, pointerEvents: 'none' } }, Array.from({ length: 24 }, (_, i) => h('i', { key: i, style: { position: 'absolute', opacity: 0, top: 0, left: ((i * 37) % 100) + '%', width: 6, height: 10, background: ['#901040', '#D9A441', '#13794A'][i % 3] } }))),
-      h('h2', { id: titleId, style: { display: 'block', fontSize: 21, margin: 0 } }, result.title),
-      h('p', { style: { margin: '8px 0', overflowWrap: 'anywhere' } }, result.folio + ' · ' + result.name),
-      result.next && h('p', null, 'Ahora continúa: ' + result.next),
-      h('button', { className: 'finwb-secondary', onClick: onClose, style: { minHeight: 44, padding: '10px 18px', border: 0, borderRadius: 12, font: '750 14px var(--font, sans-serif)', cursor: 'pointer' } }, 'Entendido'));
+    return h('dialog', {
+      ref,
+      'aria-labelledby': titleId,
+      'aria-modal': 'true',
+      onCancel: event => {
+        event.preventDefault();
+        onClose();
+      },
+      onKeyDown: event => {
+        event.stopPropagation();
+        if (event.key === 'Tab') {
+          event.preventDefault();
+          ref.current.querySelector('button').focus();
+        }
+      },
+      'data-financial-result': result.kind,
+      style: {
+        width: 'min(480px, calc(100vw - 24px))',
+        maxHeight: 'calc(100dvh - 24px)',
+        overflowY: 'auto',
+        padding: 24,
+        border: 0,
+        borderRadius: 20,
+        background: result.warning ? '#FFF3DC' : '#E7F6ED',
+        color: result.warning ? '#704D13' : '#13794A'
+      }
+    }, result.celebrate && h('div', {
+      'aria-hidden': 'true',
+      'data-authorization-confetti': 'true',
+      style: {
+        position: 'absolute',
+        inset: 0,
+        pointerEvents: 'none'
+      }
+    }, Array.from({
+      length: 24
+    }, (_, i) => h('i', {
+      key: i,
+      style: {
+        position: 'absolute',
+        opacity: 0,
+        top: 0,
+        left: i * 37 % 100 + '%',
+        width: 6,
+        height: 10,
+        background: ['#901040', '#D9A441', '#13794A'][i % 3]
+      }
+    }))), h('h2', {
+      id: titleId,
+      style: {
+        display: 'block',
+        fontSize: 21,
+        margin: 0
+      }
+    }, result.title), h('p', {
+      style: {
+        margin: '8px 0',
+        overflowWrap: 'anywhere'
+      }
+    }, result.folio + ' · ' + result.name), result.next && h('p', null, 'Ahora continúa: ' + result.next), h('button', {
+      className: 'finwb-secondary',
+      onClick: onClose,
+      style: {
+        minHeight: 44,
+        padding: '10px 18px',
+        border: 0,
+        borderRadius: 12,
+        font: '750 14px var(--font, sans-serif)',
+        cursor: 'pointer'
+      }
+    }, 'Entendido'));
   }
-
-  function FinanceQueuePhoto({ row, detailPhoto = false }) {
-    const ref = React.useRef(null), demand = window.PrivateResourceDemand;
+  function FinanceQueuePhoto({
+    row,
+    detailPhoto = false
+  }) {
+    const ref = React.useRef(null),
+      demand = window.PrivateResourceDemand;
     const visible = demand.useVisible(ref);
-    const source = demand.useSource('finance-queue-photo:' + row.affiliate_id, () =>
-      demand.run('finance-queue-photo:' + row.affiliate_id, async () => {
-        const photo = await window.AffiliateRepository.getProfilePhoto(row.affiliate_id);
-        return photo ? { signedUrl: photo.signedUrl, expiresIn: Math.max(1, (photo.expiresAt - Date.now()) / 1000) } : { signedUrl: '' };
-      }), visible, 240);
+    const source = demand.useSource('finance-queue-photo:' + row.affiliate_id, () => demand.run('finance-queue-photo:' + row.affiliate_id, async () => {
+      const photo = await window.AffiliateRepository.getProfilePhoto(row.affiliate_id);
+      return photo ? {
+        signedUrl: photo.signedUrl,
+        expiresIn: Math.max(1, (photo.expiresAt - Date.now()) / 1000)
+      } : {
+        signedUrl: ''
+      };
+    }), visible, 240);
     const initials = row.nombre.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
     const label = source.error ? 'Foto no disponible' : source.url ? 'Foto de ' + row.nombre : 'Sin foto de perfil';
-    return h('span', { ref, className: 'finwb-profile-photo' + (detailPhoto ? ' finwb-detail-photo' : ''), [detailPhoto ? 'data-financial-detail-photo' : 'data-financial-queue-photo']: row.affiliate_id, 'data-photo-state': source.error ? 'error' : source.url ? 'photo' : 'initials', title: label, 'aria-label': label },
-      source.url ? h('img', { src: source.url, alt: '', loading: 'lazy', decoding: 'async', onError: source.onError }) : initials);
+    return h('span', {
+      ref,
+      className: 'finwb-profile-photo' + (detailPhoto ? ' finwb-detail-photo' : ''),
+      [detailPhoto ? 'data-financial-detail-photo' : 'data-financial-queue-photo']: row.affiliate_id,
+      'data-photo-state': source.error ? 'error' : source.url ? 'photo' : 'initials',
+      title: label,
+      'aria-label': label
+    }, source.url ? h('img', {
+      src: source.url,
+      alt: '',
+      loading: 'lazy',
+      decoding: 'async',
+      onError: source.onError
+    }) : initials);
   }
-
-  function DesktopFinancialWorkbench({ app, onCount, initialAffiliateId }) {
+  function DesktopFinancialWorkbench({
+    app,
+    onCount,
+    initialAffiliateId
+  }) {
     const [deleting, setDeleting] = useState(false);
-    const [detailOpen, setDetailOpen] = useState(false), modalTitleId = React.useId();
-    const [rows, setRows] = useState([]), [phase, setPhase] = useState('loading'), [error, setError] = useState('');
-    const [selectedId, setSelectedId] = useState(''), [detail, setDetail] = useState(null), [detailPhase, setDetailPhase] = useState('idle'), [detailNonce, setDetailNonce] = useState(0);
-    const [search, setSearch] = useState(''), [statusFilter, setStatusFilter] = useState('all'), [programFilter, setProgramFilter] = useState('all'), [stageFilter, setStageFilter] = useState('all'), [ageFilter, setAgeFilter] = useState('all'), [dateFilter, setDateFilter] = useState(''), [sort, setSort] = useState('newest');
-    const [action, setAction] = useState(''), [actionNote, setActionNote] = useState(''), [quoteAmount, setQuoteAmount] = useState(''), [quoteValidUntil, setQuoteValidUntil] = useState(''), [busy, setBusy] = useState(false), [feedback, setFeedback] = useState(null), [rowFeedback, setRowFeedback] = useState({}), [viewer, setViewer] = useState(null);
-    const actionAttempts = React.useRef(new Map()), actionLock = React.useRef(false);
-    const [confirmation, setConfirmation] = useState(null), [actionResult, setActionResult] = useState(null);
+    const [detailOpen, setDetailOpen] = useState(false),
+      modalTitleId = React.useId();
+    const [rows, setRows] = useState([]),
+      [phase, setPhase] = useState('loading'),
+      [error, setError] = useState('');
+    const [selectedId, setSelectedId] = useState(''),
+      [detail, setDetail] = useState(null),
+      [detailPhase, setDetailPhase] = useState('idle'),
+      [detailNonce, setDetailNonce] = useState(0);
+    const [search, setSearch] = useState(''),
+      [statusFilter, setStatusFilter] = useState('all'),
+      [programFilter, setProgramFilter] = useState('all'),
+      [stageFilter, setStageFilter] = useState('all'),
+      [ageFilter, setAgeFilter] = useState('all'),
+      [dateFilter, setDateFilter] = useState(''),
+      [sort, setSort] = useState('newest');
+    const [action, setAction] = useState(''),
+      [actionNote, setActionNote] = useState(''),
+      [quoteAmount, setQuoteAmount] = useState(''),
+      [quoteValidUntil, setQuoteValidUntil] = useState(''),
+      [busy, setBusy] = useState(false),
+      [feedback, setFeedback] = useState(null),
+      [rowFeedback, setRowFeedback] = useState({}),
+      [viewer, setViewer] = useState(null);
+    const actionAttempts = React.useRef(new Map()),
+      actionLock = React.useRef(false);
+    const [confirmation, setConfirmation] = useState(null),
+      [actionResult, setActionResult] = useState(null);
     const [resolution, setResolution] = useState(null);
     const resolutionAttempt = React.useRef(null);
     useEffect(ensureWorkbenchStyles, []);
-    const load = React.useCallback(async (quiet) => { try { if (!quiet) setPhase('loading'); const source = await window.AdminFinanceQueueRepository.enrich(await window.ProgramRequestRepository.listAdminFlowQueue()); const scoped=initialAffiliateId?source.filter((row)=>row.affiliate_id===initialAffiliateId):source; setRows(scoped.slice()); setError(''); setPhase('loaded'); onCount(scoped.length); return scoped; } catch (_) { if (!quiet) setRows([]); setError('No fue posible cargar las solicitudes.'); setPhase('error'); onCount(0); return []; } }, [onCount,initialAffiliateId]);
-    useEffect(() => { load(false); }, [load]);
-    const programs = React.useMemo(() => Array.from(new Map(rows.map((row) => [row.program_id + ':' + (row.request_type || ''), programLabel(row)])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
-    const stages = React.useMemo(() => Array.from(new Map(rows.map((row) => [currentStage(row) && currentStage(row).id, stageLabel(row)]).filter((item) => item[0])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
-    const visible = React.useMemo(() => { const needle = search.trim().toLocaleLowerCase('es-MX'); const filtered = rows.filter((row) => {
-      const text = [row.folio, row.nombre, row.numero_control, queueProgramLabel(row)].join(' ').toLocaleLowerCase('es-MX');
-      if (needle && !text.includes(needle)) return false;
-      if (statusFilter !== 'all' && row.status !== statusFilter) return false;
-      if (programFilter !== 'all' && row.program_id + ':' + (row.request_type || '') !== programFilter) return false;
-      if (stageFilter !== 'all' && (!currentStage(row) || currentStage(row).id !== stageFilter)) return false;
-      const days = ageDays(row.created_at); if (ageFilter === 'today' && days !== 0 || ageFilter === '3d' && days < 3 || ageFilter === '7d' && days < 7 || ageFilter === '30d' && days < 30) return false;
-      return !dateFilter || dayKey(row.created_at) === dateFilter;
-    }); return filtered.sort((a, b) => sort === 'oldest' ? a.ts - b.ts : sort === 'amount' ? Number(b.requested_amount || 0) - Number(a.requested_amount || 0) : b.ts - a.ts); }, [rows, search, statusFilter, programFilter, stageFilter, ageFilter, dateFilter, sort]);
-    useEffect(() => { if (!visible.length) setSelectedId(''); else if (!visible.some((row) => row.id === selectedId)) setSelectedId(visible[0].id); }, [visible, selectedId]);
-    useEffect(() => { if (!selectedId) { setDetail(null); setDetailPhase('idle'); return; } let active = true; setDetailPhase('loading'); setFeedback(null); setActionNote(''); setQuoteAmount(''); setQuoteValidUntil(''); setViewer(null); window.ProgramRequestRepository.adminFlowDetail(selectedId).then((value) => { if (active) { setDetail(value); setDetailPhase('loaded'); } }).catch(() => { if (active) { setDetail(null); setDetailPhase('error'); } }); return () => { active = false; }; }, [selectedId, detailNonce]);
-    const index = visible.findIndex((row) => row.id === selectedId), selected = index >= 0 ? visible[index] : null;
-    const actionOptions = React.useMemo(() => { if (!detail || !app.admin.has('program_requests.write')) return []; const target=nextStage(detail),snapshot=detail.financial_submission_snapshot||{},rental=snapshot.contract_version==='RENTA_CAR_CASH_V1',productPayment=snapshot.contract_version==='PROGRAM_PRODUCT_PAYMENT_V1',statusRefs=target&&target.status_references||[],options=[]; if (['requires_financial_processing','submitted'].includes(detail.status)) options.push({ id:'review',label:'Iniciar revisión' }); if (target) { if (statusRefs.includes('approved') && detail.request_type==='quote' && (workflowOf(detail).can_quote===true||detail.financial_processing_status==null)) options.push({id:'quoteAdvance',label:'Guardar cotización y aprobar etapa'}); else if (statusRefs.includes('approved') && detail.financial_processing_status!=null) options.push({id:rental?'approveRent':productPayment?'approveProduct':'approveLoan',label:rental?'Aprobar renta y reservar fechas':productPayment?'Aprobar etapa en Supabase':'Aprobar etapa y autorizar préstamo'}); else options.push({id:'advance',label:statusRefs.includes('approved')?'Aprobar etapa':'Avanzar a siguiente etapa'}); } if (!['approved','rejected','cancelled'].includes(detail.status) && (workflowOf(detail).can_reject===true||(workflowOf(detail).stages||[]).some((stage)=>stage.outcome==='failure'))) options.push({id:'reject',label:'Rechazar etapa'}); if (!['approved','rejected','cancelled'].includes(detail.status)) options.push({id:'cancel',label:'Cancelar solicitud'}); if (detail.program_id==='prestamo' && detail.status==='approved' && ['ready_for_handoff','failed'].includes(detail.financial_processing_status)) options.push({id:'handoff',label:detail.financial_processing_status==='failed'?'Reintentar envío a gestión':'Enviar a gestión'}); if(rental&&detail.status==='approved')options.push({id:'cancelRent',label:'Cancelar renta y liberar fechas'}); options.push({id:'note',label:'Guardar observación'}); return options; }, [detail, app]);
-    useEffect(() => { if (!actionOptions.some((item) => item.id === action)) setAction(actionOptions[0] && actionOptions[0].id || ''); }, [actionOptions, action]);
-    const clearFilters = () => { setSearch(''); setStatusFilter('all'); setProgramFilter('all'); setStageFilter('all'); setAgeFilter('all'); setDateFilter(''); setSort('newest'); };
-    const move = (delta) => { if (!visible.length) return; const next = Math.max(0, Math.min(visible.length - 1, (index < 0 ? 0 : index) + delta)); setSelectedId(visible[next].id); };
+    const load = React.useCallback(async quiet => {
+      try {
+        if (!quiet) setPhase('loading');
+        const source = await window.AdminFinanceQueueRepository.enrich(await window.ProgramRequestRepository.listAdminFlowQueue());
+        const scoped = initialAffiliateId ? source.filter(row => row.affiliate_id === initialAffiliateId) : source;
+        setRows(scoped.slice());
+        setError('');
+        setPhase('loaded');
+        onCount(scoped.length);
+        return scoped;
+      } catch (_) {
+        if (!quiet) setRows([]);
+        setError('No fue posible cargar las solicitudes.');
+        setPhase('error');
+        onCount(0);
+        return [];
+      }
+    }, [onCount, initialAffiliateId]);
+    useEffect(() => {
+      load(false);
+    }, [load]);
+    const programs = React.useMemo(() => Array.from(new Map(rows.map(row => [row.program_id + ':' + (row.request_type || ''), programLabel(row)])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
+    const stages = React.useMemo(() => Array.from(new Map(rows.map(row => [currentStage(row) && currentStage(row).id, stageLabel(row)]).filter(item => item[0])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
+    const visible = React.useMemo(() => {
+      const needle = search.trim().toLocaleLowerCase('es-MX');
+      const filtered = rows.filter(row => {
+        const text = [row.folio, row.nombre, row.numero_control, queueProgramLabel(row)].join(' ').toLocaleLowerCase('es-MX');
+        if (needle && !text.includes(needle)) return false;
+        if (statusFilter !== 'all' && row.status !== statusFilter) return false;
+        if (programFilter !== 'all' && row.program_id + ':' + (row.request_type || '') !== programFilter) return false;
+        if (stageFilter !== 'all' && (!currentStage(row) || currentStage(row).id !== stageFilter)) return false;
+        const days = ageDays(row.created_at);
+        if (ageFilter === 'today' && days !== 0 || ageFilter === '3d' && days < 3 || ageFilter === '7d' && days < 7 || ageFilter === '30d' && days < 30) return false;
+        return !dateFilter || dayKey(row.created_at) === dateFilter;
+      });
+      return filtered.sort((a, b) => sort === 'oldest' ? a.ts - b.ts : sort === 'amount' ? Number(b.requested_amount || 0) - Number(a.requested_amount || 0) : b.ts - a.ts);
+    }, [rows, search, statusFilter, programFilter, stageFilter, ageFilter, dateFilter, sort]);
+    useEffect(() => {
+      if (!visible.length) setSelectedId('');else if (!visible.some(row => row.id === selectedId)) setSelectedId(visible[0].id);
+    }, [visible, selectedId]);
+    useEffect(() => {
+      if (!selectedId) {
+        setDetail(null);
+        setDetailPhase('idle');
+        return;
+      }
+      let active = true;
+      setDetailPhase('loading');
+      setFeedback(null);
+      setActionNote('');
+      setQuoteAmount('');
+      setQuoteValidUntil('');
+      setViewer(null);
+      window.ProgramRequestRepository.adminFlowDetail(selectedId).then(value => {
+        if (active) {
+          setDetail(value);
+          setDetailPhase('loaded');
+        }
+      }).catch(() => {
+        if (active) {
+          setDetail(null);
+          setDetailPhase('error');
+        }
+      });
+      return () => {
+        active = false;
+      };
+    }, [selectedId, detailNonce]);
+    const index = visible.findIndex(row => row.id === selectedId),
+      selected = index >= 0 ? visible[index] : null;
+    const actionOptions = React.useMemo(() => {
+      if (!detail || !app.admin.has('program_requests.write')) return [];
+      const target = nextStage(detail),
+        snapshot = detail.financial_submission_snapshot || {},
+        rental = snapshot.contract_version === 'RENTA_CAR_CASH_V1',
+        productPayment = snapshot.contract_version === 'PROGRAM_PRODUCT_PAYMENT_V1',
+        statusRefs = target && target.status_references || [],
+        options = [];
+      if (['requires_financial_processing', 'submitted'].includes(detail.status)) options.push({
+        id: 'review',
+        label: 'Iniciar revisión'
+      });
+      if (target) {
+        if (statusRefs.includes('approved') && detail.request_type === 'quote' && (workflowOf(detail).can_quote === true || detail.financial_processing_status == null)) options.push({
+          id: 'quoteAdvance',
+          label: 'Guardar cotización y aprobar etapa'
+        });else if (statusRefs.includes('approved') && detail.financial_processing_status != null) options.push({
+          id: rental ? 'approveRent' : productPayment ? 'approveProduct' : 'approveLoan',
+          label: rental ? 'Aprobar renta y reservar fechas' : productPayment ? 'Aprobar etapa en Supabase' : 'Aprobar etapa y autorizar préstamo'
+        });else options.push({
+          id: 'advance',
+          label: statusRefs.includes('approved') ? 'Aprobar etapa' : 'Avanzar a siguiente etapa'
+        });
+      }
+      if (!['approved', 'rejected', 'cancelled'].includes(detail.status) && (workflowOf(detail).can_reject === true || (workflowOf(detail).stages || []).some(stage => stage.outcome === 'failure'))) options.push({
+        id: 'reject',
+        label: 'Rechazar etapa'
+      });
+      if (!['approved', 'rejected', 'cancelled'].includes(detail.status)) options.push({
+        id: 'cancel',
+        label: 'Cancelar solicitud'
+      });
+      if (detail.program_id === 'prestamo' && detail.status === 'approved' && ['ready_for_handoff', 'failed'].includes(detail.financial_processing_status)) options.push({
+        id: 'handoff',
+        label: detail.financial_processing_status === 'failed' ? 'Reintentar envío a gestión' : 'Enviar a gestión'
+      });
+      if (rental && detail.status === 'approved') options.push({
+        id: 'cancelRent',
+        label: 'Cancelar renta y liberar fechas'
+      });
+      options.push({
+        id: 'note',
+        label: 'Guardar observación'
+      });
+      return options;
+    }, [detail, app]);
+    useEffect(() => {
+      if (!actionOptions.some(item => item.id === action)) setAction(actionOptions[0] && actionOptions[0].id || '');
+    }, [actionOptions, action]);
+    const clearFilters = () => {
+      setSearch('');
+      setStatusFilter('all');
+      setProgramFilter('all');
+      setStageFilter('all');
+      setAgeFilter('all');
+      setDateFilter('');
+      setSort('newest');
+    };
+    const move = delta => {
+      if (!visible.length) return;
+      const next = Math.max(0, Math.min(visible.length - 1, (index < 0 ? 0 : index) + delta));
+      setSelectedId(visible[next].id);
+    };
     const inspectApproval = async () => {
       try {
         const result = await window.FinancialLegacyRepository.reviewApproval(detail.id);
-        const next = result.idempotent ? { phase: 'REFRESH', message: 'La solicitud ya tiene autorización. Actualiza para ver su estado.' } : result;
-        if (!['READY','NEW_REQUEST_REQUIRED','REFRESH'].includes(next.phase) || result.request_id !== detail.id) throw Error('APPROVAL_REVIEW_INVALID');
-        setResolution(next); return next;
-      } catch (failure) { const next = approvalRecovery(failure); setResolution(next); return next; }
+        const next = result.idempotent ? {
+          phase: 'REFRESH',
+          message: 'La solicitud ya tiene autorización. Actualiza para ver su estado.'
+        } : result;
+        if (!['READY', 'NEW_REQUEST_REQUIRED', 'REFRESH'].includes(next.phase) || result.request_id !== detail.id) throw Error('APPROVAL_REVIEW_INVALID');
+        setResolution(next);
+        return next;
+      } catch (failure) {
+        const next = approvalRecovery(failure);
+        setResolution(next);
+        return next;
+      }
     };
     const reviewApproval = async () => {
       if (busy || actionLock.current) return;
-      actionLock.current = true; setBusy(true); setFeedback(null);
-      try { await inspectApproval(); } finally { actionLock.current = false; setBusy(false); }
+      actionLock.current = true;
+      setBusy(true);
+      setFeedback(null);
+      try {
+        await inspectApproval();
+      } finally {
+        actionLock.current = false;
+        setBusy(false);
+      }
     };
     const renewRequest = async () => {
       if (busy || actionLock.current || !detail || resolution?.phase !== 'NEW_REQUEST_REQUIRED') return;
-      actionLock.current = true; setBusy(true); setFeedback(null);
+      actionLock.current = true;
+      setBusy(true);
+      setFeedback(null);
       const request = detail;
       try {
         // Always re-read first, including retries after an ambiguous response.
@@ -53915,379 +58803,1706 @@ Object.assign(window, {
         if (fresh.status !== 'cancelled') {
           const diagnosis = await inspectApproval();
           if (diagnosis.phase !== 'NEW_REQUEST_REQUIRED') return;
-          const reason = diagnosis.code === 'CONDITIONS_CHANGED' || diagnosis.code === 'FINANCIAL_PROGRAM_NOT_ELIGIBLE'
-            ? 'Se cancela para presentar una nueva solicitud con las condiciones financieras vigentes. Las condiciones originales ya no permiten autorizar esta solicitud.'
-            : 'Se cancela para presentar una nueva solicitud y completar nuevamente los requisitos, documentos, términos y firma.';
-          if (!resolutionAttempt.current || resolutionAttempt.current.requestId !== request.id) resolutionAttempt.current = { requestId: request.id, key: window.ProgramRequestRepository.newIdempotencyKey() };
+          const reason = diagnosis.code === 'CONDITIONS_CHANGED' || diagnosis.code === 'FINANCIAL_PROGRAM_NOT_ELIGIBLE' ? 'Se cancela para presentar una nueva solicitud con las condiciones financieras vigentes. Las condiciones originales ya no permiten autorizar esta solicitud.' : 'Se cancela para presentar una nueva solicitud y completar nuevamente los requisitos, documentos, términos y firma.';
+          if (!resolutionAttempt.current || resolutionAttempt.current.requestId !== request.id) resolutionAttempt.current = {
+            requestId: request.id,
+            key: window.ProgramRequestRepository.newIdempotencyKey()
+          };
           const event = await window.ProgramRequestRepository.recordAdminAction(request.id, 'CANCEL', reason, resolutionAttempt.current.key);
           fresh = await window.ProgramRequestRepository.adminFlowDetail(request.id);
           if (fresh.status !== 'cancelled' || !fresh.admin_events?.some(item => item.id === event.id)) throw Error('FINANCIAL_ACTION_READBACK_FAILED');
         }
         setDetail(fresh);
-        setResolution({ phase: 'CANCELLED', message: 'La cancelación quedó confirmada. La solicitud anterior se conserva en el historial; todavía no se ha creado una nueva.' });
+        setResolution({
+          phase: 'CANCELLED',
+          message: 'La cancelación quedó confirmada. La solicitud anterior se conserva en el historial; todavía no se ha creado una nueva.'
+        });
         window.dispatchEvent(new CustomEvent('suti:request-changed'));
-      } catch (failure) { setFeedback({ tone: 'error', text: 'No se pudo confirmar la cancelación. Actualiza la solicitud antes de continuar.' }); setResolution({ phase: 'REFRESH', message: humanActionError(failure) }); }
-      finally { actionLock.current = false; setBusy(false); }
+      } catch (failure) {
+        setFeedback({
+          tone: 'error',
+          text: 'No se pudo confirmar la cancelación. Actualiza la solicitud antes de continuar.'
+        });
+        setResolution({
+          phase: 'REFRESH',
+          message: humanActionError(failure)
+        });
+      } finally {
+        actionLock.current = false;
+        setBusy(false);
+      }
     };
     const beginNewRequest = async () => {
       if (busy || actionLock.current || resolution?.phase !== 'CANCELLED' || !app.admin.has('affiliates.impersonate')) return;
-      actionLock.current = true; setBusy(true); setFeedback(null);
+      actionLock.current = true;
+      setBusy(true);
+      setFeedback(null);
       try {
         const fresh = await window.ProgramRequestRepository.adminFlowDetail(detail.id);
         if (fresh.status !== 'cancelled') throw Error('FINANCIAL_ACTION_READBACK_FAILED');
         await window.AdminRepository.startImpersonation(detail.affiliate_id, 'Nueva solicitud con condiciones actuales tras cancelación de ' + detail.folio);
-      } catch (_) { setFeedback({ tone: 'error', text: 'La solicitud anterior sigue cancelada. No se pudo abrir la atención asistida; verifica tu permiso y vuelve a intentarlo.' }); }
-      finally { actionLock.current = false; setBusy(false); }
+      } catch (_) {
+        setFeedback({
+          tone: 'error',
+          text: 'La solicitud anterior sigue cancelada. No se pudo abrir la atención asistida; verifica tu permiso y vuelve a intentarlo.'
+        });
+      } finally {
+        actionLock.current = false;
+        setBusy(false);
+      }
     };
-    const save = async (advance, confirmed = false) => { if (!detail || !action || busy || actionLock.current) return; const targetBefore=nextStage(detail),currentBefore=currentStage(detail); if (actionNote.trim().length > 0 && actionNote.trim().length < 3) { setFeedback({ tone: 'error', text: 'La observación debe tener al menos 3 caracteres.' }); return; } if (action === 'note' && actionNote.trim().length < 3) { setFeedback({ tone: 'error', text: 'Escribe una observación de al menos 3 caracteres.' }); return; } if (['reject', 'cancel', 'cancelRent'].includes(action) && actionNote.trim().length < 3) { setFeedback({ tone: 'error', text: action === 'reject' ? 'Indica el motivo del rechazo.' : 'Indica el motivo de la cancelación.' }); return; } if (action==='quoteAdvance' && numberValue(quoteAmount)==null) { setFeedback({tone:'error',text:'Captura el monto de la cotización antes de aprobar la etapa.'}); return; }
-      const finalApproval = ['advance','quoteAdvance','approveProduct','approveLoan','approveRent'].includes(action) && targetBefore && (targetBefore.status_references || []).includes('approved');
+    const save = async (advance, confirmed = false) => {
+      if (!detail || !action || busy || actionLock.current) return;
+      const targetBefore = nextStage(detail),
+        currentBefore = currentStage(detail);
+      if (actionNote.trim().length > 0 && actionNote.trim().length < 3) {
+        setFeedback({
+          tone: 'error',
+          text: 'La observación debe tener al menos 3 caracteres.'
+        });
+        return;
+      }
+      if (action === 'note' && actionNote.trim().length < 3) {
+        setFeedback({
+          tone: 'error',
+          text: 'Escribe una observación de al menos 3 caracteres.'
+        });
+        return;
+      }
+      if (['reject', 'cancel', 'cancelRent'].includes(action) && actionNote.trim().length < 3) {
+        setFeedback({
+          tone: 'error',
+          text: action === 'reject' ? 'Indica el motivo del rechazo.' : 'Indica el motivo de la cancelación.'
+        });
+        return;
+      }
+      if (action === 'quoteAdvance' && numberValue(quoteAmount) == null) {
+        setFeedback({
+          tone: 'error',
+          text: 'Captura el monto de la cotización antes de aprobar la etapa.'
+        });
+        return;
+      }
+      const finalApproval = ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan', 'approveRent'].includes(action) && targetBefore && (targetBefore.status_references || []).includes('approved');
       if (!confirmed && action !== 'note') {
-        const warning = ['reject','cancel','cancelRent'].includes(action);
-        const label = action === 'reject' ? 'Rechazar solicitud' : ['cancel','cancelRent'].includes(action) ? 'Cancelar solicitud' : finalApproval ? 'Autorizar solicitud' : action === 'review' ? 'Iniciar revisión' : action === 'handoff' ? 'Enviar a gestión' : 'Aprobar etapa';
-        const destination = action === 'reject' ? 'Rechazada' : ['cancel','cancelRent'].includes(action) ? 'Cancelada' : action === 'review' ? 'En revisión' : targetBefore && targetBefore.label || stageLabel(detail);
-        setFeedback(null); setResolution(null);
-        setConfirmation({ action, advance, warning, label, title: label === 'Aprobar etapa' ? '¿Aprobar esta etapa?' : '¿' + label + '?',
-          fields: [['Solicitud', detail.folio], ['Afiliado', detail.nombre], ['Programa', programLabel(detail)],
-            ...(detail.requested_amount != null ? [['Monto', moneyValue(detail.requested_amount)]] : []),
-            ...(detail.requested_term ? [['Plazo', detail.requested_term + ' ' + (detail.requested_term_semantics || 'pagos')]] : []),
-            ...(action === 'quoteAdvance' ? [['Cotización', moneyValue(quoteAmount)]] : []),
-            ['Etapa actual', stageLabel(detail)], ['Estado / etapa resultante', destination],
-            ...(actionNote.trim() ? [['Comentario', actionNote.trim()]] : [])],
-          message: action === 'handoff' ? 'Se enviará la solicitud con la autorización ya registrada. El resultado de la gestión se mostrará al terminar.' : warning ? 'Al confirmar, la solicitud quedará ' + destination.toLowerCase() + '. El afiliado podrá consultar el resultado y el motivo en su historial.' : 'Al confirmar, la solicitud avanzará a ' + destination + ' y el afiliado verá la nueva etapa en su historial.' });
+        const warning = ['reject', 'cancel', 'cancelRent'].includes(action);
+        const label = action === 'reject' ? 'Rechazar solicitud' : ['cancel', 'cancelRent'].includes(action) ? 'Cancelar solicitud' : finalApproval ? 'Autorizar solicitud' : action === 'review' ? 'Iniciar revisión' : action === 'handoff' ? 'Enviar a gestión' : 'Aprobar etapa';
+        const destination = action === 'reject' ? 'Rechazada' : ['cancel', 'cancelRent'].includes(action) ? 'Cancelada' : action === 'review' ? 'En revisión' : targetBefore && targetBefore.label || stageLabel(detail);
+        setFeedback(null);
+        setResolution(null);
+        setConfirmation({
+          action,
+          advance,
+          warning,
+          label,
+          title: label === 'Aprobar etapa' ? '¿Aprobar esta etapa?' : '¿' + label + '?',
+          fields: [['Solicitud', detail.folio], ['Afiliado', detail.nombre], ['Programa', programLabel(detail)], ...(detail.requested_amount != null ? [['Monto', moneyValue(detail.requested_amount)]] : []), ...(detail.requested_term ? [['Plazo', detail.requested_term + ' ' + (detail.requested_term_semantics || 'pagos')]] : []), ...(action === 'quoteAdvance' ? [['Cotización', moneyValue(quoteAmount)]] : []), ['Etapa actual', stageLabel(detail)], ['Estado / etapa resultante', destination], ...(actionNote.trim() ? [['Comentario', actionNote.trim()]] : [])],
+          message: action === 'handoff' ? 'Se enviará la solicitud con la autorización ya registrada. El resultado de la gestión se mostrará al terminar.' : warning ? 'Al confirmar, la solicitud quedará ' + destination.toLowerCase() + '. El afiliado podrá consultar el resultado y el motivo en su historial.' : 'Al confirmar, la solicitud avanzará a ' + destination + ' y el afiliado verá la nueva etapa en su historial.'
+        });
         return;
       }
       actionLock.current = true;
-      const currentId = detail.id, nextId = visible[index + 1] && visible[index + 1].id || visible[index - 1] && visible[index - 1].id || currentId; setBusy(true); setFeedback({ tone: 'saving', text: 'Procesando…' }); setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'saving' }));
-      const adminAction = { review: 'MARK_IN_REVIEW', cancel: 'CANCEL', note: 'COMMENT' }[action], fingerprint = [currentId, action, actionNote.trim(), quoteAmount, quoteValidUntil].join('|'); let persistedEvent = null;
-      try { if (action === 'approveLoan') { const review = await inspectApproval(); if (review.phase !== 'READY') { setFeedback(null); setRowFeedback(all => Object.assign({}, all, { [currentId]: 'error' })); return; } } const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey(); actionAttempts.current.set(fingerprint, actionId); if (adminAction) persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId); else if (action === 'advance' || action === 'reject' || action === 'quoteAdvance') { const result=await window.ProgramRequestRepository.transitionWorkflow(currentId,action==='reject'?'REJECT':'ADVANCE',actionNote.trim(),actionId,action==='quoteAdvance'?{amount:quoteAmount,validUntil:quoteValidUntil}:null);persistedEvent=result.event; } else if (action === 'approveRent' || action === 'cancelRent') await window.RentaCarRepository.admin(currentId,action === 'approveRent'?'APPROVE':'CANCEL',actionNote.trim(),actionId); else if (action === 'approveProduct') await window.ProgramRequestRepository.approveProductPayment(currentId,actionNote.trim(),actionId); else if (action === 'approveLoan') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim()); else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
-        const refreshed = await load(true), verified = refreshed.find((row) => row.id === currentId), verifiedDetail=await window.ProgramRequestRepository.adminFlowDetail(currentId), verifiedCurrent=currentStage(verifiedDetail); let valid = Boolean(verified); if (action === 'review') valid=valid&&verified.status==='in_review'; else if (action === 'reject') valid=valid&&verified.status==='rejected'&&verifiedCurrent&&verifiedCurrent.outcome==='failure'; else if (action === 'cancel' || action === 'cancelRent') valid=valid&&verified.status==='cancelled'; else if (['advance','quoteAdvance','approveProduct','approveLoan','approveRent'].includes(action)) valid=valid&&targetBefore&&verifiedCurrent&&verifiedCurrent.id===targetBefore.id; else if (action === 'handoff') valid=valid&&verified.status==='approved'&&(verified.financial_processing_status==='handed_off'||verifiedDetail.google_sync&&['pending','processing','error'].includes(verifiedDetail.google_sync.phase)); if (valid && persistedEvent) valid=verifiedDetail.admin_events_available&&verifiedDetail.admin_events.some((event)=>event.id===persistedEvent.id); if (!valid) throw new Error('FINANCIAL_ACTION_READBACK_FAILED');
-        actionAttempts.current.delete(fingerprint); setDetail(verifiedDetail); setConfirmation(null);
+      const currentId = detail.id,
+        nextId = visible[index + 1] && visible[index + 1].id || visible[index - 1] && visible[index - 1].id || currentId;
+      setBusy(true);
+      setFeedback({
+        tone: 'saving',
+        text: 'Procesando…'
+      });
+      setRowFeedback(all => Object.assign({}, all, {
+        [currentId]: 'saving'
+      }));
+      const adminAction = {
+          review: 'MARK_IN_REVIEW',
+          cancel: 'CANCEL',
+          note: 'COMMENT'
+        }[action],
+        fingerprint = [currentId, action, actionNote.trim(), quoteAmount, quoteValidUntil].join('|');
+      let persistedEvent = null;
+      try {
+        if (action === 'approveLoan') {
+          const review = await inspectApproval();
+          if (review.phase !== 'READY') {
+            setFeedback(null);
+            setRowFeedback(all => Object.assign({}, all, {
+              [currentId]: 'error'
+            }));
+            return;
+          }
+        }
+        const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
+        actionAttempts.current.set(fingerprint, actionId);
+        if (adminAction) persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId);else if (action === 'advance' || action === 'reject' || action === 'quoteAdvance') {
+          const result = await window.ProgramRequestRepository.transitionWorkflow(currentId, action === 'reject' ? 'REJECT' : 'ADVANCE', actionNote.trim(), actionId, action === 'quoteAdvance' ? {
+            amount: quoteAmount,
+            validUntil: quoteValidUntil
+          } : null);
+          persistedEvent = result.event;
+        } else if (action === 'approveRent' || action === 'cancelRent') await window.RentaCarRepository.admin(currentId, action === 'approveRent' ? 'APPROVE' : 'CANCEL', actionNote.trim(), actionId);else if (action === 'approveProduct') await window.ProgramRequestRepository.approveProductPayment(currentId, actionNote.trim(), actionId);else if (action === 'approveLoan') await window.FinancialLegacyRepository.approveRequest(currentId, actionNote.trim());else if (action === 'handoff') await window.FinancialLegacyRepository.handoffRequest(currentId);
+        const refreshed = await load(true),
+          verified = refreshed.find(row => row.id === currentId),
+          verifiedDetail = await window.ProgramRequestRepository.adminFlowDetail(currentId),
+          verifiedCurrent = currentStage(verifiedDetail);
+        let valid = Boolean(verified);
+        if (action === 'review') valid = valid && verified.status === 'in_review';else if (action === 'reject') valid = valid && verified.status === 'rejected' && verifiedCurrent && verifiedCurrent.outcome === 'failure';else if (action === 'cancel' || action === 'cancelRent') valid = valid && verified.status === 'cancelled';else if (['advance', 'quoteAdvance', 'approveProduct', 'approveLoan', 'approveRent'].includes(action)) valid = valid && targetBefore && verifiedCurrent && verifiedCurrent.id === targetBefore.id;else if (action === 'handoff') valid = valid && verified.status === 'approved' && (verified.financial_processing_status === 'handed_off' || verifiedDetail.google_sync && ['pending', 'processing', 'error'].includes(verifiedDetail.google_sync.phase));
+        if (valid && persistedEvent) valid = verifiedDetail.admin_events_available && verifiedDetail.admin_events.some(event => event.id === persistedEvent.id);
+        if (!valid) throw new Error('FINANCIAL_ACTION_READBACK_FAILED');
+        actionAttempts.current.delete(fingerprint);
+        setDetail(verifiedDetail);
+        setConfirmation(null);
         const authorized = finalApproval && verifiedDetail.status === 'approved' && detail.status !== 'approved';
-        const title = action === 'reject' ? 'Solicitud rechazada' : ['cancel','cancelRent'].includes(action) ? 'Solicitud cancelada' : authorized ? '✓ Solicitud autorizada' : action === 'review' ? 'Revisión iniciada' : action === 'note' ? 'Observación guardada' : action === 'handoff' ? 'Gestión actualizada' : '✓ Etapa aprobada';
-        setActionResult({ title, kind: authorized ? 'authorized' : action, warning: ['reject','cancel','cancelRent'].includes(action), celebrate: authorized, folio: detail.folio, name: detail.nombre, next: ['advance','quoteAdvance','approveProduct','approveLoan','approveRent'].includes(action) && verifiedCurrent && verifiedCurrent.label });
-        setFeedback({ tone: ['reject','cancel','cancelRent'].includes(action) ? 'warning' : 'success', text: title });
+        const title = action === 'reject' ? 'Solicitud rechazada' : ['cancel', 'cancelRent'].includes(action) ? 'Solicitud cancelada' : authorized ? '✓ Solicitud autorizada' : action === 'review' ? 'Revisión iniciada' : action === 'note' ? 'Observación guardada' : action === 'handoff' ? 'Gestión actualizada' : '✓ Etapa aprobada';
+        setActionResult({
+          title,
+          kind: authorized ? 'authorized' : action,
+          warning: ['reject', 'cancel', 'cancelRent'].includes(action),
+          celebrate: authorized,
+          folio: detail.folio,
+          name: detail.nombre,
+          next: ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan', 'approveRent'].includes(action) && verifiedCurrent && verifiedCurrent.label
+        });
+        setFeedback({
+          tone: ['reject', 'cancel', 'cancelRent'].includes(action) ? 'warning' : 'success',
+          text: title
+        });
         window.dispatchEvent(new CustomEvent('suti:request-changed'));
- setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'success' })); setActionNote(''); setQuoteAmount(''); if (advance && nextId !== currentId) setSelectedId(nextId);
-      } catch (actionError) { setFeedback({ tone: 'error', text: humanActionError(actionError) }); if (action === 'approveLoan') setResolution(approvalRecovery(actionError)); setRowFeedback((all) => Object.assign({}, all, { [currentId]: 'error' })); } finally { actionLock.current = false; setBusy(false); }
+        setRowFeedback(all => Object.assign({}, all, {
+          [currentId]: 'success'
+        }));
+        setActionNote('');
+        setQuoteAmount('');
+        if (advance && nextId !== currentId) setSelectedId(nextId);
+      } catch (actionError) {
+        setFeedback({
+          tone: 'error',
+          text: humanActionError(actionError)
+        });
+        if (action === 'approveLoan') setResolution(approvalRecovery(actionError));
+        setRowFeedback(all => Object.assign({}, all, {
+          [currentId]: 'error'
+        }));
+      } finally {
+        actionLock.current = false;
+        setBusy(false);
+      }
     };
-    const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && app.admin.has('documents.read'), setViewer);
-    const closeDetail = () => { if (busy || confirmation) return; setViewer(null); setDetailOpen(false); };
+    const previews = useFinancialDocumentPreviews(detail, detailPhase === 'loaded' && detail && detail.id === selectedId && (app.admin.has('documents.read') || window.DocumentIntegration && window.DocumentIntegration.enabled() && app.admin.has('program_requests.read')), setViewer);
+    const closeDetail = () => {
+      if (busy || confirmation) return;
+      setViewer(null);
+      setDetailOpen(false);
+    };
     const deleteRequest = async () => {
       if (!detail || busy || !app.admin.has('program_requests.write')) return;
-      const id=detail.id;setBusy(true);setDeleting(true);setFeedback(null);
+      const id = detail.id;
+      setBusy(true);
+      setDeleting(true);
+      setFeedback(null);
       try {
-        const preview=await window.AdminRequestDeletionRepository.preview(id);
-        if(preview.phase!=='completed'&&!window.confirm('¿Eliminar la solicitud '+preview.folio+' y sus '+preview.documents_count+' documentos enviados? También se retirará su registro de Google. El expediente del afiliado y sus imágenes se conservarán.')) return;
-        await window.AdminRequestDeletionRepository.remove(preview,actionNote.trim().length>=3?actionNote.trim():'Eliminación confirmada desde Admin Solicitudes');
-        setViewer(null);setDetailOpen(false);setDetail(null);setSelectedId('');await load(true);
+        const preview = await window.AdminRequestDeletionRepository.preview(id);
+        if (preview.phase !== 'completed' && !window.confirm('¿Eliminar la solicitud ' + preview.folio + ' y sus ' + preview.documents_count + ' documentos enviados? También se retirará su registro de Google. El expediente del afiliado y sus imágenes se conservarán.')) return;
+        await window.AdminRequestDeletionRepository.remove(preview, actionNote.trim().length >= 3 ? actionNote.trim() : 'Eliminación confirmada desde Admin Solicitudes');
+        setViewer(null);
+        setDetailOpen(false);
+        setDetail(null);
+        setSelectedId('');
+        await load(true);
       } catch (failure) {
-        const code=String(failure?.message||''),messages={REQUEST_DELETE_DENIED:'No tienes permiso para eliminar solicitudes.',REQUEST_DELETE_SYNC_BUSY:'La solicitud se está sincronizando. Espera unos segundos y reintenta.',REQUEST_DELETE_CHANGED:'La solicitud cambió. Actualiza el detalle y vuelve a confirmar.',REQUEST_DELETE_DEPENDENT_REQUEST:'Otra solicitud utiliza esta cotización; debe conservarse su referencia.',REQUEST_DELETE_LEGACY_REVIEW_REQUIRED:'No se pudo verificar el registro histórico de Google. La eliminación requiere revisar esa referencia.',REQUEST_DELETE_IN_PROGRESS:'Hay una eliminación pendiente. Usa Eliminar solicitud para reintentar.'};
-        setFeedback({tone:'error',text:messages[code]||'No se completó la eliminación. Reintenta con Eliminar solicitud; el expediente del afiliado se conserva.'});
-      } finally { setBusy(false);setDeleting(false); }
+        const code = String(failure?.message || ''),
+          messages = {
+            REQUEST_DELETE_DENIED: 'No tienes permiso para eliminar solicitudes.',
+            REQUEST_DELETE_SYNC_BUSY: 'La solicitud se está sincronizando. Espera unos segundos y reintenta.',
+            REQUEST_DELETE_CHANGED: 'La solicitud cambió. Actualiza el detalle y vuelve a confirmar.',
+            REQUEST_DELETE_DEPENDENT_REQUEST: 'Otra solicitud utiliza esta cotización; debe conservarse su referencia.',
+            REQUEST_DELETE_LEGACY_REVIEW_REQUIRED: 'No se pudo verificar el registro histórico de Google. La eliminación requiere revisar esa referencia.',
+            REQUEST_DELETE_IN_PROGRESS: 'Hay una eliminación pendiente. Usa Eliminar solicitud para reintentar.'
+          };
+        setFeedback({
+          tone: 'error',
+          text: messages[code] || 'No se completó la eliminación. Reintenta con Eliminar solicitud; el expediente del afiliado se conserva.'
+        });
+      } finally {
+        setBusy(false);
+        setDeleting(false);
+      }
     };
-    const onKeyDown = (event) => { if (detailOpen || /INPUT|SELECT|TEXTAREA|BUTTON|A/.test(event.target.tagName)) return; if (event.key === 'ArrowDown') { event.preventDefault(); move(1); } else if (event.key === 'ArrowUp') { event.preventDefault(); move(-1); } else if (event.key === 'Enter' && selectedId) { event.preventDefault(); setDetailOpen(true); } };
-    const renderConditions = (title, result, fallback) => h('section', { className: 'finwb-card', 'data-financial-snapshot': title }, h('h3', null, h(I, { name: 'cash', size: 17, stroke: 2 }), title), result || fallback ? h('div', { className: 'finwb-kv' },
-      [['Monto solicitado', moneyValue(result && result.amount != null ? result.amount : detail.requested_amount)], ['Fondo / programa', result && result.fund || programLabel(detail)], ['Plazo', (result && result.paymentCount || detail.requested_term || '—') + (result && result.paymentPeriod || detail.requested_term_semantics ? ' · ' + (result && result.paymentPeriod || detail.requested_term_semantics) : '')], ['Tasa aplicada', result && result.rate != null ? result.rate + '%' + (result.ratePeriod ? ' · ' + result.ratePeriod : '') : '—'], ['Pago por periodo', moneyValue(result && result.paymentPerPeriod)], ['Interés', moneyValue(result && result.interest)], ['Gasto administrativo', moneyValue(result && result.administrativeFeeTotal)], ['Total', moneyValue(result && result.total)]].map((item) => h('div', { key: item[0] }, h('span', null, item[0]), h('strong', null, item[1])))) : h('div', { className: 'finwb-snapshot-note' }, 'Snapshot contractual no disponible. No se recalculan valores históricos con reglas actuales.'));
-    const renderProductPayment = (snapshot) => { if (!snapshot || snapshot.contract_version !== 'PROGRAM_PRODUCT_PAYMENT_V1') return null; const product = snapshot.product || {}, schedule = snapshot.payment_schedule || {}, rows = Array.isArray(schedule.rows) ? schedule.rows : []; return h('section', { className: 'finwb-card', 'data-financial-product-payment': 'true' },
-      h('h3', null, h(I, { name: 'receipt', size: 17, stroke: 2 }), 'Producto y plan aceptado'),
-      h('div', { className: 'finwb-kv' }, [['Producto', product.name || programLabel(detail)], ['Programa', product.program_key || detail.program_id], ['Origen del precio', snapshot.price_source === 'PRICE_CASH' ? 'Precio publicado' : 'Cotización autorizada'], ['Precio autorizado', moneyValue(snapshot.authorized_price)], ['Enganche', moneyValue(snapshot.down_payment)], ['Monto financiado', moneyValue(snapshot.financed_amount)], ['Plazo', (snapshot.term || detail.requested_term || '—') + ' pagos'], ['Calendario', rows.length ? (schedule.first_payment_date + ' → ' + schedule.last_payment_date) : 'No disponible']].map((item) => h('div', { key: item[0] }, h('span', null, item[0]), h('strong', null, item[1])))),
-      rows.length ? h('details', { style: { marginTop: 11 } }, h('summary', { style: { cursor: 'pointer', color: 'var(--guinda)', fontSize: 11.5, fontWeight: 850 } }, 'Ver calendario de ' + rows.length + ' descuentos'), h('div', { style: { marginTop: 7, maxHeight: 220, overflow: 'auto' } }, rows.map((row) => h('div', { key: row.number, style: { display: 'grid', gridTemplateColumns: '34px 1fr auto', gap: 8, padding: '6px 4px', borderTop: '1px solid var(--hairline)', fontSize: 11.5 } }, h('strong', null, row.number), h('span', null, row.date), h('strong', null, moneyValue(row.payment)))))) : null);
+    const onKeyDown = event => {
+      if (detailOpen || /INPUT|SELECT|TEXTAREA|BUTTON|A/.test(event.target.tagName)) return;
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        move(1);
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        move(-1);
+      } else if (event.key === 'Enter' && selectedId) {
+        event.preventDefault();
+        setDetailOpen(true);
+      }
+    };
+    const renderConditions = (title, result, fallback) => h('section', {
+      className: 'finwb-card',
+      'data-financial-snapshot': title
+    }, h('h3', null, h(I, {
+      name: 'cash',
+      size: 17,
+      stroke: 2
+    }), title), result || fallback ? h('div', {
+      className: 'finwb-kv'
+    }, [['Monto solicitado', moneyValue(result && result.amount != null ? result.amount : detail.requested_amount)], ['Fondo / programa', result && result.fund || programLabel(detail)], ['Plazo', (result && result.paymentCount || detail.requested_term || '—') + (result && result.paymentPeriod || detail.requested_term_semantics ? ' · ' + (result && result.paymentPeriod || detail.requested_term_semantics) : '')], ['Tasa aplicada', result && result.rate != null ? result.rate + '%' + (result.ratePeriod ? ' · ' + result.ratePeriod : '') : '—'], ['Pago por periodo', moneyValue(result && result.paymentPerPeriod)], ['Interés', moneyValue(result && result.interest)], ['Gasto administrativo', moneyValue(result && result.administrativeFeeTotal)], ['Total', moneyValue(result && result.total)]].map(item => h('div', {
+      key: item[0]
+    }, h('span', null, item[0]), h('strong', null, item[1])))) : h('div', {
+      className: 'finwb-snapshot-note'
+    }, 'Snapshot contractual no disponible. No se recalculan valores históricos con reglas actuales.'));
+    const renderProductPayment = snapshot => {
+      if (!snapshot || snapshot.contract_version !== 'PROGRAM_PRODUCT_PAYMENT_V1') return null;
+      const product = snapshot.product || {},
+        schedule = snapshot.payment_schedule || {},
+        rows = Array.isArray(schedule.rows) ? schedule.rows : [];
+      return h('section', {
+        className: 'finwb-card',
+        'data-financial-product-payment': 'true'
+      }, h('h3', null, h(I, {
+        name: 'receipt',
+        size: 17,
+        stroke: 2
+      }), 'Producto y plan aceptado'), h('div', {
+        className: 'finwb-kv'
+      }, [['Producto', product.name || programLabel(detail)], ['Programa', product.program_key || detail.program_id], ['Origen del precio', snapshot.price_source === 'PRICE_CASH' ? 'Precio publicado' : 'Cotización autorizada'], ['Precio autorizado', moneyValue(snapshot.authorized_price)], ['Enganche', moneyValue(snapshot.down_payment)], ['Monto financiado', moneyValue(snapshot.financed_amount)], ['Plazo', (snapshot.term || detail.requested_term || '—') + ' pagos'], ['Calendario', rows.length ? schedule.first_payment_date + ' → ' + schedule.last_payment_date : 'No disponible']].map(item => h('div', {
+        key: item[0]
+      }, h('span', null, item[0]), h('strong', null, item[1])))), rows.length ? h('details', {
+        style: {
+          marginTop: 11
+        }
+      }, h('summary', {
+        style: {
+          cursor: 'pointer',
+          color: 'var(--guinda)',
+          fontSize: 11.5,
+          fontWeight: 850
+        }
+      }, 'Ver calendario de ' + rows.length + ' descuentos'), h('div', {
+        style: {
+          marginTop: 7,
+          maxHeight: 220,
+          overflow: 'auto'
+        }
+      }, rows.map(row => h('div', {
+        key: row.number,
+        style: {
+          display: 'grid',
+          gridTemplateColumns: '34px 1fr auto',
+          gap: 8,
+          padding: '6px 4px',
+          borderTop: '1px solid var(--hairline)',
+          fontSize: 11.5
+        }
+      }, h('strong', null, row.number), h('span', null, row.date), h('strong', null, moneyValue(row.payment)))))) : null);
     };
     const renderWorkflow = () => {
-      const workflow=workflowOf(detail),current=currentStage(detail),next=nextStage(detail),steps=workflow.stages||[];
-      if(!workflow.available)return h('section',{className:'finwb-card','data-financial-workflow':'true'},h('h3',null,h(I,{name:'clock',size:17,stroke:2}),'Flujo completo de la solicitud'),h('div',{className:'finwb-snapshot-note'},workflow.message||'Seguimiento no disponible.'));
-      return h('section',{className:'finwb-card','data-financial-workflow':'true'},
-        h('h3',null,h(I,{name:'clock',size:17,stroke:2}),'Flujo completo de la solicitud'),
-        h('div',{className:'finwb-flow-summary'},
-          h('div',{className:'finwb-sub'},(workflow.workflow_name||'Flujo aplicado')+(workflow.workflow_version?' · versión '+workflow.workflow_version:'')),
-          h('div',{className:'finwb-flow-current'},h('div',null,h('span',{className:'finwb-sub'},'ETAPA ACTUAL'),h('strong',null,current&&current.label||'No disponible'),current&&current.description&&h('p',null,current.description)),current&&h('span',{className:'finwb-responsible'},current.responsible||'Área responsable')),
-          h('div',{className:'finwb-next-action'},next?'Siguiente acción: '+next.label+' · Responsable: '+(next.responsible||'Área responsable'):'Flujo completado · no hay otra etapa pendiente')),
-        h('div',{className:'finwb-steps'},steps.map((stage,stageIndex)=>
-          h('div',{className:'finwb-step','data-state':stage.state,key:stage.id},
-            h('span',{className:'finwb-step-dot'},stage.state==='done'?'✓':stageIndex+1),
-            h('div',null,h('strong',null,stage.label),h('p',null,(stage.state==='done'?'Completada':stage.state==='current'?'Actual':'Pendiente')+' · '+(stage.responsible||'Sin responsable')+(stage.date?' · '+dateValue(stage.date):'')),stage.description&&h('p',null,stage.description))))));
+      const workflow = workflowOf(detail),
+        current = currentStage(detail),
+        next = nextStage(detail),
+        steps = workflow.stages || [];
+      if (!workflow.available) return h('section', {
+        className: 'finwb-card',
+        'data-financial-workflow': 'true'
+      }, h('h3', null, h(I, {
+        name: 'clock',
+        size: 17,
+        stroke: 2
+      }), 'Flujo completo de la solicitud'), h('div', {
+        className: 'finwb-snapshot-note'
+      }, workflow.message || 'Seguimiento no disponible.'));
+      return h('section', {
+        className: 'finwb-card',
+        'data-financial-workflow': 'true'
+      }, h('h3', null, h(I, {
+        name: 'clock',
+        size: 17,
+        stroke: 2
+      }), 'Flujo completo de la solicitud'), h('div', {
+        className: 'finwb-flow-summary'
+      }, h('div', {
+        className: 'finwb-sub'
+      }, (workflow.workflow_name || 'Flujo aplicado') + (workflow.workflow_version ? ' · versión ' + workflow.workflow_version : '')), h('div', {
+        className: 'finwb-flow-current'
+      }, h('div', null, h('span', {
+        className: 'finwb-sub'
+      }, 'ETAPA ACTUAL'), h('strong', null, current && current.label || 'No disponible'), current && current.description && h('p', null, current.description)), current && h('span', {
+        className: 'finwb-responsible'
+      }, current.responsible || 'Área responsable')), h('div', {
+        className: 'finwb-next-action'
+      }, next ? 'Siguiente acción: ' + next.label + ' · Responsable: ' + (next.responsible || 'Área responsable') : 'Flujo completado · no hay otra etapa pendiente')), h('div', {
+        className: 'finwb-steps'
+      }, steps.map((stage, stageIndex) => h('div', {
+        className: 'finwb-step',
+        'data-state': stage.state,
+        key: stage.id
+      }, h('span', {
+        className: 'finwb-step-dot'
+      }, stage.state === 'done' ? '✓' : stageIndex + 1), h('div', null, h('strong', null, stage.label), h('p', null, (stage.state === 'done' ? 'Completada' : stage.state === 'current' ? 'Actual' : 'Pendiente') + ' · ' + (stage.responsible || 'Sin responsable') + (stage.date ? ' · ' + dateValue(stage.date) : '')), stage.description && h('p', null, stage.description))))));
     };
-    const renderDocumentRows = (documents, scope) => documents.map((document) => {
-      const viewKey = scope + ':' + document.id, view = previews.views[viewKey] || {}, status = document.status_at_submission || document.status || 'No disponible';
-      const mime = String(document.mimeType || '').toLowerCase(), title = document.document_type && document.document_type.label || 'Documento';
-      const ready = view.phase === 'ready' && view.url && view.expiresAt > Date.now(), failed = view.phase === 'error';
-      const open = () => previews.open(viewKey), mediaError = () => previews.failed(viewKey, view.url);
-      const preview = ready && scope === 'request' && mime === 'application/pdf' ? h('iframe', { className: 'finwb-request-pdf', src: view.url + '#navpanes=0', title: 'Documento enviado: ' + title, onError: mediaError }) : ready ? (mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
-        type: 'button', className: 'finwb-doc-preview', onClick: open, disabled: !!view.busy, 'aria-label': (mime.startsWith('image/') ? 'Ampliar ' : 'Abrir ') + title
-      }, mime.startsWith('image/') ? h('img', { src: view.url, alt: 'Vista previa de ' + title, onError: mediaError }) : h('iframe', { src: view.url + '#toolbar=0&navpanes=0', title: 'Vista previa de ' + title, tabIndex: -1, onError: mediaError })) : h('span', { className: 'finwb-doc-preview' }, h(I, { name: 'doc', size: 24, stroke: 1.8 })))
-        : h('span', { className: 'finwb-doc-preview', role: 'status' }, h(I, { name: failed ? 'warning' : 'clock', size: 22 }));
-      const openAction = ready ? (mime.startsWith('image/') || mime === 'application/pdf' ? h('button', { type: 'button', onClick: open, disabled: !!view.busy }, view.busy ? 'Cargando…' : mime === 'application/pdf' ? 'Ver PDF' : 'Ampliar') : h('a', { href: view.url, target: '_blank', rel: 'noopener noreferrer' }, 'Abrir'))
-        : failed ? h('button', { type: 'button', onClick: () => previews.retry(viewKey) }, 'Reintentar') : null;
-      return h('div', { className: 'finwb-doc', key: viewKey }, preview,
-        h('div', { className: 'finwb-doc-main' }, h('div', { className: 'finwb-person' }, title),
-          h('div', { className: 'finwb-sub finwb-doc-status' }, h('span', null, scope === 'request' ? 'Estado al enviar:' : 'Estado vigente:'), badge(DOCUMENT_STATUS[status] || { label: status === 'No disponible' ? status : 'Estado no reconocido: ' + status, tone: 'gray' }, 'data-financial-document-status', status)),
-          h('div', { className: 'finwb-sub' }, failed ? 'Vista no disponible · el archivo sigue privado' : !ready ? 'Preparando vista segura…' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
+    const renderDocumentRows = (documents, scope) => documents.map(document => {
+      const viewKey = scope + ':' + document.id,
+        view = previews.views[viewKey] || {},
+        status = document.status_at_submission || document.status || 'No disponible';
+      const mime = String(document.mimeType || '').toLowerCase(),
+        title = document.document_type && document.document_type.label || 'Documento';
+      const ready = view.phase === 'ready' && view.url && view.expiresAt > Date.now(),
+        failed = view.phase === 'error';
+      const open = () => previews.open(viewKey),
+        mediaError = () => previews.failed(viewKey, view.url);
+      const preview = ready && scope === 'request' && mime === 'application/pdf' ? h('iframe', {
+        className: 'finwb-request-pdf',
+        src: view.url + '#navpanes=0',
+        title: 'Documento enviado: ' + title,
+        onError: mediaError
+      }) : ready ? mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
+        type: 'button',
+        className: 'finwb-doc-preview',
+        onClick: open,
+        disabled: !!view.busy,
+        'aria-label': (mime.startsWith('image/') ? 'Ampliar ' : 'Abrir ') + title
+      }, mime.startsWith('image/') ? h('img', {
+        src: view.url,
+        alt: 'Vista previa de ' + title,
+        onError: mediaError
+      }) : h('iframe', {
+        src: view.url + '#toolbar=0&navpanes=0',
+        title: 'Vista previa de ' + title,
+        tabIndex: -1,
+        onError: mediaError
+      })) : h('span', {
+        className: 'finwb-doc-preview'
+      }, h(I, {
+        name: 'doc',
+        size: 24,
+        stroke: 1.8
+      })) : h('span', {
+        className: 'finwb-doc-preview',
+        role: 'status'
+      }, h(I, {
+        name: failed ? 'warning' : 'clock',
+        size: 22
+      }));
+      const openAction = ready ? mime.startsWith('image/') || mime === 'application/pdf' ? h('button', {
+        type: 'button',
+        onClick: open,
+        disabled: !!view.busy
+      }, view.busy ? 'Cargando…' : mime === 'application/pdf' ? 'Ver PDF' : 'Ampliar') : h('a', {
+        href: view.url,
+        target: '_blank',
+        rel: 'noopener noreferrer'
+      }, 'Abrir') : failed ? h('button', {
+        type: 'button',
+        onClick: () => previews.retry(viewKey)
+      }, 'Reintentar') : null;
+      return h('div', {
+        className: 'finwb-doc',
+        key: viewKey
+      }, preview, h('div', {
+        className: 'finwb-doc-main'
+      }, h('div', {
+        className: 'finwb-person'
+      }, title), h('div', {
+        className: 'finwb-sub finwb-doc-status'
+      }, h('span', null, scope === 'request' ? 'Estado al enviar:' : 'Estado vigente:'), badge(DOCUMENT_STATUS[status] || {
+        label: status === 'No disponible' ? status : 'Estado no reconocido: ' + status,
+        tone: 'gray'
+      }, 'data-financial-document-status', status)), h('div', {
+        className: 'finwb-sub'
+      }, failed ? 'Vista no disponible · el archivo sigue privado' : !ready ? 'Preparando vista segura…' : mime === 'application/pdf' ? 'PDF listo para revisar' : mime.startsWith('image/') ? 'Imagen lista para revisar' : 'Documento listo para abrir')), openAction);
     });
-    const renderNavigation = () => h('div', { className: 'finwb-buttons' },
-      h('button', { className: 'finwb-secondary', disabled: index <= 0 || busy, onClick: () => move(-1) }, 'Anterior'),
-      h('button', { className: 'finwb-secondary', disabled: index < 0 || index >= visible.length - 1 || busy, onClick: () => move(1) }, 'Siguiente solicitud'));
-    const renderDetail = () => { if (detailPhase === 'loading') return h('div', { className: 'finwb-empty' }, h(I, { name: 'clock', size: 28 }), 'Cargando detalle autorizado…'); if (detailPhase === 'error') return h('div', { className: 'finwb-empty' }, h(I, { name: 'warning', size: 28 }), 'No fue posible cargar el detalle.', h('button', { onClick: () => setDetailNonce((value) => value + 1) }, 'Reintentar')); if (!detail) return h('div', { className: 'finwb-empty' }, 'Selecciona una solicitud para revisar su expediente.'); const submission = snapshotResult(detail, false), approval = snapshotResult(detail, true), productPayment = detail.financial_submission_snapshot && detail.financial_submission_snapshot.contract_version === 'PROGRAM_PRODUCT_PAYMENT_V1' ? detail.financial_submission_snapshot : null, events = timelineEvents(detail);
-      return h(React.Fragment, null,
-        h('div', { className: 'finwb-detail-scroll' },
-          h('div', { className: 'finwb-detail-column finwb-detail-main' },
-          detail.program_id === 'prestamo' && detail.status === 'cancelled' && app.admin.has('affiliates.impersonate') && (detail.admin_events || []).some(event => event.action === 'CANCEL' && /^Se cancela para presentar una nueva solicitud/.test(event.comment || '')) && h('section', { className: 'finwb-card', 'data-approval-renewal-resume': 'true' },
-            h('h3', null, 'Nueva solicitud con condiciones actuales'),
-            h('p', null, 'Esta solicitud quedó cancelada. Puedes abrir la atención asistida para acompañar al afiliado en una nueva solicitud.'),
-            h('button', { className: 'finwb-primary', disabled: busy, onClick: () => { setResolution({ phase: 'CANCELLED', message: 'La solicitud anterior está cancelada. La nueva solicitud requiere completar y confirmar sus propios datos.' }); setConfirmation({ action: 'approveLoan', title: 'Nueva solicitud', fields: [['Solicitud anterior', detail.folio], ['Afiliado', detail.nombre]], message: '' }); } }, 'Continuar con nueva solicitud')),
-          detail.financial_submission_snapshot?.contract_version==='RENTA_CAR_CASH_V1'?h(window.RentaCarSummary,{snapshot:detail.financial_submission_snapshot}):renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null),
-          approval && detail.financial_submission_snapshot?.contract_version!=='RENTA_CAR_CASH_V1' && renderConditions('Condiciones aprobadas', approval, true),
-          renderProductPayment(productPayment),
-          renderWorkflow(),
-          ),
-          h('div', { className: 'finwb-detail-column finwb-detail-context' },
-          h(window.FinanceBlockRequestControl, {app, request:detail}),
-          h('div', { className: 'finwb-card finwb-card-group' },
-          h('section', { className: 'finwb-card', 'data-financial-detail-person': 'true' }, h('h3', null, h(I, { name: 'user', size: 17, stroke: 2 }), 'Solicitante'), h('div', { className: 'finwb-kv' }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detailFullName(detail))), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Proceso'), h('strong', null, detail.affiliate?.financial_employee_category_code || 'No registrada'))), h(RequestBankReference, { reference: detail.deposit_reference })),
-          h('section', { className: 'finwb-card' }, h('h3', null, h(I, { name: 'receipt', size: 17, stroke: 2 }), 'Resumen'), h('div', { className: 'finwb-kv' }, h('div', null, h('span', null, 'Resultado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Tipo'), h('strong', null, requestTypeLabel(detail))),detail.financial_processing_status!=null&&h('div',null,h('span',null,'Procesamiento financiero'),h('strong',null,processingMeta(detail.financial_processing_status).label)),detail.quoted_amount!=null&&h('div',null,h('span',null,'Monto cotizado'),h('strong',null,moneyValue(detail.quoted_amount)))), detail.notes && h('div', { className: 'finwb-snapshot-note', style: { marginTop: 10 } }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes))),
-          ),
-          h('div', { className: 'finwb-card finwb-card-group' },
-          h(window.GeneratedDocuments,{domain:'program',operationId:detail.id,admin:true}),
-          h('section', { className: 'finwb-card', 'data-request-google-sync': detail.google_sync && detail.google_sync.phase || 'unavailable' }, h('h3', null, 'Registro en Google'), h('div', { className: 'finwb-snapshot-note' }, detail.google_sync && detail.google_sync.phase === 'synced' ? 'Historial de solicitudes actualizado · fila ' + detail.google_sync.google_row : detail.google_sync && detail.google_sync.phase === 'not_requested' ? 'Solicitud anterior a la sincronización automática; se registrará con la siguiente acción.' : 'El registro en Google está pendiente. Supabase conserva la solicitud; el backend reintentará sin duplicarla.')),
-          h('section', { className: 'finwb-card', 'data-financial-terms': 'true' }, h('h3', null, h(I, { name: 'checkCircle', size: 17, stroke: 2 }), 'Términos aceptados'), h('div', { className: 'finwb-kv' }, h('div', null, h('span', null, 'Aceptación'), h('strong', null, detail.terms_accepted ? 'Sí · al enviar la solicitud' : 'No registrada')), h('div', null, h('span', null, 'Versión'), h('strong', null, detail.terms_version ? detail.terms_version.title + ' · versión ' + detail.terms_version.version : detail.terms_available ? 'Sin versión vinculada' : 'No disponible')))),
-          ),
-          h('section', { className: 'finwb-card', 'data-financial-timeline': 'true' }, h('h3', null, h(I, { name: 'clock', size: 17, stroke: 2 }), 'Timeline'), !detail.admin_events_available ? h('div', { className: 'finwb-snapshot-note', style: { marginBottom: 9 } }, 'No fue posible consultar la bitácora administrativa.') : null, h('div', { className: 'finwb-timeline' }, events.map((event, eventIndex) => h('div', { className: 'finwb-event', key: event.title + eventIndex }, h('span', { className: 'finwb-event-dot' }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text)))))),
-          ),
-          h('section', { className: 'finwb-card', 'data-financial-documents': 'true' }, h('h3', null, h(I, { name: 'doc', size: 17, stroke: 2 }), 'Documentos enviados con esta solicitud'), !detail.documents_available ? h('div', { className: 'finwb-snapshot-note' }, 'No fue posible consultar la relación documental autorizada.') : !(detail.request_documents || []).length ? h('div', { className: 'finwb-snapshot-note' }, 'Esta solicitud no conserva documentos vinculados. No es posible reconstruir qué archivos fueron enviados usando el expediente actual.') : renderDocumentRows(detail.request_documents, 'request')),
-          h('details', { key: detail.id, className: 'finwb-card finwb-dossier', 'data-financial-current-documents': 'true' }, h('summary', null, 'Expediente actual del afiliado', h('span', { className: 'finwb-dossier-show' }, 'Mostrar expediente'), h('span', { className: 'finwb-dossier-hide' }, 'Ocultar expediente')), h('div', { className: 'finwb-sub', style: { whiteSpace: 'normal', lineHeight: 1.45, marginBottom: 8 } }, 'Referencia vigente · no demuestra qué documentos acompañaron esta solicitud.'), !detail.current_documents_available ? h('div', { className: 'finwb-snapshot-note' }, 'No fue posible consultar el expediente actual. Verifica los permisos de documentos.') : !(detail.current_affiliate_documents || []).length ? h('div', { className: 'finwb-sub' }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate')),
-          ),
-        h('div', { className: 'finwb-actionbar', 'data-financial-safe-action-bar': 'true' }, actionOptions.length ? h(React.Fragment, null, h('div', { className: 'finwb-action-fields' }, h('select', { className: 'finwb-action-select', value: action, disabled: busy, onChange: (event) => { setAction(event.target.value); setActionNote(''); }, 'aria-label': 'Acción permitida para la etapa' }, actionOptions.map((item) => h('option', { key: item.id, value: item.id }, item.label))), h('div', { className: 'finwb-action-context' }, h('span', { className: 'finwb-sub' }, 'Etapa actual'), h('strong', { style: { fontSize: 11.5 } }, stageLabel(detail))), h('textarea', { className: 'finwb-note', value: actionNote, disabled: busy || action === 'handoff', onChange: (event) => setActionNote(event.target.value), placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : ['cancel','cancelRent'].includes(action) ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)', 'aria-label': 'Observación de la acción' })), action==='quoteAdvance'&&h('div',{className:'finwb-action-grid',style:{marginTop:8}},h('input',{className:'finwb-action-select',type:'number',min:'0.01',step:'0.01',value:quoteAmount,onChange:(event)=>setQuoteAmount(event.target.value),placeholder:'Monto cotizado (MXN)','aria-label':'Monto de la cotización'}),h('input',{className:'finwb-action-select',type:'date',value:quoteValidUntil,onChange:(event)=>setQuoteValidUntil(event.target.value),'aria-label':'Vigencia de la cotización'})), nextStage(detail)&&['advance','quoteAdvance','approveProduct','approveLoan','approveRent'].includes(action)&&h('div',{className:'finwb-next-action','data-financial-next-action':'true'},'Confirmar moverá la solicitud de “'+stageLabel(detail)+'” a “'+nextStage(detail).label+'”. Responsable siguiente: '+(nextStage(detail).responsible||'Área responsable')+'.'), h('div', { className: 'finwb-buttons' }, h('button', { className: 'finwb-secondary', disabled: index <= 0 || busy, onClick: () => move(-1) }, 'Anterior'), h('button', { className: 'finwb-secondary', disabled: index < 0 || index >= visible.length - 1 || busy, onClick: () => move(1) }, 'Siguiente solicitud'), h('button', { className: 'finwb-primary', disabled: busy || !action, onClick: () => save(false) }, busy ? 'Procesando…' : (actionOptions.find((item)=>item.id===action)||{label:'Confirmar acción'}).label), h('button', { type:'button', className:'finwb-delete', disabled:busy, onClick:deleteRequest, 'data-request-delete':'true' }, deleting?'Eliminando…':'Eliminar solicitud')), feedback && h('div', { className: 'finwb-feedback', 'data-financial-action-feedback': feedback.tone, 'data-tone': feedback.tone }, feedback.text)) : h(React.Fragment, null, renderNavigation(), h('div', { className: 'finwb-sub' }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.'))),
-        viewer&&viewer.context===previews.identity&&window.DocumentViewer&&h(window.DocumentViewer,{source:viewer.source,mimeType:viewer.mimeType,title:viewer.title,onClose:()=>setViewer(null)}));
+    const renderNavigation = () => h('div', {
+      className: 'finwb-buttons'
+    }, h('button', {
+      className: 'finwb-secondary',
+      disabled: index <= 0 || busy,
+      onClick: () => move(-1)
+    }, 'Anterior'), h('button', {
+      className: 'finwb-secondary',
+      disabled: index < 0 || index >= visible.length - 1 || busy,
+      onClick: () => move(1)
+    }, 'Siguiente solicitud'));
+    const renderDetail = () => {
+      if (detailPhase === 'loading') return h('div', {
+        className: 'finwb-empty'
+      }, h(I, {
+        name: 'clock',
+        size: 28
+      }), 'Cargando detalle autorizado…');
+      if (detailPhase === 'error') return h('div', {
+        className: 'finwb-empty'
+      }, h(I, {
+        name: 'warning',
+        size: 28
+      }), 'No fue posible cargar el detalle.', h('button', {
+        onClick: () => setDetailNonce(value => value + 1)
+      }, 'Reintentar'));
+      if (!detail) return h('div', {
+        className: 'finwb-empty'
+      }, 'Selecciona una solicitud para revisar su expediente.');
+      const submission = snapshotResult(detail, false),
+        approval = snapshotResult(detail, true),
+        productPayment = detail.financial_submission_snapshot && detail.financial_submission_snapshot.contract_version === 'PROGRAM_PRODUCT_PAYMENT_V1' ? detail.financial_submission_snapshot : null,
+        events = timelineEvents(detail);
+      return h(React.Fragment, null, h('div', {
+        className: 'finwb-detail-scroll'
+      }, h('div', {
+        className: 'finwb-detail-column finwb-detail-main'
+      }, detail.program_id === 'prestamo' && detail.status === 'cancelled' && app.admin.has('affiliates.impersonate') && (detail.admin_events || []).some(event => event.action === 'CANCEL' && /^Se cancela para presentar una nueva solicitud/.test(event.comment || '')) && h('section', {
+        className: 'finwb-card',
+        'data-approval-renewal-resume': 'true'
+      }, h('h3', null, 'Nueva solicitud con condiciones actuales'), h('p', null, 'Esta solicitud quedó cancelada. Puedes abrir la atención asistida para acompañar al afiliado en una nueva solicitud.'), h('button', {
+        className: 'finwb-primary',
+        disabled: busy,
+        onClick: () => {
+          setResolution({
+            phase: 'CANCELLED',
+            message: 'La solicitud anterior está cancelada. La nueva solicitud requiere completar y confirmar sus propios datos.'
+          });
+          setConfirmation({
+            action: 'approveLoan',
+            title: 'Nueva solicitud',
+            fields: [['Solicitud anterior', detail.folio], ['Afiliado', detail.nombre]],
+            message: ''
+          });
+        }
+      }, 'Continuar con nueva solicitud')), detail.financial_submission_snapshot?.contract_version === 'RENTA_CAR_CASH_V1' ? h(window.RentaCarSummary, {
+        snapshot: detail.financial_submission_snapshot
+      }) : renderConditions('Condiciones de la solicitud', submission, detail.requested_amount != null || detail.requested_term != null), approval && detail.financial_submission_snapshot?.contract_version !== 'RENTA_CAR_CASH_V1' && renderConditions('Condiciones aprobadas', approval, true), renderProductPayment(productPayment), renderWorkflow()), h('div', {
+        className: 'finwb-detail-column finwb-detail-context'
+      }, h(window.FinanceBlockRequestControl, {
+        app,
+        request: detail
+      }), h('div', {
+        className: 'finwb-card finwb-card-group'
+      }, h('section', {
+        className: 'finwb-card',
+        'data-financial-detail-person': 'true'
+      }, h('h3', null, h(I, {
+        name: 'user',
+        size: 17,
+        stroke: 2
+      }), 'Solicitante'), h('div', {
+        className: 'finwb-kv'
+      }, h('div', null, h('span', null, 'Afiliado'), h('strong', null, detailFullName(detail))), h('div', null, h('span', null, 'Número de control'), h('strong', null, detail.numero_control)), h('div', null, h('span', null, 'Fecha'), h('strong', null, dateValue(detail.created_at))), h('div', null, h('span', null, 'Proceso'), h('strong', null, detail.affiliate?.financial_employee_category_code || 'No registrada'))), h(RequestBankReference, {
+        reference: detail.deposit_reference
+      })), h('section', {
+        className: 'finwb-card'
+      }, h('h3', null, h(I, {
+        name: 'receipt',
+        size: 17,
+        stroke: 2
+      }), 'Resumen'), h('div', {
+        className: 'finwb-kv'
+      }, h('div', null, h('span', null, 'Resultado'), h('strong', null, statusMeta(detail.status).label)), h('div', null, h('span', null, 'Tipo'), h('strong', null, requestTypeLabel(detail))), detail.financial_processing_status != null && h('div', null, h('span', null, 'Procesamiento financiero'), h('strong', null, processingMeta(detail.financial_processing_status).label)), detail.quoted_amount != null && h('div', null, h('span', null, 'Monto cotizado'), h('strong', null, moneyValue(detail.quoted_amount)))), detail.notes && h('div', {
+        className: 'finwb-snapshot-note',
+        style: {
+          marginTop: 10
+        }
+      }, h('strong', null, 'Nota del solicitante'), h('div', null, detail.notes)))), h('div', {
+        className: 'finwb-card finwb-card-group'
+      }, h(window.GeneratedDocuments, {
+        domain: 'program',
+        operationId: detail.id,
+        admin: true
+      }), h('section', {
+        className: 'finwb-card',
+        'data-request-google-sync': detail.google_sync && detail.google_sync.phase || 'unavailable'
+      }, h('h3', null, 'Registro en Google'), h('div', {
+        className: 'finwb-snapshot-note'
+      }, detail.google_sync && detail.google_sync.phase === 'synced' ? 'Historial de solicitudes actualizado · fila ' + detail.google_sync.google_row : detail.google_sync && detail.google_sync.phase === 'not_requested' ? 'Solicitud anterior a la sincronización automática; se registrará con la siguiente acción.' : 'El registro en Google está pendiente. Supabase conserva la solicitud; el backend reintentará sin duplicarla.')), h('section', {
+        className: 'finwb-card',
+        'data-financial-terms': 'true'
+      }, h('h3', null, h(I, {
+        name: 'checkCircle',
+        size: 17,
+        stroke: 2
+      }), 'Términos aceptados'), h('div', {
+        className: 'finwb-kv'
+      }, h('div', null, h('span', null, 'Aceptación'), h('strong', null, detail.terms_accepted ? 'Sí · al enviar la solicitud' : 'No registrada')), h('div', null, h('span', null, 'Versión'), h('strong', null, detail.terms_version ? detail.terms_version.title + ' · versión ' + detail.terms_version.version : detail.terms_available ? 'Sin versión vinculada' : 'No disponible'))))), h('section', {
+        className: 'finwb-card',
+        'data-financial-timeline': 'true'
+      }, h('h3', null, h(I, {
+        name: 'clock',
+        size: 17,
+        stroke: 2
+      }), 'Timeline'), !detail.admin_events_available ? h('div', {
+        className: 'finwb-snapshot-note',
+        style: {
+          marginBottom: 9
+        }
+      }, 'No fue posible consultar la bitácora administrativa.') : null, h('div', {
+        className: 'finwb-timeline'
+      }, events.map((event, eventIndex) => h('div', {
+        className: 'finwb-event',
+        key: event.title + eventIndex
+      }, h('span', {
+        className: 'finwb-event-dot'
+      }), h('div', null, h('strong', null, event.title), h('p', null, dateValue(event.at) + ' · ' + event.text))))))), h('section', {
+        className: 'finwb-card',
+        'data-financial-documents': 'true'
+      }, h('h3', null, h(I, {
+        name: 'doc',
+        size: 17,
+        stroke: 2
+      }), 'Documentos enviados con esta solicitud'), !detail.documents_available ? h('div', {
+        className: 'finwb-snapshot-note'
+      }, 'No fue posible consultar la relación documental autorizada.') : !(detail.request_documents || []).length ? h('div', {
+        className: 'finwb-snapshot-note'
+      }, 'Esta solicitud no conserva documentos vinculados. No es posible reconstruir qué archivos fueron enviados usando el expediente actual.') : renderDocumentRows(detail.request_documents, 'request')), h('details', {
+        key: detail.id,
+        className: 'finwb-card finwb-dossier',
+        'data-financial-current-documents': 'true'
+      }, h('summary', null, 'Expediente actual del afiliado', h('span', {
+        className: 'finwb-dossier-show'
+      }, 'Mostrar expediente'), h('span', {
+        className: 'finwb-dossier-hide'
+      }, 'Ocultar expediente')), h('div', {
+        className: 'finwb-sub',
+        style: {
+          whiteSpace: 'normal',
+          lineHeight: 1.45,
+          marginBottom: 8
+        }
+      }, 'Referencia vigente · no demuestra qué documentos acompañaron esta solicitud.'), !detail.current_documents_available ? h('div', {
+        className: 'finwb-snapshot-note'
+      }, 'No fue posible consultar el expediente actual. Verifica los permisos de documentos.') : !(detail.current_affiliate_documents || []).length ? h('div', {
+        className: 'finwb-sub'
+      }, 'El afiliado no tiene documentos vigentes disponibles.') : renderDocumentRows(detail.current_affiliate_documents, 'affiliate'))), h('div', {
+        className: 'finwb-actionbar',
+        'data-financial-safe-action-bar': 'true'
+      }, actionOptions.length ? h(React.Fragment, null, h('div', {
+        className: 'finwb-action-fields'
+      }, h('select', {
+        className: 'finwb-action-select',
+        value: action,
+        disabled: busy,
+        onChange: event => {
+          setAction(event.target.value);
+          setActionNote('');
+        },
+        'aria-label': 'Acción permitida para la etapa'
+      }, actionOptions.map(item => h('option', {
+        key: item.id,
+        value: item.id
+      }, item.label))), h('div', {
+        className: 'finwb-action-context'
+      }, h('span', {
+        className: 'finwb-sub'
+      }, 'Etapa actual'), h('strong', {
+        style: {
+          fontSize: 11.5
+        }
+      }, stageLabel(detail))), h('textarea', {
+        className: 'finwb-note',
+        value: actionNote,
+        disabled: busy || action === 'handoff',
+        onChange: event => setActionNote(event.target.value),
+        placeholder: action === 'reject' ? 'Motivo obligatorio del rechazo' : ['cancel', 'cancelRent'].includes(action) ? 'Motivo obligatorio de la cancelación' : action === 'note' ? 'Observación administrativa obligatoria' : action === 'handoff' ? 'El envío usa la autorización ya registrada' : 'Comentario para la bitácora (opcional)',
+        'aria-label': 'Observación de la acción'
+      })), action === 'quoteAdvance' && h('div', {
+        className: 'finwb-action-grid',
+        style: {
+          marginTop: 8
+        }
+      }, h('input', {
+        className: 'finwb-action-select',
+        type: 'number',
+        min: '0.01',
+        step: '0.01',
+        value: quoteAmount,
+        onChange: event => setQuoteAmount(event.target.value),
+        placeholder: 'Monto cotizado (MXN)',
+        'aria-label': 'Monto de la cotización'
+      }), h('input', {
+        className: 'finwb-action-select',
+        type: 'date',
+        value: quoteValidUntil,
+        onChange: event => setQuoteValidUntil(event.target.value),
+        'aria-label': 'Vigencia de la cotización'
+      })), nextStage(detail) && ['advance', 'quoteAdvance', 'approveProduct', 'approveLoan', 'approveRent'].includes(action) && h('div', {
+        className: 'finwb-next-action',
+        'data-financial-next-action': 'true'
+      }, 'Confirmar moverá la solicitud de “' + stageLabel(detail) + '” a “' + nextStage(detail).label + '”. Responsable siguiente: ' + (nextStage(detail).responsible || 'Área responsable') + '.'), h('div', {
+        className: 'finwb-buttons'
+      }, h('button', {
+        className: 'finwb-secondary',
+        disabled: index <= 0 || busy,
+        onClick: () => move(-1)
+      }, 'Anterior'), h('button', {
+        className: 'finwb-secondary',
+        disabled: index < 0 || index >= visible.length - 1 || busy,
+        onClick: () => move(1)
+      }, 'Siguiente solicitud'), h('button', {
+        className: 'finwb-primary',
+        disabled: busy || !action,
+        onClick: () => save(false)
+      }, busy ? 'Procesando…' : (actionOptions.find(item => item.id === action) || {
+        label: 'Confirmar acción'
+      }).label), h('button', {
+        type: 'button',
+        className: 'finwb-delete',
+        disabled: busy,
+        onClick: deleteRequest,
+        'data-request-delete': 'true'
+      }, deleting ? 'Eliminando…' : 'Eliminar solicitud')), feedback && h('div', {
+        className: 'finwb-feedback',
+        'data-financial-action-feedback': feedback.tone,
+        'data-tone': feedback.tone
+      }, feedback.text)) : h(React.Fragment, null, renderNavigation(), h('div', {
+        className: 'finwb-sub'
+      }, app.admin.has('program_requests.write') ? 'No hay transiciones disponibles para este estado.' : 'Consulta autorizada; las acciones requieren permiso de escritura.'))), viewer && viewer.context === previews.identity && window.DocumentViewer && h(window.DocumentViewer, {
+        source: viewer.source,
+        mimeType: viewer.mimeType,
+        title: viewer.title,
+        onClose: () => setViewer(null)
+      }));
     };
-    return h('div', { className: 'finwb-root', tabIndex: 0, onKeyDown, 'data-admin-financial-workbench': 'true' },
-      h('div', { className: 'finwb-toolbar', 'data-financial-queue-toolbar': 'true' }, h('div', { className: 'finwb-filters' },
-        h('div', { className: 'finwb-field' }, h('label', { htmlFor: 'finwb-search' }, 'Buscar'), h('input', { id: 'finwb-search', value: search, onChange: (event) => setSearch(event.target.value), placeholder: 'Folio, afiliado o programa', 'aria-label': 'Buscar solicitudes financieras' })),
-        h('div', { className: 'finwb-field' }, h('label', null, 'Estado'), h('select', { value: statusFilter, onChange: (event) => setStatusFilter(event.target.value), 'aria-label': 'Filtrar por estado financiero' }, h('option', { value: 'all' }, 'Todos'), Object.keys(REQUEST_STATUS).map((value) => h('option', { key: value, value }, REQUEST_STATUS[value].label)))),
-        h('div', { className: 'finwb-field' }, h('label', null, 'Programa'), h('select', { value: programFilter, onChange: (event) => setProgramFilter(event.target.value), 'aria-label': 'Filtrar por programa financiero' }, h('option', { value: 'all' }, 'Todos'), programs.map((item) => h('option', { key: item[0], value: item[0] }, item[1])))),
-        h('div', { className: 'finwb-field' }, h('label', null, 'Etapa actual'), h('select', { value: stageFilter, onChange: (event) => setStageFilter(event.target.value), 'aria-label': 'Filtrar por etapa real de la solicitud' }, h('option', { value: 'all' }, 'Todas'), stages.map((item) => h('option', { key: item[0], value:item[0] }, item[1])))),
-        h('div', { className: 'finwb-field' }, h('label', null, 'Antigüedad'), h('select', { value: ageFilter, onChange: (event) => setAgeFilter(event.target.value), 'aria-label': 'Filtrar por antigüedad financiera' }, h('option', { value: 'all' }, 'Todas'), h('option', { value: 'today' }, 'Hoy'), h('option', { value: '3d' }, '3 días o más'), h('option', { value: '7d' }, '7 días o más'), h('option', { value: '30d' }, '30 días o más'))),
-        h('div', { className: 'finwb-field' }, h('label', null, 'Fecha'), h('input', { type: 'date', value: dateFilter, onChange: (event) => setDateFilter(event.target.value), 'aria-label': 'Filtrar por fecha financiera' })),
-        h('div', { className: 'finwb-field' }, h('label', null, 'Orden'), h('select', { value: sort, onChange: (event) => setSort(event.target.value), 'aria-label': 'Ordenar solicitudes financieras' }, h('option', { value: 'newest' }, 'Más recientes'), h('option', { value: 'oldest' }, 'Más antiguas'), h('option', { value: 'amount' }, 'Mayor monto')))),
-        h('div', { className: 'finwb-results' }, h('span', null, h('strong', null, visible.length), ' resultados'), h('button', { type: 'button', onClick: clearFilters }, 'Limpiar filtros'))),
-      h('div', { className: 'finwb-grid' }, h('section', { className: 'finwb-panel finwb-queue', 'data-financial-queue': 'true' }, h('div', { className: 'finwb-queue-head' }, h('span', null, 'Folio'), h('span', null, 'Foto'), h('span', null, 'Afiliado / programa'), h('span', null, 'Monto / plazo'), h('span', null, 'Estado / etapa'), h('span', null, 'Antig.')), h('div', { className: 'finwb-queue-body' }, phase === 'loading' ? h('div', { className: 'finwb-empty' }, 'Cargando solicitudes…') : phase === 'error' ? h('div', { className: 'finwb-empty' }, error, h('button', { onClick: () => load(false) }, 'Reintentar')) : !visible.length ? h('div', { className: 'finwb-empty' }, 'No hay solicitudes con estos filtros.') : visible.map((row) => h('div', { key: row.id, role:'button',tabIndex:0,onKeyDown:(event)=>{if(event.target===event.currentTarget&&['Enter',' '].includes(event.key)){event.preventDefault();setSelectedId(row.id);setDetailOpen(true);}},className: 'finwb-row', 'data-financial-queue-row': row.id, 'aria-selected': row.id === selectedId, 'aria-haspopup': 'dialog', onClick: () => { setSelectedId(row.id); setDetailOpen(true); } }, h('span', { className: 'finwb-folio' }, row.folio), h(FinanceQueuePhoto, { row }), h('span', null, h('span', { className: 'finwb-person', 'data-financial-queue-person': 'true' }, row.nombre), h('span', { className: 'finwb-sub' }, maskedControl(row.numero_control) + ' · ' + queueProgramLabel(row))), h('span', null, h('span', { className: 'finwb-amount' }, moneyValue(row.requested_amount!=null?row.requested_amount:row.quoted_amount)), h('span', { className: 'finwb-sub' }, row.requested_term ? row.requested_term + ' · ' + (row.requested_term_semantics || 'pagos') : row.request_type==='quote'?'Cotización':'Sin plazo financiero')), h('span', null, badge(statusMeta(row.status), 'data-financial-human-status', statusMeta(row.status).label), h('span', { className: 'finwb-stage' }, stageLabel(row)), h(RowAuthorizationPdf,{row}), rowFeedback[row.id] && h('span', { className: 'finwb-stage', 'data-financial-inline-feedback': rowFeedback[row.id] }, rowFeedback[row.id] === 'saving' ? 'Guardando…' : rowFeedback[row.id] === 'success' ? '✓ Actualizado' : '! Error')), h('span', { className: 'finwb-age' }, ageLabel(row.created_at)))))),
-        detailOpen && h(FinancialRequestDetailModal, { titleId: modalTitleId, onClose: closeDetail, onEscape: () => viewer ? setViewer(null) : closeDetail(),
-          header: h(React.Fragment, null,
-            selected && h(FinanceQueuePhoto, { key: selected.affiliate_id, detailPhoto: true, row: { ...selected, nombre: detailFullName(selected) } }),
-            h('div', { className: 'finwb-modal-heading' },
-              h('strong', null, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).folio),
-              h('h2', { id: modalTitleId }, detailFullName(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected)),
-              h('div', { className: 'finwb-sub' }, detailProgramLabel(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected) + ' · ' + requestTypeLabel(selected) + ' · ' + (index + 1) + ' de ' + visible.length)),
-            badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
-        }, actionResult && h(FinancialAuthorizationResult, { result: actionResult, onClose: () => setActionResult(null) }), confirmation && h(FinancialActionDialog, { model: confirmation, busy, resolution, canAssist: app.admin.has('affiliates.impersonate'), onReview: reviewApproval, onRenew: renewRequest, onAssist: beginNewRequest, onRefresh: () => { setConfirmation(null); setResolution(null); setDetailNonce(n => n + 1); load(true); }, error: feedback && feedback.tone === 'error' ? feedback.text : null, onClose: () => { if (!actionLock.current) { setConfirmation(null); if (resolution?.phase === 'CANCELLED') load(true); setResolution(null); } }, onConfirm: () => save(confirmation.advance, true) }), renderDetail(), detailPhase !== 'loaded' && h('footer', { className: 'finwb-actionbar', 'data-financial-safe-action-bar': 'true' }, renderNavigation()))));
+    return h('div', {
+      className: 'finwb-root',
+      tabIndex: 0,
+      onKeyDown,
+      'data-admin-financial-workbench': 'true'
+    }, h('div', {
+      className: 'finwb-toolbar',
+      'data-financial-queue-toolbar': 'true'
+    }, h('div', {
+      className: 'finwb-filters'
+    }, h('div', {
+      className: 'finwb-field'
+    }, h('label', {
+      htmlFor: 'finwb-search'
+    }, 'Buscar'), h('input', {
+      id: 'finwb-search',
+      value: search,
+      onChange: event => setSearch(event.target.value),
+      placeholder: 'Folio, afiliado o programa',
+      'aria-label': 'Buscar solicitudes financieras'
+    })), h('div', {
+      className: 'finwb-field'
+    }, h('label', null, 'Estado'), h('select', {
+      value: statusFilter,
+      onChange: event => setStatusFilter(event.target.value),
+      'aria-label': 'Filtrar por estado financiero'
+    }, h('option', {
+      value: 'all'
+    }, 'Todos'), Object.keys(REQUEST_STATUS).map(value => h('option', {
+      key: value,
+      value
+    }, REQUEST_STATUS[value].label)))), h('div', {
+      className: 'finwb-field'
+    }, h('label', null, 'Programa'), h('select', {
+      value: programFilter,
+      onChange: event => setProgramFilter(event.target.value),
+      'aria-label': 'Filtrar por programa financiero'
+    }, h('option', {
+      value: 'all'
+    }, 'Todos'), programs.map(item => h('option', {
+      key: item[0],
+      value: item[0]
+    }, item[1])))), h('div', {
+      className: 'finwb-field'
+    }, h('label', null, 'Etapa actual'), h('select', {
+      value: stageFilter,
+      onChange: event => setStageFilter(event.target.value),
+      'aria-label': 'Filtrar por etapa real de la solicitud'
+    }, h('option', {
+      value: 'all'
+    }, 'Todas'), stages.map(item => h('option', {
+      key: item[0],
+      value: item[0]
+    }, item[1])))), h('div', {
+      className: 'finwb-field'
+    }, h('label', null, 'Antigüedad'), h('select', {
+      value: ageFilter,
+      onChange: event => setAgeFilter(event.target.value),
+      'aria-label': 'Filtrar por antigüedad financiera'
+    }, h('option', {
+      value: 'all'
+    }, 'Todas'), h('option', {
+      value: 'today'
+    }, 'Hoy'), h('option', {
+      value: '3d'
+    }, '3 días o más'), h('option', {
+      value: '7d'
+    }, '7 días o más'), h('option', {
+      value: '30d'
+    }, '30 días o más'))), h('div', {
+      className: 'finwb-field'
+    }, h('label', null, 'Fecha'), h('input', {
+      type: 'date',
+      value: dateFilter,
+      onChange: event => setDateFilter(event.target.value),
+      'aria-label': 'Filtrar por fecha financiera'
+    })), h('div', {
+      className: 'finwb-field'
+    }, h('label', null, 'Orden'), h('select', {
+      value: sort,
+      onChange: event => setSort(event.target.value),
+      'aria-label': 'Ordenar solicitudes financieras'
+    }, h('option', {
+      value: 'newest'
+    }, 'Más recientes'), h('option', {
+      value: 'oldest'
+    }, 'Más antiguas'), h('option', {
+      value: 'amount'
+    }, 'Mayor monto')))), h('div', {
+      className: 'finwb-results'
+    }, h('span', null, h('strong', null, visible.length), ' resultados'), h('button', {
+      type: 'button',
+      onClick: clearFilters
+    }, 'Limpiar filtros'))), h('div', {
+      className: 'finwb-grid'
+    }, h('section', {
+      className: 'finwb-panel finwb-queue',
+      'data-financial-queue': 'true'
+    }, h('div', {
+      className: 'finwb-queue-head'
+    }, h('span', null, 'Folio'), h('span', null, 'Foto'), h('span', null, 'Afiliado / programa'), h('span', null, 'Monto / plazo'), h('span', null, 'Estado / etapa'), h('span', null, 'Antig.')), h('div', {
+      className: 'finwb-queue-body'
+    }, phase === 'loading' ? h('div', {
+      className: 'finwb-empty'
+    }, 'Cargando solicitudes…') : phase === 'error' ? h('div', {
+      className: 'finwb-empty'
+    }, error, h('button', {
+      onClick: () => load(false)
+    }, 'Reintentar')) : !visible.length ? h('div', {
+      className: 'finwb-empty'
+    }, 'No hay solicitudes con estos filtros.') : visible.map(row => h('div', {
+      key: row.id,
+      role: 'button',
+      tabIndex: 0,
+      onKeyDown: event => {
+        if (event.target === event.currentTarget && ['Enter', ' '].includes(event.key)) {
+          event.preventDefault();
+          setSelectedId(row.id);
+          setDetailOpen(true);
+        }
+      },
+      className: 'finwb-row',
+      'data-financial-queue-row': row.id,
+      'aria-selected': row.id === selectedId,
+      'aria-haspopup': 'dialog',
+      onClick: () => {
+        setSelectedId(row.id);
+        setDetailOpen(true);
+      }
+    }, h('span', {
+      className: 'finwb-folio'
+    }, row.folio), h(FinanceQueuePhoto, {
+      row
+    }), h('span', null, h('span', {
+      className: 'finwb-person',
+      'data-financial-queue-person': 'true'
+    }, row.nombre), h('span', {
+      className: 'finwb-sub'
+    }, maskedControl(row.numero_control) + ' · ' + queueProgramLabel(row))), h('span', null, h('span', {
+      className: 'finwb-amount'
+    }, moneyValue(row.requested_amount != null ? row.requested_amount : row.quoted_amount)), h('span', {
+      className: 'finwb-sub'
+    }, row.requested_term ? row.requested_term + ' · ' + (row.requested_term_semantics || 'pagos') : row.request_type === 'quote' ? 'Cotización' : 'Sin plazo financiero')), h('span', null, badge(statusMeta(row.status), 'data-financial-human-status', statusMeta(row.status).label), h('span', {
+      className: 'finwb-stage'
+    }, stageLabel(row)), h(RowAuthorizationPdf, {
+      row
+    }), rowFeedback[row.id] && h('span', {
+      className: 'finwb-stage',
+      'data-financial-inline-feedback': rowFeedback[row.id]
+    }, rowFeedback[row.id] === 'saving' ? 'Guardando…' : rowFeedback[row.id] === 'success' ? '✓ Actualizado' : '! Error')), h('span', {
+      className: 'finwb-age'
+    }, ageLabel(row.created_at)))))), detailOpen && h(FinancialRequestDetailModal, {
+      titleId: modalTitleId,
+      onClose: closeDetail,
+      onEscape: () => viewer ? setViewer(null) : closeDetail(),
+      header: h(React.Fragment, null, selected && h(FinanceQueuePhoto, {
+        key: selected.affiliate_id,
+        detailPhoto: true,
+        row: {
+          ...selected,
+          nombre: detailFullName(selected)
+        }
+      }), h('div', {
+        className: 'finwb-modal-heading'
+      }, h('strong', null, (detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).folio), h('h2', {
+        id: modalTitleId
+      }, detailFullName(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected)), h('div', {
+        className: 'finwb-sub'
+      }, detailProgramLabel(detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected) + ' · ' + requestTypeLabel(selected) + ' · ' + (index + 1) + ' de ' + visible.length)), badge(statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status), 'data-financial-human-status', statusMeta((detailPhase === 'loaded' && detail && detail.id === selectedId ? detail : selected || {}).status).label))
+    }, actionResult && h(FinancialAuthorizationResult, {
+      result: actionResult,
+      onClose: () => setActionResult(null)
+    }), confirmation && h(FinancialActionDialog, {
+      model: confirmation,
+      busy,
+      resolution,
+      canAssist: app.admin.has('affiliates.impersonate'),
+      onReview: reviewApproval,
+      onRenew: renewRequest,
+      onAssist: beginNewRequest,
+      onRefresh: () => {
+        setConfirmation(null);
+        setResolution(null);
+        setDetailNonce(n => n + 1);
+        load(true);
+      },
+      error: feedback && feedback.tone === 'error' ? feedback.text : null,
+      onClose: () => {
+        if (!actionLock.current) {
+          setConfirmation(null);
+          if (resolution?.phase === 'CANCELLED') load(true);
+          setResolution(null);
+        }
+      },
+      onConfirm: () => save(confirmation.advance, true)
+    }), renderDetail(), detailPhase !== 'loaded' && h('footer', {
+      className: 'finwb-actionbar',
+      'data-financial-safe-action-bar': 'true'
+    }, renderNavigation()))));
   }
-
-  function EstadoBadge({ estado }) {
+  function EstadoBadge({
+    estado
+  }) {
     const e = window.FINANZAS.ESTADO(estado);
-    return React.createElement(window.Badge, { tone: e.tone, icon: e.icon }, e.label);
+    return React.createElement(window.Badge, {
+      tone: e.tone,
+      icon: e.icon
+    }, e.label);
   }
-
-  function HistoricalReviewQueue({ initialAffiliateId }) {
-    const [rows, setRows] = useState([]), [phase, setPhase] = useState('loading'), [nonce, setNonce] = useState(0);
+  function HistoricalReviewQueue({
+    initialAffiliateId
+  }) {
+    const [rows, setRows] = useState([]),
+      [phase, setPhase] = useState('loading'),
+      [nonce, setNonce] = useState(0);
     useEffect(() => {
       let active = true;
-      setRows([]); setPhase('loading');
+      setRows([]);
+      setPhase('loading');
       window.AdminFinanceQueueRepository.historicalReviews(initialAffiliateId).then(value => {
-        if (active) { setRows(value); setPhase('ready'); }
-      }).catch(() => { if (active) { setRows([]); setPhase('error'); } });
+        if (active) {
+          setRows(value);
+          setPhase('ready');
+        }
+      }).catch(() => {
+        if (active) {
+          setRows([]);
+          setPhase('error');
+        }
+      });
       const contextKey = state => JSON.stringify([state?.phase, state?.subjectKey, state?.assignment]);
       const initialContext = contextKey(window.AdminRepository?.getState?.());
       const invalidate = state => {
         // subscribe immediately emits the current state; only a real authority
         // change invalidates the request, otherwise every mount reloads forever.
         if (contextKey(state) === initialContext) return;
-        active = false; setRows([]); setPhase('loading'); setNonce(n => n + 1);
+        active = false;
+        setRows([]);
+        setPhase('loading');
+        setNonce(n => n + 1);
       };
       const unsubscribe = window.AdminRepository?.subscribe?.(invalidate);
-      return () => { active = false; unsubscribe?.(); };
+      return () => {
+        active = false;
+        unsubscribe?.();
+      };
     }, [initialAffiliateId, nonce]);
-    return h('section', { className: 'finwb-card', 'data-historical-review-queue': phase, style: { marginBottom: 16 } },
-      h('h3', null, 'REVISIÓN DE HISTORIAL REQUERIDA'),
-      h('p', { style: { fontSize: 13, lineHeight: 1.5 } }, 'Estos pendientes conservan sus obligaciones. El crédito permanece sin calcular hasta contar con soporte documental.'),
-      phase === 'loading' ? h('p', { role: 'status' }, 'Consultando revisiones…') :
-      phase === 'error' ? h('p', { role: 'alert' }, 'No fue posible consultar los pendientes. ', h('button', { type: 'button', onClick: () => setNonce(n => n + 1) }, 'Reintentar')) :
-      h(React.Fragment, null, h('p', { role: 'status' }, rows.length ? rows.length + ' revisión(es) pendiente(s)' : 'Sin revisiones pendientes.'),
-        rows.map(row => h('details', { key: row.id, 'data-historical-review-case': row.id, style: { borderTop: '1px solid var(--line)', padding: '12px 0', overflowWrap: 'anywhere' } },
-          h('summary', { style: { cursor: 'pointer', fontWeight: 800 } }, row.full_name || 'Afiliado', ' · ', row.numero_control ? 'Control ' + row.numero_control : 'UUID ' + row.affiliate_id, ' · Pendiente'),
-          h('p', null, row.cause),
-          h('p', null, row.cause_code === 'CONTROL_MISSING' ? 'Registro problemático: identidad sin número de control.' : 'Obligación problemática: ' + row.obligation_key.replace(/^loan:/, '')),
-          h('strong', null, 'Evidencia disponible'), h('ul', null, row.evidence.map((item, i) => h('li', { key: i }, item))),
-          h('p', null, 'Valor anterior registrado: ', h('code', null, JSON.stringify(row.previous_value))),
-          row.events.map(event => h('p', { key: event.id, style: { fontSize: 12 } }, 'Registro de revisión · ', dateValue(event.created_at), ' · Actor: ', event.actor_auth_user_id, ' · ', event.reason)),
-          h('p', { style: { fontSize: 12, fontWeight: 700 } }, 'La resolución manual requiere soporte documental, actor, fecha, motivo, valor anterior y decisión auditada. Este panel conserva el pendiente; no permite asignar un fondo ni liberar crédito.')))));
+    return h('section', {
+      className: 'finwb-card',
+      'data-historical-review-queue': phase,
+      style: {
+        marginBottom: 16
+      }
+    }, h('h3', null, 'REVISIÓN DE HISTORIAL REQUERIDA'), h('p', {
+      style: {
+        fontSize: 13,
+        lineHeight: 1.5
+      }
+    }, 'Estos pendientes conservan sus obligaciones. El crédito permanece sin calcular hasta contar con soporte documental.'), phase === 'loading' ? h('p', {
+      role: 'status'
+    }, 'Consultando revisiones…') : phase === 'error' ? h('p', {
+      role: 'alert'
+    }, 'No fue posible consultar los pendientes. ', h('button', {
+      type: 'button',
+      onClick: () => setNonce(n => n + 1)
+    }, 'Reintentar')) : h(React.Fragment, null, h('p', {
+      role: 'status'
+    }, rows.length ? rows.length + ' revisión(es) pendiente(s)' : 'Sin revisiones pendientes.'), rows.map(row => h('details', {
+      key: row.id,
+      'data-historical-review-case': row.id,
+      style: {
+        borderTop: '1px solid var(--line)',
+        padding: '12px 0',
+        overflowWrap: 'anywhere'
+      }
+    }, h('summary', {
+      style: {
+        cursor: 'pointer',
+        fontWeight: 800
+      }
+    }, row.full_name || 'Afiliado', ' · ', row.numero_control ? 'Control ' + row.numero_control : 'UUID ' + row.affiliate_id, ' · Pendiente'), h('p', null, row.cause), h('p', null, row.cause_code === 'CONTROL_MISSING' ? 'Registro problemático: identidad sin número de control.' : 'Obligación problemática: ' + row.obligation_key.replace(/^loan:/, '')), h('strong', null, 'Evidencia disponible'), h('ul', null, row.evidence.map((item, i) => h('li', {
+      key: i
+    }, item))), h('p', null, 'Valor anterior registrado: ', h('code', null, JSON.stringify(row.previous_value))), row.events.map(event => h('p', {
+      key: event.id,
+      style: {
+        fontSize: 12
+      }
+    }, 'Registro de revisión · ', dateValue(event.created_at), ' · Actor: ', event.actor_auth_user_id, ' · ', event.reason)), h('p', {
+      style: {
+        fontSize: 12,
+        fontWeight: 700
+      }
+    }, 'La resolución manual requiere soporte documental, actor, fecha, motivo, valor anterior y decisión auditada. Este panel conserva el pendiente; no permite asignar un fondo ni liberar crédito.')))));
   }
-
-  function FinanzasModule({ app, onBack, header, initialAffiliateId }) {
+  function FinanzasModule({
+    app,
+    onBack,
+    header,
+    initialAffiliateId
+  }) {
     const desktop = useDesktop();
     const qs = window.useQuoteStore ? window.useQuoteStore() : null;
-    const [tab, setTab] = useState('sols');       // 'sols' | 'cots'
+    const [tab, setTab] = useState('sols'); // 'sols' | 'cots'
     const [desktopCount, setDesktopCount] = useState(0);
     const cotPend = qs ? qs.pendientes() : 0;
-
-    const segBtn = (id, label, badge) => React.createElement('button', { key: id, onClick: () => setTab(id), style: { flex: 1, height: 40, borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: tab === id ? 'var(--grad-guinda-soft)' : 'var(--surface)', color: tab === id ? '#fff' : 'var(--ink-2)', boxShadow: tab === id ? 'var(--glow-guinda)' : 'var(--neo-sm)' } },
-      label, badge ? React.createElement('span', { style: { minWidth: 19, height: 19, borderRadius: 999, background: tab === id ? 'rgba(255,255,255,.25)' : 'var(--guinda)', color: '#fff', fontSize: 11, fontWeight: 800, display: 'grid', placeItems: 'center', padding: '0 5px' } }, badge) : null);
-
-    return React.createElement('div', { 'data-admin-view':'finanzas' },
-      header({ title: 'Finanzas · Solicitudes', sub: desktopCount + ' solicitud(es) · flujo real por programa', onBack }),
-      window.ActingBanner && React.createElement(window.ActingBanner, {}),
-      React.createElement('div', { className: 'su-app-scroll', style: { padding: 16, paddingBottom: 28 } },
-        React.createElement(window.HistorySyncAdmin, {}),
-        React.createElement(window.SavingsLoanAccessAdmin, { app }),
-        React.createElement(window.LoanAvailabilityAdmin, { app }),
-        React.createElement(HistoricalReviewQueue, { initialAffiliateId }),
-        React.createElement('div', { style: { display: 'flex', gap: 10, marginBottom: 16 } },
-          segBtn('sols', 'Solicitudes', null),
-          segBtn('cots', 'Cotizaciones', cotPend || null)),
-        tab === 'cots' ? React.createElement(CotizacionesAdmin, { qs, app }) : React.createElement(DesktopFinancialWorkbench, { app, onCount: setDesktopCount, initialAffiliateId, compact: !desktop })));
+    const segBtn = (id, label, badge) => React.createElement('button', {
+      key: id,
+      onClick: () => setTab(id),
+      style: {
+        flex: 1,
+        height: 40,
+        borderRadius: 12,
+        border: 'none',
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        fontSize: 13.5,
+        fontWeight: 800,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 7,
+        background: tab === id ? 'var(--grad-guinda-soft)' : 'var(--surface)',
+        color: tab === id ? '#fff' : 'var(--ink-2)',
+        boxShadow: tab === id ? 'var(--glow-guinda)' : 'var(--neo-sm)'
+      }
+    }, label, badge ? React.createElement('span', {
+      style: {
+        minWidth: 19,
+        height: 19,
+        borderRadius: 999,
+        background: tab === id ? 'rgba(255,255,255,.25)' : 'var(--guinda)',
+        color: '#fff',
+        fontSize: 11,
+        fontWeight: 800,
+        display: 'grid',
+        placeItems: 'center',
+        padding: '0 5px'
+      }
+    }, badge) : null);
+    return React.createElement('div', {
+      'data-admin-view': 'finanzas'
+    }, header({
+      title: 'Finanzas · Solicitudes',
+      sub: desktopCount + ' solicitud(es) · flujo real por programa',
+      onBack
+    }), window.ActingBanner && React.createElement(window.ActingBanner, {}), React.createElement('div', {
+      className: 'su-app-scroll',
+      style: {
+        padding: 16,
+        paddingBottom: 28
+      }
+    }, React.createElement(window.HistorySyncAdmin, {}), React.createElement(window.SavingsLoanAccessAdmin, {
+      app
+    }), React.createElement(window.LoanAvailabilityAdmin, {
+      app
+    }), React.createElement(HistoricalReviewQueue, {
+      initialAffiliateId
+    }), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 10,
+        marginBottom: 16
+      }
+    }, segBtn('sols', 'Solicitudes', null), segBtn('cots', 'Cotizaciones', cotPend || null)), tab === 'cots' ? React.createElement(CotizacionesAdmin, {
+      qs,
+      app
+    }) : React.createElement(DesktopFinancialWorkbench, {
+      app,
+      onCount: setDesktopCount,
+      initialAffiliateId,
+      compact: !desktop
+    })));
   }
 
   // ── Cotizaciones: solicitudes de interés + configuración de servicios ──
-  function CotizacionesAdmin({ qs, app }) {
+  function CotizacionesAdmin({
+    qs,
+    app
+  }) {
     const [open, setOpen] = useState(null);
     const [monto, setMonto] = useState('');
     const [nota, setNota] = useState('');
     const list = qs.all().sort((a, b) => (b.ts || 0) - (a.ts || 0));
     const items = [];
     // F1.2 — autoridad finCatStore; DATA.finanzasGroups solo como arranque controlado.
-    ((window.finCatStore && window.finCatStore.allItems) ? window.finCatStore.allItems()
-      : ((window.DATA && window.DATA.finanzasGroups) || []).reduce((a, g) => a.concat(g.items || []), [])
-    ).forEach((it) => items.push(it));
+    (window.finCatStore && window.finCatStore.allItems ? window.finCatStore.allItems() : (window.DATA && window.DATA.finanzasGroups || []).reduce((a, g) => a.concat(g.items || []), [])).forEach(it => items.push(it));
     const r = open ? qs.get(open) : null;
-
-    const cargar = async () => { const m = parseFloat(monto); if (!r || !m || m <= 0) return; try{await qs.cotizar(r.id, { monto: m, nota: nota.trim() }, 'Área de Finanzas');setOpen(null);setMonto('');setNota('');app.toast&&app.toast('Cotización cargada y notificada');}catch(_){app.toast&&app.toast('No se pudo guardar la cotización');} };
-
-    return React.createElement('div', null,
-      React.createElement('div', { style: { background: '#EEF3FF', border: '1px solid #D6E2FB', borderRadius: 14, padding: '11px 13px', display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 16 } },
-        React.createElement(I, { name: 'info', size: 17, stroke: 2, style: { color: '#2456C7', flexShrink: 0, marginTop: 1 } }),
-        React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-2)', fontWeight: 600, lineHeight: 1.5 } }, 'Servicios con ', React.createElement('b', null, 'cotización previa'), ': el afiliado solicita, el proveedor (o Finanzas) cotiza, y solo entonces se habilita el simulador con el monto real.')),
-
-      // Config: switch por servicio del catálogo
-      React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, padding: '13px 15px', boxShadow: 'var(--neo-sm)', marginBottom: 16 } },
-        React.createElement('div', { style: { fontSize: 13.5, fontWeight: 900, color: 'var(--ink)', marginBottom: 4 } }, 'Requieren cotización previa'),
-        React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600, marginBottom: 10, lineHeight: 1.45 } }, 'Actívalo para servicios sin precio fijo. Con el switch apagado, el afiliado simula de inmediato.'),
-        items.map((it) => React.createElement('div', { key: it.id, style: { display: 'flex', alignItems: 'center', gap: 11, padding: '8px 0', borderBottom: '1px solid var(--hairline)' } },
-          React.createElement('div', { style: { width: 32, height: 32, borderRadius: 9, background: 'var(--guinda-50)', color: 'var(--guinda)', display: 'grid', placeItems: 'center', flexShrink: 0 } }, React.createElement(I, { name: it.icon, size: 17, stroke: 2 })),
-          React.createElement('span', { style: { flex: 1, fontSize: 13.5, fontWeight: 700, color: 'var(--ink)' } }, it.label),
-          React.createElement(window.Toggle, { on: qs.requiresQuote(it.id), size: 'md', disabled:true, 'aria-label': 'Configuración de catálogo en solo lectura', glow: false, })))),
-
-      // Listado de solicitudes de cotización
-      React.createElement('div', { style: { fontSize: 13, fontWeight: 900, color: 'var(--ink-3)', letterSpacing: '.06em', margin: '0 0 10px' } }, 'SOLICITUDES DE COTIZACIÓN'),
-      list.length === 0
-        ? React.createElement(window.EmptyState, { icon: 'doc', title: 'Sin solicitudes', sub: 'Cuando un afiliado pida cotización, aparecerá aquí.' })
-        : React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
-          list.map((c) => { const e = window.COTIZA.ESTADO(c.estado); return React.createElement('button', { key: c.id, onClick: () => { setOpen(c.id); setMonto(''); setNota(''); }, style: { textAlign: 'left', background: 'var(--surface)', borderRadius: 14, padding: 13, boxShadow: 'var(--neo-sm)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' } },
-            React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
-              React.createElement('span', { style: { flex: 1, fontSize: 14, fontWeight: 800, color: 'var(--ink)' } }, c.productoNombre),
-              React.createElement(window.Badge, { tone: e.tone, icon: e.icon }, e.label)),
-            React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-2)', fontWeight: 600, marginTop: 4 } }, c.usuario.nombre + ' · ' + (c.empresaNombre ? 'Atiende: ' + c.empresaNombre : 'Atiende: Finanzas') + (c.cotizacion ? ' · ' + money(c.cotizacion.monto) : '')),
-            React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600, marginTop: 3 } }, c.folio + ' · ' + c.fechaHora)); })),
-
-      // Detalle / captura de cotización
-      r && React.createElement('div', { onClick: () => setOpen(null), style: { position: 'fixed', inset: 0, zIndex: 76, background: 'rgba(16,12,14,.5)', display: 'flex', alignItems: 'flex-end' } },
-        React.createElement('div', { onClick: (e) => e.stopPropagation(), style: { width: '100%', background: 'var(--surface)', borderRadius: '24px 24px 0 0', padding: '10px 18px calc(18px + env(safe-area-inset-bottom))', maxHeight: '88%', overflowY: 'auto' } },
-          React.createElement('div', { style: { width: 40, height: 4.5, borderRadius: 999, background: 'var(--hairline-strong)', margin: '4px auto 14px' } }),
-          React.createElement('div', { style: { fontSize: 18, fontWeight: 900, marginBottom: 12 } }, 'Cotización ' + r.folio),
-          [['Afiliado', r.usuario.nombre], ['Servicio', r.productoNombre], ['Proveedor asignado', r.empresaNombre || 'Área de Finanzas'], ['Fecha', r.fechaHora]].map((x) => React.createElement('div', { key: x[0], style: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '7px 0', borderBottom: '1px solid var(--hairline)' } },
-            React.createElement('span', { style: { fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 600 } }, x[0]),
-            React.createElement('span', { style: { fontSize: 13, color: 'var(--ink)', fontWeight: 700, textAlign: 'right' } }, x[1]))),
-          r.mensaje && React.createElement('div', { style: { background: 'var(--surface-2)', borderRadius: 11, padding: '9px 12px', fontSize: 13, color: 'var(--ink-2)', fontWeight: 500, marginTop: 10, lineHeight: 1.45 } }, '“' + r.mensaje + '”'),
-          r.estado === 'cotizada'
-            ? React.createElement('div', { style: { background: '#E7F6ED', borderRadius: 13, padding: '12px 14px', marginTop: 14 } },
-              React.createElement('div', { style: { fontSize: 12, fontWeight: 800, color: '#0b5c37' } }, 'COTIZACIÓN CARGADA'),
-              React.createElement('div', { style: { fontSize: 22, fontWeight: 900, color: '#0b5c37', marginTop: 3 } }, money((r.cotizacion || {}).monto || 0)),
-              React.createElement('div', { style: { fontSize: 11.5, fontWeight: 600, color: '#13794A', marginTop: 2 } }, 'Por ' + ((r.cotizacion || {}).actor || '') + ' · ' + ((r.cotizacion || {}).fechaHora || '')))
-            : React.createElement('div', { style: { marginTop: 14 } },
-              r.empresaNombre && React.createElement('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', fontWeight: 600, marginBottom: 10, lineHeight: 1.45 } }, 'Normalmente ' + r.empresaNombre + ' carga la cotización desde su Panel Empresarial; Finanzas puede capturarla en su nombre.'),
-              React.createElement('input', { type: 'number', value: monto, placeholder: 'Monto cotizado (MXN)', onChange: (e) => setMonto(e.target.value), style: { width: '100%', border: 'none', outline: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 13, padding: '12px 14px', fontSize: 14.5, fontFamily: 'inherit', color: 'var(--ink)', boxSizing: 'border-box', marginBottom: 10 } }),
-              React.createElement('input', { value: nota, placeholder: 'Nota (opcional)', onChange: (e) => setNota(e.target.value), style: { width: '100%', border: 'none', outline: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 13, padding: '12px 14px', fontSize: 14, fontFamily: 'inherit', color: 'var(--ink)', boxSizing: 'border-box', marginBottom: 12 } }),
-              React.createElement(window.Btn, { full: true, icon: 'upload', disabled: !parseFloat(monto), onClick: cargar }, 'Cargar cotización y notificar')))));
+    const cargar = async () => {
+      const m = parseFloat(monto);
+      if (!r || !m || m <= 0) return;
+      try {
+        await qs.cotizar(r.id, {
+          monto: m,
+          nota: nota.trim()
+        }, 'Área de Finanzas');
+        setOpen(null);
+        setMonto('');
+        setNota('');
+        app.toast && app.toast('Cotización cargada y notificada');
+      } catch (_) {
+        app.toast && app.toast('No se pudo guardar la cotización');
+      }
+    };
+    return React.createElement('div', null, React.createElement('div', {
+      style: {
+        background: '#EEF3FF',
+        border: '1px solid #D6E2FB',
+        borderRadius: 14,
+        padding: '11px 13px',
+        display: 'flex',
+        gap: 10,
+        alignItems: 'flex-start',
+        marginBottom: 16
+      }
+    }, React.createElement(I, {
+      name: 'info',
+      size: 17,
+      stroke: 2,
+      style: {
+        color: '#2456C7',
+        flexShrink: 0,
+        marginTop: 1
+      }
+    }), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        color: 'var(--ink-2)',
+        fontWeight: 600,
+        lineHeight: 1.5
+      }
+    }, 'Servicios con ', React.createElement('b', null, 'cotización previa'), ': el afiliado solicita, el proveedor (o Finanzas) cotiza, y solo entonces se habilita el simulador con el monto real.')),
+    // Config: switch por servicio del catálogo
+    React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 16,
+        padding: '13px 15px',
+        boxShadow: 'var(--neo-sm)',
+        marginBottom: 16
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 900,
+        color: 'var(--ink)',
+        marginBottom: 4
+      }
+    }, 'Requieren cotización previa'), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginBottom: 10,
+        lineHeight: 1.45
+      }
+    }, 'Actívalo para servicios sin precio fijo. Con el switch apagado, el afiliado simula de inmediato.'), items.map(it => React.createElement('div', {
+      key: it.id,
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 11,
+        padding: '8px 0',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 32,
+        height: 32,
+        borderRadius: 9,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center',
+        flexShrink: 0
+      }
+    }, React.createElement(I, {
+      name: it.icon,
+      size: 17,
+      stroke: 2
+    })), React.createElement('span', {
+      style: {
+        flex: 1,
+        fontSize: 13.5,
+        fontWeight: 700,
+        color: 'var(--ink)'
+      }
+    }, it.label), React.createElement(window.Toggle, {
+      on: qs.requiresQuote(it.id),
+      size: 'md',
+      disabled: true,
+      'aria-label': 'Configuración de catálogo en solo lectura',
+      glow: false
+    })))),
+    // Listado de solicitudes de cotización
+    React.createElement('div', {
+      style: {
+        fontSize: 13,
+        fontWeight: 900,
+        color: 'var(--ink-3)',
+        letterSpacing: '.06em',
+        margin: '0 0 10px'
+      }
+    }, 'SOLICITUDES DE COTIZACIÓN'), list.length === 0 ? React.createElement(window.EmptyState, {
+      icon: 'doc',
+      title: 'Sin solicitudes',
+      sub: 'Cuando un afiliado pida cotización, aparecerá aquí.'
+    }) : React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10
+      }
+    }, list.map(c => {
+      const e = window.COTIZA.ESTADO(c.estado);
+      return React.createElement('button', {
+        key: c.id,
+        onClick: () => {
+          setOpen(c.id);
+          setMonto('');
+          setNota('');
+        },
+        style: {
+          textAlign: 'left',
+          background: 'var(--surface)',
+          borderRadius: 14,
+          padding: 13,
+          boxShadow: 'var(--neo-sm)',
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'inherit'
+        }
+      }, React.createElement('div', {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }
+      }, React.createElement('span', {
+        style: {
+          flex: 1,
+          fontSize: 14,
+          fontWeight: 800,
+          color: 'var(--ink)'
+        }
+      }, c.productoNombre), React.createElement(window.Badge, {
+        tone: e.tone,
+        icon: e.icon
+      }, e.label)), React.createElement('div', {
+        style: {
+          fontSize: 12.5,
+          color: 'var(--ink-2)',
+          fontWeight: 600,
+          marginTop: 4
+        }
+      }, c.usuario.nombre + ' · ' + (c.empresaNombre ? 'Atiende: ' + c.empresaNombre : 'Atiende: Finanzas') + (c.cotizacion ? ' · ' + money(c.cotizacion.monto) : '')), React.createElement('div', {
+        style: {
+          fontSize: 11.5,
+          color: 'var(--ink-3)',
+          fontWeight: 600,
+          marginTop: 3
+        }
+      }, c.folio + ' · ' + c.fechaHora));
+    })),
+    // Detalle / captura de cotización
+    r && React.createElement('div', {
+      onClick: () => setOpen(null),
+      style: {
+        position: 'fixed',
+        inset: 0,
+        zIndex: 76,
+        background: 'rgba(16,12,14,.5)',
+        display: 'flex',
+        alignItems: 'flex-end'
+      }
+    }, React.createElement('div', {
+      onClick: e => e.stopPropagation(),
+      style: {
+        width: '100%',
+        background: 'var(--surface)',
+        borderRadius: '24px 24px 0 0',
+        padding: '10px 18px calc(18px + env(safe-area-inset-bottom))',
+        maxHeight: '88%',
+        overflowY: 'auto'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 40,
+        height: 4.5,
+        borderRadius: 999,
+        background: 'var(--hairline-strong)',
+        margin: '4px auto 14px'
+      }
+    }), React.createElement('div', {
+      style: {
+        fontSize: 18,
+        fontWeight: 900,
+        marginBottom: 12
+      }
+    }, 'Cotización ' + r.folio), [['Afiliado', r.usuario.nombre], ['Servicio', r.productoNombre], ['Proveedor asignado', r.empresaNombre || 'Área de Finanzas'], ['Fecha', r.fechaHora]].map(x => React.createElement('div', {
+      key: x[0],
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 12,
+        padding: '7px 0',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 12.5,
+        color: 'var(--ink-3)',
+        fontWeight: 600
+      }
+    }, x[0]), React.createElement('span', {
+      style: {
+        fontSize: 13,
+        color: 'var(--ink)',
+        fontWeight: 700,
+        textAlign: 'right'
+      }
+    }, x[1]))), r.mensaje && React.createElement('div', {
+      style: {
+        background: 'var(--surface-2)',
+        borderRadius: 11,
+        padding: '9px 12px',
+        fontSize: 13,
+        color: 'var(--ink-2)',
+        fontWeight: 500,
+        marginTop: 10,
+        lineHeight: 1.45
+      }
+    }, '“' + r.mensaje + '”'), r.estado === 'cotizada' ? React.createElement('div', {
+      style: {
+        background: '#E7F6ED',
+        borderRadius: 13,
+        padding: '12px 14px',
+        marginTop: 14
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 12,
+        fontWeight: 800,
+        color: '#0b5c37'
+      }
+    }, 'COTIZACIÓN CARGADA'), React.createElement('div', {
+      style: {
+        fontSize: 22,
+        fontWeight: 900,
+        color: '#0b5c37',
+        marginTop: 3
+      }
+    }, money((r.cotizacion || {}).monto || 0)), React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        fontWeight: 600,
+        color: '#13794A',
+        marginTop: 2
+      }
+    }, 'Por ' + ((r.cotizacion || {}).actor || '') + ' · ' + ((r.cotizacion || {}).fechaHora || ''))) : React.createElement('div', {
+      style: {
+        marginTop: 14
+      }
+    }, r.empresaNombre && React.createElement('div', {
+      style: {
+        fontSize: 11.5,
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginBottom: 10,
+        lineHeight: 1.45
+      }
+    }, 'Normalmente ' + r.empresaNombre + ' carga la cotización desde su Panel Empresarial; Finanzas puede capturarla en su nombre.'), React.createElement('input', {
+      type: 'number',
+      value: monto,
+      placeholder: 'Monto cotizado (MXN)',
+      onChange: e => setMonto(e.target.value),
+      style: {
+        width: '100%',
+        border: 'none',
+        outline: 'none',
+        background: 'var(--surface-2)',
+        boxShadow: 'var(--neo-inset)',
+        borderRadius: 13,
+        padding: '12px 14px',
+        fontSize: 14.5,
+        fontFamily: 'inherit',
+        color: 'var(--ink)',
+        boxSizing: 'border-box',
+        marginBottom: 10
+      }
+    }), React.createElement('input', {
+      value: nota,
+      placeholder: 'Nota (opcional)',
+      onChange: e => setNota(e.target.value),
+      style: {
+        width: '100%',
+        border: 'none',
+        outline: 'none',
+        background: 'var(--surface-2)',
+        boxShadow: 'var(--neo-inset)',
+        borderRadius: 13,
+        padding: '12px 14px',
+        fontSize: 14,
+        fontFamily: 'inherit',
+        color: 'var(--ink)',
+        boxSizing: 'border-box',
+        marginBottom: 12
+      }
+    }), React.createElement(window.Btn, {
+      full: true,
+      icon: 'upload',
+      disabled: !parseFloat(monto),
+      onClick: cargar
+    }, 'Cargar cotización y notificar')))));
   }
   function kpi(icon, n, label, accent) {
-    return React.createElement('div', { style: { flex: 1, background: accent ? 'var(--grad-guinda-soft)' : 'var(--surface)', color: accent ? '#fff' : 'var(--ink)', borderRadius: 15, padding: '12px 13px', boxShadow: accent ? 'var(--glow-guinda)' : 'var(--neo-sm)' } },
-      React.createElement(I, { name: icon, size: 18, stroke: 2, style: { opacity: accent ? .9 : .5 } }),
-      React.createElement('div', { style: { fontSize: 19, fontWeight: 900, marginTop: 5, letterSpacing: '-.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, n),
-      React.createElement('div', { style: { fontSize: 10.5, fontWeight: 700, opacity: accent ? .9 : .6, marginTop: 1 } }, label));
+    return React.createElement('div', {
+      style: {
+        flex: 1,
+        background: accent ? 'var(--grad-guinda-soft)' : 'var(--surface)',
+        color: accent ? '#fff' : 'var(--ink)',
+        borderRadius: 15,
+        padding: '12px 13px',
+        boxShadow: accent ? 'var(--glow-guinda)' : 'var(--neo-sm)'
+      }
+    }, React.createElement(I, {
+      name: icon,
+      size: 18,
+      stroke: 2,
+      style: {
+        opacity: accent ? .9 : .5
+      }
+    }), React.createElement('div', {
+      style: {
+        fontSize: 19,
+        fontWeight: 900,
+        marginTop: 5,
+        letterSpacing: '-.02em',
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis'
+      }
+    }, n), React.createElement('div', {
+      style: {
+        fontSize: 10.5,
+        fontWeight: 700,
+        opacity: accent ? .9 : .6,
+        marginTop: 1
+      }
+    }, label));
   }
 
   // ── Detalle completo: toda la información capturada + seguimiento ──
-  function RequestDetail({ app, r, onBack, header }) {
+  function RequestDetail({
+    app,
+    r,
+    onBack,
+    header
+  }) {
     const store = useStore(true);
     const [obs, setObs] = useState('');
-    useEffect(() => { store.loadDetail(r.id).catch(() => {}); }, [r.id]);
+    useEffect(() => {
+      store.loadDetail(r.id).catch(() => {});
+    }, [r.id]);
     const sim = r.simulacion;
-    const fld = (label, value, mono) => React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--hairline)' } },
-      React.createElement('span', { style: { fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 600, flexShrink: 0 } }, label),
-      React.createElement('span', { style: { fontSize: 13, fontWeight: 700, color: 'var(--ink)', textAlign: 'right', fontFamily: mono ? 'var(--mono)' : 'inherit' } }, value == null || value === '' ? '—' : value));
-    const card = (title, icon, rows) => React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, padding: '4px 15px 8px', boxShadow: 'var(--neo-sm)', marginBottom: 14 } },
-      React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 8, padding: '12px 0 6px' } },
-        React.createElement('div', { style: { width: 26, height: 26, borderRadius: 8, background: 'var(--guinda-50)', color: 'var(--guinda)', display: 'grid', placeItems: 'center' } }, React.createElement(I, { name: icon, size: 15, stroke: 2 })),
-        React.createElement('span', { style: { fontSize: 13.5, fontWeight: 900, color: 'var(--ink)' } }, title)),
-      rows);
-
-    return React.createElement('div', null,
-      header({ title: 'Solicitud ' + r.folio, sub: r.fechaHora, onBack }),
-      React.createElement(window.GeneratedDocuments,{domain:'program',operationId:r.id,admin:true}),
-      React.createElement('div', { className: 'su-app-scroll', style: { padding: 16, paddingBottom: 28 } },
-        React.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 } },
-          React.createElement('div', { style: { flex: 1 } },
-            React.createElement('div', { style: { fontSize: 18, fontWeight: 800, color: 'var(--ink)' } }, r.productoNombre || r.programa || 'Suti Préstamo'),
-            React.createElement('div', { style: { fontSize: 20, fontWeight: 900, color: 'var(--guinda)', marginTop: 2 } }, money(sim.montoSolicitado))),
-          React.createElement(EstadoBadge, { estado: r.estado })),
-
-        card('Solicitante', 'user', React.createElement('div', null,
-          fld('Usuario', r.usuario.nombre),
-          fld('No. de afiliado', r.usuario.numAfiliado, true),
-          fld('Tipo de sindicato', r.usuario.sindicato),
-          fld('Tipo de empleado', r.usuario.tipoEmpleado),
-          fld('Categoría laboral', r.usuario.categoria))),
-
-        card('Origen del financiamiento', 'grid', React.createElement('div', null,
-          fld('Empresa / proveedor', r.empresaNombre),
-          fld('Programa / convenio', r.programa),
-          fld('Producto / servicio', r.productoNombre),
-          fld('Tipo', r.productoTipo),
-          r.cotizacion && fld('Cotización previa', r.cotizacion.folio + ' · ' + money(r.cotizacion.monto)),
-          r.destino && fld('Destino', r.destino),
-          fld('ID convenio', r.convenioId, true),
-          fld('ID producto', r.productoId, true))),
-
-        card('Simulación (descuento vía nómina)', 'cash', React.createElement('div', null,
-          fld('Monto solicitado', moneyValue(sim.montoSolicitado)),
-          fld('Monto autorizado (perfil)', moneyValue(sim.montoAutorizado)),
-          fld('Plazo', sim.plazoQuincenas != null ? sim.plazoQuincenas + (sim.paymentPeriod ? ' · ' + sim.paymentPeriod : ' pagos') : '—'),
-          fld('Tasa aplicada', sim.tasa != null ? sim.tasa + '%' + (sim.ratePeriod ? ' · ' + sim.ratePeriod : '') : '—'),
-          fld('Pago por periodo', moneyValue(sim.pagoQuincenal)),
-          fld('Interés total', moneyValue(sim.interesTotal)),
-          fld('Gasto administrativo', moneyValue(sim.gastoAdministrativo)),
-          fld('Total a pagar', moneyValue(sim.totalPagar)),
-          sim.ratioNomina != null && fld('% de la quincena', sim.ratioNomina + '%'))),
-
-        // Seguimiento: cambio de estado
-        React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, padding: 15, boxShadow: 'var(--neo-sm)', marginBottom: 14 } },
-          React.createElement('div', { style: { fontSize: 13.5, fontWeight: 900, color: 'var(--ink)', marginBottom: 11 } }, 'Estado de la solicitud'),
-          React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 8 } },
-            window.FINANZAS.ESTADOS.map((e) => { const transitionAllowed = e.id==='revision'&&['submitted','requires_financial_processing'].includes(r.status)||['aprobada','rechazada','cancelada'].includes(e.id)&&['submitted','requires_financial_processing','in_review'].includes(r.status); return React.createElement('button', {
-              key: e.id, disabled:!transitionAllowed||!app.admin.has('program_requests.write'), title:e.id==='depositada'?'La confirmación del depósito se realiza por separado':e.id==='pendiente'?'El estado pendiente no se restablece manualmente':'', onClick: async () => {let reason='';if(['rechazada','cancelada'].includes(e.id)){reason=String(window.prompt(e.id==='rechazada'?'Motivo del rechazo':'Motivo de la cancelación')||'').trim();if(reason.length<3){app.toast&&app.toast('Escribe un motivo de al menos 3 caracteres');return;}}if(e.id==='aprobada'&&!window.confirm('¿Aprobar y enviar esta solicitud? Se guardará la autorización en Supabase y se intentará la entrega a Google.'))return;try{await store.setEstado(r.id,e.id,reason);app.toast&&app.toast('Estado actualizado');}catch(_){app.toast&&app.toast(e.id==='depositada'?'El depósito se confirma en el sistema financiero':'No se pudo actualizar');}},
-              style: { display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 12px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, background: r.estado === e.id ? 'var(--grad-guinda-soft)' : 'var(--surface-2)', color: r.estado === e.id ? '#fff' : 'var(--ink-2)', boxShadow: r.estado === e.id ? 'var(--glow-guinda)' : 'var(--neo-inset)' },
-            }, React.createElement(I, { name: e.icon, size: 14, stroke: 2.2 }), e.label); }))),
-
-        // Observaciones y documentación
-        React.createElement('div', { style: { background: 'var(--surface)', borderRadius: 16, padding: 15, boxShadow: 'var(--neo-sm)' } },
-          React.createElement('div', { style: { fontSize: 13.5, fontWeight: 900, color: 'var(--ink)', marginBottom: 11 } }, 'Observaciones y documentación'),
-          (r.comentarios && r.comentarios.length)
-            ? React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 } },
-              r.comentarios.map((c, i) => React.createElement('div', { key: i, style: { background: 'var(--surface-2)', borderRadius: 11, padding: '9px 12px' } },
-                React.createElement('div', { style: { fontSize: 13, color: 'var(--ink)', fontWeight: 600, lineHeight: 1.45 } }, c.texto),
-                React.createElement('div', { style: { fontSize: 10.5, color: 'var(--ink-3)', fontWeight: 600, marginTop: 3 } }, (c.actor || 'Finanzas')))))
-            : React.createElement('div', { style: { fontSize: 12.5, color: 'var(--ink-3)', fontWeight: 600, marginBottom: 12 } }, 'Sin observaciones registradas.'),
-          React.createElement('div', { style: { display: 'flex', gap: 8 } },
-            React.createElement('input', { value: obs, disabled:!app.admin.has('program_requests.write'), placeholder: 'Agregar observación…', onChange: (e) => setObs(e.target.value), onKeyDown: async(e) => { if (e.key === 'Enter' && obs.trim()) { try{await store.addObs(r.id,obs.trim());setObs('');}catch(_){app.toast&&app.toast('No se pudo guardar la observación');} } }, style: { flex: 1, border: 'none', outline: 'none', background: 'var(--surface-2)', boxShadow: 'var(--neo-inset)', borderRadius: 11, padding: '11px 13px', fontSize: 13.5, fontFamily: 'inherit', color: 'var(--ink)' } }),
-            React.createElement('button', { disabled:!app.admin.has('program_requests.write'), onClick: async() => { if(obs.trim()){try{await store.addObs(r.id,obs.trim());setObs('');}catch(_){app.toast&&app.toast('No se pudo guardar la observación');}} }, style: { width: 44, borderRadius: 11, border: 'none', background: 'var(--grad-guinda-soft)', color: '#fff', display: 'grid', placeItems: 'center', cursor: 'pointer', boxShadow: 'var(--glow-guinda)' } }, React.createElement(I, { name: 'plus', size: 19, stroke: 2.4 }))))));
+    const fld = (label, value, mono) => React.createElement('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 12,
+        padding: '10px 0',
+        borderBottom: '1px solid var(--hairline)'
+      }
+    }, React.createElement('span', {
+      style: {
+        fontSize: 12.5,
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        flexShrink: 0
+      }
+    }, label), React.createElement('span', {
+      style: {
+        fontSize: 13,
+        fontWeight: 700,
+        color: 'var(--ink)',
+        textAlign: 'right',
+        fontFamily: mono ? 'var(--mono)' : 'inherit'
+      }
+    }, value == null || value === '' ? '—' : value));
+    const card = (title, icon, rows) => React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 16,
+        padding: '4px 15px 8px',
+        boxShadow: 'var(--neo-sm)',
+        marginBottom: 14
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '12px 0 6px'
+      }
+    }, React.createElement('div', {
+      style: {
+        width: 26,
+        height: 26,
+        borderRadius: 8,
+        background: 'var(--guinda-50)',
+        color: 'var(--guinda)',
+        display: 'grid',
+        placeItems: 'center'
+      }
+    }, React.createElement(I, {
+      name: icon,
+      size: 15,
+      stroke: 2
+    })), React.createElement('span', {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 900,
+        color: 'var(--ink)'
+      }
+    }, title)), rows);
+    return React.createElement('div', null, header({
+      title: 'Solicitud ' + r.folio,
+      sub: r.fechaHora,
+      onBack
+    }), React.createElement(window.GeneratedDocuments, {
+      domain: 'program',
+      operationId: r.id,
+      admin: true
+    }), React.createElement('div', {
+      className: 'su-app-scroll',
+      style: {
+        padding: 16,
+        paddingBottom: 28
+      }
+    }, React.createElement('div', {
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        marginBottom: 16
+      }
+    }, React.createElement('div', {
+      style: {
+        flex: 1
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 18,
+        fontWeight: 800,
+        color: 'var(--ink)'
+      }
+    }, r.productoNombre || r.programa || 'Suti Préstamo'), React.createElement('div', {
+      style: {
+        fontSize: 20,
+        fontWeight: 900,
+        color: 'var(--guinda)',
+        marginTop: 2
+      }
+    }, money(sim.montoSolicitado))), React.createElement(EstadoBadge, {
+      estado: r.estado
+    })), card('Solicitante', 'user', React.createElement('div', null, fld('Usuario', r.usuario.nombre), fld('No. de afiliado', r.usuario.numAfiliado, true), fld('Tipo de sindicato', r.usuario.sindicato), fld('Tipo de empleado', r.usuario.tipoEmpleado), fld('Categoría laboral', r.usuario.categoria))), card('Origen del financiamiento', 'grid', React.createElement('div', null, fld('Empresa / proveedor', r.empresaNombre), fld('Programa / convenio', r.programa), fld('Producto / servicio', r.productoNombre), fld('Tipo', r.productoTipo), r.cotizacion && fld('Cotización previa', r.cotizacion.folio + ' · ' + money(r.cotizacion.monto)), r.destino && fld('Destino', r.destino), fld('ID convenio', r.convenioId, true), fld('ID producto', r.productoId, true))), card('Simulación (descuento vía nómina)', 'cash', React.createElement('div', null, fld('Monto solicitado', moneyValue(sim.montoSolicitado)), fld('Monto autorizado (perfil)', moneyValue(sim.montoAutorizado)), fld('Plazo', sim.plazoQuincenas != null ? sim.plazoQuincenas + (sim.paymentPeriod ? ' · ' + sim.paymentPeriod : ' pagos') : '—'), fld('Tasa aplicada', sim.tasa != null ? sim.tasa + '%' + (sim.ratePeriod ? ' · ' + sim.ratePeriod : '') : '—'), fld('Pago por periodo', moneyValue(sim.pagoQuincenal)), fld('Interés total', moneyValue(sim.interesTotal)), fld('Gasto administrativo', moneyValue(sim.gastoAdministrativo)), fld('Total a pagar', moneyValue(sim.totalPagar)), sim.ratioNomina != null && fld('% de la quincena', sim.ratioNomina + '%'))),
+    // Seguimiento: cambio de estado
+    React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 16,
+        padding: 15,
+        boxShadow: 'var(--neo-sm)',
+        marginBottom: 14
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 900,
+        color: 'var(--ink)',
+        marginBottom: 11
+      }
+    }, 'Estado de la solicitud'), React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 8
+      }
+    }, window.FINANZAS.ESTADOS.map(e => {
+      const transitionAllowed = e.id === 'revision' && ['submitted', 'requires_financial_processing'].includes(r.status) || ['aprobada', 'rechazada', 'cancelada'].includes(e.id) && ['submitted', 'requires_financial_processing', 'in_review'].includes(r.status);
+      return React.createElement('button', {
+        key: e.id,
+        disabled: !transitionAllowed || !app.admin.has('program_requests.write'),
+        title: e.id === 'depositada' ? 'La confirmación del depósito se realiza por separado' : e.id === 'pendiente' ? 'El estado pendiente no se restablece manualmente' : '',
+        onClick: async () => {
+          let reason = '';
+          if (['rechazada', 'cancelada'].includes(e.id)) {
+            reason = String(window.prompt(e.id === 'rechazada' ? 'Motivo del rechazo' : 'Motivo de la cancelación') || '').trim();
+            if (reason.length < 3) {
+              app.toast && app.toast('Escribe un motivo de al menos 3 caracteres');
+              return;
+            }
+          }
+          if (e.id === 'aprobada' && !window.confirm('¿Aprobar y enviar esta solicitud? Se guardará la autorización en Supabase y se intentará la entrega a Google.')) return;
+          try {
+            await store.setEstado(r.id, e.id, reason);
+            app.toast && app.toast('Estado actualizado');
+          } catch (_) {
+            app.toast && app.toast(e.id === 'depositada' ? 'El depósito se confirma en el sistema financiero' : 'No se pudo actualizar');
+          }
+        },
+        style: {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+          height: 34,
+          padding: '0 12px',
+          borderRadius: 999,
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          fontSize: 12.5,
+          fontWeight: 700,
+          background: r.estado === e.id ? 'var(--grad-guinda-soft)' : 'var(--surface-2)',
+          color: r.estado === e.id ? '#fff' : 'var(--ink-2)',
+          boxShadow: r.estado === e.id ? 'var(--glow-guinda)' : 'var(--neo-inset)'
+        }
+      }, React.createElement(I, {
+        name: e.icon,
+        size: 14,
+        stroke: 2.2
+      }), e.label);
+    }))),
+    // Observaciones y documentación
+    React.createElement('div', {
+      style: {
+        background: 'var(--surface)',
+        borderRadius: 16,
+        padding: 15,
+        boxShadow: 'var(--neo-sm)'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 13.5,
+        fontWeight: 900,
+        color: 'var(--ink)',
+        marginBottom: 11
+      }
+    }, 'Observaciones y documentación'), r.comentarios && r.comentarios.length ? React.createElement('div', {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+        marginBottom: 12
+      }
+    }, r.comentarios.map((c, i) => React.createElement('div', {
+      key: i,
+      style: {
+        background: 'var(--surface-2)',
+        borderRadius: 11,
+        padding: '9px 12px'
+      }
+    }, React.createElement('div', {
+      style: {
+        fontSize: 13,
+        color: 'var(--ink)',
+        fontWeight: 600,
+        lineHeight: 1.45
+      }
+    }, c.texto), React.createElement('div', {
+      style: {
+        fontSize: 10.5,
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginTop: 3
+      }
+    }, c.actor || 'Finanzas')))) : React.createElement('div', {
+      style: {
+        fontSize: 12.5,
+        color: 'var(--ink-3)',
+        fontWeight: 600,
+        marginBottom: 12
+      }
+    }, 'Sin observaciones registradas.'), React.createElement('div', {
+      style: {
+        display: 'flex',
+        gap: 8
+      }
+    }, React.createElement('input', {
+      value: obs,
+      disabled: !app.admin.has('program_requests.write'),
+      placeholder: 'Agregar observación…',
+      onChange: e => setObs(e.target.value),
+      onKeyDown: async e => {
+        if (e.key === 'Enter' && obs.trim()) {
+          try {
+            await store.addObs(r.id, obs.trim());
+            setObs('');
+          } catch (_) {
+            app.toast && app.toast('No se pudo guardar la observación');
+          }
+        }
+      },
+      style: {
+        flex: 1,
+        border: 'none',
+        outline: 'none',
+        background: 'var(--surface-2)',
+        boxShadow: 'var(--neo-inset)',
+        borderRadius: 11,
+        padding: '11px 13px',
+        fontSize: 13.5,
+        fontFamily: 'inherit',
+        color: 'var(--ink)'
+      }
+    }), React.createElement('button', {
+      disabled: !app.admin.has('program_requests.write'),
+      onClick: async () => {
+        if (obs.trim()) {
+          try {
+            await store.addObs(r.id, obs.trim());
+            setObs('');
+          } catch (_) {
+            app.toast && app.toast('No se pudo guardar la observación');
+          }
+        }
+      },
+      style: {
+        width: 44,
+        borderRadius: 11,
+        border: 'none',
+        background: 'var(--grad-guinda-soft)',
+        color: '#fff',
+        display: 'grid',
+        placeItems: 'center',
+        cursor: 'pointer',
+        boxShadow: 'var(--glow-guinda)'
+      }
+    }, React.createElement(I, {
+      name: 'plus',
+      size: 19,
+      stroke: 2.4
+    }))))));
   }
-
   window.FinanzasModule = FinanzasModule;
 })();
 })();
@@ -67424,7 +73639,11 @@ Object.assign(window, {
       onOpenPerson: row => revealFolio(row.folio, row.id),
       initialNavigation: requestNavigation,
       onNavigationChange: setRequestNavigation
-    }), attention === 'reembolsos' && h(window.SavingsRefundsAdmin, {app, onSaved: refresh, onDirty: setDirty}), requestOnly && h(RecordSection, {
+    }), attention === 'reembolsos' && h(window.SavingsRefundsAdmin, {
+      app,
+      onSaved: refresh,
+      onDirty: setDirty
+    }), requestOnly && h(RecordSection, {
       title: 'Solicitud del Folio ' + requestOnly.folio,
       initialOpen: true
     }, h(window.SavingsRequestsAdmin, {
@@ -71355,6 +77574,11 @@ Object.assign(window, {
       required: false,
       doc
     }));
+    if (window.DocumentIntegration && window.DocumentIntegration.enabled()) return h(window.DocumentEvidencePanel, {
+      contextId: detail.id,
+      rows: docs,
+      mode: 'ADMIN'
+    });
     return h('div', {
       'data-request-document-summary': 'true',
       className: 'reqwb-doc-list'
@@ -71618,7 +77842,7 @@ Object.assign(window, {
         }
       }));
       try {
-        await window.ProgramRequestRepository.update(selected.id, status, detail.notes || '');
+        await window.ProgramRequestRepository.update(selected.id, status, detail.notes || '', detail);
         const refreshed = await reload(true),
           verified = refreshed.find(row => row.id === selected.id && row.status === status);
         if (!verified) throw new Error('REQUEST_UPDATE_READBACK_FAILED');
@@ -71715,7 +77939,9 @@ Object.assign(window, {
       name: 'info',
       size: 17,
       stroke: 2
-    }), h('span', null, 'Bandeja de solicitudes generales. Los financiamientos y su procesamiento continúan en “Finanzas · Solicitudes”.')), content));
+    }), h('span', null, 'Bandeja de solicitudes generales. Los financiamientos y su procesamiento continúan en “Finanzas · Solicitudes”.')), window.DocumentIntegration && window.DocumentIntegration.enabled() && h(window.ArchivedDocumentEvidence, {
+      mode: 'ADMIN'
+    }), content));
   }
   function DesktopStyles() {
     return h('style', null, `
@@ -71779,7 +78005,9 @@ Object.assign(window, {
         padding: 16,
         paddingBottom: 28
       }
-    }, h('div', {
+    }, window.DocumentIntegration && window.DocumentIntegration.enabled() && h(window.ArchivedDocumentEvidence, {
+      mode: 'ADMIN'
+    }), h('div', {
       style: {
         background: '#EEF3FF',
         border: '1px solid #D6E2FB',
@@ -72777,6 +79005,7 @@ Object.assign(window, {
     onClose,
     onDeleted
   }) {
+    const logical = !!(window.DocumentIntegration && window.DocumentIntegration.enabled());
     const [report, setReport] = React.useState(null),
       [reason, setReason] = React.useState(''),
       [confirmed, setConfirmed] = React.useState(false),
@@ -72839,17 +79068,17 @@ Object.assign(window, {
       }
     };
     return h(Overlay, {
-      title: pending ? 'Finalizar eliminación' : 'Eliminar documento',
+      title: logical ? 'Retirar documento' : pending ? 'Finalizar eliminación' : 'Eliminar documento',
       description: text(profile.display_name || profile.full_name) + ' · Control ' + text(profile.numero_control),
       onClose: close
     }, h('div', {
       'data-affiliate-document-delete-modal': 'true',
       className: 'aff-modal-body'
-    }, pending ? h('p', null, 'El retiro está registrado. Se completará la protección del archivo sin repetir la eliminación.') : !report && !error ? h('p', null, 'Comprobando versiones y referencias…') : report && h(React.Fragment, null, h('p', null, 'Se eliminará del expediente ', h('strong', null, row.type_label || row.document_type && row.document_type.label || 'este documento'), ' junto con estas versiones enlazadas:'), h('ul', {
+    }, pending ? h('p', null, 'El retiro está registrado. Se completará la protección del archivo sin repetir la eliminación.') : !report && !error ? h('p', null, 'Comprobando versiones y referencias…') : report && h(React.Fragment, null, h('p', null, logical ? 'Se retirará del expediente ' : 'Se eliminará del expediente ', h('strong', null, row.type_label || row.document_type && row.document_type.label || 'este documento'), logical ? '. La evidencia de solicitudes anteriores se conserva.' : ' junto con estas versiones enlazadas:'), h('ul', {
       'data-delete-version-list': 'true'
     }, report.documents.map(doc => h('li', {
       key: doc.id
-    }, doc.label + ' · ' + date(doc.created_at) + ' · ' + doc.status))), h('p', null, 'No podrán abrirse desde el historial ni Document Workbench. Se conservará la auditoría y podrás cargar el documento correcto.'), report.blocked ? h('div', {
+    }, doc.label + ' · ' + date(doc.created_at) + ' · ' + doc.status))), h('p', null, logical ? 'Las solicitudes conservan su archivo original. Podrás cargar otra versión en el expediente.' : 'No podrán abrirse desde el historial ni Document Workbench. Se conservará la auditoría y podrás cargar el documento correcto.'), report.blocked ? h('div', {
       role: 'alert',
       className: 'aff-alert'
     }, 'Este archivo está vinculado a otros registros. La eliminación está bloqueada para protegerlos.') : h(React.Fragment, null, h('label', null, h('span', null, 'Motivo de la eliminación'), h('textarea', {
@@ -72866,7 +79095,7 @@ Object.assign(window, {
       checked: confirmed,
       disabled: busy || attempted.current,
       onChange: event => setConfirmed(event.target.checked)
-    }), ' Confirmo eliminar el documento y las ' + report.documents.length + ' versión(es) indicadas.'))), error && h('div', {
+    }), logical ? ' Confirmo retirar este documento del expediente.' : ' Confirmo eliminar el documento y las ' + report.documents.length + ' versión(es) indicadas.'))), error && h('div', {
       role: 'alert',
       className: 'aff-alert'
     }, error)), h('footer', {
@@ -72880,7 +79109,7 @@ Object.assign(window, {
       'data-confirm-document-delete': 'true',
       disabled: busy || !pending && (!report || report.blocked || !confirmed || reason.trim().length < 8),
       onClick: submit
-    }, busy ? 'Procesando…' : pending || attempted.current ? 'Reintentar' : 'Eliminar documento')));
+    }, busy ? 'Procesando…' : pending || attempted.current ? 'Reintentar' : logical ? 'Retirar documento' : 'Eliminar documento')));
   }
   function DocumentUploadModal({
     profile,
@@ -73026,7 +79255,7 @@ Object.assign(window, {
       ref,
       type: 'button',
       className: 'aff-document-card',
-      disabled: busy || authorizing || !available,
+      disabled: busy || !window.DocumentIntegration?.enabled() && authorizing || !available,
       onClick: open
     }, h('span', {
       className: 'aff-document-thumb'
@@ -73557,7 +79786,7 @@ Object.assign(window, {
     }, h(I, {
       name: 'trash',
       size: 12
-    }), ' Eliminar documento'))) : !(data.empty_document_slots || []).length && h(Empty, {
+    }), window.DocumentIntegration && window.DocumentIntegration.enabled() ? ' Retirar documento' : ' Eliminar documento'))) : !(data.empty_document_slots || []).length && h(Empty, {
       title: 'Expediente vacío',
       sub: 'No hay documentos canónicos relacionados.'
     }), (data.empty_document_slots || []).map(slot => h('div', {
@@ -94054,71 +100283,5 @@ Object.assign(window, {
     });
   }
   ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Root));
-})();
-})();
-/* @@file savings-regularization-admin.jsx */
-(function(){
-/* Historical event documentation; never a withdrawal or a balance writer. */
-(function(){
- 'use strict';
- const h=React.createElement,{useState,useEffect,useRef}=React;
- const monthNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
- const states={PENDING:'Pendiente de completar',REVIEWED:'Revisado',REVIEWED_ZERO:'Revisado sin reembolsos',REOPENED:'Requiere nueva revisión',CURRENT:'Mes en curso · al corte',FUTURE:'Mes futuro'};
- const terminationStates={PENDING:'Fecha por documentar',RESOLVED:'Fecha documentada',CONFLICT:'Requiere resolver una diferencia',VOIDED:'Constancia retirada'};
- function errorText(error){const code=String(error?.message||'');const known={CONTEXT_CHANGED:'La sesión cambió. Consulta de nuevo.',AUTH_REQUIRED:'Vuelve a iniciar sesión.',SAVINGS_TERMINATION_DENIED:'Tu cuenta no tiene permiso para validar bajas históricas.',SAVINGS_TERMINATION_VERSION_CONFLICT:'El antecedente fue actualizado. Consulta de nuevo antes de guardar.',SAVINGS_TERMINATION_SOURCE_CHANGED:'Cambió el antecedente de origen. Consulta de nuevo y revisa su información.',SAVINGS_TERMINATION_DATE_INVALID:'Revisa la fecha efectiva: debe corresponder al antecedente y no puede ser futura.',SAVINGS_TERMINATION_CANONICAL_CONFLICT:'La baja existente tiene información diferente. Revisa el vínculo antes de continuar.',SAVINGS_REFUND_PERIOD_INVALID:'Sólo se puede confirmar un mes ya terminado.',SAVINGS_REFUND_DENIED:'Tu cuenta no tiene permiso para confirmar este periodo.'};return known[code]||'No se pudo completar la operación. '+code;}
- function Field({label,value,onChange,...props}){return h('label',null,label,h('input',{...props,value:value??'',onChange:e=>onChange(e.target.value)}));}
- function TerminationForm({entry,today,busy,onSave,onCancel,onDirty,voiding=false}){
-  const [mode,setMode]=useState(voiding?'VOID':entry.mode==='LINK'?'LINK':'ATTESTED'),[date,setDate]=useState(entry.effective_on||''),[enrollment,setEnrollment]=useState(entry.enrollment_id||''),[reason,setReason]=useState(''),[evidence,setEvidence]=useState(entry.evidence_reference||'');
-  const change=(setter,value)=>{onDirty?.(true);setter(value);};
-  const candidates=entry.candidates||[];
-  const possibleCandidates=candidates.filter(c=>c.linked||!c.started_on||!date||c.started_on<=date);
-  function selectEnrollment(id){change(setEnrollment,id);const selected=candidates.find(c=>c.id===id);if(mode==='LINK')setDate(selected?.terminated_on||'');}
-  return h('form',{className:'srf-card',onSubmit:e=>{e.preventDefault();onSave({kind:'SAVE_TERMINATION',source_record_id:entry.source_record_id,source_fingerprint:entry.source_fingerprint,expected_version:Number(entry.version||0),mode,enrollment_id:enrollment||null,effective_on:date,reason,evidence_reference:evidence});}},
-   h('h4',null,voiding?'Retirar una constancia que ya no acredita la baja':entry.version?'Corregir constancia de baja histórica':'Completar baja histórica'),
-   h('p',{className:'srf-note'},'Control '+entry.numero_control+' · '+(entry.source_sheet||'Solicitud de Ahorro')+' · fila '+entry.source_row),
-   h('div',{className:'srf-grid'},!voiding&&h('label',null,'Cómo se acredita la baja',h('select',{value:mode,onChange:e=>{change(setMode,e.target.value);if(e.target.value==='LINK')setDate(candidates.find(c=>c.id===enrollment)?.terminated_on||'');}},h('option',{value:'ATTESTED'},'Documentar una baja histórica'),h('option',{value:'LINK',disabled:!candidates.some(c=>c.terminated_on)},'Vincular una baja existente'))),
-    !voiding&&h('label',null,'Inscripción correspondiente',h('select',{value:enrollment,required:mode==='LINK'||possibleCandidates.length>0,onChange:e=>selectEnrollment(e.target.value)},h('option',{value:''},possibleCandidates.length?'Selecciona la inscripción correspondiente':'Antecedente sin inscripción vinculada'),candidates.filter(c=>mode!=='LINK'||c.terminated_on).map(c=>h('option',{key:c.id,value:c.id,disabled:mode==='ATTESTED'&&date&&c.started_on>date&&!c.linked},(c.started_on||'Inicio sin fecha')+' · '+(c.terminated_on?'Baja '+c.terminated_on:c.status||'Inscripción'))))),
-    h(Field,{label:voiding?'Fecha conservada en el antecedente':'Fecha efectiva de la baja',type:'date',required:!voiding,max:today,value:date,readOnly:mode==='LINK'||voiding,onChange:v=>{change(setDate,v);const selected=candidates.find(c=>c.id===enrollment);if(mode==='ATTESTED'&&selected?.started_on>v&&!selected.linked)setEnrollment('');}}),
-    h(Field,{label:'Referencia que acredita la baja',required:true,minLength:3,maxLength:180,value:evidence,onChange:v=>change(setEvidence,v)}),
-    h('label',{className:'srf-wide'},'Justificación de la constancia o corrección',h('textarea',{required:true,minLength:8,maxLength:1000,rows:3,value:reason,onChange:e=>change(setReason,e.target.value)}))),
-   h('p',{className:'srf-note'},voiding?'El retiro de esta constancia conserva todas sus versiones. Documenta por qué la fuente corregida ya no acredita la baja; no cambia la cuenta de ahorro.':'La validación y su responsable se registran con la fecha actual. Esta constancia documenta el antecedente; no ejecuta una baja, un retiro ni un cambio de saldo.'),
-   h('div',{className:'srf-bar'},h('button',{type:'button',className:'srf-btn',disabled:busy,onClick:onCancel},'Cancelar constancia'),h('button',{type:'submit',className:'srf-btn primary',disabled:busy},busy?'Guardando…':voiding?'Confirmar retiro de constancia':'Validar baja histórica')));
- }
- function SavingsRegularizationAdmin({initialYear,folio,onSaved,onDirty,onOpenRefund,focusSourceIds}){
-  const currentYear=Number(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric'}).format(new Date()));
-  const [year,setYear]=useState(Number(initialYear)||currentYear),[draftYear,setDraftYear]=useState(String(Number(initialYear)||currentYear)),[revision,setRevision]=useState(0),[state,setState]=useState({loading:true,data:null,error:null});
-  const [selected,setSelected]=useState(null),[voiding,setVoiding]=useState(false),[period,setPeriod]=useState(null),[reason,setReason]=useState(''),[confirmed,setConfirmed]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
-  const sequence=useRef(0),pending=useRef(null),dirty=useRef(false);let subject;try{subject=window.SavingsRefundsRepository.contextKey();}catch(_){subject='denied';}
-  const markDirty=value=>{dirty.current=value;onDirty?.(value);};
-  function mayLeave(){return !dirty.current||window.confirm('Hay una captura sin guardar. ¿Quieres descartarla?');}
-  function clear(){setSelected(null);setVoiding(false);setPeriod(null);setReason('');setConfirmed(false);setError('');pending.current=null;markDirty(false);}
-  useEffect(()=>{clear();setNotice('');},[subject,folio]);
-  useEffect(()=>{const incoming=Number(initialYear);if(Number.isInteger(incoming)&&incoming>=2000&&incoming<=2100&&incoming!==year&&!dirty.current){setYear(incoming);setDraftYear(String(incoming));}},[initialYear]);
-  useEffect(()=>{const seq=++sequence.current;setState({loading:true,data:null,error:null});window.SavingsRefundsRepository.regularization({year,folio}).then(data=>{if(seq===sequence.current)setState({loading:false,data,error:null});}).catch(error=>{if(seq===sequence.current)setState({loading:false,data:null,error});});return()=>{sequence.current++;};},[year,folio,subject,revision]);
-  async function save(command){if(busy)return;const signature=JSON.stringify(command);if(!pending.current||pending.current.signature!==signature)pending.current={signature,key:crypto.randomUUID()};const key=subject;setBusy(true);setError('');try{if(command.kind==='CONFIRM_PERIOD')await window.SavingsRefundsRepository.save(command,pending.current.key);else await window.SavingsRefundsRepository.saveTermination(command,pending.current.key);if(window.SavingsRefundsRepository.contextKey()!==key)throw Error('CONTEXT_CHANGED');clear();setNotice(command.kind==='CONFIRM_PERIOD'?'Revisión mensual guardada.':'Constancia guardada. Se actualizaron los periodos afectados.');setRevision(n=>n+1);if(onSaved)await onSaved();}catch(e){setError(errorText(e));}finally{setBusy(false);}}
-  const data=state.data,canValidate=data?.permissions?.can_write&&data?.permissions?.can_approve;
-  const entries=data?.terminations||[],focus=new Set(focusSourceIds||[]),ordered=[...entries].sort((a,b)=>(focus.has(b.source_record_id)?1:0)-(focus.has(a.source_record_id)?1:0));
-  return h('details',{className:'srf-card','data-savings-regularization':true,open:Boolean(initialYear||focus.size)||undefined},h('summary',null,'Bajas históricas y revisión mensual'),
-   h('p',{className:'srf-note'},'Completa los antecedentes del año que necesitas reportar. Los libros mensuales también contienen concentrados anuales.'),
-   h('form',{className:'srf-bar',onSubmit:e=>{e.preventDefault();const next=Number(draftYear);if(next>=2000&&next<=2100){if(mayLeave()){clear();setYear(next);setRevision(n=>n+1);}else setDraftYear(String(year));}}},h(Field,{label:'Año de regularización',type:'number',min:2000,max:2100,required:true,value:draftYear,disabled:busy,onChange:setDraftYear}),h('button',{className:'srf-btn',disabled:busy||state.loading,type:'submit'},'Consultar año')),
-   state.loading&&h('p',{role:'status',className:'srf-note'},'Consultando periodos y bajas históricas…'),state.error&&h('p',{role:'alert',className:'srf-error'},errorText(state.error)),error&&h('p',{role:'alert',className:'srf-error'},error),notice&&h('p',{role:'status',className:'srf-note'},notice),
-   data&&h(React.Fragment,null,
-    h('div',{className:'srf-table'},h('table',{'aria-label':'Revisión mensual del histórico'},h('thead',null,h('tr',null,['Mes','Reembolsos concluidos','Estado del periodo','Bajas por resolver','Acciones'].map(text=>h('th',{key:text},text)))),h('tbody',null,(data.months||[]).map(m=>h('tr',{key:m.period},
-     h('th',{scope:'row'},monthNames[Number(m.period.slice(5,7))-1]),h('td',null,m.refund_count??'Por determinar'),h('td',null,states[m.status]||m.status),h('td',null,m.pending_termination_count??'Por determinar'),
-     h('td',null,h('div',{className:'srf-bar'},onOpenRefund&&h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:()=>{if(mayLeave()){clear();onOpenRefund({period:m.period});}}},'Ver reembolsos de '+monthNames[Number(m.period.slice(5,7))-1]),canValidate&&!['CURRENT','FUTURE'].includes(m.status)&&h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:()=>{if(mayLeave()){clear();setPeriod(m.period);}}},'Revisar '+monthNames[Number(m.period.slice(5,7))-1]))))))),
-    period&&h('form',{className:'srf-card',onSubmit:e=>{e.preventDefault();if(confirmed)save({kind:'CONFIRM_PERIOD',period,reason});}},h('h4',null,'Confirmar reembolsos de '+period.slice(0,7)),h('p',{className:'srf-note'},'Confirma que todos los casos concluidos de este mes están registrados, incluidos los capturados después. Un mes sin devoluciones también requiere esta revisión.'),h('label',null,'Referencia o explicación de la revisión',h('textarea',{required:true,minLength:8,maxLength:1000,value:reason,onChange:e=>{markDirty(true);setReason(e.target.value);}})),
-     h('label',{className:'srf-note',style:{display:'flex',alignItems:'center',gap:8}},h('input',{type:'checkbox',checked:confirmed,required:true,style:{width:'auto'},onChange:e=>{markDirty(true);setConfirmed(e.target.checked);}}),'Todos los reembolsos concluidos de este mes están registrados.'),h('div',{className:'srf-bar'},h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:clear},'Cancelar revisión'),h('button',{className:'srf-btn primary',type:'submit',disabled:busy||!confirmed},'Confirmar histórico del mes'))),
-    h('h4',null,'Bajas históricas'),h('p',{className:'srf-note'},'Una baja sin fecha comprobada puede afectar varios años. No se sustituye la fecha efectiva con una fecha programada o con el último descuento.'),
-    !ordered.length&&h('p',{className:'srf-note'},'No hay antecedentes de bajas para esta consulta.'),
-    ordered.map(entry=>h('article',{key:entry.source_record_id,className:'srf-card','data-termination-source':entry.source_record_id},h('div',{className:'srf-bar'},h('strong',null,(entry.name||'Antecedente de ahorro')+' · Control '+entry.numero_control),h('span',{className:'srf-state'},terminationStates[entry.status]||entry.status)),
-     h('p',{className:'srf-note'},(entry.source_sheet||'Solicitud de Ahorro')+' · fila '+entry.source_row+' · Fecha efectiva: '+(entry.effective_on||'Por determinar')),
-     entry.reason&&h('p',{className:'srf-note'},entry.reason),entry.evidence_reference&&h('p',{className:'srf-note'},'Respaldo: '+entry.evidence_reference),
-     entry.source_state&&h('p',{className:'srf-note'},'Estado del antecedente de origen: '+entry.source_state),
-     canValidate&&!entry.can_void&&entry.status!=='VOIDED'&&selected!==entry.source_record_id&&h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:()=>{if(mayLeave()){clear();setSelected(entry.source_record_id);}}},entry.version?'Revisar o corregir constancia':'Completar fecha de baja'),
-     canValidate&&entry.can_void&&selected!==entry.source_record_id&&h('button',{className:'srf-btn',type:'button',disabled:busy,onClick:()=>{if(mayLeave()){clear();setVoiding(true);setSelected(entry.source_record_id);}}},'Retirar constancia histórica'),
-     selected===entry.source_record_id&&h(TerminationForm,{key:entry.source_record_id+':'+entry.version+':'+voiding,entry,today:data.today,busy,onSave:save,onCancel:clear,onDirty:markDirty,voiding}),
-     entry.history?.length>0&&h('details',null,h('summary',null,'Historial de constancias'),entry.history.map((event,i)=>h('p',{key:event.id||i,className:'srf-note'},'Versión '+event.version+' · '+(event.mode==='VOID'?'Constancia retirada; fecha del antecedente ':'Baja ')+event.effective_on+' · Capturada '+(event.created_at||event.captured_at||'')+' · '+(event.reason||'')))))))));
- }
- window.SavingsRegularizationAdmin=SavingsRegularizationAdmin;
 })();
 })();

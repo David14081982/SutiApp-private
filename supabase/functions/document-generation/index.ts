@@ -21,8 +21,11 @@ async function work(){
  const job=await worker('CLAIM');if(!job||job.skipped)return {processed:0};
  try{
   const output=await render(job.document_snapshot,loadAsset),sha256=await hash(output.bytes),path='issued/'+job.id+'.pdf';
-  const upload=await service.storage.from(bucket).upload(path,output.bytes,{contentType:'application/pdf',upsert:false,cacheControl:'0'});
-  if(upload.error){const existing=await service.storage.from(bucket).download(path);if(existing.error||!existing.data||await hash(new Uint8Array(await existing.data.arrayBuffer()))!==sha256)throw Error('DOCUMENT_STORAGE_WRITE_FAILED');}
+  await service.storage.from(bucket).upload(path,output.bytes,{contentType:'application/pdf',upsert:false,cacheControl:'0'});
+  // A successful upload acknowledgement is not proof of durable, matching bytes.
+  const stored=await service.storage.from(bucket).download(path);
+  if(stored.error||!stored.data)throw Error('DOCUMENT_STORAGE_WRITE_FAILED');
+  if(await hash(new Uint8Array(await stored.data.arrayBuffer()))!==sha256)throw Error('DOCUMENT_STORAGE_HASH_MISMATCH');
   await worker('READY',{id:job.id,lease_id:job.lease_id,path,sha256,snapshot_sha256:await hash(new TextEncoder().encode(JSON.stringify(job.document_snapshot)))});
   return {processed:1};
  }catch(e){await worker('FAILED',{id:job.id,lease_id:job.lease_id,error_code:cleanError(e)});return {processed:0,failed:1};}

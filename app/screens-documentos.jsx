@@ -26,7 +26,7 @@
       selection.current={type,source};
       setError('');
       if(input.current){
-        input.current.accept=source==='camera'?'image/*':(type.accepted_mime_types||[]).join(',');
+        input.current.accept=source==='camera'?'image/*':(type.accepted_mime_types||[]).concat((type.accepted_mime_types||[]).includes('image/jpeg')?['.jfif']:[]).join(',');
         if(source==='camera')input.current.setAttribute('capture','environment');
         else input.current.removeAttribute('capture');
         input.current.click();

@@ -266,8 +266,13 @@
 
         const sourceRows = result.data || [];
         const privateRows = sourceRows.filter((row) => row.classification === 'PRIVATE');
-        const signedByPath = new Map();
-        if (privateRows.length) {
+        const signedByPath = new Map(), signedByAssociation = new Map();
+        const integrated = window.DocumentIntegration && window.DocumentIntegration.enabled();
+        if (privateRows.length && integrated) {
+          await Promise.all(privateRows.map(async row => {
+            signedByAssociation.set(row.id, await previewDocument(row));
+          }));
+        } else if (privateRows.length) {
           const paths = Array.from(new Set(privateRows.map((row) => row.storage_path)));
           const signed = await client.storage.from('private-assets').createSignedUrls(paths, DOCUMENTS.signedUrlTtlSeconds);
           if (signed.error) throw signed.error;
@@ -283,11 +288,12 @@
             if (row.storage_bucket !== 'private-assets' || !row.private_asset_id) {
               throw new AffiliateRepositoryError('INVALID_DOCUMENT_RELATION', 'Private document relation violates the asset contract');
             }
-            signedUrl = signedByPath.get(row.storage_path) || null;
+            const authorized = signedByAssociation.get(row.id);
+            signedUrl = (authorized ? authorized.signedUrl : signedByPath.get(row.storage_path)) || null;
             if (!signedUrl) {
               throw new AffiliateRepositoryError('DOCUMENT_SIGNING_FAILED', 'Private document signed URL was not created');
             }
-            expiresAt = Date.now() + DOCUMENTS.signedUrlTtlSeconds * 1000;
+            expiresAt = Date.now() + (authorized ? authorized.expiresIn : DOCUMENTS.signedUrlTtlSeconds) * 1000;
           } else if (row.classification === 'PUBLIC') {
             if (!row.storage_bucket || !row.public_asset_id) {
               throw new AffiliateRepositoryError('INVALID_DOCUMENT_RELATION', 'Public document relation violates the asset contract');
@@ -324,6 +330,15 @@
     }
     const getDocuments=(affiliateId)=>readDocuments(affiliateId,false);
     const getHistoricalDocuments=(affiliateId)=>readDocuments(affiliateId,true);
+    async function previewDocument(document) {
+      if (!document || !document.id) throw new AffiliateRepositoryError('INVALID_DOCUMENT_RELATION', 'Document association required');
+      if (document.classification === 'PRIVATE' && window.DocumentIntegration && window.DocumentIntegration.enabled()) {
+        const mode = window.AdminRepository && window.AdminRepository.has('assets.read') ? 'ADMIN' : 'SELF_SERVICE';
+        return window.DocumentIntegration.access('AFFILIATE_FILE', document.id, mode);
+      }
+      if (!document.signedUrl) throw new AffiliateRepositoryError('DOCUMENT_SIGNING_FAILED', 'Document URL unavailable');
+      return {signedUrl:document.signedUrl, expiresIn:DOCUMENTS.signedUrlTtlSeconds};
+    }
 
     async function updateProfilePhoto(file) {
       if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size < 1 || file.size > 20 * 1024 * 1024) {
@@ -380,7 +395,7 @@
 
     return Object.freeze({
       getCurrentAffiliate, getById, getByNumeroControl, getAuthState, claimCurrentIdentity,
-      getProfilePhoto, updateProfilePhoto, getDocuments, getHistoricalDocuments, clearProfilePhotoCache,
+      getProfilePhoto, updateProfilePhoto, getDocuments, getHistoricalDocuments, previewDocument, clearProfilePhotoCache,
     });
   }
 

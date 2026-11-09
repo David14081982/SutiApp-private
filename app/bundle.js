@@ -17,6 +17,7 @@
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
   return 'suti.document.operation.v1.'+Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
  }
+ function normalizeFile(file){return file&&/\.jfif$/i.test(file.name||'')&&['','application/octet-stream','image/jfif','image/pjpeg'].includes(file.type)?new File([file],file.name,{type:'image/jpeg',lastModified:file.lastModified}):file;}
  function access(source,id,mode){return window.PrivateResourceDemand.run(JSON.stringify(['document-association',source,id,mode]),()=>invoke('document-access',{source,association_id:id,mode:mode||'SELF_SERVICE'}));}
  async function upload(type,file,options){
   const o=options||{},before=context(),progress=o.onProgress||(()=>{}),mode=o.mode||'SELF_SERVICE';
@@ -41,7 +42,7 @@
  function withdraw(id,operation,reason){return invoke('document-operation',{action:'WITHDRAW',document_id:id,operation_id:operation||crypto.randomUUID(),reason:reason||'Retiro del expediente'});}
  function evidence(contextId,source,mode){return rpc('list_document_evidence',{p_context:contextId,p_source:source||'REQUEST',p_mode:mode||'SELF_SERVICE'});}
  function generated(contextId,domain,mode){return rpc('list_generated_document_evidence',{p_context:contextId,p_domain:domain,p_mode:mode});}
- window.DocumentIntegration=Object.freeze({enabled,access,upload,withdraw,evidence,submission,generated});
+ window.DocumentIntegration=Object.freeze({enabled,normalizeFile,access,upload,withdraw,evidence,submission,generated});
 })();
 })();
 /* @@file finance-blocks-repository.js */
@@ -22980,6 +22981,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function previewDocument(documentId,affiliateId){requirePermission('documents.read');if(!window.DocumentWorkflowRepository)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return window.DocumentWorkflowRepository.adminPreview(documentId,affiliateId,'ADMIN_AFFILIATE_PROFILE');}
   async function uploadDocument(affiliateId,type,file,reason){
     requirePermission('documents.write');if(!affiliateId||!type||!file)throw new Error('DOCUMENT_FILE_REQUIRED');
+    if(window.DocumentIntegration?.enabled())file=window.DocumentIntegration.normalizeFile(file);
     const accepted=Array.isArray(type.accepted_mime_types)?type.accepted_mime_types:[];
     const limit=Math.min(MAX_DOCUMENT_SIZE,Number(type.max_file_size_bytes)||MAX_DOCUMENT_SIZE);
     if(file.size<1||file.size>limit||!accepted.includes(file.type))throw new Error('INVALID_DOCUMENT_FILE');
@@ -23298,7 +23300,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function selfPreview(document,purpose){if(!document||!document.id)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.access('EXPEDIENTE',document.id,'SELF_SERVICE');return coordinatedPreview({mode:'SELF_SERVICE',purpose,document_id:document.id});}
   async function adminPreview(documentId,targetAffiliateId,purpose){if(!documentId||!targetAffiliateId)throw failure('DOCUMENT_PREVIEW_UNAVAILABLE');if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.access('EXPEDIENTE',documentId,'ADMIN');return coordinatedPreview({mode:'ADMIN',purpose,document_id:documentId,target_affiliate_id:targetAffiliateId});}
   async function compressImage(file,type,onProgress){if(!String(file.type||'').startsWith('image/')||typeof createImageBitmap!=='function'||!type.accepted_mime_types.includes('image/jpeg'))return file;if(file.size<=IMAGE_TARGET)return file;onProgress('preparing');let bitmap;try{bitmap=await createImageBitmap(file,{imageOrientation:'from-image'});const scale=Math.min(1,IMAGE_MAX_DIMENSION/Math.max(bitmap.width,bitmap.height)),width=Math.max(1,Math.round(bitmap.width*scale)),height=Math.max(1,Math.round(bitmap.height*scale)),canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const context=canvas.getContext('2d',{alpha:false});context.fillStyle='#fff';context.fillRect(0,0,width,height);context.drawImage(bitmap,0,0,width,height);const blob=await new Promise((resolve)=>canvas.toBlob(resolve,'image/jpeg',.86));if(!blob)throw failure('IMAGE_COMPRESSION_FAILED');const base=String(file.name||'documento').replace(/\.[^.]+$/,'').replace(/[^A-Za-z0-9._-]+/g,'_')||'documento';return new File([blob],base+'.jpg',{type:'image/jpeg',lastModified:file.lastModified||Date.now()});}finally{if(bitmap&&bitmap.close)bitmap.close();}}
-  async function prepareFile(type,file,onProgress,source){if(!type||!file)throw failure('DOCUMENT_FILE_REQUIRED');const origin=source==='camera'?'camera':'file',limit=Math.min(MAX,Number(type.max_file_size_bytes)||MAX);if(origin==='camera'&&type.camera_allowed===false||origin==='file'&&type.file_upload_allowed===false)throw failure('DOCUMENT_SOURCE_NOT_ALLOWED');if(origin==='camera'&&!String(file.type||'').startsWith('image/'))throw failure('INVALID_DOCUMENT_FILE');if(file.size<1||file.size>MAX_SOURCE||!String(file.type||'').startsWith('image/')&&!type.accepted_mime_types.includes(file.type))throw failure('INVALID_DOCUMENT_FILE');const prepared=await compressImage(file,type,onProgress||(()=>{}));if(prepared.size<1||prepared.size>limit||!type.accepted_mime_types.includes(prepared.type))throw failure('INVALID_DOCUMENT_FILE');return prepared;}
+  async function prepareFile(type,file,onProgress,source){if(window.DocumentIntegration?.enabled())file=window.DocumentIntegration.normalizeFile(file);if(!type||!file)throw failure('DOCUMENT_FILE_REQUIRED');const origin=source==='camera'?'camera':'file',limit=Math.min(MAX,Number(type.max_file_size_bytes)||MAX);if(origin==='camera'&&type.camera_allowed===false||origin==='file'&&type.file_upload_allowed===false)throw failure('DOCUMENT_SOURCE_NOT_ALLOWED');if(origin==='camera'&&!String(file.type||'').startsWith('image/'))throw failure('INVALID_DOCUMENT_FILE');if(file.size<1||file.size>MAX_SOURCE||!String(file.type||'').startsWith('image/')&&!type.accepted_mime_types.includes(file.type))throw failure('INVALID_DOCUMENT_FILE');const prepared=await compressImage(file,type,onProgress||(()=>{}));if(prepared.size<1||prepared.size>limit||!type.accepted_mime_types.includes(prepared.type))throw failure('INVALID_DOCUMENT_FILE');return prepared;}
   async function upload(type,file,options){const settings=options||{},source=settings.source==='camera'?'camera':'file',progress=typeof settings.onProgress==='function'?settings.onProgress:()=>{},prepared=await prepareFile(type,file,progress,source);if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.upload(type,prepared,Object.assign({},settings,{source}));progress('uploading');const affiliate=await db().rpc('get_effective_affiliate_id');if(affiliate.error||!affiliate.data)throw affiliate.error||failure('AFFILIATE_REQUIRED');const sha=hex(await crypto.subtle.digest('SHA-256',await prepared.arrayBuffer()));const path='affiliate-documents/'+affiliate.data+'/'+crypto.randomUUID()+ext(prepared);const stored=await db().storage.from('private-assets').upload(path,prepared,{contentType:prepared.type,upsert:false});if(stored.error)throw stored.error;try{progress('registering');const r=await db().rpc('register_affiliate_document',{p_document_type_id:type.id,p_storage_path:path,p_mime_type:prepared.type,p_file_size:prepared.size,p_sha256:sha,p_source:source.toUpperCase()});if(r.error)throw r.error;const asset=await db().from('private_assets').select('storage_path').eq('id',r.data.private_asset_id).maybeSingle();if(!asset.error&&asset.data&&asset.data.storage_path!==path)await db().storage.from('private-assets').remove([path]);return r.data;}catch(error){await db().storage.from('private-assets').remove([path]).catch(()=>{});throw error;}}
   function historicalPreview(associationId,source,mode){if(!window.DocumentIntegration||!window.DocumentIntegration.enabled())throw failure('HISTORICAL_ACCESS_NOT_ACTIVATED');return window.DocumentIntegration.access(source||'REQUEST',associationId,mode||'SELF_SERVICE');}
   function withdraw(id,operationId,reason){if(!window.DocumentIntegration||!window.DocumentIntegration.enabled())throw failure('LOGICAL_WITHDRAWAL_NOT_ACTIVATED');return window.DocumentIntegration.withdraw(id,operationId,reason);}
@@ -40678,7 +40680,7 @@ Object.assign(window, {
       };
       setError('');
       if (input.current) {
-        input.current.accept = source === 'camera' ? 'image/*' : (type.accepted_mime_types || []).join(',');
+        input.current.accept = source === 'camera' ? 'image/*' : (type.accepted_mime_types || []).concat((type.accepted_mime_types || []).includes('image/jpeg') ? ['.jfif'] : []).join(',');
         if (source === 'camera') input.current.setAttribute('capture', 'environment');else input.current.removeAttribute('capture');
         input.current.click();
       }
@@ -75625,9 +75627,19 @@ Object.assign(window, {
       }
     }, error))));
   }
-  function documentVisual(doc, height) {
-    const image = doc && String(doc.mimeType || '').startsWith('image/') && doc.signedUrl;
+  const previewSource = doc => doc.document_type_id ? window.DocumentWorkflowRepository.adminPreview(doc.id, doc.affiliate_id, 'ADMIN_AFFILIATE_PROFILE') : window.AffiliateRepository.previewDocument(doc);
+  function DocumentThumbnail({
+    doc,
+    height
+  }) {
+    const demand = window.PrivateResourceDemand,
+      ref = React.useRef(null),
+      visible = demand.useVisible(ref),
+      image = doc && String(doc.mimeType || '').startsWith('image/'),
+      available = doc && doc.available !== false;
+    const source = demand.useSource(available ? JSON.stringify(['IDENTITY_DOCUMENT', doc.id, doc.updated_at]) : '', () => previewSource(doc), !!(image && visible && available), 300);
     return React.createElement('div', {
+      ref,
       style: {
         height: height || 112,
         borderRadius: 12,
@@ -75636,10 +75648,11 @@ Object.assign(window, {
         display: 'grid',
         placeItems: 'center'
       }
-    }, image ? React.createElement('img', {
-      src: doc.signedUrl,
+    }, image && source.url ? React.createElement('img', {
+      src: source.url,
       alt: '',
       loading: 'lazy',
+      onError: source.onError,
       style: {
         width: '100%',
         height: '100%',
@@ -75655,6 +75668,10 @@ Object.assign(window, {
       }
     }));
   }
+  const documentVisual = (doc, height) => React.createElement(DocumentThumbnail, {
+    doc,
+    height
+  });
   function DocumentInspector({
     entry,
     onClose,
@@ -75873,6 +75890,8 @@ Object.assign(window, {
     historical,
     onChanged
   }) {
+    const context = window.PrivateResourceDemand.useContext(),
+      opening = React.useRef(0);
     const [preview, setPreview] = React.useState(null),
       [historicalFilter, setHistoricalFilter] = React.useState('all'),
       [historicalOpen, setHistoricalOpen] = React.useState(true);
@@ -75891,26 +75910,32 @@ Object.assign(window, {
     const shownExtras = extras.filter(d => historicalFilter === 'all' || historicalFilter === 'document' && !isTechnical(d) || historicalFilter === 'technical' && isTechnical(d) || historicalFilter === 'image' && d.kind === 'image' || historicalFilter === 'pdf' && d.kind === 'pdf' || historicalFilter === 'duplicate' && d.sha256 && hashCounts[d.sha256] > 1);
     const canonicalPreviewItems = types.map(type => {
       const doc = newestDocument(canonical, type.id);
-      return doc && doc.signedUrl ? Object.assign({
+      return doc && (doc.available === true || doc.signedUrl) ? Object.assign({
         label: type.label
       }, doc) : null;
     }).filter(Boolean);
-    const openPreview = (doc, items) => {
-      const index = Math.max(0, items.findIndex(item => item.id === doc.id));
-      setPreview({
-        doc: items[index] || doc,
-        items,
-        index
-      });
+    const openPreview = async (doc, items) => {
+      const attempt = ++opening.current,
+        index = Math.max(0, items.findIndex(item => item.id === doc.id));
+      try {
+        const access = await previewSource(doc);
+        if (attempt === opening.current && window.PrivateResourceDemand.context() === context) setPreview({
+          doc: Object.assign({}, items[index] || doc, {
+            signedUrl: access.signedUrl
+          }),
+          items,
+          index,
+          context
+        });
+      } catch (_) {
+        if (attempt === opening.current) app.toast && app.toast('No fue posible abrir el documento. Intenta nuevamente.');
+      }
     };
-    const navigate = delta => setPreview(current => {
-      if (!current) return current;
-      const index = Math.max(0, Math.min(current.items.length - 1, current.index + delta));
-      return Object.assign({}, current, {
-        index,
-        doc: current.items[index]
-      });
-    });
+    const navigate = delta => {
+      if (!preview) return;
+      const index = Math.max(0, Math.min(preview.items.length - 1, preview.index + delta));
+      openPreview(preview.items[index], preview.items);
+    };
     const review = async (id, status) => {
       try {
         const observation = status === 'VERIFIED' ? '' : prompt('Observación para el afiliado:') || '';
@@ -75928,7 +75953,7 @@ Object.assign(window, {
           label: 'Faltante',
           color: '#A00027'
         },
-        canPreview = doc && doc.signedUrl;
+        canPreview = doc && (doc.available === true || doc.signedUrl);
       const details = React.createElement('div', {
         style: {
           padding: '9px 2px 3px'
@@ -76262,8 +76287,11 @@ Object.assign(window, {
         marginTop: 14
       }
     }, canonicalCards), historicalSection, React.createElement(DocumentInspector, {
-      entry: preview,
-      onClose: () => setPreview(null),
+      entry: preview && preview.context === context ? preview : null,
+      onClose: () => {
+        opening.current++;
+        setPreview(null);
+      },
       onNavigate: navigate,
       onReview: review,
       canReview: app.admin.has('documents.write')
@@ -79031,7 +79059,7 @@ Object.assign(window, {
       if (!busy) onClose(attempted.current);
     };
     const submit = async () => {
-      if (busy || !pending && (!report || report.blocked || !confirmed || reason.trim().length < 8)) return;
+      if (busy || !pending && (!report || report.blocked || !confirmed || !logical && reason.trim().length < 8)) return;
       setBusy(true);
       setError('');
       attempted.current = true;
@@ -79044,7 +79072,7 @@ Object.assign(window, {
         affiliate_id: profile.id,
         document_id: row.id,
         fingerprint: report.fingerprint,
-        reason: reason.trim(),
+        reason: reason.trim() || (logical ? 'Retiro del expediente' : ''),
         operation_id: action.current
       };
       try {
@@ -79081,7 +79109,7 @@ Object.assign(window, {
     }, doc.label + ' · ' + date(doc.created_at) + ' · ' + doc.status))), h('p', null, logical ? 'Las solicitudes conservan su archivo original. Podrás cargar otra versión en el expediente.' : 'No podrán abrirse desde el historial ni Document Workbench. Se conservará la auditoría y podrás cargar el documento correcto.'), report.blocked ? h('div', {
       role: 'alert',
       className: 'aff-alert'
-    }, 'Este archivo está vinculado a otros registros. La eliminación está bloqueada para protegerlos.') : h(React.Fragment, null, h('label', null, h('span', null, 'Motivo de la eliminación'), h('textarea', {
+    }, 'Este archivo está vinculado a otros registros. La eliminación está bloqueada para protegerlos.') : h(React.Fragment, null, !logical && h('label', null, h('span', null, 'Motivo de la eliminación'), h('textarea', {
       className: inputClass,
       'aria-label': 'Motivo de la eliminación',
       value: reason,
@@ -79107,7 +79135,7 @@ Object.assign(window, {
     }, pending ? 'Cerrar' : 'Cancelar'), h('button', {
       className: 'aff-danger',
       'data-confirm-document-delete': 'true',
-      disabled: busy || !pending && (!report || report.blocked || !confirmed || reason.trim().length < 8),
+      disabled: busy || !pending && (!report || report.blocked || !confirmed || !logical && reason.trim().length < 8),
       onClick: submit
     }, busy ? 'Procesando…' : pending || attempted.current ? 'Reintentar' : logical ? 'Retirar documento' : 'Eliminar documento')));
   }
@@ -79121,7 +79149,6 @@ Object.assign(window, {
     const [types, setTypes] = React.useState([]),
       [typeId, setTypeId] = React.useState(''),
       [file, setFile] = React.useState(null),
-      [reason, setReason] = React.useState(''),
       [busy, setBusy] = React.useState(false),
       [error, setError] = React.useState(''),
       [loading, setLoading] = React.useState(true);
@@ -79149,11 +79176,10 @@ Object.assign(window, {
       limitMb = selected ? Math.min(10, (Number(selected.max_file_size_bytes) || 10485760) / 1048576) : 10;
     const submit = async () => {
       if (!selected || !file || busy) return;
-      if (!window.confirm(replacing ? '¿Crear una nueva versión? El documento anterior conservará su historial y procedencia.' : '¿Cargar este documento al expediente privado del afiliado?')) return;
       setBusy(true);
       setError('');
       try {
-        await window.AdminAffiliatesRepository.uploadDocument(profile.id, selected, file, reason);
+        await window.AdminAffiliatesRepository.uploadDocument(profile.id, selected, file);
         onUploaded();
       } catch (value) {
         setError(mutationError(value, true));
@@ -79191,17 +79217,9 @@ Object.assign(window, {
       className: inputClass,
       type: 'file',
       disabled: busy || !selected,
-      accept: accept.join(','),
+      accept: accept.concat(accept.includes('image/jpeg') ? ['.jfif'] : []).join(','),
       onChange: event => setFile(event.target.files && event.target.files[0] || null)
-    }), h('small', null, accept.length ? 'Formatos permitidos: ' + accept.join(', ') : 'Selecciona un tipo documental')), h('label', null, h('span', null, 'Motivo de la carga (opcional)'), h('textarea', {
-      className: inputClass,
-      value: reason,
-      maxLength: 500,
-      rows: 3,
-      disabled: busy,
-      onChange: event => setReason(event.target.value),
-      placeholder: 'Opcional, máximo 500 caracteres'
-    })), error && h('div', {
+    }), h('small', null, accept.length ? 'Formatos permitidos: ' + accept.join(', ') : 'Selecciona un tipo documental')), error && h('div', {
       role: 'alert',
       className: 'aff-alert'
     }, error)), h('footer', {

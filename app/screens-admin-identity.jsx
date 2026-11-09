@@ -37,7 +37,13 @@
           selected&&React.createElement(React.Fragment,null,React.createElement('textarea',{value:reason,onChange:e=>setReason(e.target.value),placeholder:'Motivo operativo obligatorio (mínimo 8 caracteres)',maxLength:500,style:{width:'100%',minHeight:82,resize:'vertical',boxSizing:'border-box',marginTop:14,border:'none',borderRadius:13,padding:12,background:'var(--surface-2)',color:'var(--ink)',fontFamily:'inherit',fontSize:14}}),React.createElement(window.Btn,{full:true,onClick:start,disabled:busy||reason.trim().length<8,style:{marginTop:10}},'Solicitar préstamo a nombre del afiliado')),
           error&&React.createElement('div',{role:'alert',style:{marginTop:12,color:'#A32921',fontSize:13,fontWeight:750}},error))));
   }
-  function documentVisual(doc,height){const image=doc&&String(doc.mimeType||'').startsWith('image/')&&doc.signedUrl;return React.createElement('div',{style:{height:height||112,borderRadius:12,overflow:'hidden',background:'linear-gradient(145deg,#F3F5F9,#E7EBF2)',display:'grid',placeItems:'center'}},image?React.createElement('img',{src:doc.signedUrl,alt:'',loading:'lazy',style:{width:'100%',height:'100%',objectFit:'cover'}}):React.createElement(window.Icon,{name:doc&&doc.mimeType==='application/pdf'?'doc':(doc&&doc.icon)||'folder',size:31,stroke:1.7,style:{color:'var(--guinda)',opacity:.72}}));}
+  const previewSource=doc=>doc.document_type_id?window.DocumentWorkflowRepository.adminPreview(doc.id,doc.affiliate_id,'ADMIN_AFFILIATE_PROFILE'):window.AffiliateRepository.previewDocument(doc);
+  function DocumentThumbnail({doc,height}){
+    const demand=window.PrivateResourceDemand,ref=React.useRef(null),visible=demand.useVisible(ref),image=doc&&String(doc.mimeType||'').startsWith('image/'),available=doc&&doc.available!==false;
+    const source=demand.useSource(available?JSON.stringify(['IDENTITY_DOCUMENT',doc.id,doc.updated_at]):'',()=>previewSource(doc),!!(image&&visible&&available),300);
+    return React.createElement('div',{ref,style:{height:height||112,borderRadius:12,overflow:'hidden',background:'linear-gradient(145deg,#F3F5F9,#E7EBF2)',display:'grid',placeItems:'center'}},image&&source.url?React.createElement('img',{src:source.url,alt:'',loading:'lazy',onError:source.onError,style:{width:'100%',height:'100%',objectFit:'cover'}}):React.createElement(window.Icon,{name:doc&&doc.mimeType==='application/pdf'?'doc':(doc&&doc.icon)||'folder',size:31,stroke:1.7,style:{color:'var(--guinda)',opacity:.72}}));
+  }
+  const documentVisual=(doc,height)=>React.createElement(DocumentThumbnail,{doc,height});
   function DocumentInspector({entry,onClose,onNavigate,onReview,canReview}){
     const dialog=window.useMediaViewerDialog(!!entry,onClose);
     if(!entry||!entry.doc)return null;
@@ -64,17 +70,18 @@
             React.createElement('button',{type:'button',onClick:()=>onReview(doc.id,'REUPLOAD_REQUIRED'),style:{border:0,borderRadius:10,padding:'8px 10px',background:'#FFF2D8',color:'#8A5900',fontWeight:850}},'Pedir recarga')))));
   }
   function AdminDigitalFile({app,affiliateId,types,canonical,historical,onChanged}){
+    const context=window.PrivateResourceDemand.useContext(),opening=React.useRef(0);
     const[preview,setPreview]=React.useState(null),[historicalFilter,setHistoricalFilter]=React.useState('all'),[historicalOpen,setHistoricalOpen]=React.useState(true);
     const required=types.filter(t=>t.required_by_default),verified=required.filter(t=>{const d=newestDocument(canonical,t.id);return d&&d.status==='VERIFIED';}).length,extras=historical;
     const hashCounts=extras.reduce((m,d)=>{if(d.sha256)m[d.sha256]=(m[d.sha256]||0)+1;return m;},{}),duplicateCount=extras.filter(d=>d.sha256&&hashCounts[d.sha256]>1).length;
     const isTechnical=d=>d.expedienteClassification==='HISTORICAL_NON_DOCUMENT';
     const shownExtras=extras.filter(d=>historicalFilter==='all'||(historicalFilter==='document'&&!isTechnical(d))||(historicalFilter==='technical'&&isTechnical(d))||(historicalFilter==='image'&&d.kind==='image')||(historicalFilter==='pdf'&&d.kind==='pdf')||(historicalFilter==='duplicate'&&d.sha256&&hashCounts[d.sha256]>1));
-    const canonicalPreviewItems=types.map(type=>{const doc=newestDocument(canonical,type.id);return doc&&doc.signedUrl?Object.assign({label:type.label},doc):null;}).filter(Boolean);
-    const openPreview=(doc,items)=>{const index=Math.max(0,items.findIndex(item=>item.id===doc.id));setPreview({doc:items[index]||doc,items,index});};
-    const navigate=delta=>setPreview(current=>{if(!current)return current;const index=Math.max(0,Math.min(current.items.length-1,current.index+delta));return Object.assign({},current,{index,doc:current.items[index]});});
+    const canonicalPreviewItems=types.map(type=>{const doc=newestDocument(canonical,type.id);return doc&&(doc.available===true||doc.signedUrl)?Object.assign({label:type.label},doc):null;}).filter(Boolean);
+    const openPreview=async(doc,items)=>{const attempt=++opening.current,index=Math.max(0,items.findIndex(item=>item.id===doc.id));try{const access=await previewSource(doc);if(attempt===opening.current&&window.PrivateResourceDemand.context()===context)setPreview({doc:Object.assign({},items[index]||doc,{signedUrl:access.signedUrl}),items,index,context});}catch(_){if(attempt===opening.current)app.toast&&app.toast('No fue posible abrir el documento. Intenta nuevamente.');}};
+    const navigate=delta=>{if(!preview)return;const index=Math.max(0,Math.min(preview.items.length-1,preview.index+delta));openPreview(preview.items[index],preview.items);};
     const review=async(id,status)=>{try{const observation=status==='VERIFIED'?'':prompt('Observación para el afiliado:')||'';if(status!=='VERIFIED'&&!observation.trim())return;await window.DocumentWorkflowRepository.review(id,status,observation);setPreview(null);await onChanged();}catch(_){app.toast&&app.toast('No se pudo actualizar el documento');}};
     const canonicalCards=types.map(type=>{
-      const doc=newestDocument(canonical,type.id),state=doc?DOC_STATES[doc.status]:{label:'Faltante',color:'#A00027'},canPreview=doc&&doc.signedUrl;
+      const doc=newestDocument(canonical,type.id),state=doc?DOC_STATES[doc.status]:{label:'Faltante',color:'#A00027'},canPreview=doc&&(doc.available===true||doc.signedUrl);
       const details=React.createElement('div',{style:{padding:'9px 2px 3px'}},
         React.createElement('div',{style:{fontSize:12.5,fontWeight:900,lineHeight:1.25,color:'var(--ink)'}},type.label),
         React.createElement('div',{style:{display:'flex',alignItems:'center',gap:6,marginTop:5}},React.createElement('span',{style:{width:7,height:7,borderRadius:'50%',background:state.color,flexShrink:0}}),React.createElement('span',{style:{fontSize:10.5,fontWeight:850,color:state.color}},state.label)),
@@ -101,7 +108,7 @@
       React.createElement('div',{style:{fontSize:11.5,color:'var(--ink-3)',fontWeight:650,marginTop:4}},'El porcentaje usa exactamente los tipos marcados en Catálogo como “Cuenta para el 100%”.'),
       React.createElement(window.ProgressBar,{value:required.length?verified/required.length*100:0,height:8}),
       React.createElement('div',{'data-admin-document-gallery':'canonical',style:{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(150px,1fr))',gap:10,marginTop:14}},canonicalCards),historicalSection,
-      React.createElement(DocumentInspector,{entry:preview,onClose:()=>setPreview(null),onNavigate:navigate,onReview:review,canReview:app.admin.has('documents.write')}));
+      React.createElement(DocumentInspector,{entry:preview&&preview.context===context?preview:null,onClose:()=>{opening.current++;setPreview(null);},onNavigate:navigate,onReview:review,canReview:app.admin.has('documents.write')}));
   }
   window.IdentityAccessModule=IdentityAccessModule;
 })();

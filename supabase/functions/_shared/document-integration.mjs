@@ -44,7 +44,7 @@ export async function documentOperation(body,user,service,verify){
 }
 export async function documentAccess(body,user,service,verify){
  try{
-  if(!strict(body,['source','association_id','mode'])||!['EXPEDIENTE','REQUEST','SAVINGS','GENERATED'].includes(body.source)||!['SELF_SERVICE','ADMIN'].includes(body.mode)||!UUID.test(body.association_id||''))throw fail('INVALID_ACCESS_REQUEST',400);
+  if(!strict(body,['source','association_id','mode'])||!['EXPEDIENTE','AFFILIATE_FILE','REQUEST','SAVINGS','GENERATED'].includes(body.source)||!['SELF_SERVICE','ADMIN'].includes(body.mode)||!UUID.test(body.association_id||''))throw fail('INVALID_ACCESS_REQUEST',400);
   const args={p_source:body.source,p_association:body.association_id,p_mode:body.mode};
   const d=await rpc(user,'resolve_document_access',args);await verifyObject(service,d,verify,{existingRead:true});
   const current=await rpc(user,'resolve_document_access',args);if(JSON.stringify(current)!==JSON.stringify(d))throw fail('DOCUMENT_CONTEXT_DENIED',403);

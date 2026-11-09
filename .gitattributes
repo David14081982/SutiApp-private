@@ -28,3 +28,5 @@ supabase/migrations/20261104000300_reports_jc_cash_flow_timeout.sql -text
 supabase/recovery/20261104000300_reports_jc_cash_flow_timeout.sql -text
 
 supabase/migrations/20261109000100_documentary_version_integrity.sql -text
+
+supabase/migrations/20261109000200_documentary_legacy_file_access.sql -text

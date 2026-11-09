@@ -15,6 +15,7 @@
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
   return 'suti.document.operation.v1.'+Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
  }
+ function normalizeFile(file){return file&&/\.jfif$/i.test(file.name||'')&&['','application/octet-stream','image/jfif','image/pjpeg'].includes(file.type)?new File([file],file.name,{type:'image/jpeg',lastModified:file.lastModified}):file;}
  function access(source,id,mode){return window.PrivateResourceDemand.run(JSON.stringify(['document-association',source,id,mode]),()=>invoke('document-access',{source,association_id:id,mode:mode||'SELF_SERVICE'}));}
  async function upload(type,file,options){
   const o=options||{},before=context(),progress=o.onProgress||(()=>{}),mode=o.mode||'SELF_SERVICE';
@@ -39,5 +40,5 @@
  function withdraw(id,operation,reason){return invoke('document-operation',{action:'WITHDRAW',document_id:id,operation_id:operation||crypto.randomUUID(),reason:reason||'Retiro del expediente'});}
  function evidence(contextId,source,mode){return rpc('list_document_evidence',{p_context:contextId,p_source:source||'REQUEST',p_mode:mode||'SELF_SERVICE'});}
  function generated(contextId,domain,mode){return rpc('list_generated_document_evidence',{p_context:contextId,p_domain:domain,p_mode:mode});}
- window.DocumentIntegration=Object.freeze({enabled,access,upload,withdraw,evidence,submission,generated});
+ window.DocumentIntegration=Object.freeze({enabled,normalizeFile,access,upload,withdraw,evidence,submission,generated});
 })();

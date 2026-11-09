@@ -6,7 +6,8 @@ Un error de DDL, backfill, integridad o concurrencia revierte la transacción
 completa; no desactivar RLS ni eliminar referencias para evitar el error.
 
 Antes de aplicar se verifican el respaldo PostgreSQL restaurado, los hashes de
-los bytes de Storage respaldados, muestras restauradas en Storage aislado y las
+los bytes de Storage respaldados, todos los objetos y buckets restaurados y
+descargados mediante Storage aislado con SHA-256 coincidente, y las
 referencias protegidas. La evidencia conserva hashes y conteos; los archivos de
 respaldo y sus rutas de objetos quedan fuera de Git.
 

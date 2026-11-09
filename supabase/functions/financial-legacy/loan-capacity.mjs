@@ -118,7 +118,12 @@ export function projectLoanCapacity(source, runtime, now, identity, observe = ()
     const awaitingFirstQuota = state === '' && loan.status !== null && rows.length > 0 &&
       rows.every(row => normalized(row.status) === '' && row.authorized === loan.date) &&
       loan.date <= today && origins.length === 1 && normalized(origins[0].status) === 'INICIADO' &&
-      origins[0].date === loan.date && Number(origins[0].term) === loan.term &&
+      // Request and authorization are distinct dates; reject missing/invalid
+      // calendar dates before accepting authorization on or after the request.
+      typeof origins[0].date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(origins[0].date) &&
+      Number.isFinite(Date.parse(origins[0].date + 'T12:00:00Z')) &&
+      new Date(origins[0].date + 'T12:00:00Z').toISOString().slice(0, 10) === origins[0].date &&
+      origins[0].date <= loan.date && Number(origins[0].term) === loan.term &&
       normalized(origins[0].fund) === normalized(loan.fund) &&
       String(origins[0].total ?? '').trim() !== '' && String(origins[0].principal ?? '').trim() !== '' &&
       Number(origins[0].total) === loan.total && Number(origins[0].principal) === loan.principal &&

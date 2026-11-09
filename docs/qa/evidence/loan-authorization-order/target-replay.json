@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "observedAt": "2026-11-09T17:53:24.691195+00:00",
+  "results": [
+    {
+      "control": "4547",
+      "before": {
+        "code": "HISTORICAL_LOAN_DATA_REVIEW_REQUIRED",
+        "reason": "LOAN_STATUS_UNRESOLVED",
+        "loan": "3038"
+      },
+      "after": "PASS",
+      "fullDebtPreserved": true,
+      "inputsUnchanged": true
+    },
+    {
+      "control": "7803",
+      "before": {
+        "code": "HISTORICAL_LOAN_DATA_REVIEW_REQUIRED",
+        "reason": "LOAN_STATUS_UNRESOLVED",
+        "loan": "2996"
+      },
+      "after": "PASS",
+      "fullDebtPreserved": true,
+      "inputsUnchanged": true
+    }
+  ],
+  "productionWrites": 0
+}

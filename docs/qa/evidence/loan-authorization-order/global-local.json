@@ -1,0 +1,8 @@
+{
+  "status": "PASS",
+  "exit": 0,
+  "logSha256": "35454b65828f69cc9f944eb04cb79003503d9e31b452402f3a7220a134f50460",
+  "expectedFrontendSha256": "eebab0a561344a3e358b9be0a283a6f4c7fe59857c078cbdcf4a2a18f94b7d20",
+  "localBuild": true,
+  "businessWrites": 0
+}

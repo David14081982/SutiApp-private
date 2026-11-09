@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "cases": [
+    {
+      "control": "4547",
+      "status": "PASS",
+      "sessionOpened": true,
+      "quoteResolved": true,
+      "capacityFormulaPreserved": true,
+      "visibleFunds": 6,
+      "assistanceClosed": true
+    },
+    {
+      "control": "7803",
+      "status": "PASS",
+      "sessionOpened": true,
+      "quoteResolved": true,
+      "capacityFormulaPreserved": true,
+      "visibleFunds": 5,
+      "assistanceClosed": true
+    }
+  ],
+  "requestSubmissions": 0,
+  "businessWrites": 0,
+  "technicalWrites": "Two audited assistance sessions and existing ephemeral quote snapshots"
+}

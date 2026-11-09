@@ -1,0 +1,71 @@
+{
+  "status": "PASS",
+  "files": [
+    {
+      "file": "financial-legacy/index.ts",
+      "sha256": "db9a72cda8f78bbae17719c3a88bdca62b65574b395e4319969aee3ce495d7f7",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "financial-legacy/visibility-policy.js",
+      "sha256": "bb4bb4bfb620c5cef3b3029944381e050f377bed3958b66e1c2d908c3bf4aa41",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "financial-legacy/request-google-sync.js",
+      "sha256": "0e5760e20ca48a8eb8b3f7fe03029e0b693236af76dcd960b7ef74b17f73b07a",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "financial-legacy/savings-eligibility.ts",
+      "sha256": "aa6b055e454725e924c70aeee8d1b3bced2fd10edfc26a803c2535e6ce4a1d64",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "financial-legacy/loan-capacity.mjs",
+      "sha256": "96cfa23bd6f03a6157de77541c9489640f83d08275baabc1de5bf24bfc536a08",
+      "embedded": true,
+      "changed": true
+    },
+    {
+      "file": "loan-history/history.mjs",
+      "sha256": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "financial-legacy/historical-obligation-map.mjs",
+      "sha256": "6237c357ea4c9be17f0e5add9fef65457442d940309206410963fc3d615e0b62",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "_shared/document-integration.mjs",
+      "sha256": "a6f9fccf7b8b5c13ee9edb84dcd93726084726bb8f90d4d591a6e3d2b6dd24b3",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "_shared/document-verifier-runtime.ts",
+      "sha256": "10381dafd20c7096716be8ca5dd060f37a80e03cbcbfc627cc784b8f6a07c8dd",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "_shared/webp-decoder-bytes.mjs",
+      "sha256": "764366fdf5c6eb78655499c235908c91de13b9c75c313acbbe2e2e352f87f606",
+      "embedded": true,
+      "changed": false
+    },
+    {
+      "file": "_shared/document-verification.mjs",
+      "sha256": "7336c34b7e2289b27bf15eececcb1c59ddf9e0dae666ed7552907396a00c2d90",
+      "embedded": true,
+      "changed": false
+    }
+  ]
+}

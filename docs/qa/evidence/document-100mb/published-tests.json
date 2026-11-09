@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "published": true,
+  "checks": [
+    {
+      "name": "100mb.pdf",
+      "status": "PASS",
+      "size": 104857600,
+      "sha256": "f4732e7620d8ad6d550035472d472ca3abb5453d66259f6268558230a0c5584f",
+      "uploadMs": 97111,
+      "verifiedReadMs": 75843,
+      "viewer": true
+    },
+    {
+      "name": "100mb.png",
+      "status": "PASS",
+      "size": 104857600,
+      "sha256": "2d7eebb1aa9f06b1aa0aeb47f6c3ab15396358ce4a72a55d9cee668e8e6c22da",
+      "uploadMs": 122988,
+      "verifiedReadMs": 68114,
+      "viewer": true
+    }
+  ],
+  "startedAt": "2026-11-09T21:32:18.747Z",
+  "oversizeRejectedBeforeUpload": true,
+  "historicalRequestOriginalPreserved": true,
+  "finishedAt": "2026-11-09T21:34:52.514Z",
+  "network": [
+    {
+      "source": "EXPEDIENTE",
+      "status": 200
+    },
+    {
+      "source": "EXPEDIENTE",
+      "status": 200
+    },
+    {
+      "source": "EXPEDIENTE",
+      "status": 200
+    },
+    {
+      "source": "EXPEDIENTE",
+      "status": 200
+    }
+  ]
+}

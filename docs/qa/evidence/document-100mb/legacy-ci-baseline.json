@@ -1,0 +1,9 @@
+{
+  "status": "NOT APPLICABLE",
+  "workflow": "Membership Google contract",
+  "currentRun": 42702904662,
+  "priorRun": 42634488038,
+  "sameFailure": "Approved finance block boundary changed; 0 !== 1; omitApprovedFinanceBlocks at scripts/test-membership-payment-contract.js:51",
+  "preexisting": true,
+  "googleFilesChanged": 0
+}

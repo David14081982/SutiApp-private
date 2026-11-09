@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "commit": "7beffb00d44b857b52702fceed87ddd76f21cf2e",
+  "workflow": "https://github.com/David14081982/SutiApp-private/actions/runs/42702903486",
+  "workflowConclusion": "success",
+  "domain": "https://sutiapp.com/SutiApp.html",
+  "files": [
+    {
+      "file": "SutiApp.html",
+      "sha256": "9574caed4fc41b2b06d0882c465373e9fe35c50246aa48c00b077ecbbd57ea9a"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "0b0a43a8149a9df6076af1d1eef4bc3971934a4b915429e684600a7d9c2816ba"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "d1018a1ee8dc9f12f76e967b6aa6e4f901b0ff2813c78235bcdea0f665351edb"
+    }
+  ]
+}

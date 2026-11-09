@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "types": {
+    "count": 13,
+    "minimum": "104857600",
+    "maximum": "104857600"
+  },
+  "buckets": [
+    {
+      "id": "documents",
+      "file_size_limit": "104857600",
+      "public": true
+    },
+    {
+      "id": "generated-documents",
+      "file_size_limit": "104857600",
+      "public": false
+    },
+    {
+      "id": "private-assets",
+      "file_size_limit": "104857600",
+      "public": false
+    }
+  ],
+  "globalStorageBytes": 104857600,
+  "productionWrites": 0
+}

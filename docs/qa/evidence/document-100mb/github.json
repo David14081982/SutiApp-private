@@ -1,0 +1,228 @@
+{
+  "status": "PASS",
+  "sha": "7beffb00d44b857b52702fceed87ddd76f21cf2e",
+  "parent": "e8b54c0241973689d565b67183490fbcb7531b91",
+  "url": "https://github.com/David14081982/SutiApp-private/commit/7beffb00d44b857b52702fceed87ddd76f21cf2e",
+  "files": [
+    {
+      "file": "app/document-transfer-source.mjs",
+      "sha256": "1711abdd116231a3ebbc9f47b9a04839904381cbebd1af07dd9079eb7c6a600d"
+    },
+    {
+      "file": "app/document-transfer.js",
+      "sha256": "4ec7447509476df48630967757601af7120623c3f5eb94c36df13197cf22b556"
+    },
+    {
+      "file": "app/document-transfer-LICENSE",
+      "sha256": "3f97212f66b0ecc5fd296866d3392214d655f85bd4214d83455db78fa1d72730"
+    },
+    {
+      "file": "app/document-integration.js",
+      "sha256": "fcc0d6d3c417c14f03174739bda1b5e2a8527281750e78064a64c45fa67cdd42"
+    },
+    {
+      "file": "app/document-workflow-repository.js",
+      "sha256": "9aa4437eedee78409a823761714660f219f150cc91647a7ee3c8d43cf5f73981"
+    },
+    {
+      "file": "app/admin-affiliates-repository.js",
+      "sha256": "1d409b77619a717b77fbb80b8d6b4d9b085dd35d0a8a672dc5e6355b102c428c"
+    },
+    {
+      "file": "app/screens-admin-affiliates.jsx",
+      "sha256": "eeacfd5ee9ebc278ef6d63e7d298c0a8330dbedc79a113f5da61f175d6163537"
+    },
+    {
+      "file": "app/screens-admin-documents.jsx",
+      "sha256": "14201888bd1e4c0d49beb3246eb102f94ba95052e76466a78f8a7f0a42ff539e"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "d1018a1ee8dc9f12f76e967b6aa6e4f901b0ff2813c78235bcdea0f665351edb"
+    },
+    {
+      "file": "SutiApp.html",
+      "sha256": "9574caed4fc41b2b06d0882c465373e9fe35c50246aa48c00b077ecbbd57ea9a"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "0b0a43a8149a9df6076af1d1eef4bc3971934a4b915429e684600a7d9c2816ba"
+    },
+    {
+      "file": "scripts/build-bundle.js",
+      "sha256": "9b69723dbd205af2c41aef0bf3b0310a8e69c4a8d7dd4137b6bb01c4fa1864c7"
+    },
+    {
+      "file": "supabase/functions/_shared/document-stream.mjs",
+      "sha256": "aca8e7ea5ee3879781f3ce155adea87fc3b6950f0897b078e0fc6e2331803d89"
+    },
+    {
+      "file": "supabase/functions/_shared/document-crc-source.mjs",
+      "sha256": "5e7f3890e4af89513a1a9b715c8cb2f4ea9aaf4322e68096ab47400dc354763c"
+    },
+    {
+      "file": "supabase/functions/_shared/document-crc.mjs",
+      "sha256": "736c706b74e974e7cb57ca3ffca3431d2f3186b53c54feea2ad1c17ee06b8eff"
+    },
+    {
+      "file": "supabase/functions/_shared/document-crc-LICENSE",
+      "sha256": "c14dea172f72f2714284a0ac2ab1b00b5352a01409d58255a46227ffc541debd"
+    },
+    {
+      "file": "supabase/functions/_shared/document-integration.mjs",
+      "sha256": "3dac6427e3103f500ef4dd901cf9e4e1a935b546f846a533a4e246fc7f311d75"
+    },
+    {
+      "file": "supabase/functions/document-operation/index.ts",
+      "sha256": "a79d7c34213c70ef1372e6e46472f46c585ccdd651aa342113b437ed65666636"
+    },
+    {
+      "file": "supabase/functions/document-access/index.ts",
+      "sha256": "6c7e5bd70b4bc4e0b34d0ea7906686dba9e4c193c557d45e7d80abbb0c9c47c9"
+    },
+    {
+      "file": "supabase/functions/financial-legacy/index.ts",
+      "sha256": "1fd56d9e2a9e05f29a06156b822520ff8566a8fe17d979df6d721aff1306d870"
+    },
+    {
+      "file": "scripts/document-100mb.cjs",
+      "sha256": "186d6512cff7c2ffe4d716ea0b086cb6e263970d4ff01d5f76c12cde80f79c7c"
+    },
+    {
+      "file": "scripts/document-100mb-release.cjs",
+      "sha256": "a03925eadb5f5297cd9a3defc79a58909fb96efbad02e96c5e78a333f80e589e"
+    },
+    {
+      "file": "scripts/document-100mb-github.cjs",
+      "sha256": "0a73bfa87330807ccce11bc57ccd226a9879eb5996a94b9e11098f61694c1a35"
+    },
+    {
+      "file": "scripts/test-document-100mb.cjs",
+      "sha256": "fa1a1e46a2980d04794765353e1b8c395bd1fe3a309bc4ed56d42d7d256ece6f"
+    },
+    {
+      "file": "scripts/test-document-100mb-live.cjs",
+      "sha256": "b12a9a852bfd96886b95ece898eed47f35d056bec30c8a785dcb33bafbb229b4"
+    },
+    {
+      "file": "scripts/test-document-100mb-submission.cjs",
+      "sha256": "bd19a9a216af70ecead15982ce4a0e996116cebc27566a2789546be673cd21aa"
+    },
+    {
+      "file": "scripts/fixtures/document-100mb-before.json",
+      "sha256": "58630e26da615fcfaf6eb4c185da4a5ea1278d8687dc092df83bf300482b4d92"
+    },
+    {
+      "file": "scripts/fixtures/document-100mb-webp.json",
+      "sha256": "0a97de20d417971d9bf194ba69603e29bdb78392f11fdf66b612ccf7e1858821"
+    },
+    {
+      "file": "supabase/migrations/20261109000400_document_100mb.sql",
+      "sha256": "d2a9f951e045600f064f8ea210f0f980fe465cea99a61ded672388194b1d6395"
+    },
+    {
+      "file": "supabase/recovery/20261109000400_document_100mb.sql",
+      "sha256": "09a1471513d61257869883898a383fc1c85a30bbee18281cd9238a2ca870b529"
+    },
+    {
+      "file": "docs/audits/H-LOAN-DOCUMENT-SUBMIT-001.md",
+      "sha256": "c729b7fe397bed5f891ead61224ebeaa2fffb7c08932e364bc8d85f1f3859803"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/build.json",
+      "sha256": "90ab8257ef695086cf85627fc75c0b526074fbf66621a474bcefc23eeb7970df"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/database-tests.json",
+      "sha256": "87dbb91e9ea2e5b76fa4e4bd17ad0bb516030e9847b4175ef58107be382c5f00"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-bundle-document-access.json",
+      "sha256": "a36e100b3eb19b930404de4a9cd31a8be67c39b814d0b0db23f9f3ccce84f34b"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-bundle-document-operation.json",
+      "sha256": "60da4b1f5bf13a566d8b770e5fa183aaad05bca2fb5811d9443b3d49c770a219"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-bundle-financial-legacy.json",
+      "sha256": "5364266eb35c0785bf80f0dbfa2fafa39f6f48f53329e4314e76c16790edc850"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-config-document-access.json",
+      "sha256": "1a0b21d108b5db0e10ac0651ef6639ae70ca640c3e712031fb3417625cc75c64"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-config-document-operation.json",
+      "sha256": "32be1f88ae480e973a9063a30ff63761f419dc5765377ddf96a44ae13fa54d2e"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-config-financial-legacy.json",
+      "sha256": "330327ba02b7f5ecc4e8c4b2d8970880665e27c508442f3f5a607dca9b716b96"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-deploy-document-access.json",
+      "sha256": "5adc6d026b341447f08e881181ea8b5bf48a5b99c4c238985e20d429556ef3d1"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-deploy-document-operation.json",
+      "sha256": "658cb29032cf5f62dd4f748fe4d82610726d0a68c2eb35afc4d32a55688d5ed1"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-deploy-financial-legacy.json",
+      "sha256": "c10e6834d8e43a41987cbdfe841c41598230e8592ddd468f108298f7de7c408d"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-verify-document-access.json",
+      "sha256": "707e0654f5f50679b0b3fddb17f034c27503b8a06ff90a344e9042a0299ca588"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-verify-document-operation.json",
+      "sha256": "97bed6b646aed130219b52d3a6189ddefd642e5683e5d1928b260dfd3a95da7c"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/edge-verify-financial-legacy.json",
+      "sha256": "fbe205661b8e5a0c56c3a2791a58376679a9137c3805ef618e06ea9ec67a4790"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/fixture-correction.json",
+      "sha256": "58629048add8348b59d025cffe205e7dae6796c7398e15eb32a32a1f12eb3a59"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/internal-verifier-config.json",
+      "sha256": "4123b455d1f3a843141da5885c701df97f70f8fd97275d48a0806448d8044df4"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/live-tests.json",
+      "sha256": "3bc901dc168c51b50ca40ac3ef37cd8091491a117fb8ecd9bde21fc88dd13581"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/production-sql.json",
+      "sha256": "814ef10a4b70ee5d3aeaad33cb8f817f30a12696bbd82478646d55b6664289f3"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/security-tests.json",
+      "sha256": "3803e0d704fd6bedced581d431546225a4561524b1746fc414007f444219cbea"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/site-build.json",
+      "sha256": "349e4ce0f3d313f7cfa76eb6fbdd0e6687a1697d6b7f902c324c89bfe5d48123"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/storage-config.json",
+      "sha256": "4ba957603dbf9f596b20e21af152894d5d9eeb0b0e7f601c6720212ffae2af63"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/stream-tests.json",
+      "sha256": "99dbca955d9d35cdc52c8c67afac48e8269493ad33fef3a0656a940a73c1f9ac"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/submission-tests.json",
+      "sha256": "1e0dd3303b2998df54c678e106c94b7134622b4b28a61ce79cff27e0955115d7"
+    },
+    {
+      "file": "docs/qa/evidence/document-100mb/live-upload-summary.json",
+      "sha256": "e6b1fb3ba10012d79379625298075f8eada3330d07b6910eaa116c57421e5eb3"
+    }
+  ]
+}

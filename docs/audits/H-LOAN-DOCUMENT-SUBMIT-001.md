@@ -32,7 +32,7 @@ The WebP fixture initially placed an ancillary chunk before its required image/c
 
 The architecture index is updated only for the declared files and dependencies from the exact GitHub baseline; unrelated stale entries remain explicitly stale. The public bundle retains all unrelated chunks byte-for-byte. Service-worker changes are cache-version-only. General unrelated regressions are excluded by the owner's explicit indispensable-verification instruction; focused upload/view/history/auth tests apply.
 
-Publication status: backend active; final published-frontend verification pending. This is not yet a complete-task PASS.
+Publication status: PASS. Backend and frontend are published and exact deployed bytes were checked; published PDF/PNG viewers, SHA-256, oversized-file rejection and the historical request original passed. Code commit: 7beffb00d44b857b52702fceed87ddd76f21cf2e.
 
 Owner requests a surgical repair of loan confirmation error 161BE45C for all users, approximately five virtual tests, commit/push and deployment if successful. Authorized 2026-11-09.
 
@@ -97,3 +97,26 @@ Source of truth / Architecture / Security / Data / Legacy: preserved within test
 Owner decision: YES, whether to align existing private original integrity size with canonical 100 MiB maximum while retaining new-upload limits.
 Next action: after explicit approval, set the release marker, run size-deploy and deploy modes, verify active artifact hashes, and update evidence. If declined, keep the shared constraint and prepared files inactive.
 Response generated for Codex: NO; approval-dependent operations must not continue automatically.
+
+
+## Current authorized 100 MB closure
+
+H-LOAN-DOCUMENT-SUBMIT-001 RESULT
+Status: PASS (current authorized 100 MB scope).
+Files changed: explicit GitHub publication manifest, documentary sources, scoped migration/recovery, tests/evidence and derived index only.
+Source-of-truth verdict: PASS; existing Supabase document, private-asset and Storage authorities retained.
+Invariant verdict: PASS; no historical document/request rewrite, mandatory SHA-256, immutable versions and atomic financial attachment retained.
+Build: PASS; unrelated frontend chunks byte-identical; Pages deployment and exact public hashes checked.
+Tests: PASS; 100 MiB format/boundary/memory tests, SQL permissions/recovery, all four real-format uploads and verified reads, actual internal multi-file verification, published PDF/PNG view and historical request access.
+Security: PASS; backend permissions, JWT settings, policies and ACLs retained; HMAC internal invocation denies ordinary users and altered/expired payloads. No credentials published.
+Legacy impact: no Google changes, no financial calculation/writer changes, no production test loan.
+Unexpected files changed: no preexisting dirty-root changes included.
+Known limitations: network duration depends on connection; structural validation is not malware scanning/full codec decoding. Actual financial writer exercised in prior isolated tests; the large-file handoff test deliberately uses a non-writing parent RPC harness. An unrelated Membership Google contract CI failure is identical to the preceding deployment and remains outside this request.
+Evidence: docs/qa/evidence/document-100mb/.
+
+SUTIAPP ARCHITECT REVIEW
+Verdict: APPROVED for the current 100 MB authorization.
+Method: read-only comparison of exact published baseline, scoped source reversals, SQL readback, deployed artifacts, historical fingerprints, actual tests and public hashes; no independent subagent.
+Findings: CPU exhaustion observed in the initial real trial was corrected; large submission batches isolate verification per original. Invalid WebP fixture ordering was corrected and now rejected by the new-file parser. No weakened Auth/RLS or browser-trusted receipt.
+Owner decision required: NO.
+Recommended next action: close this authorized scope. Do not expand into unrelated legacy CI, Google or financial work.

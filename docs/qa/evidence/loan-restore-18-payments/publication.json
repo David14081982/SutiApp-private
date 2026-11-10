@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "commit": "6fa77ff866c935d5e7e03f056867bf5fbd7c543f",
+  "version": "2026110904",
+  "verifiedAt": "2026-11-10T00:20:21.071Z",
+  "checks": [
+    {
+      "url": "https://sutiapp.com/",
+      "status": 200,
+      "sha256": "7770c444aa2abd3cd8005f5080e7035fbd73b9537e0bc98aed2f9c5c95509213",
+      "expected": "7770c444aa2abd3cd8005f5080e7035fbd73b9537e0bc98aed2f9c5c95509213",
+      "match": true
+    },
+    {
+      "url": "https://sutiapp.com/SutiApp.html?v=2026110904",
+      "status": 200,
+      "sha256": "7770c444aa2abd3cd8005f5080e7035fbd73b9537e0bc98aed2f9c5c95509213",
+      "expected": "7770c444aa2abd3cd8005f5080e7035fbd73b9537e0bc98aed2f9c5c95509213",
+      "match": true
+    },
+    {
+      "url": "https://sutiapp.com/app/bundle.js?v=2026110904",
+      "status": 200,
+      "sha256": "9e705856934ba1c5f24649a3913c2ca173035868a297cccbe014bf25082783f9",
+      "expected": "9e705856934ba1c5f24649a3913c2ca173035868a297cccbe014bf25082783f9",
+      "match": true
+    },
+    {
+      "url": "https://sutiapp.com/sw.js?v=2026110904",
+      "status": 200,
+      "sha256": "10c6f25345c5add53bc6e67496a51c956c5bc9416aa0c2f249c4fdbec53edc99",
+      "expected": "10c6f25345c5add53bc6e67496a51c956c5bc9416aa0c2f249c4fdbec53edc99",
+      "match": true
+    }
+  ]
+}

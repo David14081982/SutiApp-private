@@ -161,3 +161,33 @@ Reviewer de publicaci?n: APPROVED para commit/push del allowlist y despliegue
 autorizado. No se publica el bundle del workspace original ni se modifican datos.
 Siguiente acci?n: push fast-forward, comprobar Actions y hashes HTTP publicados;
 si fallan, corregir esta misma H antes de declarar publicaci?n PASS.
+
+## Cierre de publicaci?n
+Commit 6fa77ff866c935d5e7e03f056867bf5fbd7c543f en main por push fast-forward.
+Pages run 42727398477 SUCCESS: compatibilidad Auth, solicitudes backend,
+build, deploy y comprobaci?n productiva PASS. sutiapp.com sirve versi?n
+2026110904; publication.json confirma HTTP 200 y SHA256 normalizado LF
+id?ntico en ra?z, SutiApp.html, bundle y sw.js. No l?gica SW modificada.
+
+CI adicional Membership Google contract: FAIL preexistente, misma aserci?n
+'Approved finance block boundary changed' en test-membership-payment-contract.js:51
+tanto en run 42727397918 como en anterior 42702904662. Este commit no modifica
+ese test, program-request-repository.js ni su dominio; no se declara CI global verde
+ni se cambia legacy para ocultar el fallo ajeno.
+
+H RESULT: PASS publicaci?n focal. Files: 15 del commit funcional y evidencia/cierre.
+Autoridad/invariantes/build/pruebas focales/despliegue: PASS. Security/legacy:
+sin cambios. Archivos inesperados: ninguno. Limitaci?n: fallo CI Membership
+preexistente documentado; no se enviaron solicitudes reales de prueba.
+Evidence: publication.json, deployment.json, browser.json, tests.json y build.json.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-LOAN-RESTORE-18-PAYMENTS-001 publicaci?n autorizada.
+Verdict: APPROVED para alcance focal desplegado.
+Critical findings: CI Membership preexistente, ajeno al cambio; no ocultado.
+Source of truth: SAFE. Architecture: sin cambios. Security: intacta.
+Data: sin escrituras. Legacy: intacto. Owner decision: NO.
+Next action: entregar URL y commit; no ampliar a correcci?n de Membership.
+Response generated for Codex: YES.
+RESPONSE TO CODEX: Aprobar publicaci?n focal, informar CI ajeno preexistente y
+entregar resultado. Conservar cambios previos del workspace original.

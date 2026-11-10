@@ -9,7 +9,9 @@ Build focal conserva bytes de otros módulos. Tests de selección/proyección,
 contratos del wizard y Chrome aislado PASS (tres fondos, cuatro plazos,
 recotización, desglose, carrusel, errores y responsive).
 [Auditoría y cierre](audits/H-LOAN-RESTORE-18-PAYMENTS-001.md).
-No publicado; sin solicitudes reales de prueba.
+Publicado: commit 6fa77ff, Pages 42727398477 SUCCESS, versi?n 2026110904.
+Paridad HTTP confirmada. CI Membership conserva fallo preexistente documentado;
+sin solicitudes reales de prueba.
 
 ## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — activación autorizada, 2026-11-06
 

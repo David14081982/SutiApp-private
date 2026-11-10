@@ -1,0 +1,28 @@
+{
+  "deployment": "PASS",
+  "commit": "6fa77ff866c935d5e7e03f056867bf5fbd7c543f",
+  "pagesRun": 42727398477,
+  "pagesConclusion": "success",
+  "version": "2026110904",
+  "site": "https://sutiapp.com/",
+  "checks": [
+    "Auth backend compatibility",
+    "critical request backend compatibility",
+    "Pages build",
+    "Pages deploy",
+    "critical request production deployment",
+    "HTTP normalized SHA256 parity"
+  ],
+  "unrelatedCI": {
+    "workflow": "Membership Google contract",
+    "status": "FAIL_PREEXISTING",
+    "currentRun": 42727397918,
+    "priorRun": 42702904662,
+    "sameError": "Approved finance block boundary changed",
+    "location": "scripts/test-membership-payment-contract.js:51",
+    "unchangedFiles": [
+      "scripts/test-membership-payment-contract.js",
+      "app/program-request-repository.js"
+    ]
+  }
+}

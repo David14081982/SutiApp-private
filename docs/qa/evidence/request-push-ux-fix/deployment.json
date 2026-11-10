@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "verifiedAt": "2026-11-10T18:56:44.868Z",
+  "commit": "0801bc84bb2fa8330fc99d88e176e51f528ecf19",
+  "workflow": {
+    "conclusion": "success",
+    "headSha": "0801bc84bb2fa8330fc99d88e176e51f528ecf19",
+    "status": "completed",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/42880069168"
+  },
+  "bundleVersion": "2026111003",
+  "artifacts": [
+    {
+      "url": "https://sutiapp.com/?release=2026111003",
+      "status": 200,
+      "sha256": "a14c023f5616cb4345ba72257b00eb1f3e45d176d95049e3d4beccd1ef2fdac0",
+      "expectedSha256": "a14c023f5616cb4345ba72257b00eb1f3e45d176d95049e3d4beccd1ef2fdac0",
+      "match": true
+    },
+    {
+      "url": "https://sutiapp.com/SutiApp.html?release=2026111003",
+      "status": 200,
+      "sha256": "a14c023f5616cb4345ba72257b00eb1f3e45d176d95049e3d4beccd1ef2fdac0",
+      "expectedSha256": "a14c023f5616cb4345ba72257b00eb1f3e45d176d95049e3d4beccd1ef2fdac0",
+      "match": true
+    },
+    {
+      "url": "https://sutiapp.com/app/bundle.js?v=2026111003",
+      "status": 200,
+      "sha256": "ca7f1f309f3b1a608e5eabcf9ee9ff328d0ddc59e6fd8fd105179318c7375f40",
+      "expectedSha256": "ca7f1f309f3b1a608e5eabcf9ee9ff328d0ddc59e6fd8fd105179318c7375f40",
+      "match": true
+    },
+    {
+      "url": "https://sutiapp.com/sw.js?v=2026111003",
+      "status": 200,
+      "sha256": "e5660ce2f54d8ebefc89ca748d039be6ed80b8c73f730e4e712e9e00816793d2",
+      "expectedSha256": "e5660ce2f54d8ebefc89ca748d039be6ed80b8c73f730e4e712e9e00816793d2",
+      "match": true
+    }
+  ],
+  "productionDeployed": true,
+  "productionDataWrites": 0,
+  "realPushMessages": 0,
+  "functionalChecksRepeated": false
+}

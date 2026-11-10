@@ -4545,3 +4545,6 @@ Installation preserved complete fingerprints of 16 original tables and eight wri
 ## H-REQUEST-PUSH-UX-FIX — 2026-11-10
 
 PASS local, sin despliegue. Retirada únicamente la invitación automática de Inicio; comprobación existente conservada sin DOM y gestión dentro de la campanita. Estado activo discreto, disabled explícito, ayuda de permisos según plataforma y causas de reparación sin logs sensibles. Sin cambios a Auth/logout, SQL/RLS, Edge, historial, finanzas o Google. Bundle focal 2026111002; otros módulos y lógica SW idénticos. Cuatro verificaciones aisladas PASS en primera ejecución: interfaz (cabecera y=0, altura=251 antes/después, cero banners), persistencia, recuperación y aislamiento de cuentas/logout. Ningún envío ni cambio productivo. Revisión independiente APPROVED. RLS live y dispositivos físicos no recertificados. Informe: [H-REQUEST-PUSH-UX-FIX](audits/H-REQUEST-PUSH-UX-FIX.md). Evidencia: `docs/qa/evidence/request-push-ux-fix/`.
+
+
+Publicación autorizada y completada: commit 0801bc84bb2fa8330fc99d88e176e51f528ecf19, main; GitHub Pages run 42880069168 SUCCESS. sutiapp.com sirve versión 2026111003; HTML/bundle/SW coinciden con el paquete aislado. Sin cambios ajenos, sin repetir pruebas funcionales ni enviar notificaciones reales. Evidencia: docs/qa/evidence/request-push-ux-fix/deployment.json.

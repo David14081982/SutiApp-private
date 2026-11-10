@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "preparedAt": "2026-11-10T18:54:29.611Z",
+  "baseCommit": "c7f14e87ec03a95cdcb329c7f2352178b5c56012",
+  "releasePath": "C:\\Users\\david\\Downloads\\SutiApp\\tmp\\request-push-ux-release-20261110",
+  "bundleVersion": "2026111003",
+  "bundleSha256": "ca7f1f309f3b1a608e5eabcf9ee9ff328d0ddc59e6fd8fd105179318c7375f40",
+  "sourcePushSha256": "9464368a4c62c5d5a6f361072d928b7c20bc41bc850cd6096afb17e69dd8b09c",
+  "htmlSha256": "a14c023f5616cb4345ba72257b00eb1f3e45d176d95049e3d4beccd1ef2fdac0",
+  "workerSha256": "e5660ce2f54d8ebefc89ca748d039be6ed80b8c73f730e4e712e9e00816793d2",
+  "remotePushMatchedAuditedBaseline": true,
+  "publishedAppOnlyNotificationMountChanged": true,
+  "unrelatedPublishedModulesIdentical": true,
+  "swLogicIdentical": true,
+  "htmlOnlyCachebusters": true,
+  "functionalChecks": "Four prior isolated checks retained; same Push source and mount delta, no reruns",
+  "productionDeployed": false
+}

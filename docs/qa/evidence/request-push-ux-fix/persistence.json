@@ -1,0 +1,41 @@
+{
+  "check": "persistence",
+  "status": "PASS",
+  "checkedAt": "2026-11-10T18:39:28.307Z",
+  "bundleSha256": "db2c3b9bfda5ffd5a4dc7d8bbc48ce7ff46d0149cc4c0671977fae4fd5f29578",
+  "environment": "Chrome mobile viewport; built App/Auth/Push/SW and real IndexedDB; isolated native permission/provider/RPC; external network blocked; no production writes or messages",
+  "evidence": {
+    "closedAndOpenedPage": true,
+    "indexedDBPreserved": true,
+    "permissionAndProvider": "simulated restoration",
+    "before": {
+      "phase": "active",
+      "binding": {
+        "user_id": "11111111-1111-4111-8111-111111111111",
+        "subscription_id": "22222222-2222-4222-8222-000000000001",
+        "transport": "21cc03d2dbbf8e9674e6c4bd90b1eef4803597cff40e861f7419ec5139f87771"
+      },
+      "subscription": true,
+      "asks": 1,
+      "registrations": 1,
+      "subscribeCalls": 1,
+      "unsubscribes": 0,
+      "revokes": 0
+    },
+    "after": {
+      "phase": "active",
+      "binding": {
+        "user_id": "11111111-1111-4111-8111-111111111111",
+        "subscription_id": "22222222-2222-4222-8222-000000000001",
+        "transport": "21cc03d2dbbf8e9674e6c4bd90b1eef4803597cff40e861f7419ec5139f87771"
+      },
+      "subscription": true,
+      "asks": 0,
+      "registrations": 0,
+      "subscribeCalls": 0,
+      "unsubscribes": 0,
+      "revokes": 0
+    }
+  },
+  "browserErrors": []
+}

@@ -1,0 +1,27 @@
+{
+  "check": "interface",
+  "status": "PASS",
+  "checkedAt": "2026-11-10T18:39:16.795Z",
+  "bundleSha256": "db2c3b9bfda5ffd5a4dc7d8bbc48ce7ff46d0149cc4c0671977fae4fd5f29578",
+  "environment": "Chrome mobile viewport; built App/Auth/Push/SW and real IndexedDB; isolated native permission/provider/RPC; external network blocked; no production writes or messages",
+  "evidence": {
+    "actualShellAndTopBar": true,
+    "unrelatedProviders": "isolated",
+    "headerBefore": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 251
+    },
+    "headerAfter": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 251
+    },
+    "homeBannerCount": 0,
+    "bellManagement": true,
+    "nativePrompts": 0
+  },
+  "browserErrors": []
+}

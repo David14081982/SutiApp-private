@@ -1,0 +1,37 @@
+{
+  "check": "security",
+  "status": "PASS",
+  "checkedAt": "2026-11-10T18:39:43.819Z",
+  "bundleSha256": "db2c3b9bfda5ffd5a4dc7d8bbc48ce7ff46d0149cc4c0671977fae4fd5f29578",
+  "environment": "Chrome mobile viewport; built App/Auth/Push/SW and real IndexedDB; isolated native permission/provider/RPC; external network blocked; no production writes or messages",
+  "evidence": {
+    "providerDelivery": "local SW handler only",
+    "validBindingDisplayed": 1,
+    "foreignBindingIgnored": true,
+    "oldAccountIgnoredAfterSwitch": true,
+    "oldAccountIgnoredAfterNewBinding": true,
+    "logoutRevokedAndIgnored": true,
+    "oldBinding": {
+      "user_id": "11111111-1111-4111-8111-111111111111",
+      "subscription_id": "22222222-2222-4222-8222-000000000001",
+      "transport": "21cc03d2dbbf8e9674e6c4bd90b1eef4803597cff40e861f7419ec5139f87771"
+    },
+    "currentBinding": {
+      "user_id": "66666666-6666-4666-8666-666666666666",
+      "subscription_id": "22222222-2222-4222-8222-000000000002",
+      "transport": "21cc03d2dbbf8e9674e6c4bd90b1eef4803597cff40e861f7419ec5139f87771"
+    },
+    "loggedOut": {
+      "phase": "unavailable",
+      "binding": null,
+      "subscription": false,
+      "asks": 1,
+      "registrations": 2,
+      "subscribeCalls": 2,
+      "unsubscribes": 2,
+      "revokes": 1
+    },
+    "backendRLS": "not retested; RPC ownership simulated, SQL unchanged"
+  },
+  "browserErrors": []
+}

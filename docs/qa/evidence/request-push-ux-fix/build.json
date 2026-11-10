@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "builtAt": "2026-11-10T18:38:42.901Z",
+  "sourceHashes": {
+    "request-push.js": "9464368a4c62c5d5a6f361072d928b7c20bc41bc850cd6096afb17e69dd8b09c",
+    "app.jsx": "fc10d6733c15af32bee5205a47c01a6d69495519133a3a24ef7426ebf7ee6074"
+  },
+  "bundleSha256": "db2c3b9bfda5ffd5a4dc7d8bbc48ce7ff46d0149cc4c0671977fae4fd5f29578",
+  "unrelatedModulesIdentical": true,
+  "swLogicIdentical": true,
+  "htmlOnlyCachebusters": true,
+  "version": "2026111002",
+  "productionDeployed": false
+}

@@ -38677,7 +38677,7 @@ Object.assign(window, {
     }), React.createElement(window.RequestAuthorizationNotice, {
       app,
       requests: operations.all()
-    }), window.DocumentIntegration && window.DocumentIntegration.enabled() && React.createElement(window.ArchivedDocumentEvidence), React.createElement(window.FarmaHistory, {
+    }), React.createElement(window.FarmaHistory, {
       app
     }),
     // active tracker hero

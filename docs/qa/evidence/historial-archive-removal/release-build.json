@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "base": "4afa77107ad661272d110b21d145e306cd3b1a65",
+  "version": "2026111004",
+  "priorVersion": "2026111003",
+  "sourceSHA256": "544c7b6f59a753e50ce3121f52c0b4e5eda23c1765ead215de5c7cc5b0900d06",
+  "bundleSHA256": "0d2e78c293bda6adab6058ed96481358e613641e8bf4ac4e0e520f63b1e72644",
+  "sourceMatchesTestedLocal": true,
+  "unchangedPrefix": true,
+  "unchangedSuffix": true,
+  "protectedFiles": [
+    {
+      "file": "sw.js",
+      "sha256": "abfcfc5b6586f5c29c939089d0717dc2fa53c0fee29b31887b7e15f0195dc09d"
+    },
+    {
+      "file": "app/screens-documentos.jsx",
+      "sha256": "c704610b69ad0af8bbbae6fbc2ab5e855b18dcf3516b76c6420eeec94dd85690"
+    },
+    {
+      "file": "app/screens-admin-requests.jsx",
+      "sha256": "0666d3c011fd73a795636d230a3a156be30dae3d3f30b794432fe1b1ffaed18a"
+    },
+    {
+      "file": "app/document-integration.js",
+      "sha256": "870c0a2af7f0d0b3fce4caa2007dc5caa5bcaf63e29e8c34bb66c352ea3d981a"
+    },
+    {
+      "file": "app/document-workflow-repository.js",
+      "sha256": "68db33be1f6160099bdd969f9747f75494cd9ef7145c1507617ed66cf20f8991"
+    },
+    {
+      "file": "scripts/build-pages-site.js",
+      "sha256": "c8cab392cbbe2ff19c4bccbc37e5b1f0bf59487b632d237e896c2cbeb5800c65"
+    }
+  ]
+}

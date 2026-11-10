@@ -43,7 +43,6 @@
     return React.createElement('div', { className: 'su-route', style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'historial' }),
       React.createElement(window.RequestAuthorizationNotice, { app, requests: operations.all() }),
-      window.DocumentIntegration&&window.DocumentIntegration.enabled()&&React.createElement(window.ArchivedDocumentEvidence),
       React.createElement(window.FarmaHistory,{app}),
       // active tracker hero
       activa && React.createElement('div', { style: { padding: '4px 16px 0' } },

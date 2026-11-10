@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "publicFiles": 34,
+  "bundleMatchesCandidate": true,
+  "htmlMatchesCandidate": true,
+  "serviceWorkerMatchesCandidate": true,
+  "documentIntegration": "DOCUMENT_V1",
+  "privateFilesPublished": false,
+  "credentials": "synthetic build-only configuration; production workflow unchanged"
+}

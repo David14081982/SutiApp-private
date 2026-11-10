@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "base": "4afa77107ad661272d110b21d145e306cd3b1a65",
+  "changedFiles": [
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-edges.json"
+  ],
+  "changedFacts": [
+    "app/screens-historial.jsx"
+  ],
+  "freshness": "STALE",
+  "removedGlobalReference": "ArchivedDocumentEvidence",
+  "removedHistorialEdges": 2,
+  "unrelatedEdgesRestored": 4,
+  "unrelatedBacklinkNodesRestored": [
+    "file:158e41c1e24144",
+    "file:399a648f18e378",
+    "rpc:4b8d94ef84a57d",
+    "rpc:811e9d507a840d",
+    "table:018afe54f99abe",
+    "table:85df797dd096c9"
+  ],
+  "checks": {
+    "unrelatedNodesIdenticalById": true,
+    "unrelatedEdgesIdenticalByIdentity": true,
+    "unrelatedFactsIdentical": true,
+    "unrelatedFingerprintsIdentical": true,
+    "healthNotesPreserved": true
+  },
+  "runtimeUnchanged": true,
+  "note": "Compared nodes by id and edges by (from,to,type), preserving complete unrelated objects and baseline health notes."
+}

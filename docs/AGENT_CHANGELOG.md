@@ -4548,3 +4548,7 @@ PASS local, sin despliegue. Retirada únicamente la invitación automática de I
 
 
 Publicación autorizada y completada: commit 0801bc84bb2fa8330fc99d88e176e51f528ecf19, main; GitHub Pages run 42880069168 SUCCESS. sutiapp.com sirve versión 2026111003; HTML/bundle/SW coinciden con el paquete aislado. Sin cambios ajenos, sin repetir pruebas funcionales ni enviar notificaciones reales. Evidencia: docs/qa/evidence/request-push-ux-fix/deployment.json.
+
+## H-HISTORIAL-ARCHIVE-REMOVAL-001 — 2026-11-10 — candidato de publicación
+
+Por instrucción del propietario se retira toda la sección Solicitudes archivadas de Mi Historial. Una línea de montaje y su fragmento compilado; cachebuster 2026111004. Documentos históricos, permisos y Administración intactos. Candidato aislado de main 4afa771; build Pages y UI focal con contrato vigente PASS en móvil/escritorio. Publicación y hashes HTTP se verificarán después del despliegue. [Auditoría](audits/H-HISTORIAL-ARCHIVE-REMOVAL-001.md).

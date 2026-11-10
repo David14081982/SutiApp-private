@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "artifact": "candidate bundle screens-historial module",
+  "transport": "current published snapshot fixture",
+  "documentIntegrationEnabledDuringHistoryChecks": true,
+  "checks": [
+    {
+      "width": 320,
+      "archiveSectionAbsent": true,
+      "archiveMounts": 0,
+      "filters": true,
+      "heroFiltersCardsOrder": true,
+      "nativeTracking": true,
+      "networkCalls": 0
+    },
+    {
+      "width": 390,
+      "archiveSectionAbsent": true,
+      "archiveMounts": 0,
+      "filters": true,
+      "heroFiltersCardsOrder": true,
+      "nativeTracking": true,
+      "networkCalls": 0
+    },
+    {
+      "width": 1440,
+      "archiveSectionAbsent": true,
+      "archiveMounts": 0,
+      "filters": true,
+      "heroFiltersCardsOrder": true,
+      "nativeTracking": true,
+      "networkCalls": 0
+    }
+  ]
+}

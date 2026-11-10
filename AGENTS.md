@@ -36,6 +36,8 @@ Estados oficiales: `PASS`, `FAIL`, `BLOCKED`, `DECISION REQUIRED`, `NOT APPLICAB
 
 14. **Ahorro Supabase: valores válidos por instrucción permanente del propietario (2026-10-04).** Tomar como correctos los valores registrados de los ahorradores y usarlos en cálculos/SICOF sin exigir conciliación o confirmación adicional de esos importes. Sólo la encargada del programa corrige los datos; el agente no los corrige ni reabre esta decisión. Conservar fechas y significado de cada valor, sin inventar ausencias. Véase H-SICOF-SAVINGS-AUTHORITY-001 en docs/DECISIONS.md.
 
+15. **Autorización expresa del alcance visual.** No agregar secciones, accesos, listas, botones ni información visible fuera de lo solicitado expresamente por el propietario. Una necesidad técnica no amplía el alcance visual. Cualquier ampliación requiere presentar una propuesta concreta y obtener autorización antes de implementarla. Sin evidencia de esa autorización, la publicación queda bloqueada.
+
 ## Mapa normativo
 
 - Arquitectura y adaptadores: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)

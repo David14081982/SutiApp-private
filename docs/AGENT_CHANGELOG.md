@@ -1,5 +1,16 @@
 # Bitácora de agentes
 
+## H-LOAN-RESTORE-18-PAYMENTS-001 — 2026-11-09 — PASS local
+
+Restaurados 18 y 24 pagos junto a 6/12 en Caja Chica, Caja de Ahorro y
+Sutiexpress, sólo cuando allowed_terms autoritativo los contiene. Mismo motor,
+cuotas, desglose y confirmación; sin backend, datos ni Google modificados.
+Build focal conserva bytes de otros módulos. Tests de selección/proyección,
+contratos del wizard y Chrome aislado PASS (tres fondos, cuatro plazos,
+recotización, desglose, carrusel, errores y responsive).
+[Auditoría y cierre](audits/H-LOAN-RESTORE-18-PAYMENTS-001.md).
+No publicado; sin solicitudes reales de prueba.
+
 ## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — activación autorizada, 2026-11-06
 
 Excepción explícita MOSTRAR al cierre automático, con selector de visibilidad

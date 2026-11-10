@@ -395,7 +395,7 @@
   // Restricción de presentación autorizada: sólo recorta opciones del servidor.
   const hasShortTerms = (program) => !!program && ['CAJA CHICA', 'CAJA DE AHORRO', 'SUTIEXPRESS'].includes(fundKey(program.fund || program.label));
   const allowedTermsOf = (program) => (program && Array.isArray(program.allowed_terms)
-    ? program.allowed_terms.filter((value) => typeof value === 'number' && value > 0 && (!hasShortTerms(program) || value === 6 || value === 12)) : []);
+    ? program.allowed_terms.filter((value) => typeof value === 'number' && value > 0 && (!hasShortTerms(program) || [6, 12, 18, 24].includes(value))) : []);
 
   function customTermAccepts(program, term) {
     if (hasShortTerms(program)) return false;

@@ -1,0 +1,38 @@
+[
+  {
+    "command": "node scripts/test-loan-amount-term-ui.js",
+    "exitCode": 0,
+    "output": "PASS: three funds restore authoritative 6/12/18/24; restricted funds reject unavailable terms; other funds, amounts and one-payment advances preserved.",
+    "error": ""
+  },
+  {
+    "command": "node scripts/test-loan-simulator-ui-cutover.js",
+    "exitCode": 0,
+    "output": "Loan simulator UI cutover static verification PASS: high-fidelity Claude composition, four-step flow, live server-side contract, debounced cancellable quotes, mismatched-result fail-closed protection, no local financial authority or fallback.",
+    "error": ""
+  },
+  {
+    "command": "node scripts/test-loan-available-credit-ui.js",
+    "exitCode": 0,
+    "output": "{\"status\":\"PASS\",\"isolated\":true,\"availability\":[\"pending-debt\",\"zero\",\"cents\",\"visible-only\",\"fail-closed\",\"profile-maximum-preserved\"],\"admin\":[\"exact-control\",\"global\",\"individual\",\"version\",\"response-validation\",\"denied\"],\"freshness\":[\"publication-invalidation\",\"duplicate-signal\",\"focus-validation\",\"discard-old-response\",\"impersonation-isolation\",\"signout-clear\",\"unsubscribe\"]}",
+    "error": ""
+  },
+  {
+    "command": "node scripts/test-loan-deposit-step.js",
+    "exitCode": 0,
+    "output": "{\"status\":\"PASS\",\"wizard\":\"Monto > Depósito > Documentos > Resumen\",\"card_semantics\":\"SEPARATE\",\"cross_user\":\"SERVER_DENIED\",\"snapshot\":\"PRIVATE_IMMUTABLE\",\"fallbacks\":0}",
+    "error": ""
+  },
+  {
+    "command": "node scripts/test-loan-submission-success.js",
+    "exitCode": 0,
+    "output": "Loan submission success static verification PASS: full confirmation, dynamic amount and folio, document preflight, authoritative workflow timeline, three-pass confetti, history/home actions.",
+    "error": ""
+  },
+  {
+    "command": "node scripts/test-pages-deployment.js",
+    "exitCode": 0,
+    "output": "{\"status\":\"PASS\",\"pwa\":true,\"forbiddenFiles\":0}",
+    "error": ""
+  }
+]

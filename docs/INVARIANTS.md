@@ -1,6 +1,6 @@
 # Invariantes
 
-## Número de empleado corregido — excepción autorizada, candidato local
+## Número de empleado corregido — excepción autorizada y aplicada
 
 H-EMPLOYEE-NUMBER-CORRECTION-001 enmienda únicamente la reserva histórica
 de H-AFFILIATE-CONTROL-CHANGE-001: un número anterior libre puede corresponder
@@ -10,7 +10,9 @@ permanece bloqueado. Dos escrituras concurrentes no pueden adjudicarlo a dos UUI
 Se conservan permisos, evidencia histórica existente, formato TEXT, ceros
 iniciales, reglas financieras y registros anteriores. No se exige nueva bitácora
 ni se generan números. No se aplica limpieza ni UNIQUE global sobre datos legacy.
-La excepción está verificada localmente; no declara activación en producción.
+La excepción se instaló en producción el 2026-11-11 a las 16:40:31Z con
+autorización expresa del propietario. Lectura posterior: cuerpos esperados,
+seguridad conservada y cero cambios en las nueve tablas de negocio cotejadas.
 Véase [resultado y límites](audits/H-EMPLOYEE-NUMBER-CORRECTION-001.md).
 
 ## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — enmienda autorizada del corte

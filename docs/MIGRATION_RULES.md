@@ -1,5 +1,21 @@
 # Reglas de migración
 
+## 20261111000200 — employee_number_correction — APPLIED / VERIFIED
+
+Sustituye cuatro cuerpos existentes para liberar números anteriores sin titular
+vigente y alinear recorte/preconsulta/idempotencia. No altera firmas, owner, ACL,
+RLS, bindings ni formato TEXT; no crea ni modifica datos de afiliados/documentos.
+Instalación y recovery probados en PostgreSQL sintético con hashes exactos.
+La instalación productiva se bloqueó inicialmente por revisión automática; el
+propietario autorizó después explícitamente estos cuatro cuerpos sin un despliegue
+adicional en preproducción. Aplicada el 2026-11-11 16:40:31Z, PR17/CI/Pages PASS.
+Una fila técnica registra la versión; nueve tablas de negocio conservan sus
+conteos/huellas transaccionales. Postcommit readonly PASS. Recovery exacto
+restaura cuerpos, no borra personas ni revierte asignaciones legítimas posteriores.
+El SQL se conserva en migrations/prepared/employee-number-correction como artefacto
+revisado; su ubicación no implica que siga pendiente. Estado y evidencia en
+[la auditoría](audits/H-EMPLOYEE-NUMBER-CORRECTION-001.md).
+
 ## 20261106000100 — excepción MOSTRAR — APPLIED
 
 H-FINANCIAL-MOSTRAR-OVERRIDE-001 aplicado el 2026-11-06. Numeración y definición

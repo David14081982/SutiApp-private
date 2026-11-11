@@ -1,0 +1,80 @@
+{
+  "at": "2026-11-11T16:42:59.116Z",
+  "status": "PASS_FOCAL_PUBLICATION",
+  "implementationCommit": "9cf86f64e7363b94411069a83ca530856db7f749",
+  "mergeCommit": "ac0fc3ea04308f4c42cbada5df8d6a1560d70981",
+  "pr": "https://github.com/David14081982/SutiApp-private/pull/17",
+  "site": "https://sutiapp.com/",
+  "github": {
+    "prCI": {
+      "id": 43060164940,
+      "conclusion": "success"
+    },
+    "mainCI": {
+      "id": 43060286749,
+      "conclusion": "success"
+    },
+    "pages": {
+      "id": 43060286718,
+      "conclusion": "success",
+      "completedAt": "2026-11-11T16:38:39Z"
+    }
+  },
+  "sql": {
+    "status": "APPLIED_AND_VERIFIED",
+    "version": "20261111000200",
+    "appliedAt": "2026-11-11T16:40:31.956Z",
+    "verifiedAt": "2026-11-11T16:40:47.483Z",
+    "functionsReplaced": 4,
+    "otherAffectedFunctionUnchanged": true,
+    "securityMetadataPreserved": true,
+    "businessTablesUnchanged": 9,
+    "businessRowsChanged": 0,
+    "storageMutations": 0,
+    "target": {
+      "personcount": 1,
+      "documentcount": 5,
+      "reusablecurrentcount": 0
+    }
+  },
+  "authorization": {
+    "initialSQLApprovalRejected": true,
+    "initialAttemptExecuted": false,
+    "ownerSubsequentlyExplicitlyAuthorized": true,
+    "ownerAnswer": "Autorizar SQL sin preproducci?n adicional",
+    "separatePreproductionDeployment": false,
+    "syntheticEnvelopeAndRecovery": "PASS"
+  },
+  "frontend": {
+    "status": "PASS",
+    "artifactsMatched": 3,
+    "viewports": [
+      390,
+      1440
+    ],
+    "authenticatedSessionUsed": false
+  },
+  "regression": {
+    "focalSQLAfter": 24,
+    "focalBrowser": 33,
+    "inheritedFailures": 3,
+    "fullApplicationCertified": false
+  },
+  "recovery": {
+    "script": "supabase/recovery/20261111000200_employee_number_correction.sql",
+    "sha256": "8b656248334ee10858949b20ba0edbf81e8b3891aa8a79f10270d0836175912f",
+    "testedInSyntheticPostgreSQL": true,
+    "productionBackupLocalReadable": true
+  },
+  "limits": [
+    "No real affiliate was created and no user document was uploaded.",
+    "Frontend public login smoke and synthetic admin tests do not certify a real production registration.",
+    "Three inherited failures remain; no financial/Google/SICOF changes."
+  ],
+  "evidence": [
+    "production-sql-applied.json",
+    "production-sql-verify.json",
+    "published-frontend.json",
+    "publication-envelope-test.json"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "at": "2026-11-11T16:39:41.614Z",
+  "site": "https://sutiapp.com/",
+  "commit": "ac0fc3ea04308f4c42cbada5df8d6a1560d70981",
+  "status": "PASS",
+  "assets": [
+    {
+      "path": "SutiApp.html",
+      "status": 200,
+      "sha256Lf": "83232a81acaaf012a0f61304f7d2a8964b4ef6a60c67885203b54e47a281ea75",
+      "matches": true
+    },
+    {
+      "path": "app/bundle.js",
+      "status": 200,
+      "sha256Lf": "92b124b27cb9fcad65e0b7c9a179b562ead8abef8135560abd70c1c7923d50d7",
+      "matches": true
+    },
+    {
+      "path": "sw.js",
+      "status": 200,
+      "sha256Lf": "bc3980c522ac1a2be54567982d53d393e703ef6e2ded4c0b32241dc97e6d142c",
+      "matches": true
+    }
+  ],
+  "browser": [
+    {
+      "width": 390,
+      "http": 200,
+      "loginInputVisible": true,
+      "pageErrors": [],
+      "blockedNonReadRequests": [
+        {
+          "method": "POST",
+          "origin": "https://sutiapp.com"
+        }
+      ],
+      "screenshot": "published-login-390.png"
+    },
+    {
+      "width": 1440,
+      "http": 200,
+      "loginInputVisible": true,
+      "pageErrors": [],
+      "blockedNonReadRequests": [
+        {
+          "method": "POST",
+          "origin": "https://sutiapp.com"
+        }
+      ],
+      "screenshot": "published-login-1440.png"
+    }
+  ],
+  "productionBusinessWrites": 0,
+  "sqlInstallation": "BLOCKED_BY_APPROVAL_REVIEW",
+  "finishedAt": "2026-11-11T16:39:54.641Z"
+}

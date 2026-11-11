@@ -1,0 +1,96 @@
+{
+  "at": "2026-11-11T02:05:17.119Z",
+  "status": "PASS",
+  "expectedSourceCommit": "3ddfbc95b8eb720b93841eec003317c48339321b",
+  "normalization": "Expected Git blob bytes, LF as deployed by Linux Pages builder; no response normalization",
+  "checks": [
+    {
+      "base": "https://david14081982.github.io/SutiApp-private/",
+      "file": "SutiApp.html",
+      "http": 200,
+      "finalOrigin": "https://sutiapp.com",
+      "sha256": "7c0b6bb8b2a4e214a9169e52cb12a10fcc803d7f5a58f722fb53de5ae73ba414",
+      "expected": "7c0b6bb8b2a4e214a9169e52cb12a10fcc803d7f5a58f722fb53de5ae73ba414",
+      "matches": true
+    },
+    {
+      "base": "https://david14081982.github.io/SutiApp-private/",
+      "file": "app/bundle.js",
+      "http": 200,
+      "finalOrigin": "https://sutiapp.com",
+      "sha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+      "expected": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+      "matches": true
+    },
+    {
+      "base": "https://david14081982.github.io/SutiApp-private/",
+      "file": "sw.js",
+      "http": 200,
+      "finalOrigin": "https://sutiapp.com",
+      "sha256": "8838bed23cb683fa10c56d3b3073b5340e2f6f51d9c0db47154193a5ebfe70ef",
+      "expected": "8838bed23cb683fa10c56d3b3073b5340e2f6f51d9c0db47154193a5ebfe70ef",
+      "matches": true
+    },
+    {
+      "base": "https://david14081982.github.io/SutiApp-private/",
+      "file": "app/affiliate-repository.js",
+      "http": 200,
+      "finalOrigin": "https://sutiapp.com",
+      "sha256": "2630ccbf7ecfbfd02a8b9dad52a3c87fc2e5b13c8ca0997b34b7be9732548b58",
+      "expected": "2630ccbf7ecfbfd02a8b9dad52a3c87fc2e5b13c8ca0997b34b7be9732548b58",
+      "matches": true
+    },
+    {
+      "base": "https://david14081982.github.io/SutiApp-private/",
+      "file": "app/supabase-config.js",
+      "http": 200,
+      "documentV1": true,
+      "fixFlagsAbsent": true,
+      "matches": true
+    },
+    {
+      "base": "https://sutiapp.com/",
+      "file": "SutiApp.html",
+      "http": 200,
+      "finalOrigin": "https://sutiapp.com",
+      "sha256": "7c0b6bb8b2a4e214a9169e52cb12a10fcc803d7f5a58f722fb53de5ae73ba414",
+      "expected": "7c0b6bb8b2a4e214a9169e52cb12a10fcc803d7f5a58f722fb53de5ae73ba414",
+      "matches": true
+    },
+    {
+      "base": "https://sutiapp.com/",
+      "file": "app/bundle.js",
+      "http": 200,
+      "finalOrigin": "https://sutiapp.com",
+      "sha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+      "expected": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+      "matches": true
+    },
+    {
+      "base": "https://sutiapp.com/",
+      "file": "sw.js",
+      "http": 200,
+      "finalOrigin": "https://sutiapp.com",
+      "sha256": "8838bed23cb683fa10c56d3b3073b5340e2f6f51d9c0db47154193a5ebfe70ef",
+      "expected": "8838bed23cb683fa10c56d3b3073b5340e2f6f51d9c0db47154193a5ebfe70ef",
+      "matches": true
+    },
+    {
+      "base": "https://sutiapp.com/",
+      "file": "app/affiliate-repository.js",
+      "http": 200,
+      "finalOrigin": "https://sutiapp.com",
+      "sha256": "2630ccbf7ecfbfd02a8b9dad52a3c87fc2e5b13c8ca0997b34b7be9732548b58",
+      "expected": "2630ccbf7ecfbfd02a8b9dad52a3c87fc2e5b13c8ca0997b34b7be9732548b58",
+      "matches": true
+    },
+    {
+      "base": "https://sutiapp.com/",
+      "file": "app/supabase-config.js",
+      "http": 200,
+      "documentV1": true,
+      "fixFlagsAbsent": true,
+      "matches": true
+    }
+  ]
+}

@@ -1,14 +1,13 @@
 {
   "task": "H-DOCUMENT-FLOW-SURGICAL-20261110",
   "reviewer": "/root/upload_flow",
-  "reviewedAt": "2026-11-11T02:02:03.263Z",
+  "reviewedAt": "2026-11-11T02:12:10.511Z",
   "verdict": "APPROVED",
-  "approvalScope": "Candidate implementation and evidence ready for the already-authorized publication; not a declaration of completed production deployment.",
-  "taskComplete": false,
-  "productionReadbackVerified": false,
+  "approvalScope": "Published implementation and release independently verified against reviewed sources and deployment artifacts; does not certify every user incident or physical mobile device.",
+  "productionReadbackVerified": true,
   "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
   "candidateHead": "b32f037e785ed2fdc78ac60af76e6abf29c98523",
-  "method": "Independent read-only runtime diff review, source/evidence hash checks, actual official global suite on the same candidate artifact at the documented authorized local origin; no runtime edits during review.",
+  "method": "Independent read-only runtime diff review, source/evidence hash checks, actual official global suite on the same candidate artifact at the documented authorized local origin; no runtime edits during review. Post-release review verified unchanged hashes of all 19 reviewed runtime files, exact Git-blob public hashes, financial Edge artifact/settings identity and official production regression. Two read-only GitHub connector calls independently confirmed every CI and Pages job step succeeded.",
   "criticalFindings": [],
   "correctedFinding": "The preaudit now expressly includes rental/product consumers and the shared Edge error-phase module.",
   "evidence": {
@@ -25,7 +24,11 @@
     "candidateServiceWorkerCache": [
       "sutiapp-v2026111005"
     ],
-    "exactCandidateBundleSha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e"
+    "exactCandidateBundleSha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+    "globalProductionAfter": "PASS",
+    "productionPublicReadbackChecks": 10,
+    "reviewedRuntimeSourcesUnchanged": true,
+    "financialEdgeVersion": 77
   },
   "verdicts": {
     "sourceOfTruth": "Unchanged authoritative document/asset/request records; confirmed UI projections do not substitute authority on failed reads.",
@@ -36,19 +39,14 @@
     "ui": "Existing layout, controls and navigation retained; confirmed saves separated from subsequent read failures."
   },
   "openLimitations": [
-    "Production candidate deployment and exact-source readback plus post-publication global regression remain to be completed by the parent agent.",
+    "Affected real-user accounts were inspected read-only. No real request submission, production document replacement or upload was performed for those users; their individual end-to-end incidents are not certified resolved.",
     "Synthetic mobile browser suite: Chromium 7 PASS; WebKit Windows 6 PASS and 1 PDF renderer BLOCKED, also present in the baseline. Physical iOS/Safari PDF rendering is not certified.",
     "Historical Admin static test fails on an unchanged Finance-source regular expression; focal Admin behavior passes.",
     "Admin summary aggregates retain the last authoritative detail read; the confirmed document projection does not invent new aggregate counts.",
     "The initial local port 4187 failure is preserved: OPTIONS 403/CORS in about 200 ms, not a timeout. The same artifact passed at already-authorized localhost:8080 without CORS changes."
   ],
-  "publicationRequirements": [
-    "Deploy only the reviewed financial-legacy artifact and exact shared dependency, preserving verify_jwt and existing environment configuration; no migrations or data changes.",
-    "Publish the exact reviewed frontend artifact and verify hashes/version and the global surfaces after deployment.",
-    "Keep rollback artifacts and do not mark the entire task PASS until production readback and required checks complete."
-  ],
   "ownerDecisionRequired": false,
-  "recommendedNextAction": "Proceed with the publication already authorized by the user, CI, exact readback and post-deployment verification; retain all stated limits.",
+  "recommendedNextAction": "Deliver the published-and-verified implementation result with explicit physical-mobile and affected-user end-to-end limits. Preserve rollback/evidence and monitor controlled error phases; do not describe all user incidents as resolved.",
   "responseGeneratedForCodex": true,
   "runtimeSha256": {
     "SutiApp.html": "afcc4c05fe00a458fd850a837091d64ef9010dd4780cd6645fadeca8283e7c60",
@@ -72,7 +70,7 @@
     "sw.js": "70fe68a25467e182bb2fb33464bcd78c56a776668ee0db540d40cb544560dbb9"
   },
   "evidenceSha256": {
-    "docs/qa/H-DOCUMENT-FLOW-SURGICAL-20261110.md": "8d669e8b3454a9d0b7befa203aa7669368d220a67a3f5c5c8d8dc97ecfd114b9",
+    "docs/qa/H-DOCUMENT-FLOW-SURGICAL-20261110.md": "6395739ea21458ccb65edd2c65819911dcd557cf859ef38e9c9d1b3510bade35",
     "docs/qa/evidence/document-flow-surgical-20261110/confirmation-review-regression.json": "458f373de0e8fdeec3c84090121f1dadab1ef5fa7cee74de09a993433b136d00",
     "docs/qa/evidence/document-flow-surgical/consumer-confirmation-green.json": "12cdd26f0b09b51805129f9e65016c08b0b9efcfab72736fb15333e22bc74c97",
     "docs/qa/evidence/document-flow-surgical/financial-diagnostics-green.json": "3bc109fd45781ad3a5803b5bf2663f815f5a25af2e9f6eb888e4b9b6c0425ce8",
@@ -86,6 +84,92 @@
     "docs/qa/evidence/document-flow-surgical/financial-edge-predeploy.json": "cd1977e424d9e5cc7e48c5da1adfdfbcd3c53f209fcb9f5f02f540191f63f2a6",
     "docs/qa/evidence/document-flow-surgical/financial-edge-bundle.json": "4106e7271644a7eff97a552ab7907dd592b9144ee1f142d38a38a0aa99126d50",
     "docs/qa/evidence/document-flow-surgical/financial-edge-helper-check.json": "3ec3bfa2d834eda80093e776feb8eee3dcfd6737b416a199062bbba761aecdb9",
-    "docs/qa/evidence/document-flow-surgical/browser-green/report.json": "f7d07554d5a60abb99d925aac4ee6823a285cf0a734f8f27aeca4e9a8b46343d"
-  }
+    "docs/qa/evidence/document-flow-surgical/browser-green/report.json": "f7d07554d5a60abb99d925aac4ee6823a285cf0a734f8f27aeca4e9a8b46343d",
+    "docs/qa/evidence/document-flow-surgical/global-production-after.json": "0ee4691eeefd05bd6f1031ea3313901f294eb8cd77e24cf2dcc326926493d200",
+    "docs/qa/evidence/document-flow-surgical/production-readback.json": "33a6061593fbb9f4e0220fa1af3dd0a5d55c48630c3a98ca43457189ec28f333",
+    "docs/qa/evidence/document-flow-surgical/financial-edge-deploy.json": "25d037c7b990713b6ccab2c3510e5cdaef72884b1018f866664d179088342fb8",
+    "docs/qa/evidence/document-flow-surgical/financial-edge-verify.json": "017a5ef0fe4cdd25bab48470947c1f1d78f5a190302a66fdb51a5423e83ee5e5",
+    "docs/qa/evidence/document-flow-surgical/github-release.json": "2f83d033c39cea3cc22b6ee1e4ab2486bb9b0340aa02f65266189f6f1b492b0f"
+  },
+  "reviewHistory": [
+    {
+      "at": "2026-11-11T02:02:03.263Z",
+      "verdict": "APPROVED",
+      "scope": "Candidate implementation and evidence ready for the already-authorized publication; not a declaration of completed production deployment.",
+      "candidateHead": "b32f037e785ed2fdc78ac60af76e6abf29c98523",
+      "productionReadbackVerified": false
+    }
+  ],
+  "implementationComplete": true,
+  "releaseVerified": true,
+  "allUserScenariosCertified": false,
+  "publishedRelease": {
+    "pr": 12,
+    "prUrl": "https://github.com/David14081982/SutiApp-private/pull/12",
+    "sourceHead": "3ddfbc95b8eb720b93841eec003317c48339321b",
+    "mergeCommit": "53eaca73d0f7fada6b9886bb40e48e6cee01a050",
+    "ciRun": 42943267347,
+    "pagesRun": 42943407158,
+    "githubEvidence": "docs/qa/evidence/document-flow-surgical/github-release.json",
+    "independentGitHubJobs": {
+      "provider": "github_fetch_workflow_run_jobs",
+      "checkedAt": "2026-11-11T02:12:10.514Z",
+      "ci": {
+        "run": 42943267347,
+        "job": "membership-google-contract",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": 9,
+        "allStepsSuccessful": true
+      },
+      "pages": {
+        "run": 42943407158,
+        "job": "deploy",
+        "status": "completed",
+        "conclusion": "success",
+        "steps": 11,
+        "allStepsSuccessful": true
+      }
+    },
+    "frontend": {
+      "bundleSha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+      "serviceWorkerCache": [
+        "sutiapp-v2026111005"
+      ],
+      "publicReadbackStatus": "PASS",
+      "publicReadbackChecks": 10,
+      "byteComparison": "Unmodified response SHA-256 equals exact Git blob bytes as built by Linux Pages; local CRLF working-tree hashes remain separately recorded."
+    },
+    "financialEdge": {
+      "version": 77,
+      "artifactSha256": "2a6d875476edc7695fecdbe4e2187928a8a5e1bccb683c4011a8d83e06813a62",
+      "sourceDigest": "f1c1fb08b0ea773db5d6b50f6a5dc56ec43878c71b5bc907fccccd4ca6dddc5e",
+      "exactReadbackMatchesDeployment": true,
+      "settings": {
+        "name": "financial-legacy",
+        "slug": "financial-legacy",
+        "verify_jwt": true,
+        "import_map": false,
+        "entrypoint": "financial-legacy/index.ts"
+      }
+    }
+  },
+  "mobileCertification": {
+    "syntheticChromium": {
+      "passed": 7,
+      "failed": 0
+    },
+    "syntheticWebKitWindows": {
+      "passed": 6,
+      "blocked": 1,
+      "baselineSamePdfLimitation": true
+    },
+    "physicalIosSafariPdfVerified": false,
+    "productionControlledAccountPdf": "PASS",
+    "productionControlledAccountPdfScope": "Chrome desktop suite; does not substitute physical iPhone/Safari verification."
+  },
+  "completedPublicationRequirements": [
+    "Deploy only the reviewed financial-legacy artifact and exact shared dependency, preserving verify_jwt and existing environment configuration; no migrations or data changes.",
+    "Publish the exact reviewed frontend artifact and verify hashes/version and the global surfaces after deployment."
+  ]
 }

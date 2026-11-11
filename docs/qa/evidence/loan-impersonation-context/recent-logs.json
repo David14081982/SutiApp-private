@@ -1,0 +1,120 @@
+{
+  "observedAt": "2026-11-11T02:39:33.838Z",
+  "window": {
+    "start": "2026-11-11T00:39:28.461Z",
+    "end": "2026-11-11T02:39:28.461Z"
+  },
+  "scope": "Two-hour recent financial Edge and PostgreSQL context-error projections",
+  "productionWrites": 0,
+  "functionInvocations": 0,
+  "userRowsRead": 0,
+  "remoteMethod": "GET",
+  "result": [
+    {
+      "name": "financial-structured",
+      "http": 200,
+      "status": "PASS",
+      "query": "select timestamp,toInt32OrZero(log_attributes['version']) as version,JSONExtractString(event_message,'stage') as stage,JSONExtractString(event_message,'internal_code') as internal_code,JSONExtractString(event_message,'postgres_code') as postgres_code,JSONExtractString(event_message,'document_phase') as document_phase from logs where source='function_logs' and position(event_message,'financial_request_submission_failed')>0 order by timestamp desc limit 200",
+      "rows": [
+        {
+          "document_phase": "COMPLETE",
+          "internal_code": "IMPERSONATION_CONTEXT_INVALID",
+          "postgres_code": "42501",
+          "stage": "request_writer",
+          "timestamp": "2026-11-11T02:35:05.755000",
+          "version": 77
+        },
+        {
+          "document_phase": "COMPLETE",
+          "internal_code": "IMPERSONATION_CONTEXT_INVALID",
+          "postgres_code": "42501",
+          "stage": "request_writer",
+          "timestamp": "2026-11-11T02:34:31.903000",
+          "version": 77
+        }
+      ],
+      "rowCount": 2,
+      "limitReached": false
+    },
+    {
+      "name": "financial-edge-status",
+      "http": 200,
+      "status": "PASS",
+      "query": "select toInt32OrZero(log_attributes['version']) as version,toInt32OrZero(log_attributes['response.status_code']) as http_status,count() as n,min(timestamp) as first_seen,max(timestamp) as last_seen from logs where source='function_edge_logs' and log_attributes['request.pathname']='/functions/v1/financial-legacy' group by version,http_status order by version,http_status limit 100",
+      "rows": [
+        {
+          "first_seen": "2026-11-11T00:48:00.997000",
+          "http_status": 200,
+          "last_seen": "2026-11-11T02:03:40.340000",
+          "n": 68,
+          "version": 76
+        },
+        {
+          "first_seen": "2026-11-11T00:53:07.084000",
+          "http_status": 204,
+          "last_seen": "2026-11-11T01:59:22.246000",
+          "n": 10,
+          "version": 76
+        },
+        {
+          "first_seen": "2026-11-11T01:45:58.680000",
+          "http_status": 403,
+          "last_seen": "2026-11-11T01:50:40.404000",
+          "n": 4,
+          "version": 76
+        },
+        {
+          "first_seen": "2026-11-11T02:04:37.443000",
+          "http_status": 200,
+          "last_seen": "2026-11-11T02:34:58.960000",
+          "n": 28,
+          "version": 77
+        },
+        {
+          "first_seen": "2026-11-11T02:06:03.102000",
+          "http_status": 204,
+          "last_seen": "2026-11-11T02:31:49.676000",
+          "n": 6,
+          "version": 77
+        },
+        {
+          "first_seen": "2026-11-11T02:34:31.918000",
+          "http_status": 409,
+          "last_seen": "2026-11-11T02:35:05.771000",
+          "n": 2,
+          "version": 77
+        }
+      ],
+      "rowCount": 6,
+      "limitReached": false
+    },
+    {
+      "name": "postgres-context",
+      "http": 200,
+      "status": "PASS",
+      "query": "select timestamp,extract(event_message,'(AUTH_CONTEXT_MISMATCH|DOCUMENT_CONTEXT_DENIED|AFFILIATE_CONTEXT_DENIED|IMPERSONATION_CONTEXT_INVALID|AUTH_ACTOR_REQUIRED|DOCUMENT_SCOPE_NOT_AVAILABLE|SERVICE_ROLE_REQUIRED|AUTH_REQUIRED)') as code,if(match(log_attributes['parsed.sql_state_code'],'^[A-Z0-9]{5}$'),log_attributes['parsed.sql_state_code'],'') as sqlstate,extract(log_attributes['parsed.context'],'(prepare_financial_document_submission|complete_financial_document_submission|resolve_document_access|assert_document_context|document_actor_context|get_effective_affiliate_id|submit_financial_request)') as function_context from logs where source='postgres_logs' and match(event_message,'AUTH_CONTEXT_MISMATCH|DOCUMENT_CONTEXT_DENIED|AFFILIATE_CONTEXT_DENIED|IMPERSONATION_CONTEXT_INVALID|AUTH_ACTOR_REQUIRED|DOCUMENT_SCOPE_NOT_AVAILABLE|SERVICE_ROLE_REQUIRED|AUTH_REQUIRED') order by timestamp desc limit 200",
+      "rows": [
+        {
+          "code": "IMPERSONATION_CONTEXT_INVALID",
+          "function_context": "",
+          "sqlstate": "42501",
+          "timestamp": "2026-11-11T02:35:05.714000"
+        },
+        {
+          "code": "IMPERSONATION_CONTEXT_INVALID",
+          "function_context": "",
+          "sqlstate": "42501",
+          "timestamp": "2026-11-11T02:34:31.859000"
+        }
+      ],
+      "rowCount": 2,
+      "limitReached": false
+    }
+  ],
+  "limits": [
+    "Logs are not linked to an employee account; no user identifiers were selected.",
+    "Chronology and technical codes alone do not prove the screenshot belongs to a specific log event.",
+    "Empty results do not prove error absence; source logging, ingestion, retention and row limits apply.",
+    "Only structured safe fields and recognized PostgreSQL context codes were selected; raw event messages were not retained."
+  ]
+}

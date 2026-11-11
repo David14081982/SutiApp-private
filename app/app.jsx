@@ -312,15 +312,30 @@
       const file = event.target.files && event.target.files[0];
       event.target.value = '';
       if (!file || photoLock.current) return;
+      const affiliateId = u.id;
+      const context = () => window.PrivateResourceDemand && typeof window.PrivateResourceDemand.context === 'function' ? window.PrivateResourceDemand.context() : null;
+      const epoch = context();
+      const isCurrent = () => epoch != null && context() === epoch;
       photoLock.current = true;
       setPhotoBusy(true);
       setPhotoError('');
       try {
-        await window.AffiliateRepository.updateProfilePhoto(file);
-        await window.AffiliateAuth.refreshContext();
+        const receipt = await window.AffiliateRepository.updateProfilePhoto(file);
+        if (!isCurrent()) return;
+        if (!receipt || receipt.saved !== true || receipt.affiliateId !== affiliateId) throw new Error('PROFILE_PHOTO_RECEIPT_MISMATCH');
         app.toast('Foto de perfil actualizada');
+        try {
+          const photo = await window.AffiliateRepository.getProfilePhoto(affiliateId);
+          if (!isCurrent()) return;
+          if (!photo || photo.affiliateId !== affiliateId) throw new Error('PROFILE_PHOTO_REFRESH_UNAVAILABLE');
+          const refreshed = await window.AffiliateAuth.refreshContext();
+          if (!isCurrent()) return;
+          if (!refreshed || refreshed.phase !== 'authenticated' || !refreshed.affiliate || refreshed.affiliate.id !== affiliateId) throw new Error('PROFILE_PHOTO_REFRESH_UNAVAILABLE');
+        } catch (_) {
+          if (isCurrent()) setPhotoError('Tu foto se guardó, pero no pudimos mostrarla. Vuelve a cargar tu perfil para consultarla.');
+        }
       } catch (error) {
-        setPhotoError(error && ['INVALID_PROFILE_PHOTO', 'PROFILE_PHOTO_SELF_ONLY', 'PROFILE_PHOTO_SAVED_REFRESH_FAILED'].includes(error.code)
+        if (isCurrent()) setPhotoError(error && ['INVALID_PROFILE_PHOTO', 'PROFILE_PHOTO_SELF_ONLY', 'PROFILE_PHOTO_REGISTRATION_UNCONFIRMED'].includes(error.code)
           ? error.message : 'No pudimos actualizar tu foto. Revisa tu conexión e inténtalo de nuevo.');
       } finally { photoLock.current = false; setPhotoBusy(false); }
     };

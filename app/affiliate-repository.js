@@ -344,9 +344,18 @@
       if (!file || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size < 1 || file.size > 20 * 1024 * 1024) {
         throw new AffiliateRepositoryError('INVALID_PROFILE_PHOTO', 'Elige una imagen JPG, PNG o WebP de hasta 20 MB.');
       }
+      const demand = window.PrivateResourceDemand;
+      const epoch = demand && typeof demand.context === 'function' ? demand.context() : null;
+      const assertContext = () => {
+        if (epoch == null || demand !== window.PrivateResourceDemand || demand.context() !== epoch) {
+          throw new AffiliateRepositoryError('PROFILE_PHOTO_CONTEXT_CHANGED', 'La sesión cambió durante la actualización de la foto.');
+        }
+      };
+      assertContext();
       const client = provideClient();
       const principal = await getAuthenticatedUser(client);
       const affiliate = await getCurrentAffiliate(principal);
+      assertContext();
       if (affiliate._impersonation || affiliate.auth_user_id !== principal.id) {
         throw new AffiliateRepositoryError('PROFILE_PHOTO_SELF_ONLY', 'Solo puedes cambiar la foto desde tu propia sesión.');
       }
@@ -369,16 +378,20 @@
       } finally { if (bitmap) bitmap.close(); }
       const sha = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())), byte => byte.toString(16).padStart(2, '0')).join('');
       const path = 'affiliate-documents/' + affiliate.id + '/' + crypto.randomUUID() + '.jpg';
+      assertContext();
       const stored = await client.storage.from('private-assets').upload(path, blob, { contentType: 'image/jpeg', upsert: false });
       if (stored.error) throw sourceError(stored.error);
+      assertContext();
       // Never delete after an ambiguous response: registration may already have committed.
       const registered = await client.rpc('set_self_profile_photo', { p_storage_path: path, p_mime_type: 'image/jpeg', p_file_size: blob.size, p_sha256: sha });
       if (registered.error) throw sourceError(registered.error);
       clearProfilePhotoCache();
-      try { return await getProfilePhoto(affiliate.id, principal); }
-      catch (error) {
-        throw new AffiliateRepositoryError('PROFILE_PHOTO_SAVED_REFRESH_FAILED', 'Tu foto se guardó, pero no pudimos mostrarla. Vuelve a abrir tu perfil.', error);
+      assertContext();
+      if (typeof registered.data !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(registered.data)) {
+        throw new AffiliateRepositoryError('PROFILE_PHOTO_REGISTRATION_UNCONFIRMED', 'No pudimos confirmar el resultado del guardado. Vuelve a consultar tu perfil antes de repetirlo.');
       }
+      // Registration is authoritative; signing and UI refresh are separate reads.
+      return Object.freeze({ saved: true, affiliateId: affiliate.id, relationId: registered.data });
     }
 
     function clearProfilePhotoCache() {

@@ -919,8 +919,30 @@
     React.useEffect(() => { if (window.financialLegacyStore) window.financialLegacyStore.ensureLoanSession(); }, []);
     const loadDeposit=React.useCallback(async(preferredId)=>{setDeposit((current)=>Object.assign({},current,{phase:'loading',saving:false,error:''}));try{const[accounts,phoneState]=await Promise.all([window.BankAccountRepository.listDeposit(),window.BankAccountRepository.getNotificationPhone()]);setDeposit((current)=>{const eligible=accounts.filter(depositEligible);const requested=preferredId||current.selectedId;const selected=eligible.find((account)=>account.id===requested)||eligible.find((account)=>account.is_primary)||eligible[0]||null;return Object.assign({},current,{phase:'ready',accounts:accounts.slice(),selectedId:selected?selected.id:'',phone:current.phone||phoneState.notification_phone||'',persistedPhone:phoneState.source==='CURRENT_NOTIFICATION_PHONE'?(phoneState.notification_phone||''):'',phoneSource:phoneState.source||'NONE',adding:preferredId?false:eligible.length===0,draft:null,saving:false,error:''});});}catch(_){setDeposit((current)=>Object.assign({},current,{phase:'error',accounts:[],selectedId:'',saving:false,error:'No fue posible consultar tus cuentas bancarias. Intenta nuevamente.'}));}},[]);
     React.useEffect(()=>{loadDeposit();},[loadDeposit]);
-    const loadDocuments=React.useCallback(async()=>{setDocumentState((s)=>Object.assign({},s,{phase:'loading'}));try{const r=await window.DocumentWorkflowRepository.requirements('prestamo');const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'),window.ProgramTermsRepository.current('prestamo')]);if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};setDocumentState(next);if(resolveLoanDocuments(next.requirements,next.documents).missing.length===0)setDocumentRecovery([]);return next;}catch(_){const failed={requirements:[],documents:[],terms:null,phase:'error'};setDocumentState(failed);return null;}},[]);
-    React.useEffect(()=>{loadDocuments();},[loadDocuments]);
+    const documentContext=window.PrivateResourceDemand.useContext(),documentLoad=React.useRef({sequence:0,context:documentContext,ready:false});
+    if(documentLoad.current.renderContext!==documentContext){documentLoad.current.sequence++;documentLoad.current.ready=false;}documentLoad.current.renderContext=documentContext;
+    const loadDocuments=React.useCallback(async(confirmed)=>{
+      const context=window.PrivateResourceDemand.context();if(documentContext!==context||documentLoad.current.renderContext!==documentContext)return null;
+      const sequence=++documentLoad.current.sequence;
+      if(documentLoad.current.context!==context){documentLoad.current.context=context;documentLoad.current.ready=false;setDocumentState({requirements:[],documents:[],terms:null,phase:'loading'});}
+      const sameContext=()=>context!==null&&context===window.PrivateResourceDemand.context()&&documentLoad.current.renderContext===context;
+      const current=()=>sameContext()&&sequence===documentLoad.current.sequence;
+      if(!current()){setDocumentState(s=>Object.assign({},s,{phase:'error'}));return null;}
+      if(window.DocumentWorkflowRepository.isConfirmedDocument(confirmed)){
+        setDocumentState(s=>sameContext()?Object.assign({},s,{documents:window.DocumentWorkflowRepository.mergeConfirmedDocuments(s.documents,confirmed),phase:s.phase==='loading'?(documentLoad.current.ready?'ready':'error'):s.phase}):s);
+        setDocumentRecovery([]);return null;
+      }
+      setDocumentState(s=>Object.assign({},s,{phase:'loading'}));
+      try{
+        const r=await window.DocumentWorkflowRepository.requirements('prestamo');
+        const[dResult,tResult]=await Promise.allSettled([window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'),window.ProgramTermsRepository.current('prestamo')]);
+        if(!current())return null;
+        if(dResult.status!=='fulfilled')throw dResult.reason||new Error('DOCUMENTS_UNAVAILABLE');
+        const next={requirements:r.slice(),documents:dResult.value.slice(),terms:tResult.status==='fulfilled'?tResult.value:null,phase:'ready'};
+        documentLoad.current.ready=true;setDocumentState(next);if(resolveLoanDocuments(next.requirements,next.documents).missing.length===0)setDocumentRecovery([]);return next;
+      }catch(_){if(!current())return null;documentLoad.current.ready=false;setDocumentState(s=>Object.assign({},s,{phase:'error'}));return null;}
+    },[documentContext]);
+    React.useEffect(()=>{loadDocuments();return()=>{documentLoad.current.sequence++;};},[loadDocuments]);
     React.useEffect(() => { if (scroller.current) scroller.current.scrollTop = 0; }, [step]);
     const steps = ['Monto', 'Depósito', 'Documentos', 'Resumen'];
     const titles = ['Simula tu préstamo', 'Elige dónde recibir tu dinero', 'Verifica tus documentos', 'Confirma tu solicitud'];

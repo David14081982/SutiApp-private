@@ -8,8 +8,13 @@
     if (!auth || auth.phase !== 'authenticated' || !auth.session || !auth.session.user || !auth.session.user.id || !(auth.session.access_token || auth.session.session_id)) return '';
     const affiliate = auth.affiliate || {}, imp = auth.impersonation || affiliate._impersonation || {};
     const admin = window.AdminRepository && window.AdminRepository.getState ? window.AdminRepository.getState() : {};
-    // The token is used only inside this closure, never returned, persisted or logged.
-    return JSON.stringify([auth.session.user.id, auth.session.access_token || auth.session.session_id || '', affiliate.id || '', imp,
+    // Rotation changes credentials, not the authenticated session. Decoding is
+    // only for cancellation; every resource still requires backend authorization.
+    let claims;
+    try { claims = JSON.parse(atob(auth.session.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))); }
+    catch (_) { return ''; }
+    if (!claims || typeof claims.session_id !== 'string' || !claims.session_id || claims.sub !== auth.session.user.id) return '';
+    return JSON.stringify([auth.session.user.id, claims.session_id, claims.role || '', claims.aal || '', affiliate.id || '', imp,
       admin.phase || '', admin.subjectKey || '', admin.assignment || null]);
   }
   function sync() {

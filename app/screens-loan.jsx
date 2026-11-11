@@ -994,16 +994,23 @@
           setSubmitError('Las condiciones de tu simulación cambiaron. Revisa los valores actualizados antes de continuar.');
         } else if (code === 'REQUIRED_DOCUMENTS_MISSING') {
           const refreshed=await loadDocuments();
+          if(!refreshed){setStep(2);setSubmitError('No fue posible verificar tu expediente. Reintenta la consulta antes de confirmar.');return;}
           const missing=refreshed?resolveLoanDocuments(refreshed.requirements,refreshed.documents).missing:[];
           setDocumentRecovery(missing);
           setSubmitError(missingLoanDocumentsMessage(missing));
+        } else if (code === 'DOCUMENT_NOT_CURRENT' || code === 'DOCUMENT_OPERATION_CHANGED') {
+          await loadDocuments();setStep(2);
+          setSubmitError('La versión de un documento cambió antes de confirmar. Revisa el expediente actualizado y vuelve a confirmar la solicitud.');
+        } else if (code === 'DOCUMENT_BYTES_UNAVAILABLE' || code === 'PHYSICAL_ASSET_NOT_VERIFIED' || code === 'BYTE_INTEGRITY_MISMATCH') {
+          await loadDocuments();setStep(2);
+          setSubmitError('No pudimos verificar uno de tus documentos. Revisa el expediente antes de volver a confirmar la solicitud.');
         } else if (code === 'PROGRAM_NOT_REQUESTABLE') {
           setSubmitError('Este programa no está disponible para nuevas solicitudes en este momento.');
         } else if (code === 'SIGNATURE_AND_TERMS_REQUIRED') {
           setSubmitError('Confirma tu firma y la aceptación de los términos para continuar.');
         } else if (code === 'TERMS_VERSION_REQUIRED') {
           setSubmitError('Los términos vigentes cambiaron. Revísalos nuevamente antes de confirmar.');
-        } else if (code === 'AFFILIATE_CONTEXT_DENIED' || code === 'IMPERSONATION_CONTEXT_INVALID') {
+        } else if (code === 'AFFILIATE_CONTEXT_DENIED' || code === 'IMPERSONATION_CONTEXT_INVALID' || code === 'DOCUMENT_CONTEXT_DENIED') {
           setSubmitError('Tu sesión de afiliado cambió. Vuelve al inicio e ingresa nuevamente a la solicitud.');
         } else if (code === 'DEPOSIT_ACCOUNT_UNAVAILABLE' || code === 'INVALID_DEPOSIT_ACCOUNT' || code === 'INVALID_NOTIFICATION_PHONE') {
           await loadDeposit(); setStep(1);

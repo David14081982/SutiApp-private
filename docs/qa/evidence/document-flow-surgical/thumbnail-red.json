@@ -1,0 +1,20 @@
+{
+  "checks": [
+    {
+      "name": "Fresh thumbnail survives authorization lasting 1000ms",
+      "status": "PASS"
+    },
+    {
+      "name": "Fresh thumbnail survives authorization lasting 68000ms",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'error' !== 'ready'\n"
+    },
+    {
+      "name": "Shared admin/asset thumbnail TTL begins after server authorization",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ ''\n- 'https://synthetic.invalid/preview'\n"
+    }
+  ],
+  "pass": 1,
+  "fail": 2
+}

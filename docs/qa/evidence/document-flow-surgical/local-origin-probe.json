@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-11-11T01:54:42.848Z",
+  "origin": "http://localhost:8080",
+  "status": 204,
+  "corsOriginMatches": true,
+  "durationMs": 991,
+  "method": "OPTIONS",
+  "authenticated": false,
+  "productionWrites": 0,
+  "evidenceSources": [
+    "docs/audits/H-HISTORY-PRIVATE-DOCUMENTS-001.md:41",
+    "scripts/admin-login-history-release.js:32"
+  ]
+}

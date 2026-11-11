@@ -1,0 +1,148 @@
+{
+  "status": "LOCAL_SCOPE_EVIDENCE_PREPARED_NO_RETRY",
+  "observedAt": "2026-11-11T01:55:31.428Z",
+  "authorization": {
+    "source": "C:/Users/david/.codex/attachments/fd1824d7-4f58-4e94-8393-720d325396fe/pasted-text.txt",
+    "sourceSha256": "61a39f7dd7e83680526216f382704a755c174c47e61673254e9453ef417a861a",
+    "directlyRead": true,
+    "citations": [
+      {
+        "line": 387,
+        "quote": "Queda autorizada la implementación y publicación de las correcciones necesarias."
+      },
+      {
+        "line": 392,
+        "quote": "- Despliega únicamente los componentes afectados."
+      },
+      {
+        "line": 261,
+        "quote": "- Edge Function `financial-legacy`."
+      },
+      {
+        "line": 264,
+        "quote": "Corrige el clasificador para conservar códigos de error seguros y útiles sin revelar detalles internos sensibles."
+      },
+      {
+        "line": 44,
+        "quote": "**GitHub `main` y la versión productiva verificada son la base, no un candidato local sin terminar.**"
+      }
+    ]
+  },
+  "destination": {
+    "managementOrigin": "https://api.supabase.com",
+    "endpointTemplate": "/v1/projects/<same-existing-project>/functions/deploy?slug=financial-legacy&bundleOnly=true",
+    "method": "POST",
+    "projectIdentifierSha256": "526b1f7c4bccc5bdfbbc792f6c45d28fc4a1931f007a52bfb7029c90c5576cfa",
+    "existingEnvironmentMatchesRepositoryProject": true,
+    "existingEnvironmentMatchesVerifiedBackupEntrypoint": true,
+    "existingProvider": "Supabase",
+    "newProjectOrThirdPartyDestination": false,
+    "credentials": "Existing Management bearer header only; secret values omitted"
+  },
+  "payload": {
+    "fileCount": 10,
+    "changedSourceCount": 2,
+    "unchangedSourceCount": 8,
+    "sourceBytes": 159926,
+    "files": [
+      {
+        "file": "_shared/document-crc.mjs",
+        "bytes": 7299,
+        "sha256": "38604fbb65853657253c75317bf0f0c6d016e9a21ec6be1d849b9966363ece43",
+        "changedFromVerifiedBaseline": false
+      },
+      {
+        "file": "_shared/document-integration.mjs",
+        "bytes": 7413,
+        "sha256": "b88f727167b199c1250e68fa936ce78be71d6263a7abc51bded094f72fff35e1",
+        "changedFromVerifiedBaseline": true
+      },
+      {
+        "file": "_shared/document-stream.mjs",
+        "bytes": 8887,
+        "sha256": "976aa047f70c33482b38433fe37089945bc0cee13ad3d9227e90c4ad16cf229c",
+        "changedFromVerifiedBaseline": false
+      },
+      {
+        "file": "financial-legacy/historical-obligation-map.mjs",
+        "bytes": 2594,
+        "sha256": "6237c357ea4c9be17f0e5add9fef65457442d940309206410963fc3d615e0b62",
+        "changedFromVerifiedBaseline": false
+      },
+      {
+        "file": "financial-legacy/index.ts",
+        "bytes": 96454,
+        "sha256": "8c23221f6d403c5b7280da6edc277917b79e9961ea646fe6c60ebee70eda29d4",
+        "changedFromVerifiedBaseline": true
+      },
+      {
+        "file": "financial-legacy/loan-capacity.mjs",
+        "bytes": 11274,
+        "sha256": "96cfa23bd6f03a6157de77541c9489640f83d08275baabc1de5bf24bfc536a08",
+        "changedFromVerifiedBaseline": false
+      },
+      {
+        "file": "financial-legacy/request-google-sync.js",
+        "bytes": 11427,
+        "sha256": "0e5760e20ca48a8eb8b3f7fe03029e0b693236af76dcd960b7ef74b17f73b07a",
+        "changedFromVerifiedBaseline": false
+      },
+      {
+        "file": "financial-legacy/savings-eligibility.ts",
+        "bytes": 1058,
+        "sha256": "aa6b055e454725e924c70aeee8d1b3bced2fd10edfc26a803c2535e6ce4a1d64",
+        "changedFromVerifiedBaseline": false
+      },
+      {
+        "file": "financial-legacy/visibility-policy.js",
+        "bytes": 2706,
+        "sha256": "bb4bb4bfb620c5cef3b3029944381e050f377bed3958b66e1c2d908c3bf4aa41",
+        "changedFromVerifiedBaseline": false
+      },
+      {
+        "file": "loan-history/history.mjs",
+        "bytes": 10814,
+        "sha256": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2",
+        "changedFromVerifiedBaseline": false
+      }
+    ],
+    "sourceDigest": "f1c1fb08b0ea773db5d6b50f6a5dc56ec43878c71b5bc907fccccd4ca6dddc5e",
+    "normalizationForBaselineComparison": "Remove CR and trim source boundary whitespace only",
+    "metadata": {
+      "name": "financial-legacy",
+      "slug": "financial-legacy",
+      "entrypoint_path": "financial-legacy/index.ts",
+      "verify_jwt": true
+    },
+    "envFilesIncluded": false,
+    "userRecordsIncluded": false,
+    "userDocumentBytesIncluded": false,
+    "knownSecretValuesFoundInSource": false
+  },
+  "baseline": {
+    "version": 76,
+    "artifactSha256": "5c10be7502d61c5bbdb45d5f9e382dbeee302834e315f5fee65758fb2a955b72",
+    "baseCommit": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+    "originalLocalSourcesVerifiedAgainstBase": true,
+    "backupObservedAt": "2026-11-11T01:41:31.602Z"
+  },
+  "operation": {
+    "compileOnly": true,
+    "deploy": false,
+    "restore": false,
+    "sql": false,
+    "storageConfig": false,
+    "otherFunctions": false,
+    "preAndPostChecks": "Same version 76, exact raw ESZIP SHA and function settings",
+    "executed": false,
+    "networkRequestsByThisProof": 0
+  },
+  "automaticReview": {
+    "rejectedBeforeProcessCreation": true,
+    "exactRejection": "This action was rejected due to unacceptable risk.\nReason: Although bundleOnly avoids publishing, it POSTs the candidate financial-legacy source to a remote Supabase Management API, exporting sensitive internal code to a destination and payload not explicitly authorized by the user; the local audit authorization does not cover that egress.\nDo not bypass this rejection through a workaround or indirect execution. Continue with a safer alternative, or carry out checks to prove that the action is authorized or low risk before trying again. Complete unaffected work without asking for confirmation. Report anything that remains blocked, clarify why it was blocked by auto-review, inform the user of the risk and ask for approval.",
+    "retryAttempted": false
+  },
+  "helperSha256": "6e870e8c04f89eb44e632655a6f4d8f1aef8140fa09df40cc39cfe1f041f04f9",
+  "proofScriptSha256": "ba57301002bb9a2bb5f1944edfbb4c8a55ff2eb7b6867b96e36db1d5c0b7c3cf",
+  "officialApi": "https://supabase.com/docs/reference/api/v1-deploy-a-function"
+}

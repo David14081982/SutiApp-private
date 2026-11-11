@@ -1,0 +1,106 @@
+{
+  "status": "PASS",
+  "isolation": "VM; synthetic Auth/Storage/RPC; no network or personal data",
+  "sourceSha256": {
+    "app/affiliate-repository.js": "94081a2d9cab07a9347e16cb596f14902aefd0c4e194aaac1d7d1057e8e0e2bd",
+    "app/app.jsx": "0eb9297e37884a94ac791f63fa89f7828f50a1339225168a1be1013bbd2640a5"
+  },
+  "cases": [
+    {
+      "name": "existing canonical reader/cache/isolation/view/static regression",
+      "status": "PASS"
+    },
+    {
+      "name": "confirmed registration returns a minimal immutable receipt without signing",
+      "status": "PASS"
+    },
+    {
+      "name": "saved registration remains successful when subsequent signing is unavailable",
+      "status": "PASS"
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: null",
+      "status": "PASS"
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: \"\"",
+      "status": "PASS"
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: \"photo-new\"",
+      "status": "PASS"
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: {}",
+      "status": "PASS"
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: \"00000000-0000-4000-8000-000000000002-extra\"",
+      "status": "PASS"
+    },
+    {
+      "name": "context changes during auth cannot apply a stale photo",
+      "status": "PASS"
+    },
+    {
+      "name": "context changes during decode cannot apply a stale photo",
+      "status": "PASS"
+    },
+    {
+      "name": "context changes during upload cannot apply a stale photo",
+      "status": "PASS"
+    },
+    {
+      "name": "context changes during register cannot apply a stale photo",
+      "status": "PASS"
+    },
+    {
+      "name": "unavailable context fails closed before writing",
+      "status": "PASS"
+    },
+    {
+      "name": "failUpload preserves existing rejection with no automatic retry/delete",
+      "status": "PASS"
+    },
+    {
+      "name": "failRegister preserves existing rejection with no automatic retry/delete",
+      "status": "PASS"
+    },
+    {
+      "name": "impersonation preserves existing rejection with no automatic retry/delete",
+      "status": "PASS"
+    },
+    {
+      "name": "handler consumes the canonical photo before its existing Auth projection refresh",
+      "status": "PASS"
+    },
+    {
+      "name": "handler reports saved confirmation separately from failSign",
+      "status": "PASS"
+    },
+    {
+      "name": "handler reports saved confirmation separately from failRefresh",
+      "status": "PASS"
+    },
+    {
+      "name": "handler reports saved confirmation separately from errorState",
+      "status": "PASS"
+    },
+    {
+      "name": "handler suppresses mismatched confirmation: changeAfterSave",
+      "status": "PASS"
+    },
+    {
+      "name": "handler suppresses mismatched confirmation: wrongAffiliate",
+      "status": "PASS"
+    },
+    {
+      "name": "context change during canonical read prevents the Auth refresh",
+      "status": "PASS"
+    },
+    {
+      "name": "handler write error never reports confirmed success",
+      "status": "PASS"
+    }
+  ]
+}

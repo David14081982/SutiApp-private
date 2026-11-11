@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-11-11T01:36:15.261Z",
+  "alias": "H005_TEST",
+  "authority": "Current owner instruction fd1824d7 and docs/DECISIONS.md:1480 (global H005_TEST approval)",
+  "checks": {
+    "matches": 1,
+    "active": true,
+    "confirmed": true,
+    "linked_email": true,
+    "excludes_requested_real_accounts": true
+  },
+  "secondaryAliasesConfigured": false,
+  "credentialsLogged": false,
+  "productionWrites": 0
+}

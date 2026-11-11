@@ -1,0 +1,41 @@
+# Corrección quirúrgica del flujo documental
+
+Estado: EN CURSO. Autorización: instrucción del propietario fd1824d7 (implementación y publicación, sin rediseño).
+
+Base: origin/main actualizado a f6cfae303ce32c6d2102fce5a664f4292f596118; worktree separado fix/document-flow-surgical. La raíz y el candidato anterior permanecen intactos. HTML/bundle/SW y fuentes Edge productivas contrastados con main; document-operation 12, document-access 28, financial-legacy 76.
+
+Ampliación de verificación autorizada: `scripts/test-membership-payment-contract.js` y `scripts/test-program-request-finance-block-contract.js`, sólo pruebas. Se reproduce un fallo previo en f6cfae3: el comparador esperaba el transporte RPC anterior a DocumentIntegration. Se fija el hash LF del repository completo aprobado y se actualiza únicamente el selector de la mutación, conservando las pruebas de bloqueos, payloads, idempotencia, proyección financiera y Google. Ninguna regla ni fuente financiera runtime cambia.
+
+Alcance previo: coordinación de sesión (`private-resource-demand.js`); transferencia/registro (`document-integration.js`, `document-transfer-source.mjs`, `document-workflow-repository.js`); estados y selección en documentos, membresía, préstamo y Admin Afiliados; fotografía de perfil (`affiliate-repository.js`, handler correspondiente en `app.jsx`, Auth sólo si el diagnóstico lo exige); clasificación segura en `financial-legacy`. Artefactos derivados: bundle, transferencia si cambia, versiones de caché existentes. Pruebas focales y evidencia en esta carpeta. SQL sólo si una discrepancia vigente se reproduce, con definición original, reversión y revisión previa.
+
+Autoridades conservadas: Auth/afiliado efectivo; affiliate_documents/private_assets/Storage privado; request_documents para evidencia histórica; affiliate_files para fotografía. La respuesta confirmada del servidor puede actualizar la proyección de pantalla; ningún fallo autoriza un fallback de datos. Sin cambios en reglas financieras, RLS, permisos, diseño, navegación, datos reales, purgas ni recuperación masiva.
+
+Orden: (1) fiabilidad y proyección de éxito confirmado, (2) solicitudes/reutilización/diagnóstico e idempotencia, (3) rendimiento sólo con garantías demostradas. No importar todos los candidatos anteriores. Los fallos históricos ya corregidos en producción se reproducen como regresión, no justifican otro parche.
+
+Verificación: nueve recorridos solicitados con datos sintéticos; cambios de identidad y aislamiento; V1/V2 e historial; errores de lectura frente a vacío real; pérdida de respuesta/reintento; vista móvil y perfil. Comparar estructura/controles antes/después. No certificar dispositivos físicos mediante mera emulación. Publicación sólo de componentes probados, con reversión por commit/artefacto y readback.
+
+Riesgos: respuestas tardías tras cambio de contexto, registro exitoso seguido de recarga fallida, versiones sustituidas concurrentemente y alteración administrativa de bytes. No retirar verificación física sin demostrar inmutabilidad en todas las rutas autorizadas. Riesgo visual controlado: conservar nodos, estilos, navegación y botones existentes; sólo estados/progreso/mensajes autorizados.
+
+Recuperación: commits separados por prioridad; revertir fuentes y regenerar artefactos, o restaurar artefacto Edge previo verificado. No revertir datos documentales ni referencias históricas.
+
+Dependencias directas incluidas en el alcance autorizado: `app/renta-car.jsx` y `app/screens-program-product-payment.jsx` consumen los mismos recibos documentales y requieren las mismas barreras de contexto/error; `supabase/functions/_shared/document-integration.mjs` aporta únicamente la fase segura de error a `financial-legacy`. No se cambian reglas de esos productos ni se despliegan otras Edge Functions. La revisión independiente confirmó que estos tres nombres faltaban en esta declaración, no en el alcance funcional autorizado.
+
+Validación focal: contexto 4/4; confirmación 10/10; recuperación 4/4; miniatura 3/3; consumidores 50/50; diagnóstico financiero 18/18; Admin 9/9; perfil 24/24 y navegador perfil 6/6; SQL sintético 8/8. Navegador móvil sintético: Chromium 7/7; WebKit 6 PASS y 1 BLOCKED por render PDF nativo en Windows (mismo límite en baseline); URL, MIME y bytes del PDF verificados. No equivale a Safari/iPhone físico.
+
+Las cuentas ACCOUNT_A, ACCOUNT_B y ACCOUNT_C se verificaron únicamente en lectura: vínculo Auth/afiliado activo confirmado, respectivamente 9, 6 y 6 documentos actuales, sin anomalías de referencia/estado/tamaño/hash en metadatos. No se usaron sus credenciales, se descargaron sus bytes ni se enviaron solicitudes. Esta comprobación no certifica elegibilidad financiera ni el recorrido real de esos usuarios.
+
+Límites conservados: no se elimina la verificación física de bytes porque la inmutabilidad de todas las rutas administrativas no está demostrada; los agregados de Admin conservan la última consulta hasta su actualización normal. La prueba estática histórica `test-admin-affiliates.js` falla en una expresión regular sobre Finanzas que también falla en la base oficial; ese archivo no se modifica. Suite global y readback de publicación todavía pendientes.
+
+Incidencia del entorno: el disco local quedó sin espacio al copiar el sitio. Se retiraron exclusivamente directorios `pgdata` sintéticos creados por esta tarea, con rutas verificadas dentro del worktree y sin `postmaster.pid`; se conservaron scripts, resultados y logs. El paquete público se reconstruyó correctamente con 34 archivos. Ninguna base ni archivo de producción se tocó.
+
+Regresión CI: el test histórico de Membership esperaba la llamada RPC anterior a DOCUMENT_V1 y fallaba también en f6cfae3, antes de esta corrección. Se ajustaron exclusivamente `test-membership-payment-contract.js` y el selector de mutación de `test-program-request-finance-block-contract.js`: ahora se exige el SHA íntegro del repository aprobado, sin omitir escritores, y se conservan 14 comprobaciones de comportamiento y 5 mutaciones. No se cambia el repository, el workflow CI, Google ni reglas financieras.
+
+Registro de publicación, todavía no desplegado:
+
+- 2026-11-11 01:30–01:34 UTC: SQL sintético 8/8 y build de 177 fuentes, hash bundle `5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e`.
+- Regresión global oficial contra producción anterior: PASS, incluido PDF legítimo, foto, Admin, catálogo, préstamo, Membership, fullscreen, refresh y con/sin service worker. El campo estático `productionDataMutations:0` del harness no es medición de escrituras; se inspeccionó el recorrido para excluir cargas y solicitudes, permitiendo actividad Auth/auditoría de acceso normal.
+- Prueba local inicial: FAIL por OPTIONS 403/CORS del puerto 4187; no es fallo de timeout. Se comprobó que `http://localhost:8080` ya está autorizado y se repite allí sin cambiar infraestructura.
+- 01:56:34 UTC: compilación remota `bundleOnly` de financial-legacy PASS; versión 76 y ESZIP originales intactos. La primera revisión automática había omitido la autorización de publicación del adjunto; tras aportar citas y demostrar el mismo proyecto/destino, aprobó la misma operación. No hubo despliegue en ese paso.
+- Revisión de evidencia: 53 archivos sin JWT, enlaces firmados ni identificadores de las cuentas reales solicitadas. Originales y correspondencia de aliases permanecen locales en carpeta ignorada.
+
+Commits reversibles de fuentes: `e5677f9` fiabilidad; `4e77cbd` diagnóstico/recuperación de solicitudes; `245c297` expiración de miniaturas; `626a3c5` artefactos/pruebas; `19393df` reparación de pruebas CI históricas. Para revertir una prioridad, revertir su commit de fuentes y regenerar bundle/transferencia con las mismas dependencias existentes, incrementando el cachebuster; no restaurar datos. Para volver íntegramente al cliente anterior, restaurar los artefactos de f6cfae3 mediante un commit de reversión normal. Edge dispone de ESZIP original verificado y helper de restauración con guardas de versión/hash; no ejecutar migraciones.

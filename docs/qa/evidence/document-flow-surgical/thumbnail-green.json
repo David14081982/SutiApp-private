@@ -1,0 +1,18 @@
+{
+  "checks": [
+    {
+      "name": "Fresh thumbnail survives authorization lasting 1000ms",
+      "status": "PASS"
+    },
+    {
+      "name": "Fresh thumbnail survives authorization lasting 68000ms",
+      "status": "PASS"
+    },
+    {
+      "name": "Shared admin/asset thumbnail TTL begins after server authorization",
+      "status": "PASS"
+    }
+  ],
+  "pass": 3,
+  "fail": 0
+}

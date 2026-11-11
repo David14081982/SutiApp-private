@@ -1,0 +1,305 @@
+{
+  "startedAt": "2026-11-11T01:30:08.592Z",
+  "status": "PASS",
+  "scope": "LOCAL_SYNTHETIC_ONLY",
+  "checks": [
+    {
+      "name": "Fresh loopback database, schema only, existing migrations unchanged",
+      "status": "PASS",
+      "ms": 53993
+    },
+    {
+      "name": "Synthetic authority fixtures with real guards and triggers",
+      "status": "PASS",
+      "ms": 339
+    },
+    {
+      "name": "Admin upload is reused by self with the same document, asset and hash",
+      "status": "PASS",
+      "ms": 2866,
+      "detail": {
+        "documentSame": true,
+        "assetSame": true,
+        "sha256Same": true,
+        "selfListAvailable": true
+      }
+    },
+    {
+      "name": "Actual financial writer creates one loan, folio and sealed original evidence",
+      "status": "PASS",
+      "ms": 737,
+      "detail": {
+        "actualSqlWriter": true,
+        "firstCreationCommittedBeforeResponseLoss": true,
+        "requestCount": 1,
+        "folioPresent": true,
+        "requestedAmount": 1000,
+        "requestedTerm": 6,
+        "referenceCount": 1,
+        "originalHashPreserved": true
+      }
+    },
+    {
+      "name": "Lost successful response retries the same financial idempotency key without duplicate loan or evidence",
+      "status": "PASS",
+      "ms": 73,
+      "detail": {
+        "sameRequest": true,
+        "requestCount": 1,
+        "evidenceCount": 1,
+        "responseLostAfterDatabaseCommit": true
+      }
+    },
+    {
+      "name": "Self V2 upload is reused by admin and preserves request V1 evidence",
+      "status": "PASS",
+      "ms": 150,
+      "detail": {
+        "adminReusesSelfAsset": true,
+        "adminListAvailable": true,
+        "currentIsV2": true,
+        "priorRequestUsesV1": true,
+        "priorRequestStillAccessible": true,
+        "oldAndNewAssetsRetained": 2
+      }
+    },
+    {
+      "name": "Real financial writer function remains byte-for-byte unchanged throughout tests",
+      "status": "PASS",
+      "ms": 2,
+      "detail": [
+        {
+          "hash": "74476b0bb4baf9cb379545c18f017fe1",
+          "args": "p_actor_real_auth_user_id uuid, p_affiliate_id uuid, p_impersonation_session_id uuid, p_program_item_id uuid, p_notes text, p_signature_data text, p_terms_version_id uuid, p_document_ids uuid[], p_idempotency_key uuid, p_amount numeric, p_term integer, p_term_semantics text, p_expected_profile_version integer, p_financial_submission_snapshot jsonb"
+        }
+      ]
+    },
+    {
+      "name": "Different valid affiliate cannot read or submit another affiliate document",
+      "status": "PASS",
+      "ms": 31,
+      "detail": {
+        "differentConfirmedAuthLink": true,
+        "selfAccessDenied": true,
+        "adminAccessDenied": true,
+        "foreignSubmissionDenied": true,
+        "requestsAndSubmissionsUnchanged": true
+      }
+    }
+  ],
+  "sources": {
+    ".tmp/document-architecture-lab/catalog/schema.sql": "1626e120c05da60e9ec394246f180df714d6f60131fe663fb20a4121fadcda3d",
+    ".tmp/document-flow-surgical/supabase/migrations/20261109000100_documentary_version_integrity.sql": "92c5bac88806b7f90ede34530b662d813fcfceeae2c0e98c3de6b48b837ad5c9",
+    ".tmp/document-flow-surgical/supabase/migrations/20261109000200_documentary_legacy_file_access.sql": "aefa34afb0ffe46686892def3a80a89633c0693bd5178d42bd29d7df2c30d22e",
+    ".tmp/document-flow-surgical/supabase/migrations/20261109000300_loan_document_submission.sql": "1e02dfe5590d9321e0c07b5821232b1698102c3e2e326f0e602c1b9a39d6a03a",
+    ".tmp/document-flow-surgical/scripts/fixtures/document-100mb-before.json": "431f260a3835886df2d858124d3ebdfbfbc1b4ffa184d2c939b5253dab6f40e0",
+    ".tmp/document-flow-surgical/supabase/migrations/20261109000400_document_100mb.sql": "3ad30c67c791dec134012efa67ec1779e214817de605a0f081fa014f510e5c73",
+    "scripts/document-lab/phase2-fixtures.cjs": "f82466ed30822f1ca940a6127c1bc19f88ee3435940b712c5535e3fbca9e38cc",
+    ".tmp/document-flow-surgical/supabase/functions/_shared/document-integration.mjs": "b88f727167b199c1250e68fa936ce78be71d6263a7abc51bded094f72fff35e1",
+    ".tmp/document-flow-surgical/supabase/functions/_shared/document-stream.mjs": "976aa047f70c33482b38433fe37089945bc0cee13ad3d9227e90c4ad16cf229c",
+    ".tmp/document-flow-surgical/supabase/functions/_shared/document-crc.mjs": "38604fbb65853657253c75317bf0f0c6d016e9a21ec6be1d849b9966363ece43"
+  },
+  "limitations": [
+    "Schema-only catalog is historical; this does not attest current production schema.",
+    "Synthetic users, sessions, permissions, documents and financial criteria are not real accounts.",
+    "The real financial SQL writer and Edge orchestration execute; Storage transport is a loopback synthetic HTTP server.",
+    "No financial equivalence, production upload performance, mobile behavior or full UI proof is claimed."
+  ],
+  "safety": {
+    "host": "127.0.0.1",
+    "database": "document_lab_surgical",
+    "freshCluster": true,
+    "existingDatabaseAccess": false,
+    "productionRowsImported": 0,
+    "syntheticStorage": true,
+    "externalFetchBlocked": true,
+    "clusterStopped": true
+  },
+  "schema": {
+    "tables": "306",
+    "triggers": "266",
+    "policies": "331"
+  },
+  "emptyBeforeFixtures": {
+    "affiliates": "0",
+    "requests": "0",
+    "users": "0"
+  },
+  "exactPredecessors": [
+    {
+      "signature": "save_document_type_configuration(jsonb,text)",
+      "definitionSha256": "a82bef0fbbdbb346458938cc20f97c49723e35ec8ff252e06066b9a4f7273f8c"
+    },
+    {
+      "signature": "prepare_document_submission(uuid,text,jsonb)",
+      "definitionSha256": "14e1e7f9d01c58cf56891d58c50cd53d0327b7cb18d33665a79fb05ddbe8588f"
+    },
+    {
+      "signature": "complete_document_financial_submission(uuid,jsonb)",
+      "definitionSha256": "7a190c0c83ca919c16dc682644f623678da629c06f0c01a4a066a2ba36b228ab"
+    },
+    {
+      "signature": "prepare_document_operation(uuid,text,uuid,uuid,text,bigint,text,uuid,text,text)",
+      "definitionSha256": "b125a54a68d0de145eb083b2a9be2875589085a364a461a2aa6ef94e6ad6792d"
+    },
+    {
+      "signature": "complete_document_submission(uuid,jsonb)",
+      "definitionSha256": "9aa2ec1afe0960781c67d9ebfdc2c202926e0183e8af1a660236ecaca99dd971"
+    }
+  ],
+  "fixture": {
+    "syntheticOnly": true,
+    "affiliateCount": 2,
+    "authUserCount": 3,
+    "financialRules": 1,
+    "documentTypes": 1,
+    "history": "synthetic empty authoritative publication",
+    "accountNumbersFromProduction": []
+  },
+  "financialWriterBefore": [
+    {
+      "hash": "74476b0bb4baf9cb379545c18f017fe1",
+      "args": "p_actor_real_auth_user_id uuid, p_affiliate_id uuid, p_impersonation_session_id uuid, p_program_item_id uuid, p_notes text, p_signature_data text, p_terms_version_id uuid, p_document_ids uuid[], p_idempotency_key uuid, p_amount numeric, p_term integer, p_term_semantics text, p_expected_profile_version integer, p_financial_submission_snapshot jsonb"
+    }
+  ],
+  "rpcTrace": [
+    {
+      "role": "authenticated",
+      "name": "prepare_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "get_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "get_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "resolve_document_access",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "list_effective_affiliate_documents",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "get_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "get_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "resolve_document_access",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "list_admin_affiliate_documents",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "resolve_document_access",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "get_effective_affiliate_id",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "resolve_document_access",
+      "status": "FAILED",
+      "code": "42501",
+      "message": "DOCUMENT_CONTEXT_DENIED"
+    },
+    {
+      "role": "authenticated",
+      "name": "resolve_document_access",
+      "status": "FAILED",
+      "code": "42501",
+      "message": "ADMIN_DOCUMENT_ACCESS_DENIED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "FAILED",
+      "code": "42501",
+      "message": "DOCUMENT_NOT_CURRENT"
+    }
+  ],
+  "completedAt": "2026-11-11T01:31:25.204Z",
+  "scriptSha256": "3ea2814a7e466f462c35177d62f5f21409a7c3d080fa0228f61507107c84a274"
+}

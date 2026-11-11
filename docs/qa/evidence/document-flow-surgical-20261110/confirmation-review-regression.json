@@ -1,0 +1,51 @@
+{
+  "checks": [
+    {
+      "name": "PostgreSQL confirmation immediately yields reusable projection, without a second read",
+      "status": "PASS"
+    },
+    {
+      "name": "Foreign owner, wrong type and unregistered responses cannot become confirmed documents",
+      "status": "PASS"
+    },
+    {
+      "name": "Forged objects cannot replace canonical current documents",
+      "status": "PASS"
+    },
+    {
+      "name": "An idempotent V1 receipt never replaces a known V2",
+      "status": "PASS"
+    },
+    {
+      "name": "A changed context during preparation cannot start another owner upload",
+      "status": "PASS"
+    },
+    {
+      "name": "The existing upload handler publishes confirmation before waiting for refresh",
+      "status": "PASS"
+    },
+    {
+      "name": "gate: obsolete A callback cannot invalidate pending B read",
+      "status": "PASS"
+    },
+    {
+      "name": "gate: confirmed upload cannot authorize unresolved requirements/catalog; explicit retry recovers",
+      "status": "PASS"
+    },
+    {
+      "name": "documents: obsolete A callback cannot invalidate pending B read",
+      "status": "PASS"
+    },
+    {
+      "name": "documents: confirmed upload cannot authorize unresolved requirements/catalog; explicit retry recovers",
+      "status": "PASS"
+    }
+  ],
+  "pass": 10,
+  "fail": 0,
+  "isolation": "Actual Workflow and screen hook functions in VM; synthetic remote reads and React scheduling; no network or user data",
+  "sourceSha256": {
+    "app/document-workflow-repository.js": "b45bd768b8d66ee4935cf000846ad49482f5e87b92ebfdfbb7c496284c68b553",
+    "app/screens-documentos.jsx": "aa8924c147a576756c32337036e4396f13798ec4cdc48d0c3e7b3e9d249162f4"
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "status": "FAIL",
+  "isolation": "VM; synthetic Auth/Storage/RPC; no network or personal data",
+  "sourceSha256": {
+    "app/affiliate-repository.js": "9b2603e4aa10510a762a0ac7517e92682618d537f300093c93a6872b97380353",
+    "app/app.jsx": "9a3855037867920f7dc54e96d5c4e3ce9cf33b180e0c34cc33aea0e951d03200"
+  },
+  "cases": [
+    {
+      "name": "existing canonical reader/cache/isolation/view/static regression",
+      "status": "PASS"
+    },
+    {
+      "name": "confirmed registration returns a minimal immutable receipt without signing",
+      "status": "FAIL",
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    affiliateId: '00000000-0000-4000-8000-000000000001',\n+   assetId: 'canonical-asset',\n+   expiresAt: 1794362353603,\n    relationId: '00000000-0000-4000-8000-000000000002',\n+   signedUrl: 'https://example.invalid/canonical-signed-photo',\n+   storageBucket: 'private-assets',\n+   storagePath: 'fixture/canonical.jpg'\n-   saved: true\n  }\n"
+    },
+    {
+      "name": "saved registration remains successful when subsequent signing is unavailable",
+      "status": "FAIL",
+      "error": "Tu foto se guardó, pero no pudimos mostrarla. Vuelve a abrir tu perfil."
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: null",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: \"\"",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: \"photo-new\"",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: {}",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "malformed registration receipt is unconfirmed: \"00000000-0000-4000-8000-000000000002-extra\"",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "context changes during auth cannot apply a stale photo",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "context changes during decode cannot apply a stale photo",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "context changes during upload cannot apply a stale photo",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "context changes during register cannot apply a stale photo",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "unavailable context fails closed before writing",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "failUpload preserves existing rejection with no automatic retry/delete",
+      "status": "PASS"
+    },
+    {
+      "name": "failRegister preserves existing rejection with no automatic retry/delete",
+      "status": "PASS"
+    },
+    {
+      "name": "impersonation preserves existing rejection with no automatic retry/delete",
+      "status": "PASS"
+    },
+    {
+      "name": "handler consumes the canonical photo before its existing Auth projection refresh",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n0 !== 1\n"
+    },
+    {
+      "name": "handler reports saved confirmation separately from failSign",
+      "status": "FAIL",
+      "error": "The input did not match the regular expression /Tu foto se guardó/. Input:\n\n''\n"
+    },
+    {
+      "name": "handler reports saved confirmation separately from failRefresh",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n0 !== 1\n"
+    },
+    {
+      "name": "handler reports saved confirmation separately from errorState",
+      "status": "FAIL",
+      "error": "The input did not match the regular expression /Tu foto se guardó/. Input:\n\n''\n"
+    },
+    {
+      "name": "handler suppresses mismatched confirmation: changeAfterSave",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "handler suppresses mismatched confirmation: wrongAffiliate",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "context change during canonical read prevents the Auth refresh",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "handler write error never reports confirmed success",
+      "status": "PASS"
+    }
+  ]
+}

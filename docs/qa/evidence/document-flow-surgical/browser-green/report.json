@@ -1,0 +1,308 @@
+{
+  "status": "BLOCKED",
+  "baseline": false,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "startedAt": "2026-11-11T01:39:05.991Z",
+  "bundleSha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+  "chunkSha256": {
+    "icons.jsx": "6cf218cb7f8dcd1593149d70d92cbb524ad3555eb1c7ac6d040feb0f13c81255",
+    "ui.jsx": "f2264e526d29a9f0722fd7a0836e9a9756b51bea492cec397f1903de8609c1c0",
+    "image-viewer.jsx": "3580a3da4635016f02241ed240ee0821c20a6efe41e47593aa31114d6bace90d",
+    "private-resource-demand.js": "6ff84b864bc64391b5341db9c0e7348a1e0a65754f2c25f336ccd13819961be3",
+    "document-integration.js": "a5c864ba35ff2b3c6810fd56ce5e8b4d9dd871198b647876897939d93c39df4d",
+    "document-workflow-repository.js": "a2af6ad55851dba746b509d5201ce6abf47ade00941466f114fe722e9b73e786",
+    "screens-documentos.jsx": "926fe71a22e78dcdb3c55a87cb18fc85ba3a54b1aa000d38898312bf45010c11",
+    "screens-membership-application.jsx": "7298722bc3c0fb80e2c434848d81368e38b98b310807edaa7bd2b7c59ca77de5"
+  },
+  "checks": [
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "real React and exact compiled consumers",
+      "status": "PASS",
+      "durationMs": 1262,
+      "evidence": {
+        "react": "18.3.1",
+        "localIntegration": true
+      }
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "confirmed upload replaces V1 immediately despite subsequent list failure; thumbnail visible",
+      "status": "PASS",
+      "durationMs": 5104,
+      "evidence": {
+        "operations": 1,
+        "registered": 1,
+        "transfers": 1,
+        "lists": 1,
+        "deletes": 0,
+        "prepares": [
+          "9eed82b5-10e6-40f8-a475-5d833ed39b2b"
+        ],
+        "completes": [
+          "9eed82b5-10e6-40f8-a475-5d833ed39b2b"
+        ],
+        "oldVersionStayedEligibleUntilComplete": true,
+        "thumbnailLoaded": true
+      }
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "same-session JWT refresh during transfer keeps context and confirms once",
+      "status": "PASS",
+      "durationMs": 2074,
+      "evidence": {
+        "operations": 1,
+        "registered": 1,
+        "transfers": 1,
+        "lists": 1,
+        "deletes": 0,
+        "prepares": [
+          "8e60e29e-9017-4710-9b4e-30b11d6b00b3"
+        ],
+        "completes": [
+          "8e60e29e-9017-4710-9b4e-30b11d6b00b3"
+        ]
+      }
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "lost COMPLETE response reselects same operation without duplicate registration or transfer",
+      "status": "PASS",
+      "durationMs": 1950,
+      "evidence": {
+        "operations": 1,
+        "registered": 1,
+        "transfers": 1,
+        "lists": 1,
+        "deletes": 0,
+        "prepares": [
+          "43ad10c0-60f0-436a-9994-f1455df1c6c5",
+          "43ad10c0-60f0-436a-9994-f1455df1c6c5"
+        ],
+        "completes": [
+          "43ad10c0-60f0-436a-9994-f1455df1c6c5",
+          "43ad10c0-60f0-436a-9994-f1455df1c6c5"
+        ]
+      }
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "PDF authorized URL and bytes; native renderer measured separately",
+      "status": "BLOCKED",
+      "durationMs": 9062,
+      "evidence": {
+        "localPdfBytes": 869,
+        "sha256": "16d2b8ba19278f52eef39d5457d11e0a6a3fbc96871c24601c5e96183ba753dc",
+        "iframeLoaded": false,
+        "rendererStatus": "BLOCKED",
+        "limitation": "Windows WebKit did not fire PDF iframe load; physical iOS/Safari rendering remains unverified. Same limitation reproduced on baseline."
+      }
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "membership list failure is explicit error; real retry restores authoritative rows",
+      "status": "PASS",
+      "durationMs": 1139,
+      "evidence": {
+        "explicitError": true,
+        "lists": 2
+      }
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "shared request gate confirmation does not repeat a failed list query",
+      "status": "PASS",
+      "durationMs": 1460,
+      "evidence": {
+        "gate": {
+          "phase": "ready",
+          "ready": true,
+          "documentIds": [
+            "00000000-0000-4000-8000-000000000101",
+            "00000000-0000-4000-8000-000000000021"
+          ],
+          "missing": 0
+        },
+        "calls": {
+          "operations": 1,
+          "registered": 1,
+          "transfers": 1,
+          "lists": 1,
+          "deletes": 0,
+          "prepares": [
+            "54707a6d-4e44-42a6-b21c-42806cf35f0b"
+          ],
+          "completes": [
+            "54707a6d-4e44-42a6-b21c-42806cf35f0b"
+          ]
+        }
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "real React and exact compiled consumers",
+      "status": "PASS",
+      "durationMs": 1927,
+      "evidence": {
+        "react": "18.3.1",
+        "localIntegration": true
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "confirmed upload replaces V1 immediately despite subsequent list failure; thumbnail visible",
+      "status": "PASS",
+      "durationMs": 3280,
+      "evidence": {
+        "operations": 1,
+        "registered": 1,
+        "transfers": 1,
+        "lists": 1,
+        "deletes": 0,
+        "prepares": [
+          "414bc630-e862-4248-a08f-6aec6defa952"
+        ],
+        "completes": [
+          "414bc630-e862-4248-a08f-6aec6defa952"
+        ],
+        "oldVersionStayedEligibleUntilComplete": true,
+        "thumbnailLoaded": true
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "same-session JWT refresh during transfer keeps context and confirms once",
+      "status": "PASS",
+      "durationMs": 2272,
+      "evidence": {
+        "operations": 1,
+        "registered": 1,
+        "transfers": 1,
+        "lists": 1,
+        "deletes": 0,
+        "prepares": [
+          "c24568f5-67ac-4efa-8580-ff8c67bd2481"
+        ],
+        "completes": [
+          "c24568f5-67ac-4efa-8580-ff8c67bd2481"
+        ]
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "lost COMPLETE response reselects same operation without duplicate registration or transfer",
+      "status": "PASS",
+      "durationMs": 1632,
+      "evidence": {
+        "operations": 1,
+        "registered": 1,
+        "transfers": 1,
+        "lists": 1,
+        "deletes": 0,
+        "prepares": [
+          "c6cc50fc-3146-4f0a-9859-af8b70f0e856",
+          "c6cc50fc-3146-4f0a-9859-af8b70f0e856"
+        ],
+        "completes": [
+          "c6cc50fc-3146-4f0a-9859-af8b70f0e856",
+          "c6cc50fc-3146-4f0a-9859-af8b70f0e856"
+        ]
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "PDF authorized URL and bytes; native renderer measured separately",
+      "status": "PASS",
+      "durationMs": 1274,
+      "evidence": {
+        "localPdfBytes": 869,
+        "sha256": "16d2b8ba19278f52eef39d5457d11e0a6a3fbc96871c24601c5e96183ba753dc",
+        "iframeLoaded": true,
+        "rendererStatus": "PASS",
+        "limitation": null
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "membership list failure is explicit error; real retry restores authoritative rows",
+      "status": "PASS",
+      "durationMs": 1530,
+      "evidence": {
+        "explicitError": true,
+        "lists": 2
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "shared request gate confirmation does not repeat a failed list query",
+      "status": "PASS",
+      "durationMs": 999,
+      "evidence": {
+        "gate": {
+          "phase": "ready",
+          "ready": true,
+          "documentIds": [
+            "00000000-0000-4000-8000-000000000101",
+            "00000000-0000-4000-8000-000000000021"
+          ],
+          "missing": 0
+        },
+        "calls": {
+          "operations": 1,
+          "registered": 1,
+          "transfers": 1,
+          "lists": 1,
+          "deletes": 0,
+          "prepares": [
+            "592067b5-d349-425f-bfb2-e0956d5466f8"
+          ],
+          "completes": [
+            "592067b5-d349-425f-bfb2-e0956d5466f8"
+          ]
+        }
+      }
+    }
+  ],
+  "blockedExternalRequests": [],
+  "pageErrors": [],
+  "limits": [
+    "Local component integration with real React and exact compiled bundle chunks; not a full app/global visual certification.",
+    "Synthetic Auth/RPC/Edge/transport, real browser SHA; does not measure production latency or test storage/RLS.",
+    "Mobile emulation, not physical iOS/Android or mobile networks.",
+    "PDF check proves local bytes/MIME and viewer URL/load only; no pixel-level renderer certification.",
+    "Synthetic financial quote is only a display fixture; no calculations or request submissions are performed."
+  ],
+  "finishedAt": "2026-11-11T01:39:56.876Z",
+  "passed": 13,
+  "failed": 0,
+  "blocked": 1
+}

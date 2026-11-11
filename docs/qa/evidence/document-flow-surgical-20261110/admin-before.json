@@ -1,0 +1,55 @@
+{
+  "status": "FAIL",
+  "isolation": "Local Chromium; actual React/Admin/Workflow sources; synthetic adapters only; no production traffic or PII",
+  "sourceSha256": {
+    "app/admin-affiliates-repository.js": "eb92d38af9dff2966389d679dcf62d3db623131a43a59cf41530ec4c85a838ac",
+    "app/screens-admin-affiliates.jsx": "1617bebd2500f29aa97bc945916e99371b6234fbe793f4d8da73bc1944a1a21c",
+    "app/document-workflow-repository.js": "517184c0b0105b8e8712fbeade5f7b7540b72ce0e17a564fb19288652bae8f7d"
+  },
+  "cases": [
+    {
+      "name": "repository returns workflow-confirmed original object without a post-write query",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "name": "invalid MIME remains rejected before any upload",
+      "status": "PASS"
+    },
+    {
+      "name": "file selection starts upload automatically and busy prevents a second submit",
+      "status": "FAIL",
+      "error": "page.waitForFunction: Timeout 3000ms exceeded."
+    },
+    {
+      "name": "confirmed replacement stays visible when further workbench reads fail; exact predecessor yields next ordinal",
+      "status": "FAIL",
+      "error": "locator.waitFor: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-affiliate-document-replace=\"20000000-0000-4000-8000-000000000002\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "name": "unknown ordinal read failure does not hide confirmed document or fabricate version one",
+      "status": "FAIL",
+      "error": "locator.waitFor: Timeout 3000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-affiliate-document-replace=\"20000000-0000-4000-8000-000000000002\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "name": "unknown ordinal is filled by separate authorized read without replacing the confirmed row",
+      "status": "FAIL",
+      "error": "page.waitForFunction: Timeout 3000ms exceeded."
+    },
+    {
+      "name": "late completion after selecting another affiliate never refreshes or toasts that profile",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 0\n"
+    },
+    {
+      "name": "saved callback failure is labelled confirmed and cannot immediately submit the same file again",
+      "status": "FAIL",
+      "error": "The input did not match the regular expression /Documento guardado/. Input:\n\n'No fue posible guardar el documento. Conserva el archivo y vuelve a intentar.'\n"
+    },
+    {
+      "name": "genuine upload failure retains file and existing retry button",
+      "status": "PASS"
+    }
+  ],
+  "pageErrors": []
+}

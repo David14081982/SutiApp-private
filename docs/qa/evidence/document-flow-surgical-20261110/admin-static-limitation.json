@@ -1,0 +1,10 @@
+{
+  "status": "FAIL",
+  "command": "node scripts/test-admin-affiliates.js",
+  "failure": "Static expectation /const belongsToAffiliate=/ absent in untouched finance source",
+  "preexisting": true,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "source": "app/screens-admin-finanzas.jsx",
+  "normalizedSha256": "ed0d033365f0704b714eaf2b8ce187f2c9f111222cedacf3250c05b923151ecb",
+  "modifiedByThisTask": false
+}

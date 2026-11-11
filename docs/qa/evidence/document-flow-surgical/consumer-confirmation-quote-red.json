@@ -1,0 +1,163 @@
+{
+  "status": "FAIL",
+  "baseline": false,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "recordedAt": "2026-11-11T01:17:05.996Z",
+  "passed": 34,
+  "failed": 1,
+  "tests": [
+    {
+      "name": "Membership: failed list preserves prior rows in error phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: confirmed callback merges V2 without another read",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: confirmation never converts an error into ready",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: late response from another identity is discarded",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: confirmation cancels older query without stale submission result",
+      "status": "FAIL",
+      "error": "CONFIRMED_QUOTE_LOST_DURING_CANCELLED_READ"
+    },
+    {
+      "name": "Membership: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: batched confirmations of two types both survive",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: failed list preserves prior rows in error phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: confirmed callback merges V2 without another read",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: confirmation never converts an error into ready",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: late response from another identity is discarded",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: confirmation cancels older query without stale submission result",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: batched confirmations of two types both survive",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: failed list preserves prior rows in error phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: confirmed callback merges V2 without another read",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: confirmation never converts an error into ready",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: late response from another identity is discarded",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: confirmation cancels older query without stale submission result",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: batched confirmations of two types both survive",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: failed list preserves prior rows in error phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: confirmed callback merges V2 without another read",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: confirmation never converts an error into ready",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: late response from another identity is discarded",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: confirmation cancels older query without stale submission result",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: batched confirmations of two types both survive",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: DOCUMENT_NOT_CURRENT refreshes documents without automatic resubmission",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: DOCUMENT_OPERATION_CHANGED refreshes documents without automatic resubmission",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: DOCUMENT_BYTES_UNAVAILABLE refreshes documents without automatic resubmission",
+      "status": "PASS"
+    }
+  ],
+  "sourceHashes": {
+    "app/screens-membership-application.jsx": "aba4eeeecdbfe812804085dbf13e0db4dc3a26cb84a9d6fdf3a31a420f78ed8c",
+    "app/screens-loan.jsx": "947646ce0463c0020994c2b8512fddee78dce1c65f7ec471625b8c83b7bb5d13",
+    "app/screens-program-product-payment.jsx": "38f11cd9974f76280957e5ee51897600ac48200a5f64a7ac6cf2b0f4281da553",
+    "app/renta-car.jsx": "de2796eebdd8d7bdd0830baa1e9700d3cb834048de50929d08d9482fa99cba86"
+  },
+  "repositoryHash": "517184c0b0105b8e8712fbeade5f7b7540b72ce0e17a564fb19288652bae8f7d",
+  "limits": [
+    "Synthetic React hook scheduling and RPC responses; no browser layout certification",
+    "Real consumer functions and repository WeakMap confirmation/merge",
+    "No database, network, real data, financial rules, build or deployment"
+  ]
+}

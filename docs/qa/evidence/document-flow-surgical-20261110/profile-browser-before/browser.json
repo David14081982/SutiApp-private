@@ -1,0 +1,33 @@
+{
+  "status": "FAIL",
+  "isolation": "Local Chrome, actual React/Perfil/Repository; synthetic Auth/Storage/RPC only. Blob URL is a fixture adapter for the canonical signer, never production code.",
+  "checks": [
+    {
+      "name": "existing mobile picker, actual PNG-to-JPEG conversion, private upload, registration and canonical signed photo",
+      "status": "PASS"
+    },
+    {
+      "name": "invalid type, upload and registration failures remain visible and preserve previous photo",
+      "status": "PASS"
+    },
+    {
+      "name": "confirmed write remains success after failSign",
+      "status": "FAIL",
+      "error": "confirmed save must be acknowledged before read/refresh failure\n\n1 !== 2\n"
+    },
+    {
+      "name": "confirmed write remains success after failRefresh",
+      "status": "FAIL",
+      "error": "confirmed save must be acknowledged before read/refresh failure\n\n1 !== 2\n"
+    },
+    {
+      "name": "a subsequent successful canonical read displays the server-confirmed photo",
+      "status": "PASS"
+    },
+    {
+      "name": "all existing navigation and profile controls preserved",
+      "status": "PASS"
+    }
+  ],
+  "errors": []
+}

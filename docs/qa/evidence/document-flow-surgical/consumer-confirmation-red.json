@@ -1,0 +1,229 @@
+{
+  "status": "FAIL",
+  "baseline": true,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "recordedAt": "2026-11-11T01:23:10.850Z",
+  "passed": 8,
+  "failed": 35,
+  "tests": [
+    {
+      "name": "Membership: failed list preserves prior rows in error phase",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Membership: confirmed callback merges V2 without another read",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n8 !== 4\n"
+    },
+    {
+      "name": "Membership: confirmation never converts an error into ready",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Membership: late response from another identity is discarded",
+      "status": "FAIL",
+      "error": "Expected \"actual\" to be strictly unequal to:\n\n'foreign-late-response'"
+    },
+    {
+      "name": "Membership: confirmation cancels older query without stale submission result",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n12 !== 8\n"
+    },
+    {
+      "name": "Membership: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: confirmation during retry of failed read stays error, never stuck loading",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Membership: receipt in a new context cannot authorize unqueried requirements",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Membership: batched confirmations of two types both survive",
+      "status": "FAIL",
+      "error": "The expression evaluated to a falsy value:\n\n  assert(state.documents.includes(first))\n"
+    },
+    {
+      "name": "Membership: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: failed list preserves prior rows in error phase",
+      "status": "FAIL",
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ []\n- [\n-   {\n-     affiliate_id: 'synthetic-affiliate',\n-     availability: 'AVAILABLE',\n-     available: true,\n-     created_at: '2026-11-10T10:00:00Z',\n-     document_type_id: 'synthetic-type',\n-     id: 'synthetic-v1',\n-     status: 'PENDING_REVIEW'\n-   }\n- ]\n"
+    },
+    {
+      "name": "Loan: confirmed callback merges V2 without another read",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n6 !== 3\n"
+    },
+    {
+      "name": "Loan: confirmation never converts an error into ready",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Loan: late response from another identity is discarded",
+      "status": "FAIL",
+      "error": "Expected \"actual\" to be strictly unequal to:\n\n'foreign-late-response'"
+    },
+    {
+      "name": "Loan: confirmation cancels older query without stale submission result",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n9 !== 6\n"
+    },
+    {
+      "name": "Loan: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: confirmation during retry of failed read stays error, never stuck loading",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Loan: receipt in a new context cannot authorize unqueried requirements",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Loan: batched confirmations of two types both survive",
+      "status": "FAIL",
+      "error": "The expression evaluated to a falsy value:\n\n  assert(state.documents.includes(first))\n"
+    },
+    {
+      "name": "Loan: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: failed list preserves prior rows in error phase",
+      "status": "FAIL",
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ []\n- [\n-   {\n-     affiliate_id: 'synthetic-affiliate',\n-     availability: 'AVAILABLE',\n-     available: true,\n-     created_at: '2026-11-10T10:00:00Z',\n-     document_type_id: 'synthetic-type',\n-     id: 'synthetic-v1',\n-     status: 'PENDING_REVIEW'\n-   }\n- ]\n"
+    },
+    {
+      "name": "Product: confirmed callback merges V2 without another read",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n6 !== 3\n"
+    },
+    {
+      "name": "Product: confirmation never converts an error into ready",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Product: late response from another identity is discarded",
+      "status": "FAIL",
+      "error": "Expected \"actual\" to be strictly unequal to:\n\n'foreign-late-response'"
+    },
+    {
+      "name": "Product: confirmation cancels older query without stale submission result",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n9 !== 6\n"
+    },
+    {
+      "name": "Product: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: confirmation during retry of failed read stays error, never stuck loading",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Product: receipt in a new context cannot authorize unqueried requirements",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Product: batched confirmations of two types both survive",
+      "status": "FAIL",
+      "error": "The expression evaluated to a falsy value:\n\n  assert(state.documents.includes(first))\n"
+    },
+    {
+      "name": "Product: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: failed list preserves prior rows in error phase",
+      "status": "FAIL",
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n+ []\n- [\n-   {\n-     affiliate_id: 'synthetic-affiliate',\n-     availability: 'AVAILABLE',\n-     available: true,\n-     created_at: '2026-11-10T10:00:00Z',\n-     document_type_id: 'synthetic-type',\n-     id: 'synthetic-v1',\n-     status: 'PENDING_REVIEW'\n-   }\n- ]\n"
+    },
+    {
+      "name": "Renta: confirmed callback merges V2 without another read",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n4 !== 2\n"
+    },
+    {
+      "name": "Renta: confirmation never converts an error into ready",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Renta: late response from another identity is discarded",
+      "status": "FAIL",
+      "error": "Expected \"actual\" to be strictly unequal to:\n\n'foreign-late-response'"
+    },
+    {
+      "name": "Renta: confirmation cancels older query without stale submission result",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n6 !== 4\n"
+    },
+    {
+      "name": "Renta: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: confirmation during retry of failed read stays error, never stuck loading",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Renta: receipt in a new context cannot authorize unqueried requirements",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n'ready' !== 'error'\n"
+    },
+    {
+      "name": "Renta: batched confirmations of two types both survive",
+      "status": "FAIL",
+      "error": "The expression evaluated to a falsy value:\n\n  assert(state.documents.includes(first))\n"
+    },
+    {
+      "name": "Renta: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: DOCUMENT_NOT_CURRENT refreshes documents without automatic resubmission",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 2\n"
+    },
+    {
+      "name": "Loan: DOCUMENT_OPERATION_CHANGED refreshes documents without automatic resubmission",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 2\n"
+    },
+    {
+      "name": "Loan: DOCUMENT_BYTES_UNAVAILABLE refreshes documents without automatic resubmission",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n1 !== 2\n"
+    }
+  ],
+  "sourceHashes": {
+    "app/screens-membership-application.jsx": "7de63f6ead25f5ae860ded8be5fc9d05659b5c014398ca086c0ce3b59b026d4f",
+    "app/screens-loan.jsx": "10e26c535a689404724c40a9dbace0ff809c256be2e43ada516faf7413e82a13",
+    "app/screens-program-product-payment.jsx": "2d6d1ed5349b35972006faaeffb54a232f0715e154d79551b05f5804f9683b43",
+    "app/renta-car.jsx": "8cd8c23b9cda055a8591e69872a09750c19e11b25bbc36b77059b4ae667827b7"
+  },
+  "repositoryHash": "b45bd768b8d66ee4935cf000846ad49482f5e87b92ebfdfbb7c496284c68b553",
+  "limits": [
+    "Synthetic React hook scheduling and RPC responses; no browser layout certification",
+    "Real consumer functions and repository WeakMap confirmation/merge",
+    "No database, network, real data, financial rules, build or deployment"
+  ]
+}

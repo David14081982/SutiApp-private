@@ -1,0 +1,9 @@
+{
+  "status": "FAIL",
+  "message": "Approved finance block boundary changed\n\n0 !== 1\n",
+  "code": "ERR_ASSERTION",
+  "repositorySha256": "6a5c78695a60dfe0860cfe383b01a96ab949b7f3bf4473202fbffdbf586a3561",
+  "baseline": false,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "observedAt": "2026-11-11T01:54:07.898Z"
+}

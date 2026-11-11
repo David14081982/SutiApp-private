@@ -1,0 +1,186 @@
+{
+  "status": "FAIL",
+  "baseline": true,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "startedAt": "2026-11-11T01:36:25.733Z",
+  "bundleSha256": "26ad106b41218c80480e13d8cc48071ff8b09212b9dd38256b84df1c41ab3696",
+  "chunkSha256": {
+    "icons.jsx": "6cf218cb7f8dcd1593149d70d92cbb524ad3555eb1c7ac6d040feb0f13c81255",
+    "ui.jsx": "f2264e526d29a9f0722fd7a0836e9a9756b51bea492cec397f1903de8609c1c0",
+    "image-viewer.jsx": "3580a3da4635016f02241ed240ee0821c20a6efe41e47593aa31114d6bace90d",
+    "private-resource-demand.js": "42325e68ee48314156643256ddddbe19c4d1653d63906722253b76a0cc292328",
+    "document-integration.js": "7473d41475f98e43ae59e752d49fbaaf1e8bc248656539046ca184a68b80fad2",
+    "document-workflow-repository.js": "9a224e37975785c556ad3d07cf5892954d4977aceb7806663a9f87ddc0144885",
+    "screens-documentos.jsx": "80ab87733c68ca0187e43c79c396a974d267a554556b34573fadb404b1682247",
+    "screens-membership-application.jsx": "2ea18b9252513d650c6dfa162114a592fa891da80964fee37c9104c3bd9c9756"
+  },
+  "checks": [
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "real React and exact compiled consumers",
+      "status": "PASS",
+      "durationMs": 1035,
+      "evidence": {
+        "react": "18.3.1",
+        "localIntegration": true
+      }
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "name": "confirmed upload replaces V1 immediately despite subsequent list failure; thumbnail visible",
+      "status": "FAIL",
+      "durationMs": 11300,
+      "error": "locator.waitFor: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-document-id=\"00000000-0000-4000-8000-000000000101\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "name": "same-session JWT refresh during transfer keeps context and confirms once",
+      "status": "FAIL",
+      "durationMs": 2961,
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "browserVersion": "26.5",
+      "name": "lost COMPLETE response reselects same operation without duplicate registration or transfer",
+      "status": "PASS",
+      "durationMs": 6883,
+      "evidence": {
+        "operations": 1,
+        "registered": 1,
+        "transfers": 1,
+        "lists": 2,
+        "deletes": 0,
+        "prepares": [
+          "cc1b0524-7a00-4582-b28f-028b4e4b2798",
+          "cc1b0524-7a00-4582-b28f-028b4e4b2798"
+        ],
+        "completes": [
+          "cc1b0524-7a00-4582-b28f-028b4e4b2798",
+          "cc1b0524-7a00-4582-b28f-028b4e4b2798"
+        ]
+      }
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "name": "PDF uses authorized local URL and viewer loads",
+      "status": "FAIL",
+      "durationMs": 13578,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "name": "membership list failure is explicit error; real retry restores authoritative rows",
+      "status": "FAIL",
+      "durationMs": 8469,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "engine": "webkit",
+      "device": "iPhone 13",
+      "name": "shared request gate confirmation does not repeat a failed list query",
+      "status": "FAIL",
+      "durationMs": 8790,
+      "error": "locator.waitFor: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-document-id=\"00000000-0000-4000-8000-000000000101\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "real React and exact compiled consumers",
+      "status": "PASS",
+      "durationMs": 856,
+      "evidence": {
+        "react": "18.3.1",
+        "localIntegration": true
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "name": "confirmed upload replaces V1 immediately despite subsequent list failure; thumbnail visible",
+      "status": "FAIL",
+      "durationMs": 10128,
+      "error": "locator.waitFor: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-document-id=\"00000000-0000-4000-8000-000000000101\"]') to be visible\u001b[22m\n"
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "name": "same-session JWT refresh during transfer keeps context and confirms once",
+      "status": "FAIL",
+      "durationMs": 689,
+      "error": "Expected values to be strictly equal:\n\nfalse !== true\n"
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "lost COMPLETE response reselects same operation without duplicate registration or transfer",
+      "status": "PASS",
+      "durationMs": 1591,
+      "evidence": {
+        "operations": 1,
+        "registered": 1,
+        "transfers": 1,
+        "lists": 2,
+        "deletes": 0,
+        "prepares": [
+          "2c9c28fe-1aa0-4ae5-a11f-e737603c3e6c",
+          "2c9c28fe-1aa0-4ae5-a11f-e737603c3e6c"
+        ],
+        "completes": [
+          "2c9c28fe-1aa0-4ae5-a11f-e737603c3e6c",
+          "2c9c28fe-1aa0-4ae5-a11f-e737603c3e6c"
+        ]
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "browserVersion": "157.0.8103.39",
+      "name": "PDF uses authorized local URL and viewer loads",
+      "status": "PASS",
+      "durationMs": 1599,
+      "evidence": {
+        "localPdfBytes": 869,
+        "sha256": "569c66df62d01cb41e191ea01395137109038e6474af80622832b6996e5b03bc",
+        "iframeLoaded": true
+      }
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "name": "membership list failure is explicit error; real retry restores authoritative rows",
+      "status": "FAIL",
+      "durationMs": 8683,
+      "error": "page.waitForFunction: Timeout 8000ms exceeded."
+    },
+    {
+      "engine": "chromium",
+      "device": "Pixel 7",
+      "name": "shared request gate confirmation does not repeat a failed list query",
+      "status": "FAIL",
+      "durationMs": 9035,
+      "error": "locator.waitFor: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-document-id=\"00000000-0000-4000-8000-000000000101\"]') to be visible\u001b[22m\n"
+    }
+  ],
+  "blockedExternalRequests": [],
+  "pageErrors": [],
+  "limits": [
+    "Local component integration with real React and exact compiled bundle chunks; not a full app/global visual certification.",
+    "Synthetic Auth/RPC/Edge/transport, real browser SHA; does not measure production latency or test storage/RLS.",
+    "Mobile emulation, not physical iOS/Android or mobile networks.",
+    "PDF check proves local bytes/MIME and viewer URL/load only; no pixel-level renderer certification.",
+    "Synthetic financial quote is only a display fixture; no calculations or request submissions are performed."
+  ],
+  "finishedAt": "2026-11-11T01:38:12.483Z",
+  "passed": 5,
+  "failed": 9
+}

@@ -1,0 +1,80 @@
+{
+  "observedAt": "2026-11-11T01:41:31.602Z",
+  "status": "PASS",
+  "slug": "financial-legacy",
+  "helperSha256": "b8caf4f67de18173daef436bc032ac47243b62db8c3915422be9b1ba154cc5e3",
+  "productionMutation": false,
+  "bundleOnlyExecuted": false,
+  "head": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "baselineVersion": 76,
+  "baselineArtifactSha256": "5c10be7502d61c5bbdb45d5f9e382dbeee302834e315f5fee65758fb2a955b72",
+  "settings": {
+    "name": "financial-legacy",
+    "slug": "financial-legacy",
+    "verify_jwt": true,
+    "import_map": false,
+    "entrypoint": "financial-legacy/index.ts"
+  },
+  "sourceDigest": "f1c1fb08b0ea773db5d6b50f6a5dc56ec43878c71b5bc907fccccd4ca6dddc5e",
+  "files": [
+    {
+      "file": "_shared/document-crc.mjs",
+      "sha256": "38604fbb65853657253c75317bf0f0c6d016e9a21ec6be1d849b9966363ece43",
+      "normalizedSha256": "f59822c1998c68857c09fe0369a963cc9b46f731e9d411ecf5e91ce600719ffb"
+    },
+    {
+      "file": "_shared/document-integration.mjs",
+      "sha256": "b88f727167b199c1250e68fa936ce78be71d6263a7abc51bded094f72fff35e1",
+      "normalizedSha256": "07597ce176064d71a5931255ce11e22af6a79c7769c86347f75025cc45b754d4"
+    },
+    {
+      "file": "_shared/document-stream.mjs",
+      "sha256": "976aa047f70c33482b38433fe37089945bc0cee13ad3d9227e90c4ad16cf229c",
+      "normalizedSha256": "579f2f3e2c65333019aabec453bc12d0bf75e9f08f6f4863586320648f6787d8"
+    },
+    {
+      "file": "financial-legacy/historical-obligation-map.mjs",
+      "sha256": "6237c357ea4c9be17f0e5add9fef65457442d940309206410963fc3d615e0b62",
+      "normalizedSha256": "6e153e72724358d4018937b93caf99bb626ca4630a2e443101578fa3333ba1d2"
+    },
+    {
+      "file": "financial-legacy/index.ts",
+      "sha256": "8c23221f6d403c5b7280da6edc277917b79e9961ea646fe6c60ebee70eda29d4",
+      "normalizedSha256": "e6a8eef4c656129b32fe3cba762fcebfd32bd2411aee30a4da53631abe4aec1e"
+    },
+    {
+      "file": "financial-legacy/loan-capacity.mjs",
+      "sha256": "96cfa23bd6f03a6157de77541c9489640f83d08275baabc1de5bf24bfc536a08",
+      "normalizedSha256": "d6a88940dce826e0f861b4b1f1e9cae4813765c139b3c8ba120d04a22a81a53e"
+    },
+    {
+      "file": "financial-legacy/request-google-sync.js",
+      "sha256": "0e5760e20ca48a8eb8b3f7fe03029e0b693236af76dcd960b7ef74b17f73b07a",
+      "normalizedSha256": "32579c4913cf0d6998e48b341c2ad0c62e7a5d67b93eb9e5cc5a8cfa8fbcc973"
+    },
+    {
+      "file": "financial-legacy/savings-eligibility.ts",
+      "sha256": "aa6b055e454725e924c70aeee8d1b3bced2fd10edfc26a803c2535e6ce4a1d64",
+      "normalizedSha256": "a692bb9a362db9d766ef8e3af00037489bee1e37f3a994dc04d1257b49f826e4"
+    },
+    {
+      "file": "financial-legacy/visibility-policy.js",
+      "sha256": "bb4bb4bfb620c5cef3b3029944381e050f377bed3958b66e1c2d908c3bf4aa41",
+      "normalizedSha256": "2b8e079e914bd871ff159dc6ac64665b8f8506edcd5559eaed779d2906e869e0"
+    },
+    {
+      "file": "loan-history/history.mjs",
+      "sha256": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2",
+      "normalizedSha256": "6debdbd7ee9d3b2e79a1ae5196376dabea78f4116e747d119c317d74efd2adc6"
+    }
+  ],
+  "changed": [
+    "_shared/document-integration.mjs",
+    "financial-legacy/index.ts"
+  ],
+  "originalSourcesMatchHead": true,
+  "backupMetadataSha256": "4f2e4059fa7dfcc22cfe15b70118714bedb9eb6910d8ebb5fbc5f93887e9f2c6",
+  "backupExtractedFiles": 10,
+  "apiReference": "https://supabase.com/docs/reference/api/v1-deploy-a-function",
+  "restoreReference": "https://supabase.com/docs/reference/api/v1-update-a-function"
+}

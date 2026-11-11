@@ -71,11 +71,10 @@
         return () => { active = false; clearTimeout(timer); };
       }
       if (result && result.identity === identity && result.error) return;
-      const started = Date.now();
       loader.current().then(value => {
         if (!active || sync() !== epoch) return;
         const url = typeof value === 'string' ? value : value.signedUrl;
-        const expires = started + Math.min(ttlSeconds, Number(value.expiresIn) || ttlSeconds) * 1000;
+        const expires = Date.now() + Math.min(ttlSeconds, Number(value.expiresIn) || ttlSeconds) * 1000 - 1000;
         if (expires <= Date.now()) { setResult({identity,error:true}); return; }
         setResult({identity,url,expires});
         timer = setTimeout(expire, expires - Date.now());

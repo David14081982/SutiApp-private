@@ -67,12 +67,12 @@
       const load=async(doc,force)=>{
         if(!valid()||document.hidden||!visible.has(doc.id)||inFlight.has(doc.id))return;
         if(!force&&ready.has(doc.id))return;
-        inFlight.add(doc.id);const started=Date.now();
+        inFlight.add(doc.id);
         put(doc,{phase:'authorizing',url:''});
         try{
           const preview=await window.DocumentWorkflowRepository.selfPreview(doc,accessPurpose||'SELF_SERVICE_EXPEDIENTE');
           if(!valid())return;
-          const expires=started+Math.min(300,Number(preview.expiresIn)||300)*1000;
+          const expires=Date.now()+Math.min(300,Number(preview.expiresIn)||300)*1000-1000;
           if(expires<=Date.now())throw new Error('DOCUMENT_PREVIEW_EXPIRED');
           ready.set(doc.id,true);put(doc,{phase:'ready',url:preview.signedUrl,expires});
           clearTimeout(timers.get(doc.id));timers.set(doc.id,setTimeout(()=>{ready.delete(doc.id);put(doc,{phase:'expired',url:''});load(doc,false);},expires-Date.now()));

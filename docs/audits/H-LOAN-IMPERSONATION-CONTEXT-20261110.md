@@ -75,29 +75,46 @@ El preflight productivo es READ ONLY: respaldo legible de la funcion, OID/owner/
 
 Revision independiente: APPROVED, sin hallazgos altos/criticos bloqueantes, vinculada a hashes exactos en [independent-review.json](../qa/evidence/loan-impersonation-context/independent-review.json). PR14 fusionado como `e6d6b55e6c04be88b7de9386c0bc3dde9163b229`; CI del PR 42949927236, contrato main 42950045628 y Pages 42950045631 terminaron success. Build frontend/regresion global de imagenes adicionales: NOT APPLICABLE; no se modifica frontend, Auth global, Storage, viewer, service worker ni repositories/helpers compartidos. El unico runtime candidato es este trigger SQL.
 
-## Produccion: BLOCKED, SQL sin aplicar
+## Bloqueo historico antes de la autorizacion posterior
 
 La revision automatica de aprobacion rechazo `release-trigger.cjs apply --authorized-after-review` antes de crear el proceso: falta evidencia de la compuerta previa de despliegue y regresion en preproduccion. No se ejecuto el SQL ni se intento eludir el rechazo por otro mecanismo. Las pruebas sinteticas locales no se presentan como despliegue en un entorno de preproduccion designado.
 
-Readback de solo lectura, 2026-11-11 03:07:48Z: hash original `74ddf62f8613d5dc100e6bda7a5c213a`, cero filas para la migracion `20261111000100`. El codigo esta fusionado en GitHub; la correccion de base de datos NO esta aplicada en produccion. [Evidencia](../qa/evidence/loan-impersonation-context/release-blocked.json).
+Readback de solo lectura, 2026-11-11 03:07:48Z: hash original `74ddf62f8613d5dc100e6bda7a5c213a`, cero filas para la migracion `20261111000100`. En ese momento el codigo estaba fusionado en GitHub y la correccion de base de datos no estaba aplicada. [Evidencia historica](../qa/evidence/loan-impersonation-context/release-blocked.json).
 
 Comprobacion agregada de las tres cuentas autorizadas, sin nombres, UUIDs ni correos en evidencia publica: A/B/C tienen un unico afiliado no archivado y vinculo Auth confirmado. A/B carecen de asignacion administrativa habilitada; C tiene una. La causa de exigir que el afiliado sea administrador concuerda con A/B; no se atribuye ese mismo motivo a C. No demuestra elegibilidad, vigencia de asistencia ni resultado de una solicitud real. [Evidencia](../qa/evidence/loan-impersonation-context/accounts-readonly.json).
 
 ### Decisiones pendientes para el usuario
 
-Confirmar si para esta correccion puntual sustituye la compuerta de despliegue en preproduccion por la matriz sintetica, recovery, revision independiente y CI ya aprobados; de conservarla, identificar el entorno de preproduccion autorizado. No se solicita nuevamente permiso general de implementacion/publicacion y no se creara infraestructura sin autorizacion.
+Ninguna para esta correccion puntual. La decision previa sobre la compuerta de preproduccion quedo resuelta por la instruccion posterior explicita de aplicar en produccion. No se extiende esta autorizacion a otras migraciones ni fases anteriores.
 
-## Cierre local
+### Autorizacion posterior de aplicacion
+
+Despues de explicar el alcance de las pruebas sinteticas y la compuerta de preproduccion, el propietario interrumpio la preparacion de preproduccion e instruyo expresamente: **"APLICALA EN PRODUCCION"**. Esta instruccion posterior autoriza aplicar exclusivamente el guard revisado. No autoriza datos de prueba productivos, solicitudes reales, cambios de permisos globales, documentos, reglas financieras ni infraestructura. El bloqueo previo queda registrado como historico; no se presenta la preproduccion como realizada. Se renovaron preflight/backup y pruebas de merge/CI antes de aplicar. La revision automatica aprobo la aplicacion bajo esta nueva instruccion.
+
+## Produccion: aplicada y verificada
+
+- 2026-11-11 03:26:15.740Z: inicio de aplicacion de `20261111000100`, contra main `e79bfd1434003c894b00cdc894c8b3e2bd2ae098`. PR14 contiene la correccion; PR15 conserva el bloqueo historico. PR15, contrato main y Pages tenian CI exitoso; hashes de SQL, recovery y pruebas coincidian con los revisados.
+- 2026-11-11 03:26:21.323Z (10 de noviembre, 20:26:21 en Hermosillo): COMMIT completado y lectura posterior PASS. Una funcion y una fila tecnica de registro de migracion; cero filas de negocio modificadas por la liberacion.
+- Hash de definicion normalizada: `74ddf62f8613d5dc100e6bda7a5c213a` -> `db1410e3a55d25934bc79a19db784111`. OID 20730, propietario, permisos, search_path y binding conservados; las otras 14 funciones capturadas permanecieron iguales.
+- Conteos y huellas de siete tablas coinciden antes/despues dentro de la misma transaccion REPEATABLE READ: solicitudes, documentos de solicitud, snapshots bancarios, sesiones de asistencia, documentos de afiliados, assets privados y submissions. Esto acredita ausencia de escrituras de negocio por la liberacion; no afirma ausencia de actividad concurrente de otros usuarios.
+- Respaldo de definicion original y catalogo legible y verificado; recovery ensayado en el laboratorio local. No hubo rollback productivo ni cambios de flags, infraestructura, objetos Storage o documentos.
+- Revision independiente posterior: APPROVED. Confirma instalacion y preservacion de metadatos/huellas, sin afirmar ejecucion de una solicitud real.
+
+Evidencia: [aplicacion y readback](../qa/evidence/loan-impersonation-context/release-applied.json), [revision posterior](../qa/evidence/loan-impersonation-context/post-deploy-independent-review.json). SHA-256 del comprobante de aplicacion: `99c0823e7f205d6a4efbec8e3bcb9b7f62bfb559ea829bb2fed542f9aff8d969`.
+
+Resultado funcional respaldado por 16 pruebas sinteticas: un administrador con permiso vigente puede confirmar una solicitud asistida para un afiliado ordinario; no se exige que el afiliado sea administrador. Siguen aplicando las condiciones financieras y documentales existentes. Pendiente de observacion en uso real: confirmacion completa en navegador productivo; no se envio ninguna solicitud en nombre de 12376, 11905, 1412 ni de otro usuario. No se declara resuelto todo el programa documental ni cumplida su antigua Fase G.
+
+## Cierre
 
 ```text
 H-LOAN-IMPERSONATION-CONTEXT-20261110 RESULT
-Status: BLOCKED (aplicacion productiva); implementacion y pruebas aisladas PASS
+Status: PASS (correccion puntual instalada y readback verificado; sin solicitud real de prueba)
 Files changed: trigger migration/recovery, fixture, prueba, auditoria y evidencia declaradas
 Source-of-truth verdict: SAFE
 Invariant verdict: PASS
 Build: NOT APPLICABLE (SQL focal)
 Tests: 16/16 SQL local; contrato administrativo protegido PASS
-Security: denegaciones y atribucion PASS; revision independiente APPROVED
+Security: denegaciones y atribucion PASS; revisiones independientes antes/despues APPROVED
 Legacy impact: sin cambios de calculos, datos financieros ni Google
 Unexpected files changed: ninguno
 Known limitations: sin confirmacion real de usuarios; runner requiere laboratorio local; selector historico cross-SID sin modificar

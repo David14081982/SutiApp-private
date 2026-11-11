@@ -1,0 +1,740 @@
+{
+  "startedAt": "2026-11-11T03:26:15.740Z",
+  "observedAt": "2026-11-11T03:26:21.248Z",
+  "status": "APPLIED",
+  "helperSha256": "480716fb1eb8632fb38ce8bca10ff6404e40d20b240d05ea1f32abdad6aff4e0",
+  "gatesSha256": "6b91ce43cf7c0fb701eba911ab5f311c0594f791c680b54e00c9b1936ed08eee",
+  "mergeSha": "e79bfd1434003c894b00cdc894c8b3e2bd2ae098",
+  "backup": {
+    "folder": ".tmp/impersonation-diagnosis/release-backup/apply-1794367578459",
+    "definitionSha256": "f103b674cd231e5ddb92f77da93d0b81dee0a789f8c65b78a659b5906a3dc970",
+    "catalogSha256": "d8f1e422412f27eef36f541f1b6473c534117c87f942227ab096b83137c2ec40"
+  },
+  "before": {
+    "functions": [
+      {
+        "schema": "admin_support_private",
+        "name": "context",
+        "oid": 85993,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "c8858742e7557f6744814eb84c0386de"
+      },
+      {
+        "schema": "admin_support_private",
+        "name": "has_admin_permission",
+        "oid": 85988,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "08696e24dd97f8d410252c85f7ebe4c6"
+      },
+      {
+        "schema": "admin_support_private",
+        "name": "is_active_admin",
+        "oid": 85992,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "b061d17f4da30c361ae378541702ab72"
+      },
+      {
+        "schema": "document_integration_private",
+        "name": "session_required",
+        "oid": 127034,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "db2dfa991885e287736d6d365046bb6a"
+      },
+      {
+        "schema": "public",
+        "name": "admin_actor_can_impersonate",
+        "oid": 85994,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "bc2b19b39eba99484c296218dfe175cb"
+      },
+      {
+        "schema": "public",
+        "name": "capture_program_request_impersonation",
+        "oid": 20730,
+        "owner": "postgres",
+        "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "74ddf62f8613d5dc100e6bda7a5c213a"
+      },
+      {
+        "schema": "public",
+        "name": "complete_document_financial_submission",
+        "oid": 127083,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "8a3d1fc41f9963f23b4de0758a670f7e"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request",
+        "oid": 25096,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "74476b0bb4baf9cb379545c18f017fe1"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request_bank_required",
+        "oid": 25007,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "a35d05d5c27b9a70b93f52eb07db4c5a"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request_v1_engine",
+        "oid": 21932,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "7c230d3cd052ce244ee18df8ae2e761b"
+      },
+      {
+        "schema": "public",
+        "name": "get_effective_affiliate_id",
+        "oid": 18030,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "373c9fa4325c4ffd284077ac222cde67"
+      },
+      {
+        "schema": "public",
+        "name": "get_impersonation_context",
+        "oid": 18029,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "7b321d95ce2a91d840f6d6feeb25882c"
+      },
+      {
+        "schema": "public",
+        "name": "has_admin_permission",
+        "oid": 17903,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "fecefa45b9ecb47e6dc0262123cac628"
+      },
+      {
+        "schema": "public",
+        "name": "is_active_admin",
+        "oid": 20719,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "2dc2ac832b02133051b89e5e21c918e4"
+      },
+      {
+        "schema": "public",
+        "name": "prepare_document_submission",
+        "oid": 127062,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "a34f7cf0360b5c9113970ee16ab68a56"
+      }
+    ],
+    "bindings": [
+      {
+        "oid": 20731,
+        "name": "program_requests_capture_impersonation",
+        "table_schema": "public",
+        "table_name": "program_requests",
+        "enabled": "O",
+        "internal": false,
+        "type_bits": 7,
+        "function_oid": 20730,
+        "definition": "CREATE TRIGGER program_requests_capture_impersonation BEFORE INSERT ON program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_impersonation()"
+      }
+    ],
+    "registryColumns": [
+      {
+        "name": "version",
+        "type": "text",
+        "not_null": true,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      },
+      {
+        "name": "statements",
+        "type": "text[]",
+        "not_null": false,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": false,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      }
+    ],
+    "registry": {
+      "latest_version": "20261109000300",
+      "proposed_version_collision_count": 0
+    },
+    "tables": [
+      {
+        "table": "public.program_requests",
+        "row_count": "608",
+        "fingerprint": "141da72d258cd3853a865f52cf39541e"
+      },
+      {
+        "table": "public.request_documents",
+        "row_count": "3475",
+        "fingerprint": "76018a3885babd434ce89c81a3178bf0"
+      },
+      {
+        "table": "public.loan_request_deposit_snapshots",
+        "row_count": "532",
+        "fingerprint": "29688a51ec4e568c5833793835193236"
+      },
+      {
+        "table": "public.impersonation_sessions",
+        "row_count": "383",
+        "fingerprint": "1a49dbb707fb1c163401e5b25200cec9"
+      },
+      {
+        "table": "public.affiliate_documents",
+        "row_count": "5573",
+        "fingerprint": "2b1aea0589560fe4e7b77ce70cc0bea3"
+      },
+      {
+        "table": "public.private_assets",
+        "row_count": "20443",
+        "fingerprint": "bd476c0370807f4b1742a16f3ced6878"
+      },
+      {
+        "table": "document_integration_private.submissions",
+        "row_count": "43",
+        "fingerprint": "60d75d7d046657d17fafd6ec8d5bb2d7"
+      }
+    ]
+  },
+  "after": {
+    "functions": [
+      {
+        "schema": "admin_support_private",
+        "name": "context",
+        "oid": 85993,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "c8858742e7557f6744814eb84c0386de"
+      },
+      {
+        "schema": "admin_support_private",
+        "name": "has_admin_permission",
+        "oid": 85988,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "08696e24dd97f8d410252c85f7ebe4c6"
+      },
+      {
+        "schema": "admin_support_private",
+        "name": "is_active_admin",
+        "oid": 85992,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "b061d17f4da30c361ae378541702ab72"
+      },
+      {
+        "schema": "document_integration_private",
+        "name": "session_required",
+        "oid": 127034,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "db2dfa991885e287736d6d365046bb6a"
+      },
+      {
+        "schema": "public",
+        "name": "admin_actor_can_impersonate",
+        "oid": 85994,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "bc2b19b39eba99484c296218dfe175cb"
+      },
+      {
+        "schema": "public",
+        "name": "capture_program_request_impersonation",
+        "oid": 20730,
+        "owner": "postgres",
+        "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "db1410e3a55d25934bc79a19db784111"
+      },
+      {
+        "schema": "public",
+        "name": "complete_document_financial_submission",
+        "oid": 127083,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "8a3d1fc41f9963f23b4de0758a670f7e"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request",
+        "oid": 25096,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "74476b0bb4baf9cb379545c18f017fe1"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request_bank_required",
+        "oid": 25007,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "a35d05d5c27b9a70b93f52eb07db4c5a"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request_v1_engine",
+        "oid": 21932,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "7c230d3cd052ce244ee18df8ae2e761b"
+      },
+      {
+        "schema": "public",
+        "name": "get_effective_affiliate_id",
+        "oid": 18030,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "373c9fa4325c4ffd284077ac222cde67"
+      },
+      {
+        "schema": "public",
+        "name": "get_impersonation_context",
+        "oid": 18029,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "7b321d95ce2a91d840f6d6feeb25882c"
+      },
+      {
+        "schema": "public",
+        "name": "has_admin_permission",
+        "oid": 17903,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "fecefa45b9ecb47e6dc0262123cac628"
+      },
+      {
+        "schema": "public",
+        "name": "is_active_admin",
+        "oid": 20719,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "2dc2ac832b02133051b89e5e21c918e4"
+      },
+      {
+        "schema": "public",
+        "name": "prepare_document_submission",
+        "oid": 127062,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "a34f7cf0360b5c9113970ee16ab68a56"
+      }
+    ],
+    "bindings": [
+      {
+        "oid": 20731,
+        "name": "program_requests_capture_impersonation",
+        "table_schema": "public",
+        "table_name": "program_requests",
+        "enabled": "O",
+        "internal": false,
+        "type_bits": 7,
+        "function_oid": 20730,
+        "definition": "CREATE TRIGGER program_requests_capture_impersonation BEFORE INSERT ON program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_impersonation()"
+      }
+    ],
+    "registryColumns": [
+      {
+        "name": "version",
+        "type": "text",
+        "not_null": true,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      },
+      {
+        "name": "statements",
+        "type": "text[]",
+        "not_null": false,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": false,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      }
+    ],
+    "registry": {
+      "latest_version": "20261109000300",
+      "proposed_version_collision_count": 0
+    },
+    "tables": [
+      {
+        "table": "public.program_requests",
+        "row_count": "608",
+        "fingerprint": "141da72d258cd3853a865f52cf39541e"
+      },
+      {
+        "table": "public.request_documents",
+        "row_count": "3475",
+        "fingerprint": "76018a3885babd434ce89c81a3178bf0"
+      },
+      {
+        "table": "public.loan_request_deposit_snapshots",
+        "row_count": "532",
+        "fingerprint": "29688a51ec4e568c5833793835193236"
+      },
+      {
+        "table": "public.impersonation_sessions",
+        "row_count": "383",
+        "fingerprint": "1a49dbb707fb1c163401e5b25200cec9"
+      },
+      {
+        "table": "public.affiliate_documents",
+        "row_count": "5573",
+        "fingerprint": "2b1aea0589560fe4e7b77ce70cc0bea3"
+      },
+      {
+        "table": "public.private_assets",
+        "row_count": "20443",
+        "fingerprint": "bd476c0370807f4b1742a16f3ced6878"
+      },
+      {
+        "table": "document_integration_private.submissions",
+        "row_count": "43",
+        "fingerprint": "60d75d7d046657d17fafd6ec8d5bb2d7"
+      }
+    ]
+  },
+  "sameTransactionBusinessFingerprints": true,
+  "completedAt": "2026-11-11T03:26:21.323Z",
+  "productionFunctionBodiesChanged": 1,
+  "migrationMetadataRowsInserted": 1,
+  "businessRowsChangedByRelease": 0,
+  "sourceHashes": {
+    "supabase/migrations/20261111000100_loan_impersonation_actor.sql": "d1a055ab71e5ec50ef1e67b7f060f8a3c747d64bc6acfaae54d414ed75a10b9b",
+    "supabase/recovery/20261111000100_loan_impersonation_actor.sql": "4e81a53d48f51880c4ee9aff4df7ba14df239375864eb3403e6253651c2b003a",
+    "scripts/fixtures/loan-impersonation-context-before.json": "094d885f1dc2e563043eed661b0684224e42a21449dcc3f1febbc9302b1c8372"
+  },
+  "limits": [
+    "Business fingerprints compare one REPEATABLE READ transaction; they do not assert that other users made no concurrent changes.",
+    "No real request or upload was invoked. Application behavior is supported by local synthetic tests and the scoped metadata readback."
+  ],
+  "postcommitReadback": {
+    "observedAt": "2026-11-11T03:26:21.964Z",
+    "status": "PASS",
+    "functions": [
+      {
+        "schema": "admin_support_private",
+        "name": "context",
+        "oid": 85993,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "c8858742e7557f6744814eb84c0386de"
+      },
+      {
+        "schema": "admin_support_private",
+        "name": "has_admin_permission",
+        "oid": 85988,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "08696e24dd97f8d410252c85f7ebe4c6"
+      },
+      {
+        "schema": "admin_support_private",
+        "name": "is_active_admin",
+        "oid": 85992,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "b061d17f4da30c361ae378541702ab72"
+      },
+      {
+        "schema": "document_integration_private",
+        "name": "session_required",
+        "oid": 127034,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "db2dfa991885e287736d6d365046bb6a"
+      },
+      {
+        "schema": "public",
+        "name": "admin_actor_can_impersonate",
+        "oid": 85994,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "bc2b19b39eba99484c296218dfe175cb"
+      },
+      {
+        "schema": "public",
+        "name": "capture_program_request_impersonation",
+        "oid": 20730,
+        "owner": "postgres",
+        "acl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "db1410e3a55d25934bc79a19db784111"
+      },
+      {
+        "schema": "public",
+        "name": "complete_document_financial_submission",
+        "oid": 127083,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "8a3d1fc41f9963f23b4de0758a670f7e"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request",
+        "oid": 25096,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "74476b0bb4baf9cb379545c18f017fe1"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request_bank_required",
+        "oid": 25007,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "a35d05d5c27b9a70b93f52eb07db4c5a"
+      },
+      {
+        "schema": "public",
+        "name": "create_validated_financial_program_request_v1_engine",
+        "oid": 21932,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "7c230d3cd052ce244ee18df8ae2e761b"
+      },
+      {
+        "schema": "public",
+        "name": "get_effective_affiliate_id",
+        "oid": 18030,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "373c9fa4325c4ffd284077ac222cde67"
+      },
+      {
+        "schema": "public",
+        "name": "get_impersonation_context",
+        "oid": 18029,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "7b321d95ce2a91d840f6d6feeb25882c"
+      },
+      {
+        "schema": "public",
+        "name": "has_admin_permission",
+        "oid": 17903,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "fecefa45b9ecb47e6dc0262123cac628"
+      },
+      {
+        "schema": "public",
+        "name": "is_active_admin",
+        "oid": 20719,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "2dc2ac832b02133051b89e5e21c918e4"
+      },
+      {
+        "schema": "public",
+        "name": "prepare_document_submission",
+        "oid": 127062,
+        "owner": "postgres",
+        "acl": "{postgres=X/postgres,service_role=X/postgres,authenticated=X/postgres}",
+        "config": [
+          "search_path=\"\""
+        ],
+        "normalizedDefinitionMd5": "a34f7cf0360b5c9113970ee16ab68a56"
+      }
+    ],
+    "bindings": [
+      {
+        "oid": 20731,
+        "name": "program_requests_capture_impersonation",
+        "table_schema": "public",
+        "table_name": "program_requests",
+        "enabled": "O",
+        "internal": false,
+        "type_bits": 7,
+        "function_oid": 20730,
+        "definition": "CREATE TRIGGER program_requests_capture_impersonation BEFORE INSERT ON program_requests FOR EACH ROW EXECUTE FUNCTION capture_program_request_impersonation()"
+      }
+    ],
+    "registryColumns": [
+      {
+        "name": "version",
+        "type": "text",
+        "not_null": true,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      },
+      {
+        "name": "statements",
+        "type": "text[]",
+        "not_null": false,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "not_null": false,
+        "default_expression": null,
+        "identity": "",
+        "generated": ""
+      }
+    ],
+    "registry": {
+      "latest_version": "20261111000100",
+      "proposed_version_collision_count": 1
+    },
+    "tables": []
+  }
+}

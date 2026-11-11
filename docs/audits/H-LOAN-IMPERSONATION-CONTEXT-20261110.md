@@ -73,13 +73,25 @@ El runner requiere el laboratorio PostgreSQL local existente y su schema-only; n
 
 El preflight productivo es READ ONLY: respaldo legible de la funcion, OID/owner/ACL/search_path/binding y 15 definiciones comprobadas; solo conteos/huellas agregados de siete tablas. No modifica datos. La version `20261111000100` estaba libre. El registro de migraciones termina en `20261109000300` aunque existen definiciones de 100 MB: discrepancia de metadata preexistente, sin reparar.
 
-Revision independiente: APPROVED, sin hallazgos altos/criticos bloqueantes, vinculada a hashes exactos en [independent-review.json](../qa/evidence/loan-impersonation-context/independent-review.json). Publicacion: pendiente de PR/CI y aplicacion exacta. Build frontend y regresion global de imagenes: NOT APPLICABLE; no se modifica frontend, Auth global, Storage, viewer, service worker ni repositories/helpers compartidos. El unico runtime candidato es este trigger SQL.
+Revision independiente: APPROVED, sin hallazgos altos/criticos bloqueantes, vinculada a hashes exactos en [independent-review.json](../qa/evidence/loan-impersonation-context/independent-review.json). PR14 fusionado como `e6d6b55e6c04be88b7de9386c0bc3dde9163b229`; CI del PR 42949927236, contrato main 42950045628 y Pages 42950045631 terminaron success. Build frontend/regresion global de imagenes adicionales: NOT APPLICABLE; no se modifica frontend, Auth global, Storage, viewer, service worker ni repositories/helpers compartidos. El unico runtime candidato es este trigger SQL.
+
+## Produccion: BLOCKED, SQL sin aplicar
+
+La revision automatica de aprobacion rechazo `release-trigger.cjs apply --authorized-after-review` antes de crear el proceso: falta evidencia de la compuerta previa de despliegue y regresion en preproduccion. No se ejecuto el SQL ni se intento eludir el rechazo por otro mecanismo. Las pruebas sinteticas locales no se presentan como despliegue en un entorno de preproduccion designado.
+
+Readback de solo lectura, 2026-11-11 03:07:48Z: hash original `74ddf62f8613d5dc100e6bda7a5c213a`, cero filas para la migracion `20261111000100`. El codigo esta fusionado en GitHub; la correccion de base de datos NO esta aplicada en produccion. [Evidencia](../qa/evidence/loan-impersonation-context/release-blocked.json).
+
+Comprobacion agregada de las tres cuentas autorizadas, sin nombres, UUIDs ni correos en evidencia publica: A/B/C tienen un unico afiliado no archivado y vinculo Auth confirmado. A/B carecen de asignacion administrativa habilitada; C tiene una. La causa de exigir que el afiliado sea administrador concuerda con A/B; no se atribuye ese mismo motivo a C. No demuestra elegibilidad, vigencia de asistencia ni resultado de una solicitud real. [Evidencia](../qa/evidence/loan-impersonation-context/accounts-readonly.json).
+
+### Decisiones pendientes para el usuario
+
+Confirmar si para esta correccion puntual sustituye la compuerta de despliegue en preproduccion por la matriz sintetica, recovery, revision independiente y CI ya aprobados; de conservarla, identificar el entorno de preproduccion autorizado. No se solicita nuevamente permiso general de implementacion/publicacion y no se creara infraestructura sin autorizacion.
 
 ## Cierre local
 
 ```text
 H-LOAN-IMPERSONATION-CONTEXT-20261110 RESULT
-Status: PASS (implementacion y pruebas aisladas; publicacion pendiente)
+Status: BLOCKED (aplicacion productiva); implementacion y pruebas aisladas PASS
 Files changed: trigger migration/recovery, fixture, prueba, auditoria y evidencia declaradas
 Source-of-truth verdict: SAFE
 Invariant verdict: PASS

@@ -1,0 +1,17 @@
+{
+  "observedAt": "2026-11-11T03:07:48.337Z",
+  "status": "UNAPPLIED_CONFIRMED",
+  "mode": "BEGIN READ ONLY / SELECT / ROLLBACK",
+  "normalized_definition_md5": "74ddf62f8613d5dc100e6bda7a5c213a",
+  "migration_rows": 0,
+  "productionWrites": 0,
+  "blocker": "Automatic approval review rejected the SQL apply before process execution: evidence of the previously required preproduction deployment and regression is missing.",
+  "localValidation": "16/16 isolated SQL checks and exact recovery PASS; not represented as deployment to a designated preproduction environment.",
+  "github": {
+    "pullRequest": 14,
+    "merged": true,
+    "mergeSha": "e6d6b55e6c04be88b7de9386c0bc3dde9163b229",
+    "ciRun": 42950045631,
+    "ci": "success"
+  }
+}

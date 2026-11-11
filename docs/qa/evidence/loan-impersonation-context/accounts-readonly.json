@@ -1,0 +1,49 @@
+{
+  "startedAt": "2026-11-11T03:03:49.191Z",
+  "completedAt": "2026-11-11T03:03:50.271Z",
+  "status": "PASS",
+  "scope": "Three explicitly authorized account aggregates; no identifiers or row contents returned",
+  "databaseMode": "TLS / REPEATABLE READ READ ONLY / ROLLBACK",
+  "productionWrites": 0,
+  "functionInvocations": 0,
+  "authApiCalls": 0,
+  "documentBytesRead": 0,
+  "query": "WITH requested(label,control) AS (\n SELECT * FROM unnest($1::text[],$2::text[])\n), observed AS (\n SELECT r.label,a.id IS NOT NULL AS affiliate_exists,\n  a.auth_user_id IS NOT NULL AND u.id IS NOT NULL AS linked_auth_exists,\n  a.auth_user_id IS NOT NULL AND u.id IS NOT NULL AND u.email_confirmed_at IS NOT NULL AS linked_auth_confirmed,\n  a.id IS NOT NULL AND EXISTS(\n   SELECT 1 FROM public.admin_assignments aa\n   JOIN public.admin_roles ar ON ar.id=aa.role_id AND ar.enabled\n   WHERE aa.auth_user_id=a.auth_user_id AND aa.enabled\n  ) AS enabled_admin_assignment_with_enabled_role\n FROM requested r\n LEFT JOIN public.affiliates a ON a.numero_control=r.control AND a.is_archived=false\n LEFT JOIN auth.users u ON u.id=a.auth_user_id\n)\nSELECT label,\n count(*) FILTER(WHERE affiliate_exists)::int AS non_archived_affiliate_count,\n count(*) FILTER(WHERE linked_auth_exists)::int AS linked_auth_exists_count,\n count(*) FILTER(WHERE linked_auth_confirmed)::int AS linked_auth_confirmed_count,\n count(*) FILTER(WHERE enabled_admin_assignment_with_enabled_role)::int AS enabled_admin_assignment_with_enabled_role_count\nFROM observed GROUP BY label ORDER BY label",
+  "parameters": "Control values omitted; private label mapping remains in ignored workspace",
+  "accounts": [
+    {
+      "label": "ACCOUNT_A",
+      "non_archived_affiliate_count": 1,
+      "linked_auth_exists_count": 1,
+      "linked_auth_confirmed_count": 1,
+      "enabled_admin_assignment_with_enabled_role_count": 0,
+      "identitySelection": "UNIQUE_NON_ARCHIVED_MATCH"
+    },
+    {
+      "label": "ACCOUNT_B",
+      "non_archived_affiliate_count": 1,
+      "linked_auth_exists_count": 1,
+      "linked_auth_confirmed_count": 1,
+      "enabled_admin_assignment_with_enabled_role_count": 0,
+      "identitySelection": "UNIQUE_NON_ARCHIVED_MATCH"
+    },
+    {
+      "label": "ACCOUNT_C",
+      "non_archived_affiliate_count": 1,
+      "linked_auth_exists_count": 1,
+      "linked_auth_confirmed_count": 1,
+      "enabled_admin_assignment_with_enabled_role_count": 1,
+      "identitySelection": "UNIQUE_NON_ARCHIVED_MATCH"
+    }
+  ],
+  "definitions": {
+    "nonArchived": "affiliates.is_archived=false; this is not a certification of employment, affiliation or financial eligibility",
+    "confirmedAuthLink": "Existing auth.users row linked by affiliates.auth_user_id with email_confirmed_at non-null; not a session, email-equivalence or certified-link validation",
+    "administrator": "At least one enabled admin_assignments row joined to an enabled admin_roles row for the linked Auth user; same predicate as captured admin_support_private.is_active_admin(uuid)"
+  },
+  "limits": [
+    "No account identity is selected when zero or multiple non-archived matches exist.",
+    "No JWT/session, acting administrator permission, requested amount, debt, loan eligibility, document availability or real submission result was tested.",
+    "These aggregates support only the target-account administrator hypothesis at the observation time; they do not link an account to the previously observed log event."
+  ]
+}

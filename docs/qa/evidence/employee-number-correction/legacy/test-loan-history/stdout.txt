@@ -1,0 +1,7 @@
+PASS exact 24h boundary, no future/missing timestamp, liquidated precedence
+PASS one card per own loan, actual receipt clock, no multiplied principal/totals
+PASS Hermosillo midnight; unknown values are not zero or invented quota numbers
+PASS SR pending and rejected from Google Y; reject duplicate or forged owner/link
+PASS backend anonymous/forged-target denial before Google; context revalidated afterward
+PASS frontend server-anchored expiry and source failure; no duplicate request card
+PASS PostgreSQL own context, exact controls, grants, archival and recovery

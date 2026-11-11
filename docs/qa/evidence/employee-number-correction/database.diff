@@ -1,0 +1,64 @@
+diff --git "a/.tmp\\employee-number-correction\\before-functions.sql" "b/.tmp\\employee-number-correction\\after-functions.sql"
+index f89b749..1da29b9 100644
+--- "a/.tmp\\employee-number-correction\\before-functions.sql"
++++ "b/.tmp\\employee-number-correction\\after-functions.sql"
+@@ -6,8 +6,15 @@ CREATE OR REPLACE FUNCTION public.affiliate_control_reservation_guard()
+ AS $function$
+ begin
+  if tg_op='UPDATE' and new.numero_control is not distinct from old.numero_control then return new; end if;
+- if exists(select 1 from public.affiliate_control_changes c where c.affiliate_id<>new.id
+-  and (c.old_control=new.numero_control or c.new_control=new.numero_control))
++ if new.numero_control is null then return new; end if;
++ -- A repeatable snapshot cannot recheck a competing assignment after its lock.
++ if pg_catalog.current_setting('transaction_isolation')='repeatable read' then
++  raise exception 'AFFILIATE_CONTROL_RETRY_REQUIRED' using errcode='40001';
++ end if;
++ -- This VOLATILE trigger takes a fresh query snapshot after the per-number lock.
++ -- Archived affiliates retain their current assignment; existing rows are unchanged.
++ perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('affiliate-current-control:'||new.numero_control,0));
++ if exists(select 1 from public.affiliates a where a.id<>new.id and a.numero_control=new.numero_control)
+  then raise exception 'AFFILIATE_CONTROL_RESERVED' using errcode='23505'; end if;
+  return new;
+ end $function$
+@@ -21,6 +28,7 @@ AS $function$
+ declare person public.affiliates%rowtype; report jsonb; saved public.affiliate_control_changes%rowtype;
+ begin
+  perform public.affiliate_control_authorize();
++ p_new_control:=btrim(p_new_control);
+  if p_client_action_id is null or length(coalesce(p_reason,''))>500 then raise exception 'AFFILIATE_CONTROL_INPUT_INVALID' using errcode='22023'; end if;
+  -- Serialize with ordinary create/edit as well, including concurrent creations
+  -- of the desired number. No global unique constraint on historical numbers.
+@@ -64,13 +72,13 @@ begin
+     'id',a.id,'numero_control',a.numero_control,'name',coalesce(a.full_name,a.display_name,'Sin nombre'),
+     'match_state',case when a.is_archived then 'ARCHIVED_MATCH' else 'ACTIVE_MATCH' end,
+     'matches',array_remove(array[
+-      case when nullif(btrim(p_values->>'numero_control'),'') is not null and a.numero_control=p_values->>'numero_control' then 'numero_control' end,
++      case when nullif(btrim(p_values->>'numero_control'),'') is not null and a.numero_control=btrim(p_values->>'numero_control') then 'numero_control' end,
+       case when nullif(upper(btrim(p_values->>'rfc_raw')),'') is not null and upper(btrim(a.rfc_raw))=upper(btrim(p_values->>'rfc_raw')) then 'rfc' end,
+       case when nullif(upper(btrim(p_values->>'curp_raw')),'') is not null and upper(btrim(a.curp_raw))=upper(btrim(p_values->>'curp_raw')) then 'curp' end,
+       case when nullif(lower(btrim(p_values->>'historical_email_raw')),'') is not null and a.historical_email_normalized=lower(btrim(p_values->>'historical_email_raw')) then 'email' end
+     ],null)) order by a.source_row_ordinal nulls last,a.created_at),'[]'::jsonb) into v_result
+   from public.affiliates a where (p_exclude_id is null or a.id<>p_exclude_id) and (
+-    (nullif(btrim(p_values->>'numero_control'),'') is not null and a.numero_control=p_values->>'numero_control')
++    (nullif(btrim(p_values->>'numero_control'),'') is not null and a.numero_control=btrim(p_values->>'numero_control'))
+     or (nullif(upper(btrim(p_values->>'rfc_raw')),'') is not null and upper(btrim(a.rfc_raw))=upper(btrim(p_values->>'rfc_raw')))
+     or (nullif(upper(btrim(p_values->>'curp_raw')),'') is not null and upper(btrim(a.curp_raw))=upper(btrim(p_values->>'curp_raw')))
+     or (nullif(lower(btrim(p_values->>'historical_email_raw')),'') is not null and a.historical_email_normalized=lower(btrim(p_values->>'historical_email_raw'))));
+@@ -86,15 +94,14 @@ AS $function$
+ declare person public.affiliates%rowtype; report jsonb; blocks jsonb:='[]'; link_risk boolean:=false;
+ begin
+  perform public.affiliate_control_authorize();
++ p_new_control:=btrim(p_new_control);
+  select * into person from public.affiliates where id=p_affiliate_id;
+  if person.id is null then raise exception 'AFFILIATE_NOT_FOUND' using errcode='P0001'; end if;
+  if person.is_archived then raise exception 'AFFILIATE_ARCHIVED' using errcode='22023'; end if;
+- if p_new_control is null or length(p_new_control) not between 1 and 80 or p_new_control<>btrim(p_new_control)
++ if p_new_control is null or length(p_new_control) not between 1 and 80
+   or p_new_control ~ '[[:cntrl:]]' then raise exception 'AFFILIATE_CONTROL_INVALID' using errcode='22023'; end if;
+  if person.numero_control is not distinct from p_new_control then raise exception 'AFFILIATE_NO_CHANGE' using errcode='22023'; end if;
+  if exists(select 1 from public.affiliates where id<>person.id and numero_control=p_new_control)
+-  or exists(select 1 from public.affiliate_control_changes where affiliate_id<>person.id
+-   and (old_control=p_new_control or new_control=p_new_control))
+  then blocks:=blocks||jsonb_build_array('NUMBER_ALREADY_ASSIGNED'); end if;
+  report:=public.affiliate_control_inventory(person.id,person.numero_control,p_new_control);
+  if exists(select 1 from jsonb_array_elements(report->'groups') g where (g->>'new_number_conflicts')::bigint>0)

@@ -1,0 +1,183 @@
+{
+  "startedAt": "2026-11-11T15:56:00.367Z",
+  "status": "PASS",
+  "engine": "PostgreSQL 18 and local Storage/S3",
+  "productionWrites": 0,
+  "realRowsImported": 0,
+  "before": [
+    {
+      "name": "No current8322, but real create RPC fails on historical reservation",
+      "status": "PASS"
+    },
+    {
+      "name": "Padded current number escapes duplicate precheck",
+      "status": "PASS"
+    }
+  ],
+  "after": [
+    {
+      "name": "Migration leaves original identity, five documents, assets and history unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Function signatures, owners, ACL, security and search_path unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "RLS and table grants unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Basic creation reuses8322 with new UUID and empty independent documents",
+      "status": "PASS"
+    },
+    {
+      "name": "Padded number precheck matches canonical current holder",
+      "status": "PASS"
+    },
+    {
+      "name": "Existing profile edit retains UUID and current employee number",
+      "status": "PASS"
+    },
+    {
+      "name": "Leading zeroes and accented names preserved;80 accepted81 rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Existing number and archived current assignment rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Admin search resolves two independent identities by current number",
+      "status": "PASS"
+    },
+    {
+      "name": "Correction/reuse is transactional and existing history remains immutable",
+      "status": "PASS"
+    },
+    {
+      "name": "Read-only admin, ordinary user and anonymous cannot create",
+      "status": "PASS"
+    },
+    {
+      "name": "RFC and CURP duplicate protection remains enforced",
+      "status": "PASS"
+    },
+    {
+      "name": "Padded preview/change/retry agree and permit a released number for another UUID",
+      "status": "PASS"
+    },
+    {
+      "name": "Two concurrent creations cannot claim the same current number",
+      "status": "PASS",
+      "detail": {
+        "isolation": "READ COMMITTED",
+        "winner": "6d7c6d8e-03df-4fe2-a16a-5b05a6e846da",
+        "loserCode": "23505",
+        "loser": "AFFILIATE_CONTROL_RESERVED"
+      }
+    },
+    {
+      "name": "REPEATABLE READ refuses stale-snapshot creation without persisting a row",
+      "status": "PASS"
+    },
+    {
+      "name": "SERIALIZABLE concurrent snapshots commit only one assignment",
+      "status": "PASS",
+      "detail": {
+        "isolation": "SERIALIZABLE",
+        "winner": "d6f87889-95e8-4429-aec5-5bdb9f71614e",
+        "loserCode": "40001",
+        "loser": "could not serialize access due to read/write dependencies among transactions"
+      }
+    },
+    {
+      "name": "Original14262 synthetic record and five docs remain unchanged after reuse",
+      "status": "PASS"
+    },
+    {
+      "name": "Five original local objects are readable by their owner and match stored hashes",
+      "status": "PASS",
+      "detail": {
+        "objectsVerified": 5,
+        "authenticatedStorageJWT": true
+      }
+    },
+    {
+      "name": "New identity uploads with admin JWT and registers through the real document RPC",
+      "status": "PASS",
+      "detail": {
+        "storageOwnerIsActor": true,
+        "documentOwnerIsNewUUID": true,
+        "bytesVerified": true
+      }
+    },
+    {
+      "name": "Retry of confirmed registration preserves the document and creates no duplicate object or audit event",
+      "status": "PASS",
+      "detail": {
+        "documents": 1,
+        "assets": 1,
+        "objects": 1,
+        "registrationAuditEvents": 1,
+        "additionalUploadRequests": 0
+      }
+    },
+    {
+      "name": "Both ordinary users read only their own documents through RLS, self RPC and authenticated Storage",
+      "status": "PASS",
+      "detail": {
+        "subjects": 2,
+        "foreignObjectReadsDenied": 6,
+        "deniedHTTPStatuses": [
+          400
+        ],
+        "selfRPC": true,
+        "rls": true
+      }
+    },
+    {
+      "name": "Original five object bytes and asset metadata remain unchanged after registration and retry",
+      "status": "PASS",
+      "detail": {
+        "originalObjectsVerified": 5,
+        "originalMetadataUnchanged": true
+      }
+    },
+    {
+      "name": "Recovery restores exact original functions without deleting any identities or evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "Restored historical guard rejects another reuse without deleting the prior new person",
+      "status": "PASS"
+    }
+  ],
+  "limits": [
+    "Local schema-only snapshot plus exact captured definitions for the five affected functions; no live account operation or production upload.",
+    "Synthetic Auth principals and JWTs; no GoTrue login or token refresh.",
+    "RPC transport is PostgreSQL SET ROLE with claims; no PostgREST HTTP or browser flow.",
+    "Uses register_admin_affiliate_document directly; does not certify the Edge/TUS upload pipeline."
+  ],
+  "schema": {
+    "tables": "306",
+    "triggers": "266",
+    "policies": "331"
+  },
+  "documentFixture": {
+    "status": "PASS",
+    "originalObjectsVerified": 5,
+    "newObjects": 1,
+    "registrationRetries": 1,
+    "isolationSubjects": 2,
+    "goTrue": false,
+    "postgrestHTTP": false,
+    "limitations": [
+      "Synthetic Auth principals and JWTs; no GoTrue login or token refresh.",
+      "RPC transport is PostgreSQL SET ROLE with claims; no PostgREST HTTP or browser flow.",
+      "Uses register_admin_affiliate_document directly; does not certify the Edge/TUS upload pipeline."
+    ]
+  },
+  "localServicesStopped": true,
+  "completedAt": "2026-11-11T15:57:31.985Z"
+}

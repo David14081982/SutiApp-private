@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "checks": [
+    "two distinct loans consume aggregate pending contract balance",
+    "exact agreement with current Amortizacion for charges, past zero and decimal sums",
+    "today follows Hermosillo and releases only the recorded deduction",
+    "settled label never bypasses the displayed balance; overpayment gives no extra credit",
+    "distinct source rows with equal dates and quota numbers match Amortizacion",
+    "missing amounts, dates, states, duplicate source rows and ambiguous funds fail visibly",
+    "immutable transfer identifies represented request and original fund after rename",
+    "visible fund total uses available amounts with zero and exact cents"
+  ],
+  "productionWrites": 0
+}

@@ -1,0 +1,24 @@
+{
+  "startedAt": "2026-11-11T15:56:00.367Z",
+  "status": "BASELINE_REPRODUCED",
+  "engine": "PostgreSQL 18 and local Storage/S3",
+  "productionWrites": 0,
+  "realRowsImported": 0,
+  "before": [
+    {
+      "name": "No current8322, but real create RPC fails on historical reservation",
+      "status": "PASS"
+    },
+    {
+      "name": "Padded current number escapes duplicate precheck",
+      "status": "PASS"
+    }
+  ],
+  "after": [],
+  "limits": [],
+  "schema": {
+    "tables": "306",
+    "triggers": "266",
+    "policies": "331"
+  }
+}

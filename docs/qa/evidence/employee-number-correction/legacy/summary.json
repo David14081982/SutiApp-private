@@ -1,0 +1,60 @@
+{
+  "status": "FAIL",
+  "scope": "Offline synthetic history, loan and available-credit regression; no runtime changes",
+  "baselineCommit": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "candidateSuites": { "passed": 8, "failed": 2, "total": 10 },
+  "regressionConclusion": "No new failure identified in the executed suites. Both failing suites reproduce the same error on the baseline; the suite set is not fully green.",
+  "passedSuites": [
+    { "script": "scripts/test-loan-history.js", "reportedChecks": 7 },
+    { "script": "scripts/test-history-snapshot-runtime.js", "reportedPassGroups": 4 },
+    { "script": "scripts/test-history-total-paid-runtime.js", "reportedChecks": 15 },
+    { "script": "scripts/test-history-native-pending-runtime.js", "reportedChecks": 12 },
+    { "script": "scripts/test-loan-historical-resolution.js", "reportedChecks": 104 },
+    { "script": "scripts/test-loan-available-credit.js", "reportedChecks": 8 },
+    { "script": "scripts/test-loan-available-credit-edge.js", "reportedChecks": 5 },
+    { "script": "scripts/test-loan-available-credit-sql.js", "reportedChecks": 6 }
+  ],
+  "baselineReproducedFailures": [
+    {
+      "script": "scripts/test-native-financial-rules.js",
+      "candidateExitCode": 1,
+      "baselineExitCode": 1,
+      "error": "NATIVE_FINANCIAL_RULES_SCHEMA_DRIFT: get_financial_runtime_rules",
+      "testSourceUnchangedAfterLfNormalization": true
+    },
+    {
+      "script": "scripts/test-financial-mostrar-override.js",
+      "candidateExitCode": 1,
+      "baselineExitCode": 1,
+      "error": "available credit includes only eligible shown fund: null !== 10000",
+      "testSourceUnchangedAfterLfNormalization": true
+    }
+  ],
+  "sourceIntegrity": {
+    "status": "PASS",
+    "files": 89,
+    "exactBytesEqual": 4,
+    "lineEndingsOnly": 85,
+    "contentChangesAfterLfNormalization": 0,
+    "evidence": "source-integrity.json"
+  },
+  "safety": {
+    "execution": "Sequential Node and in-memory PGlite",
+    "newPersistentDatabaseClusters": 0,
+    "productionReads": 0,
+    "productionWrites": 0,
+    "googleCalls": 0,
+    "runtimeEdits": 0,
+    "originalTestEdits": 0,
+    "evidenceRedirect": "offline-preload.cjs directs test outputs to fresh per-suite directories",
+    "networkGuard": "Preload blocks fetch, HTTP/HTTPS, net connections and child process launches; this is not a complete operating-system sandbox"
+  },
+  "limits": [
+    "Synthetic offline fixtures do not certify real accounts, Auth service, Storage bytes or financial eligibility.",
+    "Existing SQL suites use their own minimal schema and authorization fixtures; this is not the separate full-schema employee correction test.",
+    "The two inherited failing suites remain unresolved; assertions and runtime were not changed to obtain a green result.",
+    "No SICOF engine test was executed; the available-credit projector, Edge adapter and SQL regression were exercised.",
+    "Counts represent the existing suites' own checks or groups and are not pooled into an asserted number of independent cases."
+  ],
+  "evidence": ["offline-regression.json", "baseline-failures.json", "source-integrity.json"]
+}

@@ -1,0 +1,21 @@
+{
+  "baselineCommit": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "observedAt": "2026-11-11T15:53:26.012Z",
+  "network": "Blocked",
+  "results": [
+    {
+      "script": "test-native-financial-rules.js",
+      "exitCode": 1,
+      "sourceSha256": "db2b518bbe05a460f80745b4884d25e272b7a3490750dddd3de8104825bbdf73",
+      "errorFirstLine": "error: NATIVE_FINANCIAL_RULES_SCHEMA_DRIFT: get_financial_runtime_rules",
+      "sameTestSourceLF": true
+    },
+    {
+      "script": "test-financial-mostrar-override.js",
+      "exitCode": 1,
+      "sourceSha256": "e06d0116b8b42c72b70b91ed16a910f1a619ec3f0c575266ffb6eaf7748f8a03",
+      "errorFirstLine": "available credit includes only eligible shown fund",
+      "sameTestSourceLF": true
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": [
+    "financial Edge TypeScript transpiles/parses locally; focal handlers run with isolated dependencies (not a Deno typecheck or cloud bundle)",
+    "one existing own published snapshot; original source version/time retained; no Google read",
+    "wrong actor/affiliate/control, changed context, malformed source and unavailable publication fail closed",
+    "Edge quote/confirmation check exact selected rule and reject one cent above available",
+    "session signature invalidates policy and reservation changes without order noise"
+  ],
+  "networkCalls": 0,
+  "productionWrites": 0
+}

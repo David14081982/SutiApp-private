@@ -1,0 +1,91 @@
+{
+  "status": "PASS",
+  "at": "2026-11-11T16:36:19.528Z",
+  "version": "20261111000200",
+  "migrationSha256": "87e3f0b70c9b769a58c34916251537dc3d8a26cda710f3c3814b8b0c34f00b90",
+  "recoverySha256": "8b656248334ee10858949b20ba0edbf81e8b3891aa8a79f10270d0836175912f",
+  "businessTablesUnchanged": 9,
+  "businessRowsChanged": 0,
+  "storageMutations": 0,
+  "metadataPreserved": true,
+  "bindingsPreserved": true,
+  "target": {
+    "personcount": 1,
+    "documentcount": 5,
+    "reusablecurrentcount": 1
+  },
+  "backupReadable": true,
+  "backupSha256": "350d1b714ee66d016328ed542301c26634d5101d91c0e64e5342c212eb16ea48",
+  "functions": [
+    {
+      "signature": "affiliate_control_reservation_guard()",
+      "hash": "00e7c2a02cefa986452dede1eb267b1b"
+    },
+    {
+      "signature": "change_admin_affiliate_control(uuid,text,timestamp with time zone,text,text,uuid)",
+      "hash": "2bf5c50e4433d52ccfb0966f71417529"
+    },
+    {
+      "signature": "create_admin_affiliate(jsonb,text)",
+      "hash": "54613d2725ed82238bf61c318c923227"
+    },
+    {
+      "signature": "find_admin_affiliate_duplicates(jsonb,uuid)",
+      "hash": "f1ad935c5b37d0150a45926e8408e539"
+    },
+    {
+      "signature": "preview_admin_affiliate_control(uuid,text)",
+      "hash": "e7abfb1e5f9e07e172bedf804c02b286"
+    }
+  ],
+  "fingerprints": [
+    {
+      "table": "public.affiliates",
+      "count": 13,
+      "digest": "c548392ddda32bf8ff5f1d3055c5bbd9"
+    },
+    {
+      "table": "public.affiliate_documents",
+      "count": 6,
+      "digest": "bbe8c59230b03960fb3051c969d4f836"
+    },
+    {
+      "table": "public.private_assets",
+      "count": 6,
+      "digest": "17513522629d6f379dbea3e50e38ab90"
+    },
+    {
+      "table": "public.affiliate_files",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "public.affiliate_control_changes",
+      "count": 5,
+      "digest": "c40c1ba599ca32eda019e832ec025e62"
+    },
+    {
+      "table": "public.program_requests",
+      "count": 0,
+      "digest": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    {
+      "table": "public.affiliate_admin_events",
+      "count": 18,
+      "digest": "f681ef7af49aae312b2bab1bd4e7750e"
+    },
+    {
+      "table": "auth.users",
+      "count": 4,
+      "digest": "d682cbe7b2eaff0bd7187f40bb868461"
+    },
+    {
+      "table": "storage.objects",
+      "count": 6,
+      "digest": "6f1810d5fd565d0a901f8f9bacf17996"
+    }
+  ],
+  "recovery": "PASS",
+  "scope": "Synthetic loopback PostgreSQL; exact publication envelope and recovery",
+  "productionWrites": 0
+}

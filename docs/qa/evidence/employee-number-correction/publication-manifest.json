@@ -1,0 +1,97 @@
+{
+  "at": "2026-11-11T16:36:51.110Z",
+  "baseline": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "ownerAuthorizedPublication": true,
+  "priorManifest": "final-manifest.json records the previously reviewed local candidate before EOF-only packaging",
+  "runtimeContentChangesSinceReview": 0,
+  "files": [
+    {
+      "path": "app/screens-admin-affiliates.jsx",
+      "sha256": "95b573963595ba795218586b1ea9501d64f5f872de4c31416dd3480e14891f87"
+    },
+    {
+      "path": "app/bundle.js",
+      "sha256": "92b124b27cb9fcad65e0b7c9a179b562ead8abef8135560abd70c1c7923d50d7"
+    },
+    {
+      "path": "SutiApp.html",
+      "sha256": "8c20da685d906ba32a50cf9cf467c8eac75e992c14c0cce3bfdcf04c3ed6c48f"
+    },
+    {
+      "path": "sw.js",
+      "sha256": "df3a0048582dbf4c624b42f1beafb62311c2e14b151f8cdf77d309ba08f94b28"
+    },
+    {
+      "path": "scripts/test-employee-number-correction.cjs",
+      "sha256": "9331f26cec453b883e14cdf5ac38552b3c61c2a3e75a963ba3c6f764f45972df"
+    },
+    {
+      "path": "scripts/employee-number-document-checks.cjs",
+      "sha256": "5a65b68c87d837b4671ece7b52b72d6820862934ce28fba344a9a0fbb6f53ae0"
+    },
+    {
+      "path": "scripts/test-employee-number-correction-browser.cjs",
+      "sha256": "e07e0237913e50ee939b7450618ed475bb87ac3eeff76a76e9c41cb017c1c6db"
+    },
+    {
+      "path": "scripts/fixtures/employee-number-correction-schema.json",
+      "sha256": "d742eb59e7688d8325a40d40aad3e5556271e4dbb0a2f9fb63327cdd2490d5db"
+    },
+    {
+      "path": "supabase/migrations/prepared/employee-number-correction/20261111000200_employee_number_correction.sql",
+      "sha256": "87e3f0b70c9b769a58c34916251537dc3d8a26cda710f3c3814b8b0c34f00b90"
+    },
+    {
+      "path": "supabase/recovery/20261111000200_employee_number_correction.sql",
+      "sha256": "8b656248334ee10858949b20ba0edbf81e8b3891aa8a79f10270d0836175912f"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/database.json",
+      "sha256": "bf0b93092a9b65f804d5ef9e09f7d7a1d6ca680f579f8fe44ff7581205818ab0"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/database-before.json",
+      "sha256": "cc139b12660a62072a3302700f88f2608435eb5f451b05a6617c33d864ec6923"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/browser-after.json",
+      "sha256": "33adb6592eb561b5b40726b99f149347485f4df8996f90fcafd3e7fd0a6d793f"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/browser-before.json",
+      "sha256": "65d29f79355c2220f48bf21d4ccd413b1869badc359c4ba3de065781181510be"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/serialization-error-after.json",
+      "sha256": "52f73c73c44c893200dad0876c7d01396447943a3e72cb9355818dfb5321b4af"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/read-only-preservation.json",
+      "sha256": "9f5c91d68036d108e6a95eb1013d76d5d2407b38ade27efe7a160f07c1d5a2e7"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/frontend.diff",
+      "sha256": "182ec6d5f757d1726d3fd0c6256ffdbae0e5bac4d4a283cb8e101b12ab4d58bf"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/database.diff",
+      "sha256": "ea02b1863843e87a1be7b8b5d8aa273da9cc2e8c6125da966c147721c826770e"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/legacy/summary.json",
+      "sha256": "8e0e98c917974dd1336e329b6f64e77f99b5e57584fbd49256f402502e1f1e0e"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/publication-packaging.json",
+      "sha256": "33a3b88378a87c00b96b4ea9f5f47dbfef0b7bdcd9700c96c58a256f81f95c96"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/publication-envelope-test.json",
+      "sha256": "669dfb37e5713ff2d3117d18091ecc17e9d50f88dc485a1fb085f3f6823cc506"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/production-sql-preflight.json",
+      "sha256": "7508cc6084d9552f3d759c14457bd656aad75452e2315cde677e5d5292ad740f"
+    }
+  ]
+}

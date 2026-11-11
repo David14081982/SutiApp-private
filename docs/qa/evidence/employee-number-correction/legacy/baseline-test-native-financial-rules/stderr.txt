@@ -1,0 +1,11 @@
+error: NATIVE_FINANCIAL_RULES_SCHEMA_DRIFT: get_financial_runtime_rules
+    at Ie.la (C:\Users\david\Downloads\SutiApp\.tmp\savings-loan-eligibility\node_modules\@electric-sql\pglite\dist\index.cjs:4:22506)
+    at Ie.Qa (C:\Users\david\Downloads\SutiApp\.tmp\savings-loan-eligibility\node_modules\@electric-sql\pglite\dist\index.cjs:4:19876)
+    at Ie.parse (C:\Users\david\Downloads\SutiApp\.tmp\savings-loan-eligibility\node_modules\@electric-sql\pglite\dist\index.cjs:4:18520)
+    at _e.Ia (C:\Users\david\Downloads\SutiApp\.tmp\savings-loan-eligibility\node_modules\@electric-sql\pglite\dist\index.cjs:15:1788)
+    at C:\Users\david\Downloads\SutiApp\.tmp\savings-loan-eligibility\node_modules\@electric-sql\pglite\dist\index.cjs:15:1161
+    at wasm://wasm/0267bb86:wasm-function[10930]:0x5a5ccf
+    at wasm://wasm/0267bb86:wasm-function[3585]:0x27eaeb
+    at wasm://wasm/0267bb86:wasm-function[3627]:0x2869d1
+    at wasm://wasm/0267bb86:wasm-function[3637]:0x286c2d
+    at wasm://wasm/0267bb86:wasm-function[9914]:0x54fd4d

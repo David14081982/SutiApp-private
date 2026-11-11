@@ -1,0 +1,724 @@
+{
+  "observedAt": "2026-11-11T15:51:15.604Z",
+  "baselineCommit": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "status": "PASS",
+  "scope": "Read-only hashes of tracked loan/finance/history sources, shared document helpers, Google receiver source and related SQL; no execution or modification of these sources",
+  "files": 89,
+  "exactBytesEqual": 4,
+  "lineEndingsOnly": 85,
+  "changed": [],
+  "results": [
+    {
+      "file": "app/document-integration.js",
+      "baselineSha256": "6745a22fb7e0b3de798325d7c726f1e0cf1e4f94b6225cca1af1f1bfa1d8ebb7",
+      "candidateSha256": "0e07e39b67a1c0adbde07290263c8ecef10e5a9c5098c828b1e6bddac41aff43",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/document-transfer-LICENSE",
+      "baselineSha256": "3f97212f66b0ecc5fd296866d3392214d655f85bd4214d83455db78fa1d72730",
+      "candidateSha256": "e9f80d655089caf9ade67bf91d15653ef7145e8bb57169fff81426653745fb16",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/document-transfer-source.mjs",
+      "baselineSha256": "1912fe0f04a4c2f936e4f27f1c8d4ac39f1758ba0729dacf0ec940b1076bd064",
+      "candidateSha256": "f53b3eeb45ce6343bb624dc9a5da4912e9f71169cf0fb9bb652696287a840f11",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/document-transfer.js",
+      "baselineSha256": "f7bc129f9974e58d0946bd7fe661ee85b608b83287b47751c7f785f015c2adcf",
+      "candidateSha256": "5c5d2418051d0c288f3f735d1347398579fb4c7485b393d992f7fae7b8612aa6",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/document-workflow-repository.js",
+      "baselineSha256": "8e2ffda275f3a901c4830d7eb219289319e4b391c48d7648e182630e2ac2be6d",
+      "candidateSha256": "b45bd768b8d66ee4935cf000846ad49482f5e87b92ebfdfbb7c496284c68b553",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/financial-legacy-repository.js",
+      "baselineSha256": "0f2b99b200819c6a1b37ce71f7edf90d76bccc222e6b1280a37d76207249bea8",
+      "candidateSha256": "29c872b8991530d28a12b40e3ae690b898b61ce7b91b42cd58d94460da2588d9",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/history-loans-repository.js",
+      "baselineSha256": "9e2331ceec7c6d9edff2282d007176ec2b09ad89eb30e4a29a678a324eff773d",
+      "candidateSha256": "67156ca8941df38c4970e3386ee9a8a74a6ad2cb22f565b389bb3e51d6b0a1ef",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/history-loans.jsx",
+      "baselineSha256": "b58f587b6b050efafbb74ce3612069aecd2cc201c1dd88d6390ceb072c63cd7f",
+      "candidateSha256": "d58a77cd36b58ee63e13c4f1af9e34618a64efa5e0c4d308792aea64876fd831",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/history-statement.js",
+      "baselineSha256": "6f5b641ff043794675ad6043cefb0b051b20d01ab84782ffe182008e9f68e7db",
+      "candidateSha256": "67b1aeafbc30be023db426db3dbbc80528550000a3d39cc4baa8256b61776486",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/history-sync-admin.js",
+      "baselineSha256": "0342c94cce99ed5ff5393b03834248812678788dc49c5637ec674c362f08f0eb",
+      "candidateSha256": "42675414d0a1985ade9c8c11620486a02cba50de09257d2aacea32ac3df5fd53",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/loan-availability-admin.js",
+      "baselineSha256": "9210d4375408daa261cc959f7789036785d20ee3e7fac066dd023d6bd4fdfd6d",
+      "candidateSha256": "6e6281c363d483b2a2f839658c944c0de6610b1a26f84d03837221d152361de3",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/operations-store.jsx",
+      "baselineSha256": "f09f8dcd3ff6ab0bdf525e024a9e0437628af3a5147ea8db436d9f82c881b1f9",
+      "candidateSha256": "2c83e7c0b1c06153855e27d8c0eff7793f21257b4a3361142fa7ddcd899e25d9",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/private-resource-demand.js",
+      "baselineSha256": "0b7faf8851c8974597a4d6c5f7503660e995f50c62b69b2d893bb8303ad1c392",
+      "candidateSha256": "581d4a654f1d5783a13e6ae62ed19f85c07b70a4dd72545dceb74bfb938dd9be",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/program-request-repository.js",
+      "baselineSha256": "6a5c78695a60dfe0860cfe383b01a96ab949b7f3bf4473202fbffdbf586a3561",
+      "candidateSha256": "2591c58f325f2cc2c2e5bef9d8fcca976d51ac6abb87fadb8bd994a155123b35",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/screens-admin-finanzas.jsx",
+      "baselineSha256": "ed0d033365f0704b714eaf2b8ce187f2c9f111222cedacf3250c05b923151ecb",
+      "candidateSha256": "81096073b8b83836c4a69d243c98373f41d8672215dea2541c4858b48998941d",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/screens-historial.jsx",
+      "baselineSha256": "0d176509fb2eedb36c752c915f871a78ad345ffe74a9e70cd9189e7eddcfe6ec",
+      "candidateSha256": "544c7b6f59a753e50ce3121f52c0b4e5eda23c1765ead215de5c7cc5b0900d06",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/screens-loan.jsx",
+      "baselineSha256": "e98f313c32298d53fe25d2e1409fbbef688277fd37905df98f1a4d0884abc62e",
+      "candidateSha256": "83f7d14b7b0d47325d6cfae464bf76d9ba045c2a6660490767cd10e3b5a6455a",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "app/supabase-client.js",
+      "baselineSha256": "42a852138f9ed2cb4c6e9bef92d60b7a2840a491cd58db2610e42da76f8b3bf2",
+      "candidateSha256": "69fb35ed67775a2220be250aafd892ed7ec30c606a00b9fe7ae90ab72445cb0e",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/.clasp.json",
+      "baselineSha256": "78ecd1575bc896c58ef366a663465c2f7cfdd9051139caec8eb4bc2ca31bc416",
+      "candidateSha256": "e387315d126baefd4e5083b5236a1653edfaa9d2f60c502ea45d980f8f0e8fd5",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/Code.gs",
+      "baselineSha256": "b021ac4d822dc2f9568cf76cd7404ad6bdb1e114abbbb10ac5b7bcd7887386f2",
+      "candidateSha256": "b021ac4d822dc2f9568cf76cd7404ad6bdb1e114abbbb10ac5b7bcd7887386f2",
+      "exactBytesEqual": true,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/README.md",
+      "baselineSha256": "9bbd611c18823e29f1ecf3796ec28df1de89eca7c69f73734a1975161ba72a94",
+      "candidateSha256": "9bbd611c18823e29f1ecf3796ec28df1de89eca7c69f73734a1975161ba72a94",
+      "exactBytesEqual": true,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "google-apps-script/financial-handoff/appsscript.json",
+      "baselineSha256": "08d1a79d2734d59dcc6ccc77c4039195adad160568bcd8109c47cd3e2a665457",
+      "candidateSha256": "d293692dc6b410bcd913aa955d01466c6c34ccdc757e7170c0356b85ff99aef8",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/document-crc-LICENSE",
+      "baselineSha256": "c14dea172f72f2714284a0ac2ab1b00b5352a01409d58255a46227ffc541debd",
+      "candidateSha256": "f27025ee1b68e02c211c6f2b1b887a0309a251d004e1de5ae7d404afb529117d",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/document-crc-source.mjs",
+      "baselineSha256": "5e7f3890e4af89513a1a9b715c8cb2f4ea9aaf4322e68096ab47400dc354763c",
+      "candidateSha256": "73b5a03d0657d4b477285ed80e84cefad93274f1525ae151d523217c5435fa55",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/document-crc.mjs",
+      "baselineSha256": "736c706b74e974e7cb57ca3ffca3431d2f3186b53c54feea2ad1c17ee06b8eff",
+      "candidateSha256": "38604fbb65853657253c75317bf0f0c6d016e9a21ec6be1d849b9966363ece43",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/document-integration.mjs",
+      "baselineSha256": "9c041bd3d64ec3536c5e40d1e381571a02e71bd537791d9e560d4dd555242745",
+      "candidateSha256": "b88f727167b199c1250e68fa936ce78be71d6263a7abc51bded094f72fff35e1",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/document-stream.mjs",
+      "baselineSha256": "aca8e7ea5ee3879781f3ce155adea87fc3b6950f0897b078e0fc6e2331803d89",
+      "candidateSha256": "976aa047f70c33482b38433fe37089945bc0cee13ad3d9227e90c4ad16cf229c",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/document-verification.mjs",
+      "baselineSha256": "7336c34b7e2289b27bf15eececcb1c59ddf9e0dae666ed7552907396a00c2d90",
+      "candidateSha256": "436177e1fa7addb285c6c12e99d28a3587608eff586f00ddc72bbfd7e4c89773",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/document-verifier-runtime.ts",
+      "baselineSha256": "10381dafd20c7096716be8ca5dd060f37a80e03cbcbfc627cc784b8f6a07c8dd",
+      "candidateSha256": "44d8a23ae39ab0f7cca5d9f5ffd6397f367cdebc7c15c3afc943ec4d0cdf487f",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/webp-decoder-LICENSE",
+      "baselineSha256": "8c3690b09c168f196446cf5904332023bbc15eb92b6a7cee470ac829e6a65d20",
+      "candidateSha256": "66c4880840a14118a2cff058be936ea81f9987cae8258eda83cd1ef6e531ec07",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/_shared/webp-decoder-bytes.mjs",
+      "baselineSha256": "764366fdf5c6eb78655499c235908c91de13b9c75c313acbbe2e2e352f87f606",
+      "candidateSha256": "b1e40647b42f32c46c7eeda3b0892a8bfe28720008b2ce776b03a8aeb5de73cf",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/financial-legacy/historical-obligation-map.mjs",
+      "baselineSha256": "b9c6b7c539ae9234cb8ffbe44d1d09e7973ad9e637dc7b2375975fb69b4712de",
+      "candidateSha256": "6237c357ea4c9be17f0e5add9fef65457442d940309206410963fc3d615e0b62",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/financial-legacy/index.ts",
+      "baselineSha256": "acb59744809e6910782102fd2ab4c01b28fe9a16ca669f4df16e35c9f9a8f09c",
+      "candidateSha256": "8c23221f6d403c5b7280da6edc277917b79e9961ea646fe6c60ebee70eda29d4",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/financial-legacy/loan-capacity.mjs",
+      "baselineSha256": "96cfa23bd6f03a6157de77541c9489640f83d08275baabc1de5bf24bfc536a08",
+      "candidateSha256": "96cfa23bd6f03a6157de77541c9489640f83d08275baabc1de5bf24bfc536a08",
+      "exactBytesEqual": true,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/financial-legacy/request-google-sync.js",
+      "baselineSha256": "a907986aba16a154a1086f13f3e60d4b06e45595726c5f711e0b9cb96934d7f3",
+      "candidateSha256": "0e5760e20ca48a8eb8b3f7fe03029e0b693236af76dcd960b7ef74b17f73b07a",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/financial-legacy/savings-eligibility.ts",
+      "baselineSha256": "229ae0c7aa13e6be521a4b7b4a48def6f765b879cf002e949a88bbd5bc88e0a1",
+      "candidateSha256": "aa6b055e454725e924c70aeee8d1b3bced2fd10edfc26a803c2535e6ce4a1d64",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/financial-legacy/visibility-policy.js",
+      "baselineSha256": "12618d7c524863ca4b5fb0a7600e95a92b65a3520adbe6aab8045f8b5c21c6ce",
+      "candidateSha256": "bb4bb4bfb620c5cef3b3029944381e050f377bed3958b66e1c2d908c3bf4aa41",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/loan-history-sync/index.ts",
+      "baselineSha256": "a122e66aa52ccc7eba47f06c58418bdeb966ac3cbfe1a3c9339e87720ccd60fe",
+      "candidateSha256": "80f3c7067e7f23f68c2ce86fff813b46c7469a57ff82e2652aa91af0c2ba0b67",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/loan-history-sync/worker.mjs",
+      "baselineSha256": "3f56bc01704a92b0113144c8dcf81c4a2540dfcd8dc868040f5b14160880ffad",
+      "candidateSha256": "7d5778e16bf8835800afea99f17a6ef4d9a600d228645623a1481cabe9b6f133",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/loan-history/history.mjs",
+      "baselineSha256": "6b0fd15bb9a9c3cb8d16c791d80cd3d7e71dd6be65e4fda2694ac12d14f8caf5",
+      "candidateSha256": "b700accd1b950118b7e2411076541770d28e237b7cc560afacdb27d55a6380c2",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/loan-history/index.ts",
+      "baselineSha256": "38b241d1f4f18a60705c60b360c98cabe9916e053bc68932cced00e4810ad88e",
+      "candidateSha256": "797f785228211abac86bb4ac84ae36174422db8d482afcadc26a0030771ee17f",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/loan-history/snapshot-source.mjs",
+      "baselineSha256": "d2787d88b737930826e9464c75a1f56d06d49ba7a41b5c7921651c7f60fbd292",
+      "candidateSha256": "d3a46750f88a6eb8df2ede3b8193e73d8d614fe6e1895cef971fd99a938c4ad9",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/loan-history/snapshot.mjs",
+      "baselineSha256": "e74305afd9d2853a27fe2f075cf93b11f6d3230dcd9ff7db61beef08cdc19d30",
+      "candidateSha256": "3b9824a8e59f2e6a2273ced844faa7c791231cd3418819c8da259d69c9aa81c8",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/functions/loan-history/source.mjs",
+      "baselineSha256": "861bdfe0293f736451fed20fdcac3fd2ace53551ff44945a5aebc796d92e4df4",
+      "candidateSha256": "efb67c7654cd9cc1e254e4e397f4a57b388a55f0fea31f3f20c8126636fcd00c",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260822000200_create_unified_program_requests.sql",
+      "baselineSha256": "3a8f87e09ea4bba32b93b7ab3eb66402508a7dc3d94d5ab2ecf8149f3b4ef544",
+      "candidateSha256": "0747b8a9ce74faedf02a8fba90594a45a89fb9d4e8d9c9397ff9d84eabae88e9",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260822000420_affiliate_financial_profile_authority.sql",
+      "baselineSha256": "92e3976691d09a328f1d60b18f03b4278bdac556d5a3aa93d72d30bfe6b25414",
+      "candidateSha256": "a4cb7422d1d94da5cb1f2b177dea8bb707d575d83822555106978e786c557a0b",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260822000421_bulk_financial_profile_seed.sql",
+      "baselineSha256": "7c2a467246c20a5b87155426fab85311873df89df1bb51bb466b32894013b405",
+      "candidateSha256": "169923d658d0442a430be1e4beae4ee46188fea1ba95135ffc096f76d0a5a33b",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260822000422_harden_financial_seed_recovery.sql",
+      "baselineSha256": "569819a633a9e0e047e7f59e6112d6103a0577a3072198b5ff77e68b32a9d62b",
+      "candidateSha256": "2b7497f4e66a7e23dccfa9305a6c6f662771487ce979db85d0fe823c2162135c",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260823000100_final_approved_loan_export_writer.sql",
+      "baselineSha256": "41b54214626324b34ad97104268f5f491745585eb51ab296e4fc79ad0fd1fc38",
+      "candidateSha256": "d7bf68bac39f05344e4ce75ec5ed5d760152b9cd5dd0ac83bd9a75e2b0a0fbc9",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260823000101_harden_final_approved_loan_export_failure.sql",
+      "baselineSha256": "976cb9029bcdc36515c3bbcab28fe5dfc0f30c725ec7e6a9c640cba71296fa57",
+      "candidateSha256": "93ad7d81130135a4aa00711092dd4682546ef24cd957767ce1324877dc1b080a",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260824000200_flexible_loan_terms_and_assisted_impersonation.sql",
+      "baselineSha256": "b14be12ddfbf76db2e7c158fca159a7c5a63237cab7c85664d4013cb85bc3184",
+      "candidateSha256": "694ec782eae3c344c619419a80aab15dd46dc6ae6892103993543ade243c7256",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260824000210_create_suti_loan_request_target.sql",
+      "baselineSha256": "52b66a575bbb1d278cb74c2cb6517aefa5b7effd3d8e8aa3ae11674f6f58cae7",
+      "candidateSha256": "e0ded0751d6487cd86f9354eb80e2937ca91a35316bc3c6128ef808b4a50d65e",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260824000220_set_custom_loan_minimum_one_payment.sql",
+      "baselineSha256": "c93804004d7b36d51a12d678b2cc9f2a8fa1177983c835498d5bca232fa23151",
+      "candidateSha256": "fab6215fe5f7acd58c02f2a934f7e1020b410e6c5b71c059d79f2e29d3813c43",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260824000230_financial_criteria_visibility_admin.sql",
+      "baselineSha256": "08abaaeed560894dacdef10f6c0f7ff48101d6febef151ec0f8f1b47610c45dd",
+      "candidateSha256": "fd018aa133b1b04b7a6f9975ae4b1e5675c8f105873e75885120d991ec20ab0a",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260824000231_fix_financial_criteria_identity_constraint.sql",
+      "baselineSha256": "0f866afda2571d4308fd4197a5d6a6320fbf86dbfe108bcba94565d374bd016c",
+      "candidateSha256": "0b9be127594ed9db3b2cc1e8c76f61e010ced3a964d308bbf64817a681a8820f",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260825000400_personalized_financial_session_snapshots.sql",
+      "baselineSha256": "ec006ab95e1960ee70bb66f61cee857f721d130af710cfcf26244f09cc15e7ad",
+      "candidateSha256": "f58e14916d5fb557fa0e5d2754af42e5ff7f0ce873c87069940c5b82e5f4620d",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260826000100_authenticated_loan_snapshot_quote_rpc.sql",
+      "baselineSha256": "7f5d0d8d662f10da7dc5fb0932d720f3ccb202f6f280a8330bdb1971a17ea127",
+      "candidateSha256": "b54400e450973ffa309db414a336c081c6517a40819b11b6a2f2c2beebd4849b",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260826000200_admin_financial_requests_read_model.sql",
+      "baselineSha256": "4a32eb5a5d4ab4444420820a9ea2cfdfa1a96411782a4fc5e8575d5627eaee91",
+      "candidateSha256": "de947071385b7d2df525b0b57212f4889cc1cd3a2e9118c7fc000389ae68d879",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827000100_financial_criteria_supabase_cutover.sql",
+      "baselineSha256": "ba813e7d09438be6ee4eed854a7df8fa48cf707021c42e9585fc42830a1bff16",
+      "candidateSha256": "e6b185cf638b4ec23f56e71a53da8b49e1f394d8120d050e75998d26f17f4fcf",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827000200_financial_import_effective_rate_equivalence.sql",
+      "baselineSha256": "b0a56679ff176a5fc15bde3a40e064684d91dc167901ef9fa1dc9d98fc2b8010",
+      "candidateSha256": "63e12ce67c374ab00da2723e3cc9f68ef403fdebedf77b8308b1ad2d51a22c25",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827000300_financial_service_role_import_boundary.sql",
+      "baselineSha256": "dfde70384565710a4f5c75f0df7195ef45f8bd2a77406b3f9ffa20b31d37a471",
+      "candidateSha256": "a65b6a864eca2fb9d56cc1829284e1a42ad162a7dfaf2e995d6c65ef518ebcbc",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827000400_financial_import_fund_grouping.sql",
+      "baselineSha256": "63ed23bd4651bc9098f67e24f71145ea80a4008735f1b810caa180fe0aa680b3",
+      "candidateSha256": "221f6c2012e09deb370b69780aec25a501556a71eb32731d789f551d3d75836d",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827000500_financial_shadow_edge_canary.sql",
+      "baselineSha256": "c64de9fe8c1e3f691b80982c40482a4dbf9581eb0431ec7a1eb8da97c76c0c3e",
+      "candidateSha256": "f6583156cdb274349894a14218885699514b9b3f5d69310f556ce2dd0cc6e693",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827000510_financial_canary_authority_transition.sql",
+      "baselineSha256": "58462415841bab1bda55120037dffb09ce6ff977ab7544bdfc938587310320e8",
+      "candidateSha256": "e5bb11e938d0d1f2468f3f31ee59bab8b17eef5f4f7b9a4191f339b70484d7fc",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827000600_retry_financial_supabase_cutover.sql",
+      "baselineSha256": "dac1998769fb667f680d56916c4ab8015908c81d30c721814121267402ad56ad",
+      "candidateSha256": "e2963f1abac38bb9424a212bdae8c466eafe34f9eceae3f6a7e67e5bed9278e6",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827000700_remove_financial_cutover_canary.sql",
+      "baselineSha256": "daea0cb0d7e3366fbf6904d3831399a86b6cdd7c03c7df751bf0cd63fd6a0605",
+      "candidateSha256": "0f63aaaa70dd389f4b950dcef6e44e303d44d9634751b050cad4f80926d3e49c",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260827001000_loan_snapshot_quote_key_share_lock.sql",
+      "baselineSha256": "4b930c177ab17b7c6db3f3b69571daae61a5566b302fcf18f792ea3458334eb0",
+      "candidateSha256": "adf468df0b4706e4b4683590ba88363fbc5e971d9878d67fae6769d634474c3f",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260829000100_loan_document_flow_recovery.sql",
+      "baselineSha256": "745ff5d6359edebac39f6e707120ac2b7ed3f75acdd7f254af3c31b242a7ba51",
+      "candidateSha256": "f021a1b20b1e9aedcf569d858301633115963e684e86929cdea69e3740b41ecc",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260829000200_financial_request_admin_events.sql",
+      "baselineSha256": "fb1f0ab5b4364d3a5fd21e123abbe86e270504bfb798ffd9cfff51915b1c140a",
+      "candidateSha256": "2bf9fdb7c66b17258b62ffa2006714fec8415742da4ef6c235dfc5f375ecfdd5",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260830000100_loan_document_context_isolation.sql",
+      "baselineSha256": "e04edebba413238b4595ba2debfe11556d2f418fa6d6b6a68f6b59e8db8e748b",
+      "candidateSha256": "cc9c9d141c9bacc30bd30d9f73b11b46ce8092022b2d3b7e596843846ccffc4a",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260830000500_loan_deposit_step.sql",
+      "baselineSha256": "6fc9a0e5630126f93e4dd86686e7420deb84a070685a73d96790e24237470b32",
+      "candidateSha256": "4909bbc9c80eed70ab74ca8e6a4a4112a6b1c6aca8e8ae780931b3dfb10b72b9",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260830000510_loan_deposit_self_read.sql",
+      "baselineSha256": "69236ffed42796ac8086a5fa644f1a898c0e58d78eee4b5cfc91b062e474743b",
+      "candidateSha256": "f1ea0b9b821037724f0551782a0e73c5784e4fb4635b146d10d6a1e649632ec5",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260831000300_optional_loan_deposit_account.sql",
+      "baselineSha256": "77fc35819f7a07ee9642c33afff856cb114a9e3ae1643667ca9fca6f64695271",
+      "candidateSha256": "b81841ba968fe94ddfe28af1eeb39b2a5f0de2dbb44689a2a1ce2f85e55200f5",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260901000100_loan_deposit_account_or_validation.sql",
+      "baselineSha256": "603186778892400f55a70cbf3dbc49fbb3d8089da6d8e0b1b5c274191ffa0f02",
+      "candidateSha256": "7713da03c6488fef574db4c7e616018b92cf94126302c2700898b02250439f41",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260922000100_savings_loan_eligibility.sql",
+      "baselineSha256": "1143abc60591cb090760ad961b53fc7a8b446563bd372e3309212c78fa093005",
+      "candidateSha256": "0c8baedd21c59261eb9bd1a30f190b692848a1afe8c40f129fd312b1f19663d0",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260922000300_loan_advance_admin_fee.sql",
+      "baselineSha256": "c1b767ce2bf6629200af8c6557007012b707565d4bca103da5ad3e03d8a0a50b",
+      "candidateSha256": "325c4c9ea671f21fea5c76d0070c08be5eba67393cbd3e39b5a0bafe03b2d645",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260923000200_loan_advance_interest.sql",
+      "baselineSha256": "e5edc33732848fa67ac1e91769ecaa571d038cc63fe030fa36d6a76a4ef56766",
+      "candidateSha256": "6a6cc40439f1a3c51fbc3e3be4d1709b134ddf589eb4f6847be49bc8f02d2270",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20260929000100_loan_document_schedule.sql",
+      "baselineSha256": "cd91bf7b6439d893270472be1db4c77d6f53768403477f3027fc7f02a0783afd",
+      "candidateSha256": "af9be50d6dea96bc251347291e8db8a3032596bb55f4e18399483a413e8ea9e0",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261005000100_loan_dated_fund_cutoff.sql",
+      "baselineSha256": "113e89cd166c0a735451853c24e23d75aa68744cdc108a270d36ca3dda422029",
+      "candidateSha256": "5ca7fad47d30287484b8682cb82459a5b93d854dbc6a928c739c70c164730572",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261020000100_native_financial_rules.sql",
+      "baselineSha256": "de9005b9ab533eebdeebffd75e9b473f64a73c7d06dfce9e3a76ff039130e537",
+      "candidateSha256": "30e3768a1ec331c18070860884c6d1dee6910fc9e79f7afbc98558958667dab4",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261025000100_self_loan_history.sql",
+      "baselineSha256": "38384294ad95e2341f0a9ef68e7d21263209d1d136eb1443c1eb7346583ad7a1",
+      "candidateSha256": "38384294ad95e2341f0a9ef68e7d21263209d1d136eb1443c1eb7346583ad7a1",
+      "exactBytesEqual": true,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261026000100_loan_history_snapshot.sql",
+      "baselineSha256": "76579ce02a5864acf5b15cd6afe29a13de5c78a5ba5ceb3bb423b624ae60a6b4",
+      "candidateSha256": "639bd9632d1e9de8b116b2454a04f8e83f2a607a17810b5388b8cb7cba7af9a6",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261026000200_loan_history_approvals.sql",
+      "baselineSha256": "ee422be13eb497c4eae27a7e68a06f6637abfea1f5500ad7fee344055aec26d1",
+      "candidateSha256": "313f0288cf52d81dbdf34edc18fca509c7691c2199e485819273f911fb54f5fe",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261027000100_loan_available_credit.sql",
+      "baselineSha256": "203826dd3e9a703785495dced45bcfb86a6a5294a5e07ae0478014ebf84c60ff",
+      "candidateSha256": "c3b250a23ba227f28fadb5a32acb74c8b5b6501b0f3441e81c82a28d10db082d",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261028000100_loan_historical_review_guard.sql",
+      "baselineSha256": "abc514eee8c7f1eb7d51cef05877146b71e81968b3cfccea9707e74c08a638a0",
+      "candidateSha256": "3298f03cc73f6814e345ff53978a4fe3d7aedcfef07b54244c43e8d838cd7111",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261106000100_financial_mostrar_override.sql",
+      "baselineSha256": "66b2a538d169b0119829e67fd63f3aca7d697d58107238558eab7bc77d7c555f",
+      "candidateSha256": "dc7e5b6f92cd01ed73b76cdef970f6def0e865c2bd29d3518c219a6a0b98beef",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261109000300_loan_document_submission.sql",
+      "baselineSha256": "2ca54baada5fccf76c769b7f515a82f91311104d99bc061e022807bd370a98dd",
+      "candidateSha256": "1e02dfe5590d9321e0c07b5821232b1698102c3e2e326f0e602c1b9a39d6a03a",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/20261111000100_loan_impersonation_actor.sql",
+      "baselineSha256": "d1a055ab71e5ec50ef1e67b7f060f8a3c747d64bc6acfaae54d414ed75a10b9b",
+      "candidateSha256": "0716d0ad91a476e11e7e1489d016b88a69de39614d2f87fed62dc703f337e754",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    },
+    {
+      "file": "supabase/migrations/prepared/loan-document-submit/20261109000400_loan_existing_document_size.sql",
+      "baselineSha256": "2ba284ac3648bbb23a9116a95fd419df7f678727d21eea1baf8fbe6d424641bd",
+      "candidateSha256": "409e52bfbe331fbc0fdd52dce5220628c8f27266693c970fddd4d629a0f1400e",
+      "exactBytesEqual": false,
+      "lfNormalizedEqual": true,
+      "status": "PASS"
+    }
+  ]
+}

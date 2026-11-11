@@ -1,0 +1,6 @@
+available credit includes only eligible shown fund
+
+null !== 10000
+
+(node:23272) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

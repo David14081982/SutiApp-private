@@ -79008,6 +79008,27 @@ Object.assign(window, {
       size: 19
     }))), children));
   }
+  function trimEmployeeNumber(value) {
+    return String(value ?? '').replace(/^ +| +$/g, '');
+  }
+  function creationError(value) {
+    const code = String(value && value.message || ''),
+      sql = String(value && value.code || '');
+    if (['AFFILIATE_CONTROL_RESERVED', 'AFFILIATE_CONTROL_DUPLICATE', 'AFFILIATE_CONTROL_UNAVAILABLE'].includes(code)) return 'Este número de control no está disponible, elige otro';
+    if (code === 'AFFILIATE_CONTROL_RETRY_REQUIRED' || sql === '40001') return 'No fue posible confirmar la disponibilidad del número. Vuelve a intentar.';
+    if (['ADMIN_DENIED', 'AFFILIATE_READ_DENIED', 'AFFILIATE_WRITE_DENIED'].includes(code) || sql === '42501') return 'Tu cuenta no tiene permiso para registrar afiliados.';
+    if (['AFFILIATE_CONTROL_REQUIRED', 'AFFILIATE_CONTROL_INVALID'].includes(code)) return 'El número de control debe tener entre 1 y 80 caracteres.';
+    if (code === 'AFFILIATE_NAME_REQUIRED') return 'El nombre completo debe tener entre 3 y 240 caracteres.';
+    if (code === 'AFFILIATE_STATUS_INVALID') return 'El estado seleccionado ya no está disponible. Recarga el padrón.';
+    if (code === 'AFFILIATE_RFC_DUPLICATE') return 'El RFC ya está registrado en otro afiliado. Revisa el dato.';
+    if (code === 'AFFILIATE_CURP_DUPLICATE') return 'La CURP ya está registrada en otro afiliado. Revisa el dato.';
+    if (code === 'AFFILIATE_REASON_TOO_LONG') return 'El motivo no puede superar los 500 caracteres.';
+    if (code === 'AFFILIATE_UNION_INVALID') return 'El sindicato seleccionado ya no está disponible. Recarga el padrón.';
+    if (code === 'AFFILIATE_CATEGORY_INVALID') return 'La categoría seleccionada ya no está disponible. Recarga el padrón.';
+    if (code === 'AFFILIATE_DUPLICATE_REVIEW_REQUIRED' || sql === '23505') return 'El alta fue detenida por una coincidencia de identidad.';
+    if (code === 'AFFILIATE_VALUES_REQUIRED' || ['23502', '23514', '22001', '22023'].includes(sql)) return 'Los datos no cumplen las validaciones del padrón. Revisa los campos e inténtalo de nuevo.';
+    return 'No fue posible crear el afiliado. Verifica campos y permisos.';
+  }
   function NewAffiliateModal({
     options,
     onClose,
@@ -79044,7 +79065,16 @@ Object.assign(window, {
     };
     const submit = async () => {
       if (busy) return;
-      const validation = captureError(form);
+      const values = Object.assign({}, form, {
+        numero_control: trimEmployeeNumber(form.numero_control)
+      });
+      if (!values.numero_control || values.numero_control.length > 80) {
+        setError(creationError({
+          message: 'AFFILIATE_CONTROL_REQUIRED'
+        }));
+        return;
+      }
+      const validation = captureError(values);
       if (validation) {
         setError(validation);
         return;
@@ -79052,21 +79082,23 @@ Object.assign(window, {
       setBusy(true);
       setError('');
       try {
-        const found = await window.AdminAffiliatesRepository.duplicates(form);
+        const found = await window.AdminAffiliatesRepository.duplicates(values);
         const archived = found.some(row => row.match_state === 'ARCHIVED_MATCH'),
+          numberTaken = found.some(row => (row.matches || []).includes('numero_control')),
           hard = found.some(row => (row.matches || []).some(match => match !== 'email'));
         if (found.length && (!emailReviewed || hard || archived)) {
           setDuplicates(found.slice());
           setEmailReviewed(!hard && !archived);
-          setError(archived ? 'Existe una identidad archivada. El alta se bloqueó: restaura el registro existente.' : hard ? 'Hay una coincidencia de identidad. El alta se detuvo para revisión.' : 'El correo ya existe. Revisa la coincidencia y confirma nuevamente si corresponde a otra persona.');
+          setError(numberTaken ? creationError({
+            message: 'AFFILIATE_CONTROL_RESERVED'
+          }) : archived ? 'Existe una identidad archivada. El alta se bloqueó: restaura el registro existente.' : hard ? 'Hay una coincidencia de identidad. El alta se detuvo para revisión.' : 'El correo ya existe. Revisa la coincidencia y confirma nuevamente si corresponde a otra persona.');
           return;
         }
         if (!window.confirm('¿Crear este afiliado en el padrón autoritativo?')) return;
-        const result = await window.AdminAffiliatesRepository.create(form, reason);
+        const result = await window.AdminAffiliatesRepository.create(values, reason);
         onCreated(result);
       } catch (errorValue) {
-        const code = String(errorValue && errorValue.message || '');
-        setError(code.includes('DUPLICATE') ? 'El alta fue detenida por una coincidencia de identidad.' : 'No fue posible crear el afiliado. Verifica campos y permisos.');
+        setError(creationError(errorValue));
       } finally {
         setBusy(false);
       }
@@ -79078,7 +79110,7 @@ Object.assign(window, {
     }, items) : h('input', {
       className: inputClass,
       value: form[key] || '',
-      maxLength: key === 'full_name' ? 240 : 160,
+      maxLength: key === 'numero_control' ? 80 : key === 'full_name' ? 240 : 160,
       onChange: event => set(key, event.target.value)
     }));
     const formBody = h('div', {
@@ -79134,7 +79166,7 @@ Object.assign(window, {
     }, 'Cancelar'), h('button', {
       type: 'button',
       className: 'aff-primary',
-      disabled: busy || form.numero_control.trim() === '' || form.full_name.trim().length < 3 || !form.affiliate_status_raw,
+      disabled: busy || trimEmployeeNumber(form.numero_control) === '' || form.full_name.trim().length < 3 || !form.affiliate_status_raw,
       onClick: submit
     }, busy ? 'Creando…' : emailReviewed && duplicates.length ? 'Confirmar alta' : 'Crear afiliado'));
     return h(Overlay, {

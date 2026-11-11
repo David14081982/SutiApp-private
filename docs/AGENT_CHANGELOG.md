@@ -4552,3 +4552,8 @@ Publicación autorizada y completada: commit 0801bc84bb2fa8330fc99d88e176e51f528
 ## H-HISTORIAL-ARCHIVE-REMOVAL-001 — 2026-11-10 — candidato de publicación
 
 Por instrucción del propietario se retira toda la sección Solicitudes archivadas de Mi Historial. Una línea de montaje y su fragmento compilado; cachebuster 2026111004. Documentos históricos, permisos y Administración intactos. Candidato aislado de main 4afa771; build Pages y UI focal con contrato vigente PASS en móvil/escritorio. Publicación y hashes HTTP se verificarán después del despliegue. [Auditoría](audits/H-HISTORIAL-ARCHIVE-REMOVAL-001.md).
+
+
+## H-DOCUMENT-FLOW-SURGICAL - 2026-11-10 - release candidate
+
+Isolated branch from verified main f6cfae3. Preserve same-session uploads, TUS recovery and confirmed document/photo receipts; distinguish failed reads from empty files; keep safe loan error codes and preview expiration after URL issuance. No SQL, RLS, financial rules, Google, visual redesign or real user data changes. Combined focal regression, synthetic real SQL writer and official global production-baseline/local-candidate checks PASS. WebKit native PDF on Windows remains a stated environment limitation. Separate reversible commits and evidence: [report](qa/H-DOCUMENT-FLOW-SURGICAL-20261110.md). PR12; publication/readback pending.

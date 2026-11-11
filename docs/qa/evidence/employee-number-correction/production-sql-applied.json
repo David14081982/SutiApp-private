@@ -1,0 +1,88 @@
+{
+  "status": "PASS",
+  "at": "2026-11-11T16:40:31.956Z",
+  "version": "20261111000200",
+  "migrationSha256": "87e3f0b70c9b769a58c34916251537dc3d8a26cda710f3c3814b8b0c34f00b90",
+  "recoverySha256": "8b656248334ee10858949b20ba0edbf81e8b3891aa8a79f10270d0836175912f",
+  "businessTablesUnchanged": 9,
+  "businessRowsChanged": 0,
+  "storageMutations": 0,
+  "metadataPreserved": true,
+  "bindingsPreserved": true,
+  "target": {
+    "personcount": 1,
+    "documentcount": 5,
+    "reusablecurrentcount": 0
+  },
+  "backupReadable": true,
+  "backupSha256": "276cab639eade393653453c5286d9442b9c839e2b84b348b390af31fa75b91a3",
+  "functions": [
+    {
+      "signature": "affiliate_control_reservation_guard()",
+      "hash": "00e7c2a02cefa986452dede1eb267b1b"
+    },
+    {
+      "signature": "change_admin_affiliate_control(uuid,text,timestamp with time zone,text,text,uuid)",
+      "hash": "2bf5c50e4433d52ccfb0966f71417529"
+    },
+    {
+      "signature": "create_admin_affiliate(jsonb,text)",
+      "hash": "54613d2725ed82238bf61c318c923227"
+    },
+    {
+      "signature": "find_admin_affiliate_duplicates(jsonb,uuid)",
+      "hash": "f1ad935c5b37d0150a45926e8408e539"
+    },
+    {
+      "signature": "preview_admin_affiliate_control(uuid,text)",
+      "hash": "e7abfb1e5f9e07e172bedf804c02b286"
+    }
+  ],
+  "fingerprints": [
+    {
+      "table": "public.affiliates",
+      "count": 1081,
+      "digest": "7c959f81d4252426678e3d9f10802960"
+    },
+    {
+      "table": "public.affiliate_documents",
+      "count": 5575,
+      "digest": "a381abaa4f1e2a1296847778324ce46e"
+    },
+    {
+      "table": "public.private_assets",
+      "count": 20445,
+      "digest": "6165e8cc88b86403717f6f59b878f326"
+    },
+    {
+      "table": "public.affiliate_files",
+      "count": 12931,
+      "digest": "560231ec4c81ec35cd60cf093a32e2e7"
+    },
+    {
+      "table": "public.affiliate_control_changes",
+      "count": 4,
+      "digest": "9480d647625a66b13766c9f08837e960"
+    },
+    {
+      "table": "public.program_requests",
+      "count": 617,
+      "digest": "e0e73fe4c6a91e15a35933f5aaf35609"
+    },
+    {
+      "table": "public.affiliate_admin_events",
+      "count": 485,
+      "digest": "9092ea1b60275a53e61578c37e9956a6"
+    },
+    {
+      "table": "auth.users",
+      "count": 556,
+      "digest": "7d73b939ac334d041ddd53a7fdbbd57b"
+    },
+    {
+      "table": "storage.objects",
+      "count": 21482,
+      "digest": "5bfed373da62cb413cdcc7f6e3a2dd1a"
+    }
+  ]
+}

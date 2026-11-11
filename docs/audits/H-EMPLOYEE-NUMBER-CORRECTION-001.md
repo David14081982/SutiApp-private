@@ -1,5 +1,19 @@
 # H-EMPLOYEE-NUMBER-CORRECTION-001
 
+## Estado vigente: publicado y SQL aplicado
+
+Commit funcional `9cf86f64e7363b94411069a83ca530856db7f749`, [PR17](https://github.com/David14081982/SutiApp-private/pull/17), fusionado como `ac0fc3ea04308f4c42cbada5df8d6a1560d70981`. CI del PR PASS. [Pages](https://github.com/David14081982/SutiApp-private/actions/runs/43060286718) terminó SUCCESS el 2026-11-11 a las 16:38:39Z, incluidas las comprobaciones de Auth y envío de solicitudes; el workflow de contrato Membership del commit fusionado también terminó SUCCESS. No se omitieron checks ni se forzó push.
+
+La instalación SQL se bloqueó inicialmente por revisión automática, antes de ejecutarse, por falta de autorización SQL suficientemente específica y de preproducción adicional. El propietario respondió expresamente «Autorizar SQL sin preproducción adicional» para los cuatro cuerpos y la migración 20261111000200. Con esa autorización posterior se aplicó a las 16:40:31Z; la lectura posterior de 16:40:47Z terminó PASS.
+
+Se sustituyeron sólo los cuatro cuerpos aprobados y se insertó una fila técnica en `supabase_migrations.schema_migrations`. Nueve tablas de negocio conservaron sus conteos y huellas dentro de la transacción; firmas/OID/ACL/owner/configuración/bindings/RLS quedaron iguales. Cero escrituras de afiliados, documentos, Auth, solicitudes u objetos Storage. 14262 conserva cinco referencias documentales y 8322 permanece sin alta real. El respaldo legible queda local; el recovery exacto y el procedimiento de instalación se probaron previamente en PostgreSQL sintético. No hubo despliegue en un entorno separado de preproducción, conforme a la excepción expresa del propietario.
+
+Los hashes publicados de HTML, bundle y service worker coinciden con el candidato. Pantalla pública de acceso comprobada en 390 y 1440, sin errores JS, sin iniciar sesión y bloqueando solicitudes distintas de GET/HEAD. Este smoke no certifica una alta real ni sustituye las 24 comprobaciones SQL/Storage y 33 de navegador sintéticas. Se conservan los tres fallos heredados: la publicación focal está verificada, no la salud integral de toda la app.
+
+Evidencia posterior: [SQL aplicado](../qa/evidence/employee-number-correction/production-sql-applied.json), [SQL verificado](../qa/evidence/employee-number-correction/production-sql-verify.json), [frontend publicado](../qa/evidence/employee-number-correction/published-frontend.json), [resumen de publicación](../qa/evidence/employee-number-correction/publication-result.json). El recibo frontend se tomó durante el bloqueo SQL inicial; el resumen posterior acredita que éste se resolvió. Los estados de candidato/BLOCKED de las secciones siguientes son evidencia histórica anterior a estas autorizaciones, no el estado vigente.
+
+Empaquetado: se retiraron únicamente líneas vacías finales de los SQL y dos scripts de prueba, y se regeneró el diff frontend sin líneas de contexto, para pasar `git diff --cached --check`. Ningún cuerpo SQL ni fuente runtime cambió. [publication-manifest.json](../qa/evidence/employee-number-correction/publication-manifest.json) sustituye los hashes de archivo afectados del manifiesto local histórico; los hashes de definición PostgreSQL se conservaron.
+
 ## Autorización posterior de publicación
 
 El propietario ordenó: «LA CORRECIÓN QUE REALISASTE EN RAMA AISLADA Y QUE SIGUE LOCAL, HAZ COMMIT PUSH Y PUBLICA», después de recibir la explicación de los tres fallos heredados. Esta instrucción reemplaza la limitación anterior de entrega exclusivamente local para este candidato exacto. No autoriza corregir esos fallos financieros, registrar personas reales ni tocar documentos.

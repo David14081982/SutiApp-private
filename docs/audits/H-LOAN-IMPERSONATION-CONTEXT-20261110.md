@@ -85,7 +85,7 @@ Comprobacion agregada de las tres cuentas autorizadas, sin nombres, UUIDs ni cor
 
 ### Decisiones pendientes para el usuario
 
-Ninguna para esta correccion puntual. La decision previa sobre la compuerta de preproduccion quedo resuelta por la instruccion posterior explicita de aplicar en produccion. No se extiende esta autorizacion a otras migraciones ni fases anteriores. Sobre la evidencia posterior, el propietario eligio expresamente **"Conservar comprobante local"**; no se publicara ese payload.
+Ninguna para esta correccion puntual. La decision previa sobre la compuerta de preproduccion quedo resuelta por la instruccion posterior explicita de aplicar en produccion. No se extiende esta autorizacion a otras migraciones ni fases anteriores. Sobre la evidencia posterior, tras elegir inicialmente conservarla local, el propietario ordeno **"PUBLICALO"**, conociendo que el repositorio es publico y que el comprobante contiene metadatos y agregados sin datos personales ni credenciales. Esta ultima instruccion autoriza su publicacion.
 
 ### Autorizacion posterior de aplicacion
 
@@ -107,6 +107,8 @@ Resultado funcional respaldado por 16 pruebas sinteticas: un administrador con p
 ### Publicacion del comprobante posterior
 
 El commit documental local `2e6aa0d` conserva el comprobante y la revision posterior. La revision automatica rechazo su push antes de ejecutar el proceso por incluir metadatos internos de produccion en un remoto publico. Se verificaron propietario autenticado y remoto `David14081982/SutiApp-private`, visibilidad publica y coincidencia de los 15 metadatos/7 agregados con el preflight ya publicado. Un segundo intento con esa evidencia tambien fue rechazado por requerir autorizacion explicita para este payload. No se utilizo un mecanismo alternativo. El propietario respondio **"Conservar comprobante local"**: informe y comprobantes posteriores permanecen locales y no se deben incluir en futuros pushes sin nueva autorizacion. El SQL original de la correccion sigue fusionado en PR14 y su instalacion productiva esta verificada; esta decision afecta solo a la evidencia posterior, no al despliegue.
+
+Autorizacion posterior: el propietario instruyo **"PUBLICALO"** despues de la decision anterior y de conocer la visibilidad publica del destino. Sustituye la retencion local para este comprobante concreto. Se publica por la misma rama aislada y PR con CI, sin repetir la migracion ni modificar datos productivos.
 
 ## Cierre
 

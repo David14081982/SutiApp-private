@@ -1,0 +1,13 @@
+{
+  "at": "2026-11-11T15:50:03.634Z",
+  "sourceSha256": "abc571edf3578a3c35e0eeafa78d929cf3323274ce6b41d233d408de1f1d9058",
+  "synthetic": true,
+  "status": "FAIL",
+  "failure": {
+    "code": "ERR_ASSERTION",
+    "actual": "No fue posible crear el afiliado. Verifica campos y permisos.",
+    "expected": "No fue posible confirmar la disponibilidad del número. Vuelve a intentar."
+  },
+  "verifiedAt": "2026-11-11T15:51:37.154Z",
+  "sourceReconstruction": "Original source SHA matched exactly before evaluating; expected copy read from the original function, preserving Unicode."
+}

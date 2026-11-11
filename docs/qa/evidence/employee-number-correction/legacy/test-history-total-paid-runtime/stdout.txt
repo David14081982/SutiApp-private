@@ -1,0 +1,16 @@
+PASS paid total uses past/today A/B once, never repeated V or future rows
+PASS helper validates the entire schedule and preserves literal decimal precision
+PASS exact decimal sum equals K without a phantom overpayment and preserves sub-cent values
+PASS decimal exponent notation, tiny values and large values use one final Number conversion
+PASS complete future-only schedules and valid zero quotas yield zero
+PASS missing, malformed and impossible dates anywhere make the paid total unavailable
+PASS missing, negative, nonnumeric and nonfinite amounts invalidate past and future rows
+PASS aggregate overflow is unavailable while uncounted finite future amounts remain valid
+PASS Hermosillo calendar midnight includes today immediately, without changing the schedule
+PASS conflicting or missing V cannot override valid A/B; W, source values and order remain intact
+PASS each exact loan ID is independent; equal dates, amounts and quota numbers are not merged
+PASS foreign owners and source Folio mismatches still fail before a total is exposed
+PASS existing snapshot boundary rejects duplicate source rows and isolates owners sharing a loan ID
+PASS preparing loans have no paid total and approvals remain independent of amortization
+PASS owned LOAD and DETAIL share the derived total through the same single snapshot RPC
+{"status":"PASS","checks":15,"evidence":"C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\employee-number-correction\\docs\\qa\\evidence\\employee-number-correction\\legacy\\test-history-total-paid-runtime\\runtime.json"}

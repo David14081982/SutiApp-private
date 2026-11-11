@@ -1,0 +1,81 @@
+{
+  "recordedAt": "2026-11-11T15:44:30.109Z",
+  "scope": "LOCAL_SYNTHETIC_BUILD_AND_BASELINE_STATIC_CHECK",
+  "productionRequests": 0,
+  "businessWrites": 0,
+  "baselineRef": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "baselineCheckoutHead": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "build": {
+    "command": "node scripts/build-bundle.js C:/tmp/babel-standalone-7.28.4.min.js",
+    "exitCode": 0,
+    "files": 177,
+    "bundleSha256": "704da6deafdb717b31e2e897ff9c323bd65fdfa9b224aad1faf1ae2ac19becf0",
+    "baselineBundleSha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+    "changedChunks": [
+      "screens-admin-affiliates.jsx"
+    ],
+    "unchangedChunks": 176,
+    "screenSourceSha256": "abc571edf3578a3c35e0eeafa78d929cf3323274ce6b41d233d408de1f1d9058",
+    "builderSha256": "e5c96b1af6d6a38e37248aca615812c89b8c0a2ebdf213d50c0e3e29623337af",
+    "babelSha256": "254d0fe4bd4a17bcceb0623a467de5f69e9938ee07de3bff9851dcb94adeb03d"
+  },
+  "adminStatic": {
+    "baseline": {
+      "command": "node scripts/test-admin-affiliates.js",
+      "exitCode": 1,
+      "signal": null,
+      "errorCode": null,
+      "expectedPattern": "/const belongsToAffiliate=/",
+      "matchedExpectedFailure": true,
+      "location": "test-admin-affiliates.js:80:8",
+      "stdout": ""
+    },
+    "candidate": {
+      "command": "node scripts/test-admin-affiliates.js",
+      "exitCode": 1,
+      "signal": null,
+      "errorCode": null,
+      "expectedPattern": "/const belongsToAffiliate=/",
+      "matchedExpectedFailure": true,
+      "location": "test-admin-affiliates.js:80:8",
+      "stdout": ""
+    }
+  },
+  "unchangedTestAndDependency": [
+    {
+      "file": "scripts/test-admin-affiliates.js",
+      "sha256": "b1f3a3d55dbbe06220631a2f418afd4009d20b0fb60667d25f864951450e3788",
+      "identicalToBaseline": true
+    },
+    {
+      "file": "app/screens-admin-finanzas.jsx",
+      "sha256": "81096073b8b83836c4a69d243c98373f41d8672215dea2541c4858b48998941d",
+      "identicalToBaseline": true
+    }
+  ],
+  "cachebuster": {
+    "from": "2026111005",
+    "to": "2026111101",
+    "files": [
+      {
+        "file": "SutiApp.html",
+        "sha256": "8c20da685d906ba32a50cf9cf467c8eac75e992c14c0cce3bfdcf04c3ed6c48f",
+        "onlyVersionReferencesChanged": true
+      },
+      {
+        "file": "sw.js",
+        "sha256": "df3a0048582dbf4c624b42f1beafb62311c2e14b151f8cdf77d309ba08f94b28",
+        "onlyVersionReferencesChanged": true
+      }
+    ]
+  },
+  "appChangedFiles": [
+    "app/bundle.js",
+    "app/screens-admin-affiliates.jsx"
+  ],
+  "verdict": "BUILD_PASS_STATIC_TEST_FAIL_PREEXISTING_IDENTICAL",
+  "limitations": [
+    "The existing static test stops at its original line 80; later assertions were not executed.",
+    "Generated bundle syntax is validated by the existing builder; no production deployment was performed."
+  ]
+}

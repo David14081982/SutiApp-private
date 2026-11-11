@@ -1,0 +1,21 @@
+{
+  "source": "Two READ ONLY captures; no RPC or DML",
+  "beforeObservedAt": "2026-11-11T15:24:59.562Z",
+  "afterObservedAt": "2026-11-11T15:54:04.194Z",
+  "productionWrites": 0,
+  "target": {
+    "target_count": 1,
+    "current_8322_count": 0,
+    "affiliate_fingerprint": "8305c6b284e486b2e8614e12fb80da63",
+    "document_count": 5,
+    "documents_fingerprint": "c9a225d61490a7c9dafa5388f9daa217",
+    "history_fingerprint": "6a17af34ec237143fd7b221e4370c315",
+    "asset_fingerprint": "f669c6bf4ba41d9148ee4d0b314600cb"
+  },
+  "unchanged": true,
+  "functionDefinitionsUnchanged": true,
+  "limitations": [
+    "Document metadata, reference and stored hash comparison; no new physical download of real files.",
+    "No real 8322 registration; no production migration or deployment."
+  ]
+}

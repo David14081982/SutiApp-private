@@ -1,5 +1,19 @@
 # Fuentes de verdad
 
+## Número de empleado corregido — candidato local autorizado, 2026-11-11
+
+H-EMPLOYEE-NUMBER-CORRECTION-001 conserva `public.affiliates.numero_control`
+como autoridad del número actualmente asignado y el UUID como identidad interna.
+Por instrucción del propietario, un número abandonado tras una corrección puede
+asignarse a otra persona si ningún afiliado lo conserva, incluidos los archivados.
+RH asigna el número; SutiApp no lo genera. `affiliate_control_changes` conserva
+su evidencia existente, pero deja de reservar números en este candidato.
+Esta excepción sustituye sólo la reserva histórica descrita el 2026-10-15;
+no cambia relaciones por UUID, permisos, autoridades financieras ni Google.
+No crea una nueva constancia, motivo obligatorio o pantalla. Producción aún
+conserva el comportamiento anterior: no se ha aplicado la migración preparada.
+Véase [alcance y evidencia](audits/H-EMPLOYEE-NUMBER-CORRECTION-001.md).
+
 ## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — activación autorizada, 2026-11-06
 
 financial_programs, financial_funds y financial_rules siguen como autoridad

@@ -1,0 +1,8 @@
+PASS two distinct loans consume aggregate pending contract balance
+PASS exact agreement with current Amortizacion for charges, past zero and decimal sums
+PASS today follows Hermosillo and releases only the recorded deduction
+PASS settled label never bypasses the displayed balance; overpayment gives no extra credit
+PASS distinct source rows with equal dates and quota numbers match Amortizacion
+PASS missing amounts, dates, states, duplicate source rows and ambiguous funds fail visibly
+PASS immutable transfer identifies represented request and original fund after rename
+PASS visible fund total uses available amounts with zero and exact cents

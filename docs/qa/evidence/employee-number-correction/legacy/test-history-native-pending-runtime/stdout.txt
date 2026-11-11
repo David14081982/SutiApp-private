@@ -1,0 +1,13 @@
+PASS real own native RPC/store pending appears immediately in Todas and En proceso
+PASS all explicit pending states survive stale financial ID lists and any publication cutoff
+PASS cold loading or unavailable independent observation still permits own native pending
+PASS unknown/missing/terminal canonical states never inherit the generic revision default
+PASS financial pending requires explicit eligibility, real source identity, SR and revision
+PASS later published pending replaces the native card once and preserves native tracking
+PASS covered and projected identities suppress native duplicates by sourceId only
+PASS all confirmed approval IDs suppress stale pending including old nonrendered approvals
+PASS latest native cancellation, rejection and removal withdraw eligibility without resurrection
+PASS nonfinancial benefits and quotations retain their original behavior and identity
+PASS loan financial projection, exact decimal total and source values stay unchanged
+PASS merging causes no additional RPC, network call, timer or source mutation
+{"status":"PASS","checks":12}

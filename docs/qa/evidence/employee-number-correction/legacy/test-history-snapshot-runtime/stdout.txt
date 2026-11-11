@@ -1,0 +1,4 @@
+PASS irrelevant blank/numeric request rows retain PV2 loans; foreign owners and all relevant ID collisions still rejected
+PASS historical numeric transfer IDs preserved without SR/approval inference; invalid receipts rejected; actual SR clock preserved
+PASS one own RPC, strict selector denial, empty/failed snapshot, source ownership, malformed transfer, quota states
+PASS worker secret/shape, coalescing, unchanged bodies skipped, complete manifest, failure before publish, bounded batches

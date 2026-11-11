@@ -1,0 +1,5 @@
+PASS financial Edge TypeScript transpiles/parses locally; focal handlers run with isolated dependencies (not a Deno typecheck or cloud bundle)
+PASS one existing own published snapshot; original source version/time retained; no Google read
+PASS wrong actor/affiliate/control, changed context, malformed source and unavailable publication fail closed
+PASS Edge quote/confirmation check exact selected rule and reject one cent above available
+PASS session signature invalidates policy and reservation changes without order noise

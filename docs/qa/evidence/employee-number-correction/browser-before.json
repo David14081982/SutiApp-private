@@ -1,0 +1,75 @@
+{
+  "startedAt": "2026-11-11T15:26:42.683Z",
+  "mode": "BEFORE",
+  "baselineRef": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "screenSha256": "ab4fd8daaae7ff6193c748c3f66e77f44eab8be2246dde7656491b514cd5a46a",
+  "repositorySha256": "4760e443816e7d23cbab45c93f8576b0e1e2a5fd16a089d269f983e4fc8b1875",
+  "synthetic": true,
+  "productionRequests": 0,
+  "businessWrites": 0,
+  "cases": [
+    {
+      "name": "reserved number has a specific safe error",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'No fue posible crear el afiliado. Verifica campos y permisos.'\n- 'Este número de control no está disponible, elige otro'\n"
+    },
+    {
+      "name": "only control input is capped at 80",
+      "status": "FAIL",
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n+   control: '160',\n-   control: '80',\n    email: '160',\n    name: '240'\n  }\n"
+    },
+    {
+      "name": "precheck and create receive the same ASCII-trimmed TEXT with leading zeros",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ '  008322  '\n- '008322'\n"
+    },
+    {
+      "name": "visual and interaction parity at 390",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "initialStructureSha256": "e54caac19df330422a37367e6844a037ede74a5134acd2c864503218d0212f36",
+        "modalStructureSha256": "1ee9b2403d0f8f5f887e2935a5d065e4fa47c61602d561b21782b19d1562a20c",
+        "sectionsAndTabs": true,
+        "newAndCancel": true,
+        "allowedDifference": "numero_control maxlength only; empty-state copy unchanged"
+      }
+    },
+    {
+      "name": "visual and interaction parity at 1440",
+      "status": "PASS",
+      "evidence": {
+        "width": 1440,
+        "initialStructureSha256": "e54caac19df330422a37367e6844a037ede74a5134acd2c864503218d0212f36",
+        "modalStructureSha256": "1ee9b2403d0f8f5f887e2935a5d065e4fa47c61602d561b21782b19d1562a20c",
+        "sectionsAndTabs": true,
+        "newAndCancel": true,
+        "allowedDifference": "numero_control maxlength only; empty-state copy unchanged"
+      }
+    }
+  ],
+  "pageErrors": [],
+  "blockedRequests": [],
+  "visual": [
+    {
+      "width": 390,
+      "initialStructureSha256": "e54caac19df330422a37367e6844a037ede74a5134acd2c864503218d0212f36",
+      "modalStructureSha256": "1ee9b2403d0f8f5f887e2935a5d065e4fa47c61602d561b21782b19d1562a20c",
+      "sectionsAndTabs": true,
+      "newAndCancel": true,
+      "allowedDifference": "numero_control maxlength only; empty-state copy unchanged"
+    },
+    {
+      "width": 1440,
+      "initialStructureSha256": "e54caac19df330422a37367e6844a037ede74a5134acd2c864503218d0212f36",
+      "modalStructureSha256": "1ee9b2403d0f8f5f887e2935a5d065e4fa47c61602d561b21782b19d1562a20c",
+      "sectionsAndTabs": true,
+      "newAndCancel": true,
+      "allowedDifference": "numero_control maxlength only; empty-state copy unchanged"
+    }
+  ],
+  "completedAt": "2026-11-11T15:27:20.946Z",
+  "passed": 2,
+  "failed": 3,
+  "status": "FAIL"
+}

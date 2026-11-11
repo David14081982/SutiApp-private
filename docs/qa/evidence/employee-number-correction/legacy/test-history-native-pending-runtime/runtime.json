@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "checks": [
+    "real own native RPC/store pending appears immediately in Todas and En proceso",
+    "all explicit pending states survive stale financial ID lists and any publication cutoff",
+    "cold loading or unavailable independent observation still permits own native pending",
+    "unknown/missing/terminal canonical states never inherit the generic revision default",
+    "financial pending requires explicit eligibility, real source identity, SR and revision",
+    "later published pending replaces the native card once and preserves native tracking",
+    "covered and projected identities suppress native duplicates by sourceId only",
+    "all confirmed approval IDs suppress stale pending including old nonrendered approvals",
+    "latest native cancellation, rejection and removal withdraw eligibility without resurrection",
+    "nonfinancial benefits and quotations retain their original behavior and identity",
+    "loan financial projection, exact decimal total and source values stay unchanged",
+    "merging causes no additional RPC, network call, timer or source mutation"
+  ],
+  "modules": [
+    "app/program-request-repository.js",
+    "app/operations-store.jsx",
+    "app/history-loans-repository.js",
+    "supabase/functions/loan-history/history.mjs"
+  ],
+  "nativeReader": "list_self_program_request_history",
+  "ownerSelectors": false,
+  "additionalMergeCalls": 0,
+  "googleCalls": 0,
+  "productionCalls": 0,
+  "financialMutation": false,
+  "sourceMutation": false,
+  "contextGuards": "Covered separately by the real browser suite; no auth code changed"
+}

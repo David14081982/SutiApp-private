@@ -1,0 +1,251 @@
+{
+  "startedAt": "2026-11-11T15:51:03.762Z",
+  "mode": "AFTER",
+  "baselineRef": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "screenSha256": "95b573963595ba795218586b1ea9501d64f5f872de4c31416dd3480e14891f87",
+  "repositorySha256": "4760e443816e7d23cbab45c93f8576b0e1e2a5fd16a089d269f983e4fc8b1875",
+  "synthetic": true,
+  "productionRequests": 0,
+  "businessWrites": 0,
+  "cases": [
+    {
+      "name": "reserved number has a specific safe error",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "Este número de control no está disponible, elige otro"
+      }
+    },
+    {
+      "name": "only control input is capped at 80",
+      "status": "PASS",
+      "evidence": {
+        "control": "80",
+        "name": "240",
+        "email": "160"
+      }
+    },
+    {
+      "name": "precheck and create receive the same ASCII-trimmed TEXT with leading zeros",
+      "status": "PASS",
+      "evidence": {
+        "precheck": "008322",
+        "create": "008322",
+        "optionalReason": true
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_CONTROL_DUPLICATE",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "Este número de control no está disponible, elige otro"
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_CONTROL_UNAVAILABLE",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "Este número de control no está disponible, elige otro"
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_CONTROL_RETRY_REQUIRED",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "No fue posible confirmar la disponibilidad del número. Vuelve a intentar."
+      }
+    },
+    {
+      "name": "safe backend error could not serialize access due to concurrent update",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "No fue posible confirmar la disponibilidad del número. Vuelve a intentar."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_WRITE_DENIED",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "Tu cuenta no tiene permiso para registrar afiliados."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_CONTROL_REQUIRED",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "El número de control debe tener entre 1 y 80 caracteres."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_NAME_REQUIRED",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "El nombre completo debe tener entre 3 y 240 caracteres."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_STATUS_INVALID",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "El estado seleccionado ya no está disponible. Recarga el padrón."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_RFC_DUPLICATE",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "El RFC ya está registrado en otro afiliado. Revisa el dato."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_CURP_DUPLICATE",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "La CURP ya está registrada en otro afiliado. Revisa el dato."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_DUPLICATE_REVIEW_REQUIRED",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "El alta fue detenida por una coincidencia de identidad."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_REASON_TOO_LONG",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "El motivo no puede superar los 500 caracteres."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_UNION_INVALID",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "El sindicato seleccionado ya no está disponible. Recarga el padrón."
+      }
+    },
+    {
+      "name": "safe backend error AFFILIATE_CATEGORY_INVALID",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "La categoría seleccionada ya no está disponible. Recarga el padrón."
+      }
+    },
+    {
+      "name": "safe backend error synthetic constraint details must not escape",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "Los datos no cumplen las validaciones del padrón. Revisa los campos e inténtalo de nuevo."
+      }
+    },
+    {
+      "name": "safe backend error synthetic unique constraint is not necessarily the control",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "El alta fue detenida por una coincidencia de identidad."
+      }
+    },
+    {
+      "name": "safe backend error synthetic raw error must not escape",
+      "status": "PASS",
+      "evidence": {
+        "safeMessage": "No fue posible crear el afiliado. Verifica campos y permisos."
+      }
+    },
+    {
+      "name": "precheck numero_control ACTIVE_MATCH",
+      "status": "PASS"
+    },
+    {
+      "name": "precheck numero_control ARCHIVED_MATCH",
+      "status": "PASS"
+    },
+    {
+      "name": "precheck rfc ACTIVE_MATCH",
+      "status": "PASS"
+    },
+    {
+      "name": "precheck curp ACTIVE_MATCH",
+      "status": "PASS"
+    },
+    {
+      "name": "precheck email ARCHIVED_MATCH",
+      "status": "PASS"
+    },
+    {
+      "name": "email review keeps the existing explicit second confirmation",
+      "status": "PASS"
+    },
+    {
+      "name": "repository permission denial remains enforced",
+      "status": "PASS"
+    },
+    {
+      "name": "normalization preserves non-ASCII or internal characters \"00 AB 12\"",
+      "status": "PASS"
+    },
+    {
+      "name": "normalization preserves non-ASCII or internal characters \" 008322 \"",
+      "status": "PASS"
+    },
+    {
+      "name": "cancel and confirmation refusal do not create",
+      "status": "PASS"
+    },
+    {
+      "name": "unchanged styles, other screens and mutation handlers",
+      "status": "PASS",
+      "evidence": {
+        "otherSourceUnchanged": true
+      }
+    },
+    {
+      "name": "visual and interaction parity at 390",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "initialStructureSha256": "e54caac19df330422a37367e6844a037ede74a5134acd2c864503218d0212f36",
+        "modalStructureSha256": "1ee9b2403d0f8f5f887e2935a5d065e4fa47c61602d561b21782b19d1562a20c",
+        "sectionsAndTabs": true,
+        "newAndCancel": true,
+        "allowedDifference": "numero_control maxlength only; empty-state copy unchanged"
+      }
+    },
+    {
+      "name": "visual and interaction parity at 1440",
+      "status": "PASS",
+      "evidence": {
+        "width": 1440,
+        "initialStructureSha256": "e54caac19df330422a37367e6844a037ede74a5134acd2c864503218d0212f36",
+        "modalStructureSha256": "1ee9b2403d0f8f5f887e2935a5d065e4fa47c61602d561b21782b19d1562a20c",
+        "sectionsAndTabs": true,
+        "newAndCancel": true,
+        "allowedDifference": "numero_control maxlength only; empty-state copy unchanged"
+      }
+    }
+  ],
+  "pageErrors": [],
+  "blockedRequests": [],
+  "visual": [
+    {
+      "width": 390,
+      "initialStructureSha256": "e54caac19df330422a37367e6844a037ede74a5134acd2c864503218d0212f36",
+      "modalStructureSha256": "1ee9b2403d0f8f5f887e2935a5d065e4fa47c61602d561b21782b19d1562a20c",
+      "sectionsAndTabs": true,
+      "newAndCancel": true,
+      "allowedDifference": "numero_control maxlength only; empty-state copy unchanged"
+    },
+    {
+      "width": 1440,
+      "initialStructureSha256": "e54caac19df330422a37367e6844a037ede74a5134acd2c864503218d0212f36",
+      "modalStructureSha256": "1ee9b2403d0f8f5f887e2935a5d065e4fa47c61602d561b21782b19d1562a20c",
+      "sectionsAndTabs": true,
+      "newAndCancel": true,
+      "allowedDifference": "numero_control maxlength only; empty-state copy unchanged"
+    }
+  ],
+  "completedAt": "2026-11-11T15:53:45.231Z",
+  "passed": 33,
+  "failed": 0,
+  "status": "PASS"
+}

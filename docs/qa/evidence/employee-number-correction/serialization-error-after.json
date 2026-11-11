@@ -1,0 +1,38 @@
+{
+  "recordedAt": "2026-11-11T15:54:29.589Z",
+  "status": "PASS",
+  "synthetic": true,
+  "productionRequests": 0,
+  "businessWrites": 0,
+  "change": "creationError also recognizes SQLSTATE 40001; unrelated unknown errors remain generic.",
+  "screenSha256": "95b573963595ba795218586b1ea9501d64f5f872de4c31416dd3480e14891f87",
+  "testScriptSha256": "e07e0237913e50ee939b7450618ed475bb87ac3eeff76a76e9c41cb017c1c6db",
+  "browser": {
+    "path": "docs/qa/evidence/employee-number-correction/browser-after.json",
+    "sha256": "33adb6592eb561b5b40726b99f149347485f4df8996f90fcafd3e7fd0a6d793f",
+    "passed": 33,
+    "failed": 0,
+    "startedAt": "2026-11-11T15:51:03.762Z",
+    "completedAt": "2026-11-11T15:53:45.231Z",
+    "verifiedCases": [
+      "safe backend error could not serialize access due to concurrent update",
+      "safe backend error synthetic raw error must not escape"
+    ]
+  },
+  "build": {
+    "command": "node scripts/build-bundle.js C:/tmp/babel-standalone-7.28.4.min.js",
+    "exitCode": 0,
+    "bundleSha256": "92b124b27cb9fcad65e0b7c9a179b562ead8abef8135560abd70c1c7923d50d7",
+    "files": 177,
+    "changedChunks": [
+      "screens-admin-affiliates.jsx"
+    ],
+    "unchangedChunks": 176
+  },
+  "cachebustersUnchangedSincePriorBuild": true,
+  "diffCheck": "PASS",
+  "limits": [
+    "Browser uses actual screen/repository with isolated synthetic RPC responses.",
+    "Existing static-test baseline failure remains documented separately; no production deployment."
+  ]
+}

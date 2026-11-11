@@ -1,5 +1,18 @@
 # Invariantes
 
+## Número de empleado corregido — excepción autorizada, candidato local
+
+H-EMPLOYEE-NUMBER-CORRECTION-001 enmienda únicamente la reserva histórica
+de H-AFFILIATE-CONTROL-CHANGE-001: un número anterior libre puede corresponder
+a otro UUID, conservando separados Auth, documentos e historial por sus
+relaciones existentes. Un número aún asignado, incluso en un afiliado archivado,
+permanece bloqueado. Dos escrituras concurrentes no pueden adjudicarlo a dos UUID.
+Se conservan permisos, evidencia histórica existente, formato TEXT, ceros
+iniciales, reglas financieras y registros anteriores. No se exige nueva bitácora
+ni se generan números. No se aplica limpieza ni UNIQUE global sobre datos legacy.
+La excepción está verificada localmente; no declara activación en producción.
+Véase [resultado y límites](audits/H-EMPLOYEE-NUMBER-CORRECTION-001.md).
+
 ## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — enmienda autorizada del corte
 
 - MOSTRAR explícito es excepción a la ventana y al cierre automático por fecha;

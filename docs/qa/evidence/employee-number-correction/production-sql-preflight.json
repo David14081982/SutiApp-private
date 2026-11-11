@@ -1,0 +1,36 @@
+{
+  "status": "PASS",
+  "at": "2026-11-11T16:35:35.213Z",
+  "mode": "preflight",
+  "migrationSha256": "87e3f0b70c9b769a58c34916251537dc3d8a26cda710f3c3814b8b0c34f00b90",
+  "recoverySha256": "8b656248334ee10858949b20ba0edbf81e8b3891aa8a79f10270d0836175912f",
+  "businessWrites": 0,
+  "target": {
+    "personcount": 1,
+    "documentcount": 5,
+    "reusablecurrentcount": 0
+  },
+  "functions": [
+    {
+      "signature": "affiliate_control_reservation_guard()",
+      "hash": "b79eec5f83824c48157e7b8c00d9dff1"
+    },
+    {
+      "signature": "change_admin_affiliate_control(uuid,text,timestamp with time zone,text,text,uuid)",
+      "hash": "74eaef04c9301e2065b84be22d5186eb"
+    },
+    {
+      "signature": "create_admin_affiliate(jsonb,text)",
+      "hash": "54613d2725ed82238bf61c318c923227"
+    },
+    {
+      "signature": "find_admin_affiliate_duplicates(jsonb,uuid)",
+      "hash": "667c21be139be19867c5d64208fd9dbc"
+    },
+    {
+      "signature": "preview_admin_affiliate_control(uuid,text)",
+      "hash": "ef7976362c8a7601efe9dca332bd8b1f"
+    }
+  ],
+  "registrations": []
+}

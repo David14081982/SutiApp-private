@@ -1,0 +1,104 @@
+{
+  "startedAt": "2026-11-11T15:49:47.866Z",
+  "baselineCommit": "36977c57db14e4cbfd485e80ce194e49fd10a2d4",
+  "status": "FAIL",
+  "productionWrites": 0,
+  "network": "Blocked by offline-preload.cjs; original scripts unchanged",
+  "checks": [
+    {
+      "script": "scripts/test-loan-history.js",
+      "sourceSha256": "53d40cd4d7c14f0f5d498f86471624fd1abef31a3a2d2bc3d659dd19a5b9f365",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 15214,
+      "error": null,
+      "stdoutPassLines": 7
+    },
+    {
+      "script": "scripts/test-history-snapshot-runtime.js",
+      "sourceSha256": "9e1e463961b4548e60d3b5200bfb28a4d180c9389d7ded5c25ac1e816b2805a5",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 1999,
+      "error": null,
+      "stdoutPassLines": 4
+    },
+    {
+      "script": "scripts/test-history-total-paid-runtime.js",
+      "sourceSha256": "22b669ab166c8b27427e09c8df2256f38802a7e51d0a2b9c4494b730b73c8eb1",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 1588,
+      "error": null,
+      "stdoutPassLines": 15
+    },
+    {
+      "script": "scripts/test-history-native-pending-runtime.js",
+      "sourceSha256": "ee668e028fa57d109c417336ece9344c102407d51c831060a2816f952d4f5ecb",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 1744,
+      "error": null,
+      "stdoutPassLines": 12
+    },
+    {
+      "script": "scripts/test-loan-historical-resolution.js",
+      "sourceSha256": "4c6032f6af5eca3ab425866f843b29c9399712e04fa39c30e4ddf8282d10a41b",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 2691,
+      "error": null,
+      "stdoutPassLines": 0
+    },
+    {
+      "script": "scripts/test-loan-available-credit.js",
+      "sourceSha256": "84f3c739dd6b02fdc8fd09eb493eae53a70f5c398bff42f106932b041a86297a",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 1643,
+      "error": null,
+      "stdoutPassLines": 8
+    },
+    {
+      "script": "scripts/test-loan-available-credit-edge.js",
+      "sourceSha256": "72743b1fd294fcd3518b3b56d886777ac72ae7bb526dc058e7f7f94eda6cf295",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 3996,
+      "error": null,
+      "stdoutPassLines": 5
+    },
+    {
+      "script": "scripts/test-loan-available-credit-sql.js",
+      "sourceSha256": "57684f3f5851ab793d381f9aa4e50739002b54874cc95008abae1e8e9850504e",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 29679,
+      "error": null,
+      "stdoutPassLines": 0
+    },
+    {
+      "script": "scripts/test-native-financial-rules.js",
+      "sourceSha256": "db2b518bbe05a460f80745b4884d25e272b7a3490750dddd3de8104825bbdf73",
+      "status": "FAIL",
+      "exitCode": 1,
+      "durationMs": 23195,
+      "error": null,
+      "stdoutPassLines": 0
+    },
+    {
+      "script": "scripts/test-financial-mostrar-override.js",
+      "sourceSha256": "e06d0116b8b42c72b70b91ed16a910f1a619ec3f0c575266ffb6eaf7748f8a03",
+      "status": "FAIL",
+      "exitCode": 1,
+      "durationMs": 2554,
+      "error": null,
+      "stdoutPassLines": 0
+    }
+  ],
+  "limits": [
+    "Offline synthetic regression; not production account validation.",
+    "Some inherited SQL suites use minimal authorization fixtures; not E2E Auth/Storage."
+  ],
+  "completedAt": "2026-11-11T15:51:12.203Z"
+}

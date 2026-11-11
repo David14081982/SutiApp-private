@@ -1,0 +1,32 @@
+{
+  "at": "2026-11-11T16:34:40.253Z",
+  "changes": [
+    {
+      "path": "docs/qa/evidence/employee-number-correction/legacy/offline-preload.cjs",
+      "onlyTrailingWhitespace": true,
+      "before": "e7e287550c88fb4696006108a0d314a3080dc0e9e4263623226b32b0dcf57d4e",
+      "after": "0bbf718c79c02ba05927cc25cdf54903d716663d57364003e8478b611889e4be"
+    },
+    {
+      "path": "docs/qa/evidence/employee-number-correction/legacy/run-offline.cjs",
+      "onlyTrailingWhitespace": true,
+      "before": "51cf2e6ab857fd208d53a16aa52054e7f88476f413aada20bf293b20235c1679",
+      "after": "ab73df253b535272c8c0b2c3908b99e3537577df283bf1a3e11bdaea77551931"
+    },
+    {
+      "path": "supabase/migrations/prepared/employee-number-correction/20261111000200_employee_number_correction.sql",
+      "onlyTrailingWhitespace": true,
+      "before": "c16301f865516dbbde60b5555f018c4f2fc33e0b967d86c7f4bdcc841981834b",
+      "after": "87e3f0b70c9b769a58c34916251537dc3d8a26cda710f3c3814b8b0c34f00b90"
+    },
+    {
+      "path": "supabase/recovery/20261111000200_employee_number_correction.sql",
+      "onlyTrailingWhitespace": true,
+      "before": "cda83de27330f3e83b91d7e68f75aafe78b1bc15e84b3b071979b1af900ede07",
+      "after": "8b656248334ee10858949b20ba0edbf81e8b3891aa8a79f10270d0836175912f"
+    }
+  ],
+  "frontendDiff": "Regenerated without context lines to avoid whitespace warnings in the embedded patch",
+  "runtimeChanges": 0,
+  "previousManifest": "Historical exact artifacts retained in final-manifest.json; publication manifest supersedes file hashes only"
+}

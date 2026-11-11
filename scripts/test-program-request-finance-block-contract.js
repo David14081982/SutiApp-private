@@ -101,7 +101,7 @@ async function mutationChecks(){
   const original=source();
   const mutations=[
     ['if(v.programItemId)await window.FinanceBlocksRepository.assertAllowed();',''],
-    ["await window.FinanceBlocksRepository.assertAllowed();const r=await db().rpc('create_membership_request'","const r=await db().rpc('create_membership_request'"],
+    ["await window.FinanceBlocksRepository.assertAllowed();const r=await (window.DocumentIntegration","const r=await (window.DocumentIntegration"],
     ['if(v.programItemId)await window.FinanceBlocksRepository.assertAllowed();','await window.FinanceBlocksRepository.assertAllowed();'],
     ['if(r.error)await window.FinanceBlocksRepository.handle(r.error);','if(r.error)throw r.error;'],
     ['p_quantity:Number(v.quantity)||1','p_quantity:1'],

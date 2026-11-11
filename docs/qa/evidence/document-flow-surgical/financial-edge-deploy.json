@@ -1,0 +1,17 @@
+{
+  "observedAt": "2026-11-11T02:04:33.116Z",
+  "status": "PASS",
+  "slug": "financial-legacy",
+  "helperSha256": "6e870e8c04f89eb44e632655a6f4d8f1aef8140fa09df40cc39cfe1f041f04f9",
+  "version": 77,
+  "sourceDigest": "f1c1fb08b0ea773db5d6b50f6a5dc56ec43878c71b5bc907fccccd4ca6dddc5e",
+  "artifactSha256": "2a6d875476edc7695fecdbe4e2187928a8a5e1bccb683c4011a8d83e06813a62",
+  "exactSourceSetVerified": true,
+  "settings": {
+    "name": "financial-legacy",
+    "slug": "financial-legacy",
+    "verify_jwt": true,
+    "import_map": false,
+    "entrypoint": "financial-legacy/index.ts"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "recordedAt": "2026-11-11 02:09:38 UTC",
+  "repository": "David14081982/SutiApp-private",
+  "pr": 12,
+  "prUrl": "https://github.com/David14081982/SutiApp-private/pull/12",
+  "head": "3ddfbc95b8eb720b93841eec003317c48339321b",
+  "merge": "53eaca73d0f7fada6b9886bb40e48e6cee01a050",
+  "ci": {
+    "run": 42943267347,
+    "status": "completed",
+    "conclusion": "success",
+    "allJobStepsPassed": true
+  },
+  "pages": {
+    "run": 42943407158,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "mainContract": {
+    "run": 42943406998,
+    "status": "completed",
+    "conclusion": "success"
+  },
+  "evidenceProvider": "GitHub connector, fetch_commit_workflow_runs, fetch_workflow_run_jobs, merge_pull_request and GET actions/runs for exact merge SHA",
+  "noChecksSkipped": true,
+  "noForcePush": true
+}

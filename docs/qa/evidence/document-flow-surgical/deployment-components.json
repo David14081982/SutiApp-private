@@ -1,0 +1,72 @@
+{
+  "startedAt": "2026-11-11T02:09:55.368Z",
+  "completedAt": "2026-11-11T02:09:56.011Z",
+  "status": "PASS",
+  "scope": "Three current Management metadata GETs and independent local consistency check of existing deploy/readback artifacts",
+  "remoteRequests": {
+    "GET": 3,
+    "POST": 0,
+    "PATCH": 0,
+    "DELETE": 0,
+    "functionInvocations": 0,
+    "userDataRequests": 0
+  },
+  "components": [
+    {
+      "slug": "document-operation",
+      "expectedVersion": 12,
+      "observedAt": "2026-11-11T02:09:55.371Z",
+      "httpStatus": 200,
+      "version": 12,
+      "functionStatus": "ACTIVE",
+      "verify_jwt": true,
+      "status": "PASS"
+    },
+    {
+      "slug": "document-access",
+      "expectedVersion": 28,
+      "observedAt": "2026-11-11T02:09:55.527Z",
+      "httpStatus": 200,
+      "version": 28,
+      "functionStatus": "ACTIVE",
+      "verify_jwt": true,
+      "status": "PASS"
+    },
+    {
+      "slug": "financial-legacy",
+      "expectedVersion": 77,
+      "observedAt": "2026-11-11T02:09:55.533Z",
+      "httpStatus": 200,
+      "version": 77,
+      "functionStatus": "ACTIVE",
+      "verify_jwt": true,
+      "status": "PASS"
+    }
+  ],
+  "existingFinancialReadback": {
+    "status": "PASS",
+    "artifactSha256": "2a6d875476edc7695fecdbe4e2187928a8a5e1bccb683c4011a8d83e06813a62",
+    "artifactBytes": 758883,
+    "sourceModuleCount": 10,
+    "sourceDigest": "f1c1fb08b0ea773db5d6b50f6a5dc56ec43878c71b5bc907fccccd4ca6dddc5e",
+    "helperSha256": "6e870e8c04f89eb44e632655a6f4d8f1aef8140fa09df40cc39cfe1f041f04f9",
+    "version": 77,
+    "settings": {
+      "name": "financial-legacy",
+      "slug": "financial-legacy",
+      "verify_jwt": true,
+      "import_map": false,
+      "entrypoint": "financial-legacy/index.ts"
+    },
+    "existingDeployObservedAt": "2026-11-11T02:04:33.116Z",
+    "existingVerifyObservedAt": "2026-11-11T02:04:35.563Z",
+    "exactReadbackMatchesDeployment": true,
+    "exactSourceSetVerified": true
+  },
+  "limits": [
+    "Current GET metadata verifies versions, ACTIVE state and verify_jwt only.",
+    "Financial ESZIP bytes and source-set verification use the existing readback artifact captured at the timestamps above; no new artifact download was requested.",
+    "No document-operation or document-access artifact byte comparison was performed in this check.",
+    "No user upload, user document, loan submission, production write, log query, latency percentile or whole-application regression is tested by this evidence."
+  ]
+}

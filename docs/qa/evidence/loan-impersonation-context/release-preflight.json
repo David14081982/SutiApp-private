@@ -1,6 +1,6 @@
 {
-  "startedAt": "2026-11-11T02:56:24.213Z",
-  "completedAt": "2026-11-11T02:56:26.813Z",
+  "startedAt": "2026-11-11T03:25:29.370Z",
+  "completedAt": "2026-11-11T03:25:32.021Z",
   "status": "PASS",
   "mode": "PREFLIGHT_READ_ONLY",
   "helperSha256": "480716fb1eb8632fb38ce8bca10ff6404e40d20b240d05ea1f32abdad6aff4e0",
@@ -13,7 +13,7 @@
   "businessRowsExported": 0,
   "readyToApply": false,
   "backup": {
-    "folder": ".tmp/impersonation-diagnosis/release-backup/preflight-1794365786805",
+    "folder": ".tmp/impersonation-diagnosis/release-backup/preflight-1794367532010",
     "definitionSha256": "f103b674cd231e5ddb92f77da93d0b81dee0a789f8c65b78a659b5906a3dc970",
     "catalogSha256": "d8f1e422412f27eef36f541f1b6473c534117c87f942227ab096b83137c2ec40"
   },

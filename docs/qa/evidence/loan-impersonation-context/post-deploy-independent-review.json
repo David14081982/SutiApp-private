@@ -1,0 +1,26 @@
+{
+  "task": "H-LOAN-IMPERSONATION-CONTEXT-20261110",
+  "reviewer": "independent storage_security agent",
+  "verdict": "APPROVED",
+  "scope": "Production installation evidence and exact reviewed correction",
+  "evidence": "release-applied.json",
+  "evidenceSha256": "99c0823e7f205d6a4efbec8e3bcb9b7f62bfb559ea829bb2fed542f9aff8d969",
+  "migration": "20261111000100",
+  "installedFunction": "public.capture_program_request_impersonation",
+  "originalDefinitionMd5": "74ddf62f8613d5dc100e6bda7a5c213a",
+  "installedDefinitionMd5": "db1410e3a55d25934bc79a19db784111",
+  "readback": "PASS",
+  "functionMetadataAndTriggerBinding": "PRESERVED",
+  "otherCapturedFunctionDefinitionsUnchanged": 14,
+  "businessTableFingerprintsUnchangedWithinTransaction": 7,
+  "candidateHashesMatchPriorReview": true,
+  "blockingCriticalOrHighFindings": [],
+  "realRequestExecutedForValidation": false,
+  "limitations": [
+    "Functional behavior is supported by 16 local synthetic PostgreSQL tests; installation is supported by production readback.",
+    "Table fingerprints do not establish absence of concurrent activity by other users.",
+    "No designated preproduction deployment or real production browser confirmation was performed."
+  ],
+  "ownerDecisionRequired": false,
+  "nextAction": "Close documentation with the application evidence and validation limits."
+}

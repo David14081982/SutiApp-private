@@ -1,0 +1,174 @@
+{
+  "status": "PASS",
+  "startedAt": "2026-11-11T01:56:45.505Z",
+  "completedAt": "2026-11-11T01:59:26.088Z",
+  "exitCode": 0,
+  "signal": null,
+  "origin": "http://localhost:8080",
+  "sameArtifact": [
+    {
+      "file": "SutiApp.html",
+      "sha256": "afcc4c05fe00a458fd850a837091d64ef9010dd4780cd6645fadeca8283e7c60",
+      "matchesSource": true
+    },
+    {
+      "file": "sw.js",
+      "sha256": "70fe68a25467e182bb2fb33464bcd78c56a776668ee0db540d40cb544560dbb9",
+      "matchesSource": true
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+      "matchesSource": true
+    },
+    {
+      "file": "app/affiliate-repository.js",
+      "sha256": "94081a2d9cab07a9347e16cb596f14902aefd0c4e194aaac1d7d1057e8e0e2bd",
+      "matchesSource": true
+    }
+  ],
+  "assertionsChanged": false,
+  "officialScriptSha256": "3e65dbbc73dd4a39b4b4dfcc8567f01966b1643a4d46f725a86823a9336e313b",
+  "wrapperSha256": "9569c8d6cece03abb72cb0ea1960d52c5f27f2b9c980c86762e73c20bba4d064",
+  "officialReport": {
+    "status": "PASS",
+    "target": "LOCAL_BUILD_WITH_PRODUCTION_BACKEND",
+    "initial": {
+      "families": {
+        "appAssets": {
+          "status": "PASS",
+          "checked": 240,
+          "passed": 240
+        },
+        "profilePhotos": {
+          "status": "PASS",
+          "checked": 1
+        },
+        "legacyAffiliateFiles": {
+          "status": "PASS",
+          "checked": 28,
+          "passed": 28,
+          "images": 28,
+          "pdfs": 0
+        },
+        "affiliateDocuments": {
+          "status": "PASS",
+          "purposes": [
+            {
+              "purpose": "SELF_SERVICE_EXPEDIENTE",
+              "status": "PASS",
+              "mime": "IMAGE"
+            },
+            {
+              "purpose": "SELF_SERVICE_LOAN",
+              "status": "PASS",
+              "mime": "IMAGE"
+            },
+            {
+              "purpose": "SELF_SERVICE_MEMBERSHIP",
+              "status": "PASS",
+              "mime": "IMAGE"
+            }
+          ]
+        },
+        "privateAssetsAdmin": {
+          "status": "PASS",
+          "checked": 1
+        },
+        "programCatalogAssets": {
+          "status": "PASS",
+          "checked": 226,
+          "passed": 226,
+          "items": 113
+        },
+        "staticBundle": {
+          "status": "PASS",
+          "checked": 13
+        }
+      },
+      "surfaces": {
+        "homeBlockOrder": "PASS",
+        "loginSeal": "PASS",
+        "publicBranding": {
+          "status": "PASS",
+          "checked": 7,
+          "passed": 7
+        },
+        "headerProfileCredential": "PASS",
+        "expediente": "PASS",
+        "membershipDocuments": "PASS",
+        "loanDocuments": "PASS",
+        "programCatalog": "PASS",
+        "marketplace": {
+          "status": "PASS",
+          "checked": 3,
+          "passed": 3
+        },
+        "membershipLogos": {
+          "status": "PASS",
+          "checked": 6,
+          "passed": 6
+        },
+        "fullscreenViewer": "PASS",
+        "affiliateDocumentPdf": "NOT_APPLICABLE_CURRENT_ACCOUNT",
+        "programProductGallery": "PASS"
+      },
+      "failures": [],
+      "cache": {
+        "serviceWorkerControlled": true,
+        "serviceWorkerScript": "sw.js",
+        "cacheNames": [
+          "sutiapp-v2026111005"
+        ]
+      },
+      "status": "PASS"
+    },
+    "loginSeal": {
+      "status": "PASS",
+      "naturalWidth": 240,
+      "naturalHeight": 240
+    },
+    "admin": {
+      "status": "PASS",
+      "photos": {
+        "checked": 1,
+        "passed": 1
+      },
+      "documentThumbnails": {
+        "checked": 4,
+        "passed": 4,
+        "failed": []
+      }
+    },
+    "refresh": {
+      "profile": true,
+      "seal": true
+    },
+    "cacheComparison": {
+      "freshProfile": true,
+      "serviceWorkerUnregistered": true,
+      "withoutServiceWorker": {
+        "status": "PASS",
+        "seal": "PASS",
+        "controlled": false,
+        "profile": true,
+        "programImage": true
+      }
+    },
+    "legitimatePdf": {
+      "status": "PASS",
+      "account": "H005_TEST",
+      "found": true,
+      "http": 200,
+      "mime": "application/pdf",
+      "opened": true
+    },
+    "browserErrors": 0,
+    "productionDataMutations": 0,
+    "rawUrlsLogged": 0,
+    "verifiedBundleSha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+    "editorialAuthority": "DEPLOYED"
+  },
+  "stdout": "global-local-authorized.stdout.log",
+  "stderr": "global-local-authorized.stderr.log"
+}

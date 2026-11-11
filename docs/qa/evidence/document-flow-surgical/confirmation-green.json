@@ -1,0 +1,30 @@
+{
+  "checks": [
+    {
+      "name": "PostgreSQL confirmation immediately yields reusable projection, without a second read",
+      "status": "PASS"
+    },
+    {
+      "name": "Foreign owner, wrong type and unregistered responses cannot become confirmed documents",
+      "status": "PASS"
+    },
+    {
+      "name": "Forged objects cannot replace canonical current documents",
+      "status": "PASS"
+    },
+    {
+      "name": "An idempotent V1 receipt never replaces a known V2",
+      "status": "PASS"
+    },
+    {
+      "name": "A changed context during preparation cannot start another owner upload",
+      "status": "PASS"
+    },
+    {
+      "name": "The existing upload handler publishes confirmation before waiting for refresh",
+      "status": "PASS"
+    }
+  ],
+  "pass": 6,
+  "fail": 0
+}

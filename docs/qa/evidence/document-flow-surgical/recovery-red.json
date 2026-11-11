@@ -1,0 +1,26 @@
+{
+  "checks": [
+    {
+      "name": "Retry resumes the same TUS URL and records its new URL",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'https://synthetic.storage.supabase.co/storage/v1/upload/resumable/prior'\n"
+    },
+    {
+      "name": "Resume URLs cannot send credentials to another origin",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "Context is checked again after asynchronous token acquisition",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "A transfer without activity ends with a recoverable timeout",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'undefined'\n- 'function'\n"
+    }
+  ],
+  "pass": 0,
+  "fail": 4
+}

@@ -53,6 +53,7 @@
     const result=await db().rpc(name,{p_affiliate_id:id,p_expected_updated_at:expectedUpdatedAt,p_reason:String(reason||'').trim()});if(result.error)throw result.error;return Object.freeze(result.data||{});
   }
   async function documentTypes(){requirePermission('documents.write');const result=await db().from('document_types').select('id,code,label,description,accepted_mime_types,file_upload_allowed,max_file_size_bytes,sort_order').eq('enabled',true).eq('file_upload_allowed',true).order('sort_order',{ascending:true});if(result.error)throw result.error;return Object.freeze(result.data||[]);}
+  async function documentVersion(affiliateId,documentId){requirePermission('documents.read');if(!affiliateId||!documentId)throw new Error('DOCUMENT_VERSION_UNAVAILABLE');const result=await db().rpc('list_document_version_ordinals',{p_affiliate:affiliateId});if(result.error)throw result.error;const row=(result.data||[]).find(value=>value.document_id===documentId),version=Number(row&&row.version);if(!Number.isSafeInteger(version)||version<1)throw new Error('DOCUMENT_VERSION_UNAVAILABLE');return version;}
   async function previewDocument(documentId,affiliateId){requirePermission('documents.read');if(!window.DocumentWorkflowRepository)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return window.DocumentWorkflowRepository.adminPreview(documentId,affiliateId,'ADMIN_AFFILIATE_PROFILE');}
   async function uploadDocument(affiliateId,type,file,reason){
     requirePermission('documents.write');if(!affiliateId||!type||!file)throw new Error('DOCUMENT_FILE_REQUIRED');
@@ -60,7 +61,7 @@
     const accepted=Array.isArray(type.accepted_mime_types)?type.accepted_mime_types:[];
     const limit=Math.min(MAX_DOCUMENT_SIZE,Number(type.max_file_size_bytes)||MAX_DOCUMENT_SIZE);
     if(file.size<1||file.size>limit||!accepted.includes(file.type))throw new Error('INVALID_DOCUMENT_FILE');
-    if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentIntegration.upload(type,file,{mode:'ADMIN',affiliateId,reason:reason||''});
+    if(window.DocumentIntegration&&window.DocumentIntegration.enabled())return window.DocumentWorkflowRepository.upload(type,file,{mode:'ADMIN',affiliateId,reason:reason||''});
     const digest=hex(await crypto.subtle.digest('SHA-256',await file.arrayBuffer()));
     const path='affiliate-documents/'+affiliateId+'/'+crypto.randomUUID()+extension(file);
     const stored=await db().storage.from('private-assets').upload(path,file,{contentType:file.type,upsert:false});if(stored.error)throw stored.error;
@@ -82,6 +83,6 @@
     if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
     if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
 })();
 

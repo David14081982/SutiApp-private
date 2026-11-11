@@ -47,8 +47,24 @@
  }
  function Application({item,quote,app,onClose}){
   const [step,setStep]=useState('documents'),[documents,setDocuments]=useState({phase:'loading',requirements:[],rows:[]}),[signature,setSignature]=useState(''),[accepted,setAccepted]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[sent,setSent]=useState(null),idem=useRef(crypto.randomUUID());
-  const load=React.useCallback(async()=>{setDocuments(s=>({...s,phase:'loading'}));try{const [requirements,rows]=await Promise.all([window.DocumentWorkflowRepository.resolveRequirements('PROGRAM',item.id),window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);setDocuments({phase:'ready',requirements,rows});}catch(e){setDocuments({phase:'error',requirements:[],rows:[]});}},[item.id]);
-  useEffect(()=>{load();},[load]);
+  const documentContext=window.PrivateResourceDemand.useContext(),documentScope=item.id,documentLoad=useRef({sequence:0,context:documentContext,scope:documentScope,ready:false});
+  if(documentLoad.current.renderContext!==documentContext||documentLoad.current.renderScope!==documentScope){documentLoad.current.sequence++;documentLoad.current.ready=false;}
+  documentLoad.current.renderContext=documentContext;documentLoad.current.renderScope=documentScope;
+  const load=React.useCallback(async(confirmed)=>{
+   const context=contextKey();if(documentContext!==context||documentLoad.current.renderContext!==documentContext||documentLoad.current.renderScope!==documentScope)return null;
+   const sequence=++documentLoad.current.sequence;
+   if(documentLoad.current.context!==context||documentLoad.current.scope!==documentScope){documentLoad.current.context=context;documentLoad.current.scope=documentScope;documentLoad.current.ready=false;setDocuments({phase:'loading',requirements:[],rows:[]});}
+   const sameContext=()=>context!==null&&context===contextKey()&&documentLoad.current.renderContext===context&&documentLoad.current.renderScope===documentScope;
+   const current=()=>sameContext()&&sequence===documentLoad.current.sequence;
+   if(!current()){setDocuments(s=>({...s,phase:'error'}));return null;}
+   if(window.DocumentWorkflowRepository.isConfirmedDocument(confirmed)){
+    setDocuments(s=>sameContext()?{...s,rows:window.DocumentWorkflowRepository.mergeConfirmedDocuments(s.rows,confirmed),phase:s.phase==='loading'?(documentLoad.current.ready?'ready':'error'):s.phase}:s);return null;
+   }
+   setDocuments(s=>({...s,phase:'loading'}));
+   try{const[requirements,rows]=await Promise.all([window.DocumentWorkflowRepository.resolveRequirements('PROGRAM',item.id),window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);if(!current())return null;documentLoad.current.ready=true;setDocuments({phase:'ready',requirements,rows});}
+   catch(e){if(!current())return null;documentLoad.current.ready=false;setDocuments(s=>({...s,phase:'error'}));}
+  },[item.id,documentContext]);
+  useEffect(()=>{load();return()=>{documentLoad.current.sequence++;};},[load]);
   const latest=new Map();documents.rows.forEach(d=>{const old=latest.get(d.document_type_id);if(!old||d.created_at>old.created_at||(d.created_at===old.created_at&&d.id>old.id))latest.set(d.document_type_id,d);});
   const selected=documents.requirements.filter(r=>r.required!==false).map(r=>latest.get(r.document_type_id)).filter(d=>d?.available===true&&['PENDING_REVIEW','UNDER_REVIEW','VERIFIED'].includes(d.status));
   const ready=documents.phase==='ready'&&selected.length===documents.requirements.filter(r=>r.required!==false).length;

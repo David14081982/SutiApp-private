@@ -1,0 +1,66 @@
+{
+  "status": "PASS",
+  "observedAt": "2026-11-11T01:50:15.752Z",
+  "remoteRequests": 0,
+  "productionMutations": 0,
+  "helperSha256": "6e870e8c04f89eb44e632655a6f4d8f1aef8140fa09df40cc39cfe1f041f04f9",
+  "testSha256": "4e6e9b8cc379added49561ff5c6610e4125f0c41ca418c2880cca53ecdc330b9",
+  "checks": [
+    {
+      "name": "Exact backup hash",
+      "status": "PASS"
+    },
+    {
+      "name": "All original local source modules match artifact",
+      "status": "PASS"
+    },
+    {
+      "name": "Changed source is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Unexpected local module is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Truncated ESZIP is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Unrecognized configuration is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Inactive function is rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "Deploy form preserves name JWT and entrypoint",
+      "status": "PASS"
+    },
+    {
+      "name": "Restore EZBR payload round-trips byte-identically",
+      "status": "PASS"
+    },
+    {
+      "name": "Failed verification snapshot can be restored without PASS evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "Inactive own deployment can be restored",
+      "status": "PASS"
+    },
+    {
+      "name": "Concurrent deployment artifact blocks restore",
+      "status": "PASS"
+    },
+    {
+      "name": "Receipt compressed hash permits restore after readback transport failure",
+      "status": "PASS"
+    },
+    {
+      "name": "Ambiguous receipt without artifact hash blocks restore",
+      "status": "PASS"
+    }
+  ]
+}

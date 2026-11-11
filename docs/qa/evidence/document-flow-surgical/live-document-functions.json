@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-11-11T01:18:11.044Z",
+  "readOnly": "on",
+  "checks": [
+    {
+      "name": "prepare_document_submission",
+      "sha256": "68d62d759fda3d0183f3803a7ba634f39f4a54bb0ccd644d8b8a0dbd4515a957",
+      "matchesPublishedMigration": true,
+      "legacyPrematureLockAbsent": true,
+      "currentVersionGuard": true,
+      "hashGuard": true
+    },
+    {
+      "name": "complete_document_financial_submission",
+      "sha256": "3cfca36bdabe6e78eed73b2efb8b24f4a465576e2cef78ec1afd5c725cb0db0c",
+      "matchesPublishedMigration": true,
+      "legacyPrematureLockAbsent": true,
+      "currentVersionGuard": true,
+      "hashGuard": true
+    }
+  ],
+  "productionWrites": 0
+}

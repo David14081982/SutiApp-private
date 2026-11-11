@@ -1,0 +1,22 @@
+{
+  "checks": [
+    {
+      "name": "Token rotation preserves in-flight work and deduplicates demand",
+      "status": "PASS"
+    },
+    {
+      "name": "A different session rejects stale work",
+      "status": "PASS"
+    },
+    {
+      "name": "Affiliate, impersonation and permission changes invalidate context",
+      "status": "PASS"
+    },
+    {
+      "name": "Malformed session claims cannot authorize demand",
+      "status": "PASS"
+    }
+  ],
+  "pass": 4,
+  "fail": 0
+}

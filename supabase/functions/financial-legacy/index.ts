@@ -55,6 +55,8 @@ const FINANCIAL_WRITER_CODES = [
   "TERMS_VERSION_REQUIRED", "FINANCIAL_SUBMISSION_CONTRACT_MISMATCH",
   "AFFILIATE_CONTEXT_DENIED", "IMPERSONATION_CONTEXT_INVALID", "AUTH_ACTOR_REQUIRED",
   "SERVICE_ROLE_REQUIRED", "AUTH_REQUIRED", "DOCUMENT_SCOPE_NOT_AVAILABLE",
+  "DOCUMENT_NOT_CURRENT", "DOCUMENT_CONTEXT_DENIED", "DOCUMENT_OPERATION_CHANGED",
+  "DOCUMENT_BYTES_UNAVAILABLE", "PHYSICAL_ASSET_NOT_VERIFIED", "BYTE_INTEGRITY_MISMATCH",
   "DEPOSIT_ACCOUNT_UNAVAILABLE", "INVALID_DEPOSIT_ACCOUNT", "INVALID_NOTIFICATION_PHONE",
   "PROGRAM_PRODUCT_NOT_FINANCEABLE", "AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE",
   "CAJA_CHICA_RULE_NOT_ELIGIBLE", "DOWN_PAYMENT_OUT_OF_RANGE", "SCHEDULE_ANCHOR_CHANGED",
@@ -67,6 +69,8 @@ function classifyFinancialWriterError(error: unknown) {
   const internalCode = FINANCIAL_WRITER_CODES.find((code) => source.includes(code)) || "UNCLASSIFIED_WRITER_FAILURE";
   const rawPostgresCode = typeof candidate.code === "string" ? candidate.code.toUpperCase() : "";
   const postgresCode = /^[0-9A-Z]{5}$/.test(rawPostgresCode) ? rawPostgresCode : "UNKNOWN";
+  const documentPhase = typeof candidate.documentPhase === "string" && ["PREPARE", "VERIFY", "COMPLETE"].includes(candidate.documentPhase)
+    ? candidate.documentPhase : "UNKNOWN";
   const publicCodes = new Set([
     "LOAN_CAPACITY_EXCEEDED",
     "CONDITIONS_CHANGED", "REQUIRED_DOCUMENTS_MISSING", "PROGRAM_NOT_REQUESTABLE",
@@ -74,18 +78,20 @@ function classifyFinancialWriterError(error: unknown) {
     "FINANCIAL_REQUEST_TERMS_INVALID", "TERMS_VERSION_REQUIRED",
     "FINANCIAL_SUBMISSION_CONTRACT_MISMATCH", "AFFILIATE_CONTEXT_DENIED",
     "IMPERSONATION_CONTEXT_INVALID",
+    "DOCUMENT_NOT_CURRENT", "DOCUMENT_CONTEXT_DENIED", "DOCUMENT_OPERATION_CHANGED",
+    "DOCUMENT_BYTES_UNAVAILABLE", "PHYSICAL_ASSET_NOT_VERIFIED", "BYTE_INTEGRITY_MISMATCH",
     "DEPOSIT_ACCOUNT_UNAVAILABLE", "INVALID_DEPOSIT_ACCOUNT", "INVALID_NOTIFICATION_PHONE",
     "PROGRAM_PRODUCT_NOT_FINANCEABLE", "AUTHORIZED_PRODUCT_PRICE_UNAVAILABLE",
     "CAJA_CHICA_RULE_NOT_ELIGIBLE", "DOWN_PAYMENT_OUT_OF_RANGE", "SCHEDULE_ANCHOR_CHANGED",
   ]);
-  return { internalCode, postgresCode,
+  return { internalCode, postgresCode, documentPhase,
     publicCode: publicCodes.has(internalCode) ? internalCode : "FINANCIAL_REQUEST_CREATE_FAILED" };
 }
 
 function logFinancialSubmissionFailure(correlationId: string, stage: string, error: unknown) {
   const failure = classifyFinancialWriterError(error);
   console.error(JSON.stringify({ event: "financial_request_submission_failed", correlation_id: correlationId,
-    stage, internal_code: failure.internalCode, postgres_code: failure.postgresCode }));
+    stage, internal_code: failure.internalCode, postgres_code: failure.postgresCode, document_phase: failure.documentPhase }));
   return failure;
 }
 

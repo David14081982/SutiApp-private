@@ -58,13 +58,17 @@ export async function documentAccess(body,user,service,verify){
 }
 
 export async function verifiedFinancialDocumentRpc(user,service,name,args,verify){
+ let phase='PREPARE';
  try{
   if(!['create_validated_financial_program_request','confirm_program_product_financing'].includes(name))throw fail('FINANCIAL_WRITER_REQUIRED',403);
   const id=crypto.randomUUID(),payload={p_id:id,p_function:name,p_arguments:args};
   const prepared=await rpc(user,'prepare_document_submission',payload),receipts=[];
+  phase='VERIFY';
   for(const d of prepared.documents)receipts.push({...await verifyObject(service,d,verify,{existingRead:true,isolated:prepared.documents.reduce((n,x)=>n+Number(x.size),0)>16*1024*1024}),document_id:d.document_id});
+  phase='PREPARE';
   const current=await rpc(user,'prepare_document_submission',payload);if(JSON.stringify(current)!==JSON.stringify(prepared))throw fail('DOCUMENT_OPERATION_CHANGED');
+  phase='COMPLETE';
   return{data:await rpc(service,'complete_document_financial_submission',{p_id:id,p_receipts:receipts}),error:null};
- }catch(error){return{data:null,error};}
+ }catch(error){return{data:null,error:{...error,message:error?.message,documentPhase:phase}};}
 }
 

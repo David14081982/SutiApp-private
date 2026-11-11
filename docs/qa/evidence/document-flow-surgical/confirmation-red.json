@@ -1,0 +1,31 @@
+{
+  "checks": [
+    {
+      "name": "PostgreSQL confirmation immediately yields reusable projection, without a second read",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- true\n"
+    },
+    {
+      "name": "Foreign owner, wrong type and unregistered responses cannot become confirmed documents",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "Forged objects cannot replace canonical current documents",
+      "status": "FAIL",
+      "error": "s.repo.isConfirmedDocument is not a function"
+    },
+    {
+      "name": "A changed context during preparation cannot start another owner upload",
+      "status": "FAIL",
+      "error": "Missing expected rejection."
+    },
+    {
+      "name": "The existing upload handler publishes confirmation before waiting for refresh",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ {\n+   id: 'synthetic-type',\n+   phase: 'preparing'\n+ }\n- null\n"
+    }
+  ],
+  "pass": 0,
+  "fail": 5
+}

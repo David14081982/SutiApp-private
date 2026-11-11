@@ -1,0 +1,93 @@
+{
+  "status": "PASS",
+  "baseline": false,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "recordedAt": "2026-11-11T00:59:10.834Z",
+  "tests": [
+    {
+      "name": "Preserve safe code DOCUMENT_NOT_CURRENT",
+      "status": "PASS"
+    },
+    {
+      "name": "Preserve safe code DOCUMENT_CONTEXT_DENIED",
+      "status": "PASS"
+    },
+    {
+      "name": "Preserve safe code DOCUMENT_OPERATION_CHANGED",
+      "status": "PASS"
+    },
+    {
+      "name": "Preserve safe code DOCUMENT_BYTES_UNAVAILABLE",
+      "status": "PASS"
+    },
+    {
+      "name": "Preserve safe code PHYSICAL_ASSET_NOT_VERIFIED",
+      "status": "PASS"
+    },
+    {
+      "name": "Preserve safe code BYTE_INTEGRITY_MISMATCH",
+      "status": "PASS"
+    },
+    {
+      "name": "Unknown error text and untrusted phase remain private",
+      "status": "PASS"
+    },
+    {
+      "name": "Existing financial error contracts remain unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Prepare failure is attributed before/after byte verification: 1",
+      "status": "PASS"
+    },
+    {
+      "name": "Prepare failure is attributed before/after byte verification: 2",
+      "status": "PASS"
+    },
+    {
+      "name": "Missing bytes stop completion and report VERIFY",
+      "status": "PASS"
+    },
+    {
+      "name": "Real stream hash mismatch stops completion and reports VERIFY",
+      "status": "PASS"
+    },
+    {
+      "name": "Descriptor recheck mismatch is PREPARE and still fails closed",
+      "status": "PASS"
+    },
+    {
+      "name": "Finalizer rejection keeps code and COMPLETE phase: DOCUMENT_NOT_CURRENT",
+      "status": "PASS"
+    },
+    {
+      "name": "Finalizer rejection keeps code and COMPLETE phase: PHYSICAL_ASSET_NOT_VERIFIED",
+      "status": "PASS"
+    },
+    {
+      "name": "Success retains exact order, verified receipt and result identity",
+      "status": "PASS"
+    },
+    {
+      "name": "Product financing keeps the same verified writer contract",
+      "status": "PASS"
+    },
+    {
+      "name": "Non-allowlisted writer cannot prepare, read bytes or dispatch",
+      "status": "PASS"
+    }
+  ],
+  "passed": 18,
+  "failed": 0,
+  "sourceHashes": {
+    "financial": "8c23221f6d403c5b7280da6edc277917b79e9961ea646fe6c60ebee70eda29d4",
+    "integration": "b88f727167b199c1250e68fa936ce78be71d6263a7abc51bded094f72fff35e1"
+  },
+  "constraints": {
+    "networkRequests": 0,
+    "databaseCalls": 0,
+    "businessWrites": 0,
+    "realStreamVerifier": true,
+    "syntheticRpcTransport": true
+  }
+}

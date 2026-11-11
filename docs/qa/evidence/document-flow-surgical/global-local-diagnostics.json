@@ -1,0 +1,150 @@
+{
+  "status": "FAIL",
+  "scope": "OFFICIAL_GLOBAL_SUITE_LOCAL_BUILD_REAL_BACKEND",
+  "cause": "LOCAL_ORIGIN_CORS_PREFLIGHT_REJECTED",
+  "runtimeRegressionDemonstrated": false,
+  "timeoutDemonstrated": false,
+  "exitCode": 1,
+  "officialAssertionsChanged": false,
+  "metrics": [
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "FETCH",
+      "endpoint": "DOCUMENT_ACCESS",
+      "phase": "REJECTED",
+      "duration_ms": 197,
+      "status": null,
+      "error": "TypeError",
+      "aborted": false
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "CDP",
+      "endpoint": "DOCUMENT_ACCESS",
+      "method": "OPTIONS",
+      "phase": "RESPONSE",
+      "duration_ms": 201,
+      "status": 403,
+      "cors_origin_matches": false
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "CDP",
+      "endpoint": "DOCUMENT_ACCESS",
+      "method": "OPTIONS",
+      "phase": "RESPONSE",
+      "duration_ms": 204,
+      "status": 403,
+      "cors_origin_matches": false
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "CDP",
+      "endpoint": "DOCUMENT_ACCESS",
+      "method": "OPTIONS",
+      "phase": "RESPONSE",
+      "duration_ms": 202,
+      "status": 403,
+      "cors_origin_matches": false
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "CDP",
+      "endpoint": "DOCUMENT_ACCESS",
+      "method": "POST",
+      "phase": "FAILED",
+      "duration_ms": 197,
+      "status": null,
+      "error": "net::ERR_FAILED",
+      "cancelled": false,
+      "cors_error": "PreflightAllowOriginMismatch"
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "FETCH",
+      "endpoint": "DOCUMENT_ACCESS",
+      "phase": "REJECTED",
+      "duration_ms": 209,
+      "status": null,
+      "error": "TypeError",
+      "aborted": false
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "CDP",
+      "endpoint": "DOCUMENT_ACCESS",
+      "method": "POST",
+      "phase": "FAILED",
+      "duration_ms": 208,
+      "status": null,
+      "error": "net::ERR_FAILED",
+      "cancelled": false,
+      "cors_error": "PreflightAllowOriginMismatch"
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "FETCH",
+      "endpoint": "DOCUMENT_ACCESS",
+      "phase": "REJECTED",
+      "duration_ms": 209,
+      "status": null,
+      "error": "TypeError",
+      "aborted": false
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "CDP",
+      "endpoint": "DOCUMENT_ACCESS",
+      "method": "POST",
+      "phase": "FAILED",
+      "duration_ms": 209,
+      "status": null,
+      "error": "net::ERR_FAILED",
+      "cancelled": false,
+      "cors_error": "PreflightAllowOriginMismatch"
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "FETCH",
+      "endpoint": "DOCUMENT_ACCESS",
+      "phase": "REJECTED",
+      "duration_ms": 209,
+      "status": null,
+      "error": "TypeError",
+      "aborted": false
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "CDP",
+      "endpoint": "DOCUMENT_ACCESS",
+      "method": "OPTIONS",
+      "phase": "RESPONSE",
+      "duration_ms": 205,
+      "status": 403,
+      "cors_origin_matches": false
+    },
+    {
+      "event": "GLOBAL_SAFE_NETWORK",
+      "observer": "CDP",
+      "endpoint": "DOCUMENT_ACCESS",
+      "method": "POST",
+      "phase": "FAILED",
+      "duration_ms": 208,
+      "status": null,
+      "error": "net::ERR_FAILED",
+      "cancelled": false,
+      "cors_error": "PreflightAllowOriginMismatch"
+    }
+  ],
+  "sourceLog": "global-local-diagnostics.stderr.log",
+  "officialScriptSha256": "3e65dbbc73dd4a39b4b4dfcc8567f01966b1643a4d46f725a86823a9336e313b",
+  "wrapperSha256": "9569c8d6cece03abb72cb0ea1960d52c5f27f2b9c980c86762e73c20bba4d064",
+  "safety": {
+    "networkObservationOnly": true,
+    "documentUploads": 0,
+    "documentDeletes": 0,
+    "financialSubmissions": 0,
+    "credentialsLogged": false,
+    "authorizedAlias": "H005_TEST"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "task": "H-DOCUMENT-FLOW-SURGICAL-20261110",
+  "reviewer": "/root/upload_flow",
+  "reviewedAt": "2026-11-11T02:02:03.263Z",
+  "verdict": "APPROVED",
+  "approvalScope": "Candidate implementation and evidence ready for the already-authorized publication; not a declaration of completed production deployment.",
+  "taskComplete": false,
+  "productionReadbackVerified": false,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "candidateHead": "b32f037e785ed2fdc78ac60af76e6abf29c98523",
+  "method": "Independent read-only runtime diff review, source/evidence hash checks, actual official global suite on the same candidate artifact at the documented authorized local origin; no runtime edits during review.",
+  "criticalFindings": [],
+  "correctedFinding": "The preaudit now expressly includes rental/product consumers and the shared Edge error-phase module.",
+  "evidence": {
+    "confirmation": 10,
+    "consumerChecks": 50,
+    "financialDiagnostics": 18,
+    "syntheticSql": 8,
+    "ciBehaviorChecks": 14,
+    "ciMutationsDetected": 5,
+    "repositoryByteIdenticalToPublishedBase": true,
+    "approvedRepositoryNormalizedSha256": "6a5c78695a60dfe0860cfe383b01a96ab949b7f3bf4473202fbffdbf586a3561",
+    "globalLocal": "PASS",
+    "globalProductionBaseline": "PASS",
+    "candidateServiceWorkerCache": [
+      "sutiapp-v2026111005"
+    ],
+    "exactCandidateBundleSha256": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e"
+  },
+  "verdicts": {
+    "sourceOfTruth": "Unchanged authoritative document/asset/request records; confirmed UI projections do not substitute authority on failed reads.",
+    "architecture": "Context-scoped receipts, stable authenticated session identity, recoverable same-operation TUS and retained original evidence; no schema migration.",
+    "security": "Backend authorization, hash verification and descriptor recheck retained. Cross-affiliate SQL denial demonstrated. No new public links or credentials.",
+    "data": "No document uploads, deletions or financial submissions in global tests; normal authorized Auth/access-audit effects are allowed. The harness zero-mutations field is not a measured database audit.",
+    "legacy": "Financial/Google writers and rules remain unchanged. Exact complete request repository hash, 14 behavior cases and 5 mutation cases replace the stale CI source selector.",
+    "ui": "Existing layout, controls and navigation retained; confirmed saves separated from subsequent read failures."
+  },
+  "openLimitations": [
+    "Production candidate deployment and exact-source readback plus post-publication global regression remain to be completed by the parent agent.",
+    "Synthetic mobile browser suite: Chromium 7 PASS; WebKit Windows 6 PASS and 1 PDF renderer BLOCKED, also present in the baseline. Physical iOS/Safari PDF rendering is not certified.",
+    "Historical Admin static test fails on an unchanged Finance-source regular expression; focal Admin behavior passes.",
+    "Admin summary aggregates retain the last authoritative detail read; the confirmed document projection does not invent new aggregate counts.",
+    "The initial local port 4187 failure is preserved: OPTIONS 403/CORS in about 200 ms, not a timeout. The same artifact passed at already-authorized localhost:8080 without CORS changes."
+  ],
+  "publicationRequirements": [
+    "Deploy only the reviewed financial-legacy artifact and exact shared dependency, preserving verify_jwt and existing environment configuration; no migrations or data changes.",
+    "Publish the exact reviewed frontend artifact and verify hashes/version and the global surfaces after deployment.",
+    "Keep rollback artifacts and do not mark the entire task PASS until production readback and required checks complete."
+  ],
+  "ownerDecisionRequired": false,
+  "recommendedNextAction": "Proceed with the publication already authorized by the user, CI, exact readback and post-deployment verification; retain all stated limits.",
+  "responseGeneratedForCodex": true,
+  "runtimeSha256": {
+    "SutiApp.html": "afcc4c05fe00a458fd850a837091d64ef9010dd4780cd6645fadeca8283e7c60",
+    "app/admin-affiliates-repository.js": "4760e443816e7d23cbab45c93f8576b0e1e2a5fd16a089d269f983e4fc8b1875",
+    "app/affiliate-repository.js": "94081a2d9cab07a9347e16cb596f14902aefd0c4e194aaac1d7d1057e8e0e2bd",
+    "app/app.jsx": "0eb9297e37884a94ac791f63fa89f7828f50a1339225168a1be1013bbd2640a5",
+    "app/bundle.js": "5fa7f080018bc4941eb890140f5a54cd5bd1c9fcc79f9f2080c17b011c43781e",
+    "app/document-integration.js": "0e07e39b67a1c0adbde07290263c8ecef10e5a9c5098c828b1e6bddac41aff43",
+    "app/document-transfer-source.mjs": "f53b3eeb45ce6343bb624dc9a5da4912e9f71169cf0fb9bb652696287a840f11",
+    "app/document-transfer.js": "f7bc129f9974e58d0946bd7fe661ee85b608b83287b47751c7f785f015c2adcf",
+    "app/document-workflow-repository.js": "b45bd768b8d66ee4935cf000846ad49482f5e87b92ebfdfbb7c496284c68b553",
+    "app/private-resource-demand.js": "581d4a654f1d5783a13e6ae62ed19f85c07b70a4dd72545dceb74bfb938dd9be",
+    "app/renta-car.jsx": "dbba0c072fb80ac7ef06911a5974a5ac69c999b14bcda6a5fd64b4fb68af52ac",
+    "app/screens-admin-affiliates.jsx": "ab4fd8daaae7ff6193c748c3f66e77f44eab8be2246dde7656491b514cd5a46a",
+    "app/screens-documentos.jsx": "aa8924c147a576756c32337036e4396f13798ec4cdc48d0c3e7b3e9d249162f4",
+    "app/screens-loan.jsx": "83f7d14b7b0d47325d6cfae464bf76d9ba045c2a6660490767cd10e3b5a6455a",
+    "app/screens-membership-application.jsx": "66774f988164560d9837d0650dbd0f35a5fbcb33c48e3f2df2fde2ce2022f69a",
+    "app/screens-program-product-payment.jsx": "7a63b5f4d6462ce778e2210bc4ef0455a397615b12426a24990d4e52189bc6f6",
+    "supabase/functions/_shared/document-integration.mjs": "b88f727167b199c1250e68fa936ce78be71d6263a7abc51bded094f72fff35e1",
+    "supabase/functions/financial-legacy/index.ts": "8c23221f6d403c5b7280da6edc277917b79e9961ea646fe6c60ebee70eda29d4",
+    "sw.js": "70fe68a25467e182bb2fb33464bcd78c56a776668ee0db540d40cb544560dbb9"
+  },
+  "evidenceSha256": {
+    "docs/qa/H-DOCUMENT-FLOW-SURGICAL-20261110.md": "8d669e8b3454a9d0b7befa203aa7669368d220a67a3f5c5c8d8dc97ecfd114b9",
+    "docs/qa/evidence/document-flow-surgical-20261110/confirmation-review-regression.json": "458f373de0e8fdeec3c84090121f1dadab1ef5fa7cee74de09a993433b136d00",
+    "docs/qa/evidence/document-flow-surgical/consumer-confirmation-green.json": "12cdd26f0b09b51805129f9e65016c08b0b9efcfab72736fb15333e22bc74c97",
+    "docs/qa/evidence/document-flow-surgical/financial-diagnostics-green.json": "3bc109fd45781ad3a5803b5bf2663f815f5a25af2e9f6eb888e4b9b6c0425ce8",
+    "docs/qa/evidence/document-flow-surgical/synthetic-sql.json": "2be803435063aa2ad493dbf7129e435858ddcc9f54891bec5660ab24f3e6adb9",
+    "docs/qa/evidence/document-flow-surgical/contracts.json": "48917fac654d13e40de2c9c054f1e54e8a41fe5613c4d8741776e4b3b6267992",
+    "docs/qa/evidence/document-flow-surgical/global-local-authorized.json": "40359ebd6cb7bd053f5800830e460d4cabd56ab77d77da0e6221ffc577fa68c6",
+    "docs/qa/evidence/document-flow-surgical/global-production-before.json": "238bd8286832706568949ac54f0045b9fb9a49439d4fce539ce5e0c6c2b7db04",
+    "docs/qa/evidence/document-flow-surgical/controlled-account-readonly.json": "6bec123bf3737ec8b6fee18ae564e52f2f3b0248bc5b245c42b4ecef2b43dd25",
+    "docs/qa/evidence/document-flow-surgical/global-local-diagnostics.json": "fbeb12a3e38ec043fc31165ccd7a152cbb95f878d23ab74ff646325e0a8a22e2",
+    "docs/qa/evidence/document-flow-surgical/local-origin-probe.json": "de9d8585222ddef7d20ba088d0cc9c36fdc073584aa161f4ede02417c58b551b",
+    "docs/qa/evidence/document-flow-surgical/financial-edge-predeploy.json": "cd1977e424d9e5cc7e48c5da1adfdfbcd3c53f209fcb9f5f02f540191f63f2a6",
+    "docs/qa/evidence/document-flow-surgical/financial-edge-bundle.json": "4106e7271644a7eff97a552ab7907dd592b9144ee1f142d38a38a0aa99126d50",
+    "docs/qa/evidence/document-flow-surgical/financial-edge-helper-check.json": "3ec3bfa2d834eda80093e776feb8eee3dcfd6737b416a199062bbba761aecdb9",
+    "docs/qa/evidence/document-flow-surgical/browser-green/report.json": "f7d07554d5a60abb99d925aac4ee6823a285cf0a734f8f27aeca4e9a8b46343d"
+  }
+}

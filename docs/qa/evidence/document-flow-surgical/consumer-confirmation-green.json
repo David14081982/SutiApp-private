@@ -1,0 +1,222 @@
+{
+  "status": "PASS",
+  "baseline": false,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "recordedAt": "2026-11-11T01:32:07.931Z",
+  "passed": 50,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "Membership: failed list preserves prior rows in error phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: confirmed callback merges V2 without another read",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: confirmation never converts an error into ready",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: late response from another identity is discarded",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: confirmation cancels older query without stale submission result",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: confirmation during retry of failed read stays error, never stuck loading",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: receipt in a new context cannot authorize unqueried requirements",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: batched confirmations of two types both survive",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: old identity callback cannot cancel the new identity read",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: old item callback cannot cancel the new item read",
+      "status": "PASS"
+    },
+    {
+      "name": "Membership: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: failed list preserves prior rows in error phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: confirmed callback merges V2 without another read",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: confirmation never converts an error into ready",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: late response from another identity is discarded",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: confirmation cancels older query without stale submission result",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: confirmation during retry of failed read stays error, never stuck loading",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: receipt in a new context cannot authorize unqueried requirements",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: batched confirmations of two types both survive",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: old identity callback cannot cancel the new identity read",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: failed list preserves prior rows in error phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: confirmed callback merges V2 without another read",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: confirmation never converts an error into ready",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: late response from another identity is discarded",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: confirmation cancels older query without stale submission result",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: confirmation during retry of failed read stays error, never stuck loading",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: receipt in a new context cannot authorize unqueried requirements",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: batched confirmations of two types both survive",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: old identity callback cannot cancel the new identity read",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: old item callback cannot cancel the new item read",
+      "status": "PASS"
+    },
+    {
+      "name": "Product: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: failed list preserves prior rows in error phase",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: confirmed callback merges V2 without another read",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: confirmation never converts an error into ready",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: late response from another identity is discarded",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: confirmation cancels older query without stale submission result",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: explicit retry still queries the authority",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: confirmation during retry of failed read stays error, never stuck loading",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: receipt in a new context cannot authorize unqueried requirements",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: batched confirmations of two types both survive",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: old identity callback cannot cancel the new identity read",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: old item callback cannot cancel the new item read",
+      "status": "PASS"
+    },
+    {
+      "name": "Renta: original markup, styles and preceding calculations unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: DOCUMENT_NOT_CURRENT refreshes documents without automatic resubmission",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: DOCUMENT_OPERATION_CHANGED refreshes documents without automatic resubmission",
+      "status": "PASS"
+    },
+    {
+      "name": "Loan: DOCUMENT_BYTES_UNAVAILABLE refreshes documents without automatic resubmission",
+      "status": "PASS"
+    }
+  ],
+  "sourceHashes": {
+    "app/screens-membership-application.jsx": "66774f988164560d9837d0650dbd0f35a5fbcb33c48e3f2df2fde2ce2022f69a",
+    "app/screens-loan.jsx": "83f7d14b7b0d47325d6cfae464bf76d9ba045c2a6660490767cd10e3b5a6455a",
+    "app/screens-program-product-payment.jsx": "7a63b5f4d6462ce778e2210bc4ef0455a397615b12426a24990d4e52189bc6f6",
+    "app/renta-car.jsx": "dbba0c072fb80ac7ef06911a5974a5ac69c999b14bcda6a5fd64b4fb68af52ac"
+  },
+  "repositoryHash": "b45bd768b8d66ee4935cf000846ad49482f5e87b92ebfdfbb7c496284c68b553",
+  "limits": [
+    "Synthetic React hook scheduling and RPC responses; no browser layout certification",
+    "Real consumer functions and repository WeakMap confirmation/merge",
+    "No database, network, real data, financial rules, build or deployment"
+  ]
+}

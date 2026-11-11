@@ -35,19 +35,23 @@
     const upload=async(event)=>{
       const file=event.target.files&&event.target.files[0],selected=selection.current;
       event.target.value='';
-      if(!file||!selected)return;
+      if(!file||!selected||busy)return;
       const type=selected.type;
+      const context=window.PrivateResourceDemand.context();let confirmed=false;
       setBusy({id:type.id,phase:'preparing'});
       try{
-        await window.DocumentWorkflowRepository.upload(type,file,{source:selected.source,onProgress:(phase)=>setBusy({id:type.id,phase})});
-        await onChanged();
+        const document=await window.DocumentWorkflowRepository.upload(type,file,{source:selected.source,onProgress:(phase)=>{if(window.PrivateResourceDemand.context()===context)setBusy({id:type.id,phase});}});
+        if(window.PrivateResourceDemand.context()!==context)return;
+        confirmed=true;setBusy(null);
+        await onChanged(document);
       }catch(e){
-        const code=e&&(e.code||e.message);
-        setError(type.label+': '+(code==='INVALID_DOCUMENT_FILE'
+        if(window.PrivateResourceDemand.context()!==context)return;
+        const code=e&&(e.code||e.message),stage=e&&e.documentPhase;
+        setError(type.label+': '+(confirmed?'el documento quedó guardado; no fue posible actualizar la vista. Vuelve a consultar el expediente.':code==='INVALID_DOCUMENT_FILE'
           ?'el archivo no tiene un formato o tamaño permitido.'
-          :'no se pudo completar la carga. Revisa tu conexión e intenta nuevamente.'));
+          :stage==='verifying'?'no se pudo confirmar el registro. Reintenta para recuperar la misma carga.':stage==='uploading'?'se interrumpió la transferencia. Selecciona el mismo archivo para reanudarla.':'no se pudo completar la carga. Revisa tu conexión e intenta nuevamente.'));
       }finally{
-        setBusy(null);
+        if(window.PrivateResourceDemand.context()===context)setBusy(null);
         selection.current=null;
       }
     };
@@ -63,12 +67,12 @@
       const load=async(doc,force)=>{
         if(!valid()||document.hidden||!visible.has(doc.id)||inFlight.has(doc.id))return;
         if(!force&&ready.has(doc.id))return;
-        inFlight.add(doc.id);const started=Date.now();
+        inFlight.add(doc.id);
         put(doc,{phase:'authorizing',url:''});
         try{
           const preview=await window.DocumentWorkflowRepository.selfPreview(doc,accessPurpose||'SELF_SERVICE_EXPEDIENTE');
           if(!valid())return;
-          const expires=started+Math.min(300,Number(preview.expiresIn)||300)*1000;
+          const expires=Date.now()+Math.min(300,Number(preview.expiresIn)||300)*1000-1000;
           if(expires<=Date.now())throw new Error('DOCUMENT_PREVIEW_EXPIRED');
           ready.set(doc.id,true);put(doc,{phase:'ready',url:preview.signedUrl,expires});
           clearTimeout(timers.get(doc.id));timers.set(doc.id,setTimeout(()=>{ready.delete(doc.id);put(doc,{phase:'expired',url:''});load(doc,false);},expires-Date.now()));
@@ -176,27 +180,45 @@
   }
 
   function DocumentRequestGate({scopeType,scopeKey,onState,title}){
-    const[state,setState]=useState({phase:'loading',requirements:[],documents:[],error:''});
-    const load=React.useCallback(async()=>{setState((current)=>Object.assign({},current,{phase:'loading',error:''}));try{const[requirements,documents]=await Promise.all([window.DocumentWorkflowRepository.resolveRequirements(scopeType,scopeKey),window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);setState({phase:'ready',requirements:requirements.slice(),documents:documents.slice(),error:''});}catch(_){setState({phase:'error',requirements:[],documents:[],error:'No fue posible consultar los requisitos autorizados.'});}},[scopeType,scopeKey]);
-    useEffect(()=>{load();},[load]);
-    const result=useMemo(()=>{const required=state.requirements.filter((row)=>row.required!==false),selected=state.requirements.map((row)=>newest(state.documents,row.document_type_id)).filter((doc)=>doc&&ACCEPTED.has(doc.status)&&physicalAvailable(doc));return{phase:state.phase,ready:state.phase==='ready'&&required.every((row)=>selected.some((doc)=>doc.document_type_id===row.document_type_id)),documentIds:selected.map((doc)=>doc.id),missing:Math.max(0,required.length-selected.filter((doc)=>required.some((row)=>row.document_type_id===doc.document_type_id)).length)};},[state]);
+    const identity=window.PrivateResourceDemand.useContext(),target=JSON.stringify([identity,scopeType,scopeKey]),request=useRef({sequence:0,target,ready:false});
+    if(request.current.target!==target){request.current={sequence:request.current.sequence+1,target,ready:false};}
+    const[state,setState]=useState({phase:'loading',requirements:[],documents:[],error:'',context:null,target:null});
+    const load=React.useCallback(async(document)=>{
+      const repo=window.DocumentWorkflowRepository,context=window.PrivateResourceDemand.context();
+      if(request.current.target!==target||context!==identity)return;
+      const sequence=++request.current.sequence;
+      if(repo.isConfirmedDocument(document)){setState(current=>current.context===context&&current.target===target?Object.assign({},current,{documents:repo.mergeConfirmedDocuments(current.documents,document),phase:current.phase==='loading'?(request.current.ready?'ready':'error'):current.phase}):current);return;}
+      setState(current=>current.context===context&&current.target===target?Object.assign({},current,{phase:'loading',error:''}):{phase:'loading',requirements:[],documents:[],error:'',context,target});
+      try{const[requirements,documents]=await Promise.all([repo.resolveRequirements(scopeType,scopeKey),repo.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);if(sequence!==request.current.sequence||request.current.target!==target||context!==window.PrivateResourceDemand.context())return;request.current.ready=true;setState({phase:'ready',requirements:requirements.slice(),documents:documents.slice(),error:'',context,target});}
+      catch(_){if(sequence===request.current.sequence&&request.current.target===target&&context===window.PrivateResourceDemand.context()){request.current.ready=false;setState(current=>Object.assign({},current,{phase:'error',error:'No fue posible consultar los requisitos autorizados.'}));}}
+    },[scopeType,scopeKey,identity]);
+    useEffect(()=>{load();return()=>{request.current.sequence++;};},[load]);
+    const visible=state.context===identity&&state.target===target?state:{phase:'loading',requirements:[],documents:[],error:''};
+    const result=useMemo(()=>{const required=visible.requirements.filter((row)=>row.required!==false),selected=visible.requirements.map((row)=>newest(visible.documents,row.document_type_id)).filter((doc)=>doc&&ACCEPTED.has(doc.status)&&physicalAvailable(doc));return{phase:visible.phase,ready:visible.phase==='ready'&&required.every((row)=>selected.some((doc)=>doc.document_type_id===row.document_type_id)),documentIds:selected.map((doc)=>doc.id),missing:visible.phase==='ready'?Math.max(0,required.length-selected.filter((doc)=>required.some((row)=>row.document_type_id===doc.document_type_id)).length):null};},[visible]);
     useEffect(()=>{if(onState)onState(result);},[result.phase,result.ready,result.missing,result.documentIds.join('|')]);
-    return h(UnifiedDocumentPhase,{requirements:state.requirements,documents:state.documents,onChanged:load,phase:state.phase,error:state.error,onRetry:load,accessPurpose:'SELF_SERVICE_EXPEDIENTE',title:title||'Verifica tus documentos'});
+    return h(UnifiedDocumentPhase,{requirements:visible.requirements,documents:visible.documents,onChanged:load,phase:visible.phase,error:visible.error,onRetry:load,accessPurpose:'SELF_SERVICE_EXPEDIENTE',title:title||'Verifica tus documentos'});
   }
 
   function useDocuments(){
-    const[state,setState]=useState({phase:'loading',types:[],docs:[],error:null});
-    const load=React.useCallback(async()=>{
-      setState((s)=>Object.assign({},s,{phase:'loading',error:null}));
+    const identity=window.PrivateResourceDemand.useContext(),request=useRef({sequence:0,context:identity,ready:false});
+    if(request.current.context!==identity){request.current={sequence:request.current.sequence+1,context:identity,ready:false};}
+    const[state,setState]=useState({phase:'loading',types:[],docs:[],error:null,context:null});
+    const load=React.useCallback(async(document)=>{
+      const repo=window.DocumentWorkflowRepository,context=window.PrivateResourceDemand.context();
+      if(context!==identity)return;
+      const sequence=++request.current.sequence;
+      if(repo.isConfirmedDocument(document)){setState(current=>current.context===context?Object.assign({},current,{docs:repo.mergeConfirmedDocuments(current.docs,document),phase:current.phase==='loading'?(request.current.ready?'ready':'error'):current.phase}):current);return;}
+      setState(current=>current.context===context?Object.assign({},current,{phase:'loading',error:null}):{phase:'loading',types:[],docs:[],error:null,context});
       try{
-        const[types,docs]=await Promise.all([window.DocumentWorkflowRepository.catalog(),window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);
-        setState({phase:'ready',types,docs,error:null});
+        const[types,docs]=await Promise.all([repo.catalog(),repo.listSelfDocuments('SELF_SERVICE_EXPEDIENTE')]);
+        if(sequence!==request.current.sequence||context!==window.PrivateResourceDemand.context())return;
+        request.current.ready=true;setState({phase:'ready',types,docs,error:null,context});
       }catch(error){
-        setState({phase:'error',types:[],docs:[],error});
+        if(sequence===request.current.sequence&&context===window.PrivateResourceDemand.context()){request.current.ready=false;setState(current=>Object.assign({},current,{phase:'error',error}));}
       }
-    },[]);
-    useEffect(()=>{load();},[load]);
-    return[state,load];
+    },[identity]);
+    useEffect(()=>{load();return()=>{request.current.sequence++;};},[load]);
+    return[state.context===identity?state:{phase:'loading',types:[],docs:[],error:null},load];
   }
 
   function DocumentosScreen({app}){
@@ -206,7 +228,7 @@
       h('div',{style:{display:'flex',alignItems:'center',gap:6,padding:'8px 12px',background:'var(--surface)',borderBottom:'1px solid var(--hairline)'}},h('button',{onClick:app.back,style:{width:40,height:40,borderRadius:12,border:'none',background:'transparent',display:'grid',placeItems:'center'}},h(I,{name:'arrowL',size:22,stroke:2})),h('span',{style:{fontSize: 'var(--text-16-5, 16.5px)',fontWeight:800}},'Mis Documentos')),
       h('div',{className:'su-app-scroll su-route',style:{flex:1,overflowY:'auto',padding:16}},
         h('div',{style:{background:'linear-gradient(135deg,#16322a,#0f4536)',borderRadius:20,padding:18,color:'#fff',display:'flex',gap:14,alignItems:'center'}},h('div',{style:{width:48,height:48,borderRadius:14,background:'rgba(255,255,255,.14)',display:'grid',placeItems:'center'}},h(I,{name:'shield',size:26,stroke:2})),h('div',null,h('div',{style:{fontSize: 'var(--text-15, 15px)',fontWeight:800}},'Tus documentos están protegidos'),h('div',{style:{fontSize: 'var(--text-12-2, 12.2px)',opacity:.82,fontWeight:600,marginTop:2,lineHeight:1.45}},'Cifrado de extremo a extremo. Solo el comité autorizado puede verlos.'))),
-        h('div',{style:{background:'var(--surface)',borderRadius:18,padding:16,marginTop:16,boxShadow:'var(--neo-sm)'}},h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:10}},h('span',{style:{fontSize: 'var(--text-14-5, 14.5px)',fontWeight:800}},'Expediente completo'),h('span',{'data-document-count':verified+'/'+requirements.length,style:{fontSize: 'var(--text-14-5, 14.5px)',fontWeight:800,color:'var(--guinda)'}},state.phase==='ready'?verified+' / '+requirements.length:'—')),h(window.ProgressBar,{value:requirements.length?verified/requirements.length*100:0,height:10}),h('div',{style:{fontSize: 'var(--text-12-3, 12.3px)',color:'var(--ink-3)',fontWeight:600,marginTop:9}},requirements.length-verified>0?'Te faltan '+(requirements.length-verified)+' documentos por verificar.':'Tu expediente está verificado.')),
+        h('div',{style:{background:'var(--surface)',borderRadius:18,padding:16,marginTop:16,boxShadow:'var(--neo-sm)'}},h('div',{style:{display:'flex',justifyContent:'space-between',marginBottom:10}},h('span',{style:{fontSize: 'var(--text-14-5, 14.5px)',fontWeight:800}},'Expediente completo'),h('span',{'data-document-count':verified+'/'+requirements.length,style:{fontSize: 'var(--text-14-5, 14.5px)',fontWeight:800,color:'var(--guinda)'}},state.phase==='ready'?verified+' / '+requirements.length:'—')),h(window.ProgressBar,{value:requirements.length?verified/requirements.length*100:0,height:10}),h('div',{style:{fontSize: 'var(--text-12-3, 12.3px)',color:'var(--ink-3)',fontWeight:600,marginTop:9}},state.phase!=='ready'?(state.phase==='error'?'No fue posible consultar tu expediente.':'Consultando el expediente autorizado…'):requirements.length-verified>0?'Te faltan '+(requirements.length-verified)+' documentos por verificar.':'Tu expediente está verificado.')),
         h('div',{style:{marginTop:20}},h(window.SectionHead,{title:'Documentos requeridos',icon:'folder'}),state.phase==='loading'&&h('div',{role:'status'},'Cargando documentos…'),state.phase==='error'&&h('div',{role:'alert',style:{background:'#fff',borderRadius:16,padding:18,color:'#A32921',fontWeight:700}},'No fue posible consultar la fuente autorizada. ',h('button',{onClick:load},'Reintentar')),state.phase==='ready'&&h(DocumentRequirementList,{requirements,documents:state.docs,onChanged:load,editable:true,accessPurpose:'SELF_SERVICE_EXPEDIENTE'}))));
   }
   window.DocumentRequirementList=DocumentRequirementList;

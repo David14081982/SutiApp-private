@@ -25,8 +25,24 @@
   }
   function Application({item,session,quote,onClose,app}){
     const [step,setStep]=useState('documents'),[docState,setDocState]=useState({phase:'loading',requirements:[],documents:[],terms:null}),[signature,setSignature]=useState(''),[accepted,setAccepted]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[sent,setSent]=useState(null),idem=useRef(window.ProgramRequestRepository.newIdempotencyKey());
-    const load=React.useCallback(async()=>{setDocState((s)=>Object.assign({},s,{phase:'loading'}));try{const[requirements,documents,terms]=await Promise.all([window.DocumentWorkflowRepository.requirements('prestamo'),window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'),window.ProgramTermsRepository.current('prestamo')]);setDocState({phase:'ready',requirements:requirements.slice(),documents:documents.slice(),terms});}catch(_){setDocState({phase:'error',requirements:[],documents:[],terms:null});}},[]);
-    useEffect(()=>{load();},[load]);
+    const documentContext=window.PrivateResourceDemand.useContext(),documentScope=item.id,documentLoad=useRef({sequence:0,context:documentContext,scope:documentScope,ready:false});
+    if(documentLoad.current.renderContext!==documentContext||documentLoad.current.renderScope!==documentScope){documentLoad.current.sequence++;documentLoad.current.ready=false;}
+    documentLoad.current.renderContext=documentContext;documentLoad.current.renderScope=documentScope;
+    const load=React.useCallback(async(confirmed)=>{
+      const context=window.PrivateResourceDemand.context();if(documentContext!==context||documentLoad.current.renderContext!==documentContext||documentLoad.current.renderScope!==documentScope)return null;
+      const sequence=++documentLoad.current.sequence;
+      if(documentLoad.current.context!==context||documentLoad.current.scope!==documentScope){documentLoad.current.context=context;documentLoad.current.scope=documentScope;documentLoad.current.ready=false;setDocState({phase:'loading',requirements:[],documents:[],terms:null});}
+      const sameContext=()=>context!==null&&context===window.PrivateResourceDemand.context()&&documentLoad.current.renderContext===context&&documentLoad.current.renderScope===documentScope;
+      const current=()=>sameContext()&&sequence===documentLoad.current.sequence;
+      if(!current()){setDocState(s=>Object.assign({},s,{phase:'error'}));return null;}
+      if(window.DocumentWorkflowRepository.isConfirmedDocument(confirmed)){
+        setDocState(s=>sameContext()?Object.assign({},s,{documents:window.DocumentWorkflowRepository.mergeConfirmedDocuments(s.documents,confirmed),phase:s.phase==='loading'?(documentLoad.current.ready?'ready':'error'):s.phase}):s);return null;
+      }
+      setDocState(s=>Object.assign({},s,{phase:'loading'}));
+      try{const[requirements,documents,terms]=await Promise.all([window.DocumentWorkflowRepository.requirements('prestamo'),window.DocumentWorkflowRepository.listSelfDocuments('SELF_SERVICE_LOAN'),window.ProgramTermsRepository.current('prestamo')]);if(!current())return null;documentLoad.current.ready=true;setDocState({phase:'ready',requirements:requirements.slice(),documents:documents.slice(),terms});}
+      catch(_){if(!current())return null;documentLoad.current.ready=false;setDocState(s=>Object.assign({},s,{phase:'error'}));}
+    },[documentContext,documentScope]);
+    useEffect(()=>{load();return()=>{documentLoad.current.sequence++;};},[load]);
     const gate=documentSelection(docState.requirements,docState.documents),canSummary=docState.phase==='ready'&&gate.missing.length===0&&docState.terms;
     const send=async()=>{if(busy||!canSummary||!signature||!accepted)return;setBusy(true);setError('');try{const result=await window.FinancialLegacyRepository.confirmProgramPayment({snapshotId:session.loanSession.id,programItemId:item.id,downPayment:quote.downPayment,term:quote.financialResult.paymentCount,notes:'Solicitud de producto con descuento vía nómina',signature,terms:true,termsVersionId:docState.terms.id,documentIds:gate.selected,idempotencyKey:idem.current});setSent(result);if(window.operationsStore)window.operationsStore.invalidate();}catch(e){const code=e.code||e.message;setError(code==='CONDITIONS_CHANGED'?'Las condiciones cambiaron. Cierra y vuelve a simular antes de enviar.':code==='REQUIRED_DOCUMENTS_MISSING'?'Falta validar uno o más documentos requeridos.':'No se pudo registrar la solicitud. Inténtalo nuevamente sin cambiar los datos.');}finally{setBusy(false);}};
     if(sent)return h(window.RequestSubmissionSuccess,{app,folio:sent.folio,kind:'benefit',subject:item.nombre,workflowState:sent.workflow_state,onBack:onClose,fullScreen:true,destination:'Tu solicitud de producto con descuento vía nómina fue enviada al Área de Finanzas para revisión.'});

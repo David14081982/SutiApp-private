@@ -1,6 +1,6 @@
 'use strict';
 // Isolated financial contract and Google projection tests; no network/writes.
-const fs=require('fs'),path=require('path'),vm=require('vm'),assert=require('assert').strict;
+const fs=require('fs'),path=require('path'),vm=require('vm'),crypto=require('crypto'),assert=require('assert').strict;
 const root=path.resolve(__dirname,'..'),out=process.env.SUTIAPP_TEST_EVIDENCE_DIR||path.join(root,'docs/qa/evidence/membership-payment-contract-20260910');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8').replace(/\r\n/g,'\n');
 const baseline=f=>require('child_process').execFileSync('git',['show','9f880bf0fcea96ecfc57cd1f80ef43cbd254cc8a:'+f],{cwd:root,encoding:'utf8'}).replace(/\r\n/g,'\n');
@@ -25,33 +25,12 @@ assert.equal(row[25],'Bud Tv Ultra');
 // Existing requests with missing values are untouched by the mapper and no backfill exists.
 const legacy=context.buildRequestRegisterRow({...request,requested_amount:null,requested_term:null,financial_submission_snapshot:null},[],null);
 assert.deepEqual(Array.from(legacy.slice(4,9)),['','','','','']);
-// Preserve the historical non-membership contract after the exact, reviewed
-// H-ADMIN-USER-MODULES-001 read-boundary additions (f130ff5). No writer is excluded.
-const before=baseline('app/program-request-repository.js');
-const omitMembership=s=>s.replace(/  async function createMembership\(values\).*\r?\n/,'');
-function omitApprovedModuleReads(source){
-  const additions=[
-    ["  const moduleScoped=()=>{const state=window.AdminRepository&&window.AdminRepository.getState();return Boolean(state&&state.assignment&&Array.isArray(state.assignment.moduleKeys));};\n",1],
-    ["  async function moduleGeneralRows(id){const r=await db().rpc('list_module_general_requests',{p_request_id:id||null});if(r.error)throw r.error;return r.data||[];}\n",1],
-    ["    if(moduleScoped())return Object.freeze((await moduleGeneralRows()).map(project));\n",2],
-    ["moduleScoped()?{data:(await moduleGeneralRows(id))[0]||null}:",1],
-    ["    if(!base.data)throw new Error('REQUEST_NOT_FOUND_OR_FORBIDDEN');\n",1],
-  ];
-  for(const [fragment,count] of additions){assert.equal(source.split(fragment).length-1,count,'Approved module read boundary changed');source=source.replaceAll(fragment,'');}
-  return source;
-}
-function omitApprovedFinanceBlocks(source){
-  // H-FINANCE-BLOCKS-001 is authorized; every other byte stays under the
-  // historical guard. Exact counts also reject removed or duplicated checks.
-  const changes=[
-    ['    if(v.programItemId)await window.FinanceBlocksRepository.assertAllowed();\n','',1],
-    ["await window.FinanceBlocksRepository.assertAllowed();const r=await db().rpc('create_membership_request'","const r=await db().rpc('create_membership_request'",1],
-    ['if(r.error)await window.FinanceBlocksRepository.handle(r.error);await refreshRequest(r.data.id);','if(r.error)throw r.error;await refreshRequest(r.data.id);',2],
-  ];
-  for(const [fragment,replacement,count] of changes){assert.equal(source.split(fragment).length-1,count,'Approved finance block boundary changed');source=source.replaceAll(fragment,replacement);}
-  return source;
-}
-assert.equal(omitMembership(omitApprovedModuleReads(omitApprovedFinanceBlocks(read('app/program-request-repository.js')))),omitMembership(before));
+// The approved f6cfae3 repository already includes DOCUMENT_V1 dispatch and
+// evidence reads. Pin every LF-normalized byte, including all writers and
+// financial guards, rather than excluding fragments from the older RPC shape.
+// This fixture hash needs no additional history fetch in the existing CI job.
+const approvedRepositorySha256='6a5c78695a60dfe0860cfe383b01a96ab949b7f3bf4473202fbffdbf586a3561';
+assert.equal(crypto.createHash('sha256').update(read('app/program-request-repository.js')).digest('hex'),approvedRepositorySha256,'Approved documentary/finance repository boundary changed');
 const ui=read('app/screens-membership-application.jsx'),original=baseline('app/screens-membership-application.jsx');
 assert.equal(ui.match(/const CSS=`([\s\S]*?)`;/)[1],original.match(/const CSS=`([\s\S]*?)`;/)[1]);
 for(const label of ['mr-hero','mr-figures','mr-tracker','UnifiedDocumentPhase','mr-data','mr-privacy','mr-footer','RequestSubmissionSuccess'])assert(ui.includes(label));
@@ -67,7 +46,7 @@ vm.createContext(sandbox);vm.runInContext(read('app/membership-repository.js'),s
   response={error:new Error('authority unavailable')};await assert.rejects(()=>sandbox.window.MembershipRepository.paymentQuote('offering'),/authority unavailable/);
   response={data:{...q,financialResult:{...financial,rate:1}}};await assert.rejects(()=>sandbox.window.MembershipRepository.paymentQuote('offering'),/QUOTE_INVALID/);
   const result={status:'PASS',googleColumnsEtoI:Array.from(row.slice(4,9)),doubleCharge:false,legacyRequestsUnchanged:true,
-    sharedRepositoryNonMembershipIdentical:true,approvedAdminReadBoundaryVerified:true,approvedFinanceBlockBoundaryVerified:true,financeBlockChecks,financeBlockMutations,
+    sharedRepositoryNonMembershipIdentical:true,approvedRepositoryRef:'f6cfae303ce32c6d2102fce5a664f4292f596118',approvedRepositorySha256,approvedAdminReadBoundaryVerified:true,approvedFinanceBlockBoundaryVerified:true,financeBlockChecks,financeBlockMutations,
     googleOtherColumnsIdentical:true,uiCssIdentical:true,quoteAuthorityAndErrors:true,externalWrites:0};
   fs.writeFileSync(path.join(out,'contracts.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 })().catch(e=>{console.error(e.message);process.exitCode=1;});

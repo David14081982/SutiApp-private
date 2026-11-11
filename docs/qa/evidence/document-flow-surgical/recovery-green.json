@@ -1,0 +1,22 @@
+{
+  "checks": [
+    {
+      "name": "Retry resumes the same TUS URL and records its new URL",
+      "status": "PASS"
+    },
+    {
+      "name": "Resume URLs cannot send credentials to another origin",
+      "status": "PASS"
+    },
+    {
+      "name": "Context is checked again after asynchronous token acquisition",
+      "status": "PASS"
+    },
+    {
+      "name": "A transfer without activity ends with a recoverable timeout",
+      "status": "PASS"
+    }
+  ],
+  "pass": 4,
+  "fail": 0
+}

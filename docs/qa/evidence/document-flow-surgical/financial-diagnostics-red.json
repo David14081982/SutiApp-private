@@ -1,0 +1,107 @@
+{
+  "status": "FAIL",
+  "baseline": true,
+  "baselineRef": "f6cfae303ce32c6d2102fce5a664f4292f596118",
+  "recordedAt": "2026-11-11T00:59:09.116Z",
+  "tests": [
+    {
+      "name": "Preserve safe code DOCUMENT_NOT_CURRENT",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_NOT_CURRENT'\n"
+    },
+    {
+      "name": "Preserve safe code DOCUMENT_CONTEXT_DENIED",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_CONTEXT_DENIED'\n"
+    },
+    {
+      "name": "Preserve safe code DOCUMENT_OPERATION_CHANGED",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_OPERATION_CHANGED'\n"
+    },
+    {
+      "name": "Preserve safe code DOCUMENT_BYTES_UNAVAILABLE",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_BYTES_UNAVAILABLE'\n"
+    },
+    {
+      "name": "Preserve safe code PHYSICAL_ASSET_NOT_VERIFIED",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'PHYSICAL_ASSET_NOT_VERIFIED'\n"
+    },
+    {
+      "name": "Preserve safe code BYTE_INTEGRITY_MISMATCH",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'BYTE_INTEGRITY_MISMATCH'\n"
+    },
+    {
+      "name": "Unknown error text and untrusted phase remain private",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ undefined\n- 'UNKNOWN'\n"
+    },
+    {
+      "name": "Existing financial error contracts remain unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "Prepare failure is attributed before/after byte verification: 1",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_CONTEXT_DENIED'\n"
+    },
+    {
+      "name": "Prepare failure is attributed before/after byte verification: 2",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_CONTEXT_DENIED'\n"
+    },
+    {
+      "name": "Missing bytes stop completion and report VERIFY",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_BYTES_UNAVAILABLE'\n"
+    },
+    {
+      "name": "Real stream hash mismatch stops completion and reports VERIFY",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'BYTE_INTEGRITY_MISMATCH'\n"
+    },
+    {
+      "name": "Descriptor recheck mismatch is PREPARE and still fails closed",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_OPERATION_CHANGED'\n"
+    },
+    {
+      "name": "Finalizer rejection keeps code and COMPLETE phase: DOCUMENT_NOT_CURRENT",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'DOCUMENT_NOT_CURRENT'\n"
+    },
+    {
+      "name": "Finalizer rejection keeps code and COMPLETE phase: PHYSICAL_ASSET_NOT_VERIFIED",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n+ actual - expected\n\n+ 'UNCLASSIFIED_WRITER_FAILURE'\n- 'PHYSICAL_ASSET_NOT_VERIFIED'\n"
+    },
+    {
+      "name": "Success retains exact order, verified receipt and result identity",
+      "status": "PASS"
+    },
+    {
+      "name": "Product financing keeps the same verified writer contract",
+      "status": "PASS"
+    },
+    {
+      "name": "Non-allowlisted writer cannot prepare, read bytes or dispatch",
+      "status": "PASS"
+    }
+  ],
+  "passed": 4,
+  "failed": 14,
+  "sourceHashes": {
+    "financial": "1fd56d9e2a9e05f29a06156b822520ff8566a8fe17d979df6d721aff1306d870",
+    "integration": "3dac6427e3103f500ef4dd901cf9e4e1a935b546f846a533a4e246fc7f311d75"
+  },
+  "constraints": {
+    "networkRequests": 0,
+    "databaseCalls": 0,
+    "businessWrites": 0,
+    "realStreamVerifier": true,
+    "syntheticRpcTransport": true
+  }
+}

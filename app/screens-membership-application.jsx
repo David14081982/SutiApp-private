@@ -142,7 +142,21 @@
       };
     });
     const idem=useRef(window.ProgramRequestRepository.newIdempotencyKey()),scrollRef=useRef(null),docsRef=useRef(null),inputRefs=useRef({}),highlightTimer=useRef(null);
-    const load=React.useCallback(async()=>{
+    const documentContext=window.PrivateResourceDemand.useContext(),documentScope=offering&&offering.id,documentLoad=useRef({sequence:0,context:documentContext,scope:documentScope,ready:false});
+    if(documentLoad.current.renderContext!==documentContext||documentLoad.current.renderScope!==documentScope){documentLoad.current.sequence++;documentLoad.current.ready=false;}
+    documentLoad.current.renderContext=documentContext;documentLoad.current.renderScope=documentScope;
+    const load=React.useCallback(async(confirmed)=>{
+      const context=window.PrivateResourceDemand.context();if(documentContext!==context||documentLoad.current.renderContext!==documentContext||documentLoad.current.renderScope!==documentScope)return null;
+      const sequence=++documentLoad.current.sequence;
+      if(documentLoad.current.context!==context||documentLoad.current.scope!==documentScope){documentLoad.current.context=context;documentLoad.current.scope=documentScope;documentLoad.current.ready=false;setPhase('loading');setRequirements([]);setDocuments([]);setTerms(null);setPaymentQuote(null);}
+      const sameContext=()=>context!==null&&context===window.PrivateResourceDemand.context()&&documentLoad.current.renderContext===context&&documentLoad.current.renderScope===documentScope;
+      const current=()=>sameContext()&&sequence===documentLoad.current.sequence;
+      if(!current()){setPhase('error');return null;}
+      if(window.DocumentWorkflowRepository.isConfirmedDocument(confirmed)){
+        setDocuments(rows=>sameContext()?window.DocumentWorkflowRepository.mergeConfirmedDocuments(rows,confirmed):rows);
+        setPhase(value=>sameContext()&&value==='loading'?(documentLoad.current.ready?'ready':'error'):value);
+        return null;
+      }
       if(!offering){
         setPhase('error');
         setError('La membresía ya no está disponible.');
@@ -150,7 +164,6 @@
       }
       setPhase('loading');
       setError('');
-      setPaymentQuote(null);
       try{
         const rows=await window.DocumentWorkflowRepository.requirements('membership',offering.id);
         const[dResult,tResult,qResult]=await Promise.allSettled([
@@ -158,26 +171,26 @@
           window.ProgramTermsRepository.current('membership',offering.id),
           window.MembershipRepository.paymentQuote(offering.id),
         ]);
+        if(!current())return null;
+        if(dResult.status!=='fulfilled')throw dResult.reason;
         if(qResult.status!=='fulfilled')throw qResult.reason;
         setPaymentQuote(qResult.value);
         setRequirements(rows.slice());
-        setDocuments(dResult.status==='fulfilled'?dResult.value.slice():[]);
+        setDocuments(dResult.value.slice());
         setTerms(tResult.status==='fulfilled'?tResult.value:null);
         const warnings=[];
-        if(dResult.status==='rejected')warnings.push('Los requisitos están disponibles; vuelve a intentar si tus documentos existentes no aparecen.');
         if(tResult.status==='rejected')warnings.push('No fue posible verificar los términos publicados.');
         setError(warnings.join(' '));
-        setPhase('ready');
+        documentLoad.current.ready=true;setPhase('ready');
       }catch(failure){
-        setRequirements([]);
-        setDocuments([]);
-        setTerms(null);
+        if(!current())return null;
+        documentLoad.current.ready=false;
         setPhase('error');
         const code=String(failure&&failure.message||'');
         setError(code.includes('MEMBERSHIP_PAYROLL_CATEGORY_UNRESOLVED')?'Tu categoría laboral aún no tiene una periodicidad de descuento definida. Solicita su revisión en Administración.':code.includes('MEMBERSHIP_INCLUDED_FEES_EXCEED_TOTAL')?'El monto configurado no cubre los gastos administrativos incluidos. Solicita su revisión en Administración.':'No fue posible consultar los requisitos y las condiciones de pago. Reintenta para continuar.');
       }
-    },[offering&&offering.id]);
-    useEffect(()=>{load();},[load]);
+    },[offering&&offering.id,documentContext]);
+    useEffect(()=>{load();return()=>{documentLoad.current.sequence++;};},[load]);
     useEffect(()=>()=>{if(highlightTimer.current)clearTimeout(highlightTimer.current);},[]);
 
     const requiredRequirements=useMemo(()=>requirements.filter((requirement)=>requirement.required===true),[requirements]);

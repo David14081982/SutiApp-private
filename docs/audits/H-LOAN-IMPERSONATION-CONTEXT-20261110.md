@@ -85,7 +85,7 @@ Comprobacion agregada de las tres cuentas autorizadas, sin nombres, UUIDs ni cor
 
 ### Decisiones pendientes para el usuario
 
-Ninguna para esta correccion puntual. La decision previa sobre la compuerta de preproduccion quedo resuelta por la instruccion posterior explicita de aplicar en produccion. No se extiende esta autorizacion a otras migraciones ni fases anteriores.
+Ninguna para esta correccion puntual. La decision previa sobre la compuerta de preproduccion quedo resuelta por la instruccion posterior explicita de aplicar en produccion. No se extiende esta autorizacion a otras migraciones ni fases anteriores. Sobre la evidencia posterior, el propietario eligio expresamente **"Conservar comprobante local"**; no se publicara ese payload.
 
 ### Autorizacion posterior de aplicacion
 
@@ -103,6 +103,10 @@ Despues de explicar el alcance de las pruebas sinteticas y la compuerta de prepr
 Evidencia: [aplicacion y readback](../qa/evidence/loan-impersonation-context/release-applied.json), [revision posterior](../qa/evidence/loan-impersonation-context/post-deploy-independent-review.json). SHA-256 del comprobante de aplicacion: `99c0823e7f205d6a4efbec8e3bcb9b7f62bfb559ea829bb2fed542f9aff8d969`.
 
 Resultado funcional respaldado por 16 pruebas sinteticas: un administrador con permiso vigente puede confirmar una solicitud asistida para un afiliado ordinario; no se exige que el afiliado sea administrador. Siguen aplicando las condiciones financieras y documentales existentes. Pendiente de observacion en uso real: confirmacion completa en navegador productivo; no se envio ninguna solicitud en nombre de 12376, 11905, 1412 ni de otro usuario. No se declara resuelto todo el programa documental ni cumplida su antigua Fase G.
+
+### Publicacion del comprobante posterior
+
+El commit documental local `2e6aa0d` conserva el comprobante y la revision posterior. La revision automatica rechazo su push antes de ejecutar el proceso por incluir metadatos internos de produccion en un remoto publico. Se verificaron propietario autenticado y remoto `David14081982/SutiApp-private`, visibilidad publica y coincidencia de los 15 metadatos/7 agregados con el preflight ya publicado. Un segundo intento con esa evidencia tambien fue rechazado por requerir autorizacion explicita para este payload. No se utilizo un mecanismo alternativo. El propietario respondio **"Conservar comprobante local"**: informe y comprobantes posteriores permanecen locales y no se deben incluir en futuros pushes sin nueva autorizacion. El SQL original de la correccion sigue fusionado en PR14 y su instalacion productiva esta verificada; esta decision afecta solo a la evidencia posterior, no al despliegue.
 
 ## Cierre
 

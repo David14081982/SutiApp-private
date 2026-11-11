@@ -1,0 +1,28 @@
+{
+  "task": "H-LOAN-IMPERSONATION-CONTEXT-20261110",
+  "reviewer": "/root/storage_security",
+  "skill": "sutiapp-architect-reviewer",
+  "verdict": "APPROVED",
+  "migrationSha256": "d1a055ab71e5ec50ef1e67b7f060f8a3c747d64bc6acfaae54d414ed75a10b9b",
+  "recoverySha256": "4e81a53d48f51880c4ee9aff4df7ba14df239375864eb3403e6253651c2b003a",
+  "fixtureSha256": "094d885f1dc2e563043eed661b0684224e42a21449dcc3f1febbc9302b1c8372",
+  "testReportSha256": "e1fd25b3f0c8660cd4890eceee5d257128cd8096a3d2496d1c4203276226e5c5",
+  "testScriptSha256": "87e3294e9b0b2d0005d5deb86ea2e4ae84bc1e998f402a5ceffbc88e85608edd",
+  "helperSha256": "480716fb1eb8632fb38ce8bca10ff6404e40d20b240d05ea1f32abdad6aff4e0",
+  "ownerDecisionRequired": false,
+  "productionApplicationVerified": false,
+  "blockingCriticalOrHighFindings": [],
+  "verified": [
+    "Only the actor permission expression changes; target equality and attribution remain",
+    "16/16 isolated SQL tests and protected administrative contract pass",
+    "Exact recovery and function metadata preservation demonstrated",
+    "Release helper pins sources and requires review, merge and successful CI before apply"
+  ],
+  "limitations": [
+    "Historical trigger selector lacks SID predicate; cross-SID is denied at PREPARE in the tested route",
+    "Trigger serves all program_requests; writer-specific permissions are unchanged",
+    "Local test requires the existing isolated PostgreSQL laboratory",
+    "No real production request was created",
+    "WORK_QUEUE_HISTORY.md is absent; no claim of rereading every historical governance entry"
+  ]
+}

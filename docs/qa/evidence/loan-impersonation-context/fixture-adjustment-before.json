@@ -1,0 +1,471 @@
+{
+  "startedAt": "2026-11-11T02:53:08.873Z",
+  "status": "FAIL",
+  "scope": "LOCAL_SYNTHETIC_ONLY",
+  "checks": [
+    {
+      "name": "One isolated cluster and current captured authorization/writer definitions",
+      "status": "PASS",
+      "ms": 36263,
+      "detail": {
+        "reusedCluster": false,
+        "capturedCurrentDefinitions": 15,
+        "syntheticBank": true
+      }
+    },
+    {
+      "name": "BEFORE: valid permitted actor and nonadmin target reproduce 42501 at COMPLETE bank writer trigger",
+      "status": "PASS",
+      "ms": 180,
+      "detail": {
+        "status": "REPRODUCED_FAILURE",
+        "code": "42501",
+        "message": "IMPERSONATION_CONTEXT_INVALID",
+        "phase": "COMPLETE",
+        "postgresContext": "PL/pgSQL function public.capture_program_request_impersonation() line 7 at RAISE\nSQL statement \"insert into public.program_requests(\n    actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,\n    numero_control,program_id,program_item_id,request_type,status,quantity,notes,signature_data,terms_accepted,\n    terms_version_id,source_context,financial_processing_status,idempotency_key,requested_amount,requested_term,\n    requested_term_semantics,financial_submission_snapshot\n  ) values(\n    p_actor_real_auth_user_id,p_affiliate_id,case when v_ctx.id is null then null else p_affiliate_id end,v_ctx.id,v_ctx.reason,\n    v_affiliate.numero_control,'prestamo',v_item.id,'quote','requires_financial_processing',1,\n    left(nullif(btrim(coalesce(p_notes,'')),''),2000),p_signature_data,true,p_terms_version_id,\n    jsonb_build_object('source','sutiapp','financial_confirmation','SUPABASE_REVALIDATED','assisted',v_ctx.id is not null),\n    'pending',p_idempotency_key,p_amount,p_term,btrim(p_term_semantics),v_submission\n  ) returning *\"\nPL/pgSQL function public.create_validated_financial_program_request_bank_required(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb) line 102 at SQL statement\nPL/pgSQL function public.create_validated_financial_program_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb) line 15 at RETURN\nSQL statement \"select to_jsonb(public.create_validated_financial_program_request(p_actor_real_auth_user_id => ($1->>'p_actor_real_auth_user_id')::uuid, p_affiliate_id => ($1->>'p_affiliate_id')::uuid, p_impersonation_session_id => ($1->>'p_impersonation_session_id')::uuid, p_program_item_id => ($1->>'p_program_item_id')::uuid, p_notes => ($1->>'p_notes')::text, p_signature_data => ($1->>'p_signature_data')::text, p_terms_version_id => ($1->>'p_terms_version_id')::uuid, p_document_ids => (select array_agg(v::uuid) from jsonb_array_elements_text($1->'p_document_ids') v), p_idempotency_key => ($1->>'p_idempotency_key')::uuid, p_amount => ($1->>'p_amount')::numeric, p_term => ($1->>'p_term')::integer, p_term_semantics => ($1->>'p_term_semantics')::text, p_expected_profile_version => ($1->>'p_expected_profile_version')::integer, p_financial_submission_snapshot => ($1->>'p_financial_submission_snapshot')::jsonb))\"\nPL/pgSQL function public.complete_document_financial_submission(uuid,jsonb) line 50 at EXECUTE",
+        "requestsCreated": 0
+      }
+    },
+    {
+      "name": "Forward migration changes only trigger body and preserves metadata, bindings and rows",
+      "status": "PASS",
+      "ms": 15,
+      "detail": {
+        "onlyExactPermissionExpressionChanged": true,
+        "allPgProcMetadataPreserved": true,
+        "allBindingsPreserved": true,
+        "businessRowsUnchanged": true
+      }
+    },
+    {
+      "name": "AFTER: own bank loan remains valid and idempotent",
+      "status": "PASS",
+      "ms": 572,
+      "detail": {
+        "actualBankWriter": true,
+        "own": true,
+        "targetHasAuth": true,
+        "actorAndTargetPreserved": true,
+        "assistanceMetadataPreserved": false,
+        "folioPresent": true,
+        "oneRequestAfterReplay": true,
+        "oneOriginalDocumentEvidence": true,
+        "bankSnapshotPreserved": true,
+        "amount": 1000,
+        "term": 6
+      }
+    },
+    {
+      "name": "AFTER: assisted bank loan for ordinary authenticated nonadmin preserves attribution and idempotency",
+      "status": "PASS",
+      "ms": 167,
+      "detail": {
+        "actualBankWriter": true,
+        "own": false,
+        "targetHasAuth": true,
+        "actorAndTargetPreserved": true,
+        "assistanceMetadataPreserved": true,
+        "folioPresent": true,
+        "oneRequestAfterReplay": true,
+        "oneOriginalDocumentEvidence": true,
+        "bankSnapshotPreserved": true,
+        "amount": 1000,
+        "term": 6
+      }
+    },
+    {
+      "name": "AFTER: assisted bank loan for nonadmin without Auth remains valid",
+      "status": "PASS",
+      "ms": 139,
+      "detail": {
+        "actualBankWriter": true,
+        "own": false,
+        "targetHasAuth": false,
+        "actorAndTargetPreserved": true,
+        "assistanceMetadataPreserved": true,
+        "folioPresent": true,
+        "oneRequestAfterReplay": true,
+        "oneOriginalDocumentEvidence": true,
+        "bankSnapshotPreserved": true,
+        "amount": 1000,
+        "term": 6
+      }
+    },
+    {
+      "name": "Shared trigger denies another target and active admin lacking the impersonation permission",
+      "status": "PASS",
+      "ms": 42,
+      "detail": {
+        "mismatchedTargetDenied": true,
+        "activeActorAndTargetAdminsWithoutPermissionDenied": true,
+        "temporaryTriggerCallsOnly": true,
+        "zeroRows": true
+      }
+    },
+    {
+      "name": "DENY: actor permission revoked creates no request, evidence or bank snapshot",
+      "status": "PASS",
+      "ms": 42,
+      "detail": {
+        "prepareDenied": true,
+        "prepareCode": "DOCUMENT_NOT_CURRENT",
+        "completeDenied": true,
+        "completeCode": "FINANCIAL_DOCUMENT_CONTEXT_DENIED",
+        "zeroBusinessWrites": true,
+        "originalStoredClaimsUnmodified": true
+      }
+    },
+    {
+      "name": "DENY: actor assignment disabled creates no request, evidence or bank snapshot",
+      "status": "FAIL",
+      "error": "new row for relation \"admin_assignments\" violates check constraint \"admin_assignments_revocation_coherence_check\"",
+      "code": "23514",
+      "context": null
+    }
+  ],
+  "sources": {
+    "scripts/test-document-flow-surgical-sql.cjs": "3ea2814a7e466f462c35177d62f5f21409a7c3d080fa0228f61507107c84a274",
+    "scripts/fixtures/loan-impersonation-context-before.json": "094d885f1dc2e563043eed661b0684224e42a21449dcc3f1febbc9302b1c8372",
+    "supabase/functions/_shared/document-integration.mjs": "b88f727167b199c1250e68fa936ce78be71d6263a7abc51bded094f72fff35e1",
+    "supabase/migrations/20261111000100_loan_impersonation_actor.sql": "d1a055ab71e5ec50ef1e67b7f060f8a3c747d64bc6acfaae54d414ed75a10b9b",
+    "supabase/recovery/20261111000100_loan_impersonation_actor.sql": "4e81a53d48f51880c4ee9aff4df7ba14df239375864eb3403e6253651c2b003a"
+  },
+  "limitations": [
+    "Historical schema-only restore aligned with 15 captured current function definitions; not a complete live schema certification.",
+    "Auth, users, bank details, documents, financial criteria and requests are synthetic. Storage is loopback HTTP.",
+    "Real SQL writer, bank-required writer, document byte verification and finalizer execute. No real financial submission is claimed.",
+    "Session-ID mismatch is rejected by the full authorization path; this does not claim the historical trigger selector alone checks session ID."
+  ],
+  "bootstrap": {
+    "startedAt": "2026-11-11T02:53:08.882Z",
+    "status": "RUNNING",
+    "scope": "LOCAL_SYNTHETIC_ONLY",
+    "checks": [],
+    "sources": {
+      ".tmp/document-architecture-lab/catalog/schema.sql": "1626e120c05da60e9ec394246f180df714d6f60131fe663fb20a4121fadcda3d",
+      ".tmp/document-flow-surgical/supabase/migrations/20261109000100_documentary_version_integrity.sql": "92c5bac88806b7f90ede34530b662d813fcfceeae2c0e98c3de6b48b837ad5c9",
+      ".tmp/document-flow-surgical/supabase/migrations/20261109000200_documentary_legacy_file_access.sql": "aefa34afb0ffe46686892def3a80a89633c0693bd5178d42bd29d7df2c30d22e",
+      ".tmp/document-flow-surgical/supabase/migrations/20261109000300_loan_document_submission.sql": "1e02dfe5590d9321e0c07b5821232b1698102c3e2e326f0e602c1b9a39d6a03a",
+      ".tmp/document-flow-surgical/scripts/fixtures/document-100mb-before.json": "431f260a3835886df2d858124d3ebdfbfbc1b4ffa184d2c939b5253dab6f40e0",
+      ".tmp/document-flow-surgical/supabase/migrations/20261109000400_document_100mb.sql": "3ad30c67c791dec134012efa67ec1779e214817de605a0f081fa014f510e5c73",
+      "scripts/document-lab/phase2-fixtures.cjs": "f82466ed30822f1ca940a6127c1bc19f88ee3435940b712c5535e3fbca9e38cc"
+    },
+    "limitations": [
+      "Schema-only catalog is historical; this does not attest current production schema.",
+      "Synthetic users, sessions, permissions, documents and financial criteria are not real accounts.",
+      "The real financial SQL writer and Edge orchestration execute; Storage transport is a loopback synthetic HTTP server.",
+      "No financial equivalence, production upload performance, mobile behavior or full UI proof is claimed."
+    ],
+    "safety": {
+      "host": "127.0.0.1",
+      "database": "document_lab_impersonation",
+      "freshCluster": true,
+      "existingDatabaseAccess": false,
+      "productionRowsImported": 0,
+      "syntheticStorage": true,
+      "externalFetchBlocked": true,
+      "clusterStopped": false
+    },
+    "schema": {
+      "tables": "306",
+      "triggers": "266",
+      "policies": "331"
+    },
+    "emptyBeforeFixtures": {
+      "affiliates": "0",
+      "requests": "0",
+      "users": "0"
+    },
+    "exactPredecessors": [
+      {
+        "signature": "save_document_type_configuration(jsonb,text)",
+        "definitionSha256": "a82bef0fbbdbb346458938cc20f97c49723e35ec8ff252e06066b9a4f7273f8c"
+      },
+      {
+        "signature": "prepare_document_submission(uuid,text,jsonb)",
+        "definitionSha256": "14e1e7f9d01c58cf56891d58c50cd53d0327b7cb18d33665a79fb05ddbe8588f"
+      },
+      {
+        "signature": "complete_document_financial_submission(uuid,jsonb)",
+        "definitionSha256": "7a190c0c83ca919c16dc682644f623678da629c06f0c01a4a066a2ba36b228ab"
+      },
+      {
+        "signature": "prepare_document_operation(uuid,text,uuid,uuid,text,bigint,text,uuid,text,text)",
+        "definitionSha256": "b125a54a68d0de145eb083b2a9be2875589085a364a461a2aa6ef94e6ad6792d"
+      },
+      {
+        "signature": "complete_document_submission(uuid,jsonb)",
+        "definitionSha256": "9aa2ec1afe0960781c67d9ebfdc2c202926e0183e8af1a660236ecaca99dd971"
+      }
+    ],
+    "fixture": {
+      "syntheticOnly": true,
+      "affiliateCount": 2,
+      "authUserCount": 3,
+      "financialRules": 1,
+      "documentTypes": 1,
+      "history": "synthetic empty authoritative publication",
+      "accountNumbersFromProduction": []
+    }
+  },
+  "reusedCluster": false,
+  "safety": {
+    "host": "127.0.0.1",
+    "database": "document_lab_impersonation",
+    "oneCluster": true,
+    "productionRowsImported": 0,
+    "externalFetchBlocked": true,
+    "businessCasesRolledBack": true,
+    "clusterStopped": true
+  },
+  "capturedFunctions": [
+    {
+      "signature": "admin_actor_can_impersonate()",
+      "sha256": "557aa90805eeca843a562ea3dc4a11fc05ed69e93d89a41c031d36ebdacaae1f"
+    },
+    {
+      "signature": "capture_program_request_impersonation()",
+      "sha256": "f103b674cd231e5ddb92f77da93d0b81dee0a789f8c65b78a659b5906a3dc970"
+    },
+    {
+      "signature": "complete_document_financial_submission(uuid,jsonb)",
+      "sha256": "3cfca36bdabe6e78eed73b2efb8b24f4a465576e2cef78ec1afd5c725cb0db0c"
+    },
+    {
+      "signature": "create_validated_financial_program_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "sha256": "9e562cb265e64f6517793c286e50b49fe5c7a95362187e70b675e66226be7a45"
+    },
+    {
+      "signature": "create_validated_financial_program_request_bank_required(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "sha256": "e45df4f640b20b3fe739cf7eb8da04b9f2d2b3abf046ade265c4c722dbebf819"
+    },
+    {
+      "signature": "create_validated_financial_program_request_v1_engine(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb)",
+      "sha256": "89defaf0aeb3f758d044e80256202e3d407a5de7ae98e45d2d460d5a356d75e3"
+    },
+    {
+      "signature": "get_effective_affiliate_id()",
+      "sha256": "74068654e219db87a741ed4d4c21eb145a9df7d16d2f131bdc8d6740f71b71b7"
+    },
+    {
+      "signature": "get_impersonation_context()",
+      "sha256": "7e0a6f519d9397b5f1c2981e80b29bb0cd457a98c1d36cf49ab941512dd6382a"
+    },
+    {
+      "signature": "has_admin_permission(text)",
+      "sha256": "f04dba6fc899da5bd5b210bb9376897e9e206e6a7715ed259f7a7b7212855cc1"
+    },
+    {
+      "signature": "is_active_admin()",
+      "sha256": "8e2878a7600f49a86613d0db1ee5570a73bd5bd79f3a76b689ca32022ae6c7e1"
+    },
+    {
+      "signature": "prepare_document_submission(uuid,text,jsonb)",
+      "sha256": "68d62d759fda3d0183f3803a7ba634f39f4a54bb0ccd644d8b8a0dbd4515a957"
+    },
+    {
+      "signature": "admin_support_private.context()",
+      "sha256": "4a20c2ee63fe732b7c8ca942fb4ccdca9872ce4f02b8fa06172298944d3dd5b7"
+    },
+    {
+      "signature": "admin_support_private.has_admin_permission(uuid,text)",
+      "sha256": "264e09a86dcea3cdcf7e274accdf5096c907ce332162426e2c5ac3e9125ed92c"
+    },
+    {
+      "signature": "admin_support_private.is_active_admin(uuid)",
+      "sha256": "9d96a5bfac10bdd447edb32685a66afff1d985d443874d077e23f8d6c72ed638"
+    },
+    {
+      "signature": "document_integration_private.session_required()",
+      "sha256": "aaf35b2e56baaba9b0b4ade16b7fb8a24fae5ec990d9fc880bc0f64a417eba62"
+    }
+  ],
+  "before": {
+    "status": "REPRODUCED_FAILURE",
+    "code": "42501",
+    "message": "IMPERSONATION_CONTEXT_INVALID",
+    "phase": "COMPLETE",
+    "postgresContext": "PL/pgSQL function public.capture_program_request_impersonation() line 7 at RAISE\nSQL statement \"insert into public.program_requests(\n    actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,\n    numero_control,program_id,program_item_id,request_type,status,quantity,notes,signature_data,terms_accepted,\n    terms_version_id,source_context,financial_processing_status,idempotency_key,requested_amount,requested_term,\n    requested_term_semantics,financial_submission_snapshot\n  ) values(\n    p_actor_real_auth_user_id,p_affiliate_id,case when v_ctx.id is null then null else p_affiliate_id end,v_ctx.id,v_ctx.reason,\n    v_affiliate.numero_control,'prestamo',v_item.id,'quote','requires_financial_processing',1,\n    left(nullif(btrim(coalesce(p_notes,'')),''),2000),p_signature_data,true,p_terms_version_id,\n    jsonb_build_object('source','sutiapp','financial_confirmation','SUPABASE_REVALIDATED','assisted',v_ctx.id is not null),\n    'pending',p_idempotency_key,p_amount,p_term,btrim(p_term_semantics),v_submission\n  ) returning *\"\nPL/pgSQL function public.create_validated_financial_program_request_bank_required(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb) line 102 at SQL statement\nPL/pgSQL function public.create_validated_financial_program_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb) line 15 at RETURN\nSQL statement \"select to_jsonb(public.create_validated_financial_program_request(p_actor_real_auth_user_id => ($1->>'p_actor_real_auth_user_id')::uuid, p_affiliate_id => ($1->>'p_affiliate_id')::uuid, p_impersonation_session_id => ($1->>'p_impersonation_session_id')::uuid, p_program_item_id => ($1->>'p_program_item_id')::uuid, p_notes => ($1->>'p_notes')::text, p_signature_data => ($1->>'p_signature_data')::text, p_terms_version_id => ($1->>'p_terms_version_id')::uuid, p_document_ids => (select array_agg(v::uuid) from jsonb_array_elements_text($1->'p_document_ids') v), p_idempotency_key => ($1->>'p_idempotency_key')::uuid, p_amount => ($1->>'p_amount')::numeric, p_term => ($1->>'p_term')::integer, p_term_semantics => ($1->>'p_term_semantics')::text, p_expected_profile_version => ($1->>'p_expected_profile_version')::integer, p_financial_submission_snapshot => ($1->>'p_financial_submission_snapshot')::jsonb))\"\nPL/pgSQL function public.complete_document_financial_submission(uuid,jsonb) line 50 at EXECUTE",
+    "requestsCreated": 0
+  },
+  "afterDefinitionSha256": "f405830f63a8e9c0870fa2ab5320b5df1f57c69444c3100a3a8445caa72a32a6",
+  "error": {
+    "message": "new row for relation \"admin_assignments\" violates check constraint \"admin_assignments_revocation_coherence_check\"",
+    "code": "23514",
+    "context": null,
+    "stack": "error: new row for relation \"admin_assignments\" violates check constraint \"admin_assignments_revocation_coherence_check\"\n    at C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\document-architecture-lab\\deps\\node_modules\\pg\\lib\\client.js:545:17\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\document-flow-surgical\\scripts\\test-loan-impersonation-context.cjs:155:42\n    at async C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\document-flow-surgical\\scripts\\test-loan-impersonation-context.cjs:167:3\n    at async transaction (C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\document-flow-surgical\\scripts\\test-loan-impersonation-context.cjs:24:93)\n    at async test (C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\document-flow-surgical\\scripts\\test-loan-impersonation-context.cjs:23:73)\n    at async main (C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\document-flow-surgical\\scripts\\test-loan-impersonation-context.cjs:162:43)\n    at async C:\\Users\\david\\Downloads\\SutiApp\\.tmp\\document-flow-surgical\\scripts\\test-loan-impersonation-context.cjs:180:16"
+  },
+  "completedAt": "2026-11-11T02:53:55.626Z",
+  "scriptSha256": "c68d3b0eada66e1f1a60bd37f0eb6ffdb88a915f08a736c2921ecf6eb54026a2",
+  "rpcTrace": [
+    {
+      "role": "authenticated",
+      "name": "prepare_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "get_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "get_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_operation",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "admin_actor_can_impersonate",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "is_active_admin",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "get_effective_affiliate_id",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "FAILED",
+      "code": "42501",
+      "message": "IMPERSONATION_CONTEXT_INVALID",
+      "context": "PL/pgSQL function public.capture_program_request_impersonation() line 7 at RAISE\nSQL statement \"insert into public.program_requests(\n    actor_real_auth_user_id,affiliate_id,usuario_contexto_affiliate_id,impersonation_session_id,impersonation_reason,\n    numero_control,program_id,program_item_id,request_type,status,quantity,notes,signature_data,terms_accepted,\n    terms_version_id,source_context,financial_processing_status,idempotency_key,requested_amount,requested_term,\n    requested_term_semantics,financial_submission_snapshot\n  ) values(\n    p_actor_real_auth_user_id,p_affiliate_id,case when v_ctx.id is null then null else p_affiliate_id end,v_ctx.id,v_ctx.reason,\n    v_affiliate.numero_control,'prestamo',v_item.id,'quote','requires_financial_processing',1,\n    left(nullif(btrim(coalesce(p_notes,'')),''),2000),p_signature_data,true,p_terms_version_id,\n    jsonb_build_object('source','sutiapp','financial_confirmation','SUPABASE_REVALIDATED','assisted',v_ctx.id is not null),\n    'pending',p_idempotency_key,p_amount,p_term,btrim(p_term_semantics),v_submission\n  ) returning *\"\nPL/pgSQL function public.create_validated_financial_program_request_bank_required(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb) line 102 at SQL statement\nPL/pgSQL function public.create_validated_financial_program_request(uuid,uuid,uuid,uuid,text,text,uuid,uuid[],uuid,numeric,integer,text,integer,jsonb) line 15 at RETURN\nSQL statement \"select to_jsonb(public.create_validated_financial_program_request(p_actor_real_auth_user_id => ($1->>'p_actor_real_auth_user_id')::uuid, p_affiliate_id => ($1->>'p_affiliate_id')::uuid, p_impersonation_session_id => ($1->>'p_impersonation_session_id')::uuid, p_program_item_id => ($1->>'p_program_item_id')::uuid, p_notes => ($1->>'p_notes')::text, p_signature_data => ($1->>'p_signature_data')::text, p_terms_version_id => ($1->>'p_terms_version_id')::uuid, p_document_ids => (select array_agg(v::uuid) from jsonb_array_elements_text($1->'p_document_ids') v), p_idempotency_key => ($1->>'p_idempotency_key')::uuid, p_amount => ($1->>'p_amount')::numeric, p_term => ($1->>'p_term')::integer, p_term_semantics => ($1->>'p_term_semantics')::text, p_expected_profile_version => ($1->>'p_expected_profile_version')::integer, p_financial_submission_snapshot => ($1->>'p_financial_submission_snapshot')::jsonb))\"\nPL/pgSQL function public.complete_document_financial_submission(uuid,jsonb) line 50 at EXECUTE"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "FAILED",
+      "code": "42501",
+      "message": "DOCUMENT_NOT_CURRENT",
+      "context": "PL/pgSQL function public.prepare_document_submission(uuid,text,jsonb) line 27 at RAISE"
+    },
+    {
+      "role": "service_role",
+      "name": "complete_document_financial_submission",
+      "status": "FAILED",
+      "code": "42501",
+      "message": "FINANCIAL_DOCUMENT_CONTEXT_DENIED",
+      "context": "PL/pgSQL function public.complete_document_financial_submission(uuid,jsonb) line 11 at RAISE"
+    },
+    {
+      "role": "authenticated",
+      "name": "prepare_document_submission",
+      "status": "SUCCEEDED"
+    }
+  ]
+}

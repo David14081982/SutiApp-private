@@ -1,0 +1,12 @@
+{
+  "command": "node scripts/test-admin-access-protected-contract.js",
+  "exitCode": 0,
+  "status": "PASS",
+  "protected_contract": true,
+  "protected_sha": "b8c1f6c0057dabded90804ffadd5bd012fb41a1a",
+  "migrations": 3,
+  "invariants": 10,
+  "focused_static": true,
+  "global_suites": "NOT_EXECUTED",
+  "production_data_change": false
+}

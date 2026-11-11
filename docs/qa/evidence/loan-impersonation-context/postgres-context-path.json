@@ -1,0 +1,43 @@
+{
+  "observedAt": "2026-11-11T02:42:11.371Z",
+  "window": {
+    "start": "2026-11-11T00:39:28.461Z",
+    "end": "2026-11-11T02:39:28.461Z"
+  },
+  "http": 200,
+  "status": "PASS",
+  "query": "select timestamp,arrayFilter(k -> position(k,'context')>0,mapKeys(log_attributes)) as context_keys,arrayMap(k -> extractAll(log_attributes[k],'(?:function )([A-Za-z_][A-Za-z0-9_.]{0,120})'),arrayFilter(k -> position(k,'context')>0,mapKeys(log_attributes))) as context_functions from logs where source='postgres_logs' and position(event_message,'IMPERSONATION_CONTEXT_INVALID')>0 order by timestamp desc limit 20",
+  "rows": [
+    {
+      "context_functions": [
+        [
+          "public.capture_program_request_impersonation",
+          "public.create_validated_financial_program_request_bank_required",
+          "public.create_validated_financial_program_request",
+          "public.complete_document_financial_submission"
+        ]
+      ],
+      "context_keys": [
+        "parsed.context"
+      ],
+      "timestamp": "2026-11-11T02:35:05.714000"
+    },
+    {
+      "context_functions": [
+        [
+          "public.capture_program_request_impersonation",
+          "public.create_validated_financial_program_request_bank_required",
+          "public.create_validated_financial_program_request",
+          "public.complete_document_financial_submission"
+        ]
+      ],
+      "context_keys": [
+        "parsed.context"
+      ],
+      "timestamp": "2026-11-11T02:34:31.859000"
+    }
+  ],
+  "productionWrites": 0,
+  "userRowsRead": 0,
+  "functionInvocations": 0
+}

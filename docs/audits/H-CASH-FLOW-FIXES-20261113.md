@@ -162,3 +162,26 @@ El candidato real detecto y corrigio registeredAmount ausente en otros descuento
 Build PASS. 86 tests JS PASS en checkout aislado y 20 checks SQL PASS. Navegador autenticado con fuentes reales: 1,800 posiciones mensuales panel/Excel y 124,347 registros de detalle coinciden; 12,232 cuotas originales verificadas, cero mocks financieros/escrituras/errores JS. RPC instalado con guarda de hash: 40919970206e49e46616e5b3af842842 -> c62e10f905af84e0db2efa076b53eff8. Owner, OID, ACL, search_path y timeout conservados. No se necesita redeploy Edge: index.ts retorna sourceSnapshot:true y el worker ejecuta la proyeccion.
 Registry del checkout tenia desfase heredado de publicaciones documentales anteriores. Se actualiza el indice derivado desde archivos reales, sin editar esos archivos ni incorporar cambios ajenos del workspace. No cambia el generador; prueba global del Registry NOT APPLICABLE para este ajuste focal; se verifica freshness.
 SUTIAPP ARCHITECT REVIEW: APPROVED para activacion autorizada, como fase separada de revision en esta sesion. Evidencia nueva: publication-preflight.json, browser-live-candidate.json, reader-applied.json, release-unit-tests.txt y release-sql-tests.txt. Permisos y autoridades conservados; datos historicos intactos. Owner decision: NO. RESPONSE TO CODEX: hacer commit/push del paquete permitido, esperar Pages y verificar hash, pantalla y descarga productivos; no ampliar alcance ni modificar datos financieros.
+
+
+## Cierre de publicacion y readback productivo
+La seccion presente sustituye los estados locales/preparados anteriores. Commit implementacion: `00d766dea1f4cd4f31d1398c63ec78c00380beca`, push a main completado. Pages run `43490198472` SUCCESS, incluyendo Auth, contrato de solicitudes, build y verificacion productiva. Version publica `2026111303` en https://sutiapp.com/.
+
+Readback real sin overlay ni mocks: bundle/worker/SW coinciden por SHA-256. Panel y descarga Excel coinciden en 1,800 celdas mensuales y 124,347 registros de detalle; 20,851 fechas PV2 son fechas numericas Excel; 68 celdas conservan texto Por conciliar. El lector devuelve los 228 retiros historicos: 195 totales, 31 parciales y 2 sin tipo acreditado. No se infiere tipo para esos dos registros.
+
+```text
+H-CASH-FLOW-FIXES-20261113 RESULT
+Status: PASS - implementado, commit/push y publicado; lectura productiva verificada.
+Files changed: 47 archivos del commit focal; cierre adicional de evidencia/verificador y Registry derivado.
+Source-of-truth verdict: SAFE; Google PV2/solicitudes, Supabase Ahorro/Inversores preservados.
+Invariant verdict: PASS; trazabilidad, identidad C, desconocido distinto de cero, sin escrituras financieras.
+Build: PASS; 177 modulos ajenos preservados, artefactos productivos coincidentes.
+Tests: 86 JS, 20 SQL, navegador candidato y produccion, descarga Excel real.
+Security: PASS; Auth/backend, ACL/OID/owner/config del lector conservados, cero secretos publicados.
+Legacy impact: ninguna escritura a fuentes; lectura/interpretacion autorizada.
+Unexpected files changed: ninguno en el paquete publicado; workspace previo conservado.
+Known limitations: anomalias originales de ID/fecha/componentes permanecen; dos retiros sin tipo; no se afirma conciliacion historica integral.
+Evidence: publication-result.json, browser-live-production.json, http-production.json y release-files.json en docs/qa/evidence/cash-flow-fixes-20261113/.
+```
+
+SUTIAPP ARCHITECT REVIEW: APPROVED tras contrastar diff permitido, pruebas, hashes y readback productivo. Revision separada en esta misma sesion, sin segundo agente. Source of truth, Architecture, Security, Data y Legacy: PASS dentro del alcance; datos originales intactos. Owner decision: NO. Next action: cerrar esta H sin iniciar otra ni reparar registros de origen. Response generated for Codex: YES. RESPONSE TO CODEX: entregar commit, URL publicada y limitaciones originales; conservar evidencia y no modificar datos financieros.

@@ -1,0 +1,29 @@
+{
+  "status": "PASS",
+  "implementationCommit": "00d766dea1f4cd4f31d1398c63ec78c00380beca",
+  "pagesRun": "https://github.com/David14081982/SutiApp-private/actions/runs/43490198472",
+  "pagesConclusion": "success",
+  "url": "https://sutiapp.com/",
+  "version": "2026111303",
+  "financialWrites": 0,
+  "sourceRecordsChanged": false,
+  "jsTests": 86,
+  "sqlChecks": 20,
+  "liveBrowser": "PASS",
+  "liveExcelCells": 1800,
+  "liveExcelDetailRows": 124347,
+  "liveExcelTypedDates": 20851,
+  "historicalWithdrawals": {
+    "total": 195,
+    "partial": 31,
+    "unclassified": 2
+  },
+  "knownLimits": [
+    "Source ID/date anomalies remain for source owners",
+    "Two historical withdrawals retain unknown type",
+    "Complete reconciliation of missing historical components is not claimed",
+    "Fable full 13-Nov source snapshot unavailable; new live snapshot verified independently"
+  ],
+  "architectVerdict": "APPROVED",
+  "globalImageRegression": "NOT APPLICABLE: focal generated artifacts; no shared logic changed"
+}

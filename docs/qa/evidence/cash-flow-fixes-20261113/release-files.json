@@ -1,0 +1,195 @@
+{
+  "commit": "00d766dea1f4cd4f31d1398c63ec78c00380beca",
+  "base": "3bad1875f970f58e622af672d6daa487f208065f",
+  "files": [
+    {
+      "file": ".gitattributes",
+      "committedSha256": "7796dc93de090dd18dca47d817ead714ebe41247e974b3925ede9b6b38f30ac4"
+    },
+    {
+      "file": "SutiApp.html",
+      "committedSha256": "0555e32f310538248179b5e96c970e587f7ae1c3756e04dea20566741c0b2656"
+    },
+    {
+      "file": "app/bundle.js",
+      "committedSha256": "bc640e358b7e856df3b9f2fa8eef82fdc9b4dfbead9ee8bfb6472b4b790ba6e7"
+    },
+    {
+      "file": "app/cash-flow-export.js",
+      "committedSha256": "8c811d84a7dcdd4fd9dc7756d1f11421879598a0a26644ade9c9104385d5931b"
+    },
+    {
+      "file": "app/cash-flow-projection-worker.js",
+      "committedSha256": "33c860c890d6f9905144bcae146df45ff030dd8e9e5bc6ab6c4bbef9ec40e4fc"
+    },
+    {
+      "file": "app/cash-flow-report.jsx",
+      "committedSha256": "ab0b36bfc7cb649a09cdc074a1d70e53c0ef6259e728bb1cc2dcea5ace306997"
+    },
+    {
+      "file": "docs/AGENT_CHANGELOG.md",
+      "committedSha256": "7f761c3b49b4aef2c25cce85f85e7b60bcc36d26e2f670c00c9ab2e1b141023a"
+    },
+    {
+      "file": "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+      "committedSha256": "b96f8a12ad24fafde439a292b47620d3bc4026a07a914016995c33d6dc0e87a9"
+    },
+    {
+      "file": "docs/architecture/registry-code.json",
+      "committedSha256": "166575259ea472a994396fdf742288ffb5e99590386184d158219c1fe325c8e6"
+    },
+    {
+      "file": "docs/architecture/registry-data.json",
+      "committedSha256": "d3edbe1e0ab295cbc11d9836b1012607566ac3a79b4a1b633736a2e9de951100"
+    },
+    {
+      "file": "docs/architecture/registry-edges.json",
+      "committedSha256": "378d515a830bd67d210231fde52b32b461dbed79f92d98e8d2d187937ae6058d"
+    },
+    {
+      "file": "docs/architecture/registry-search.json",
+      "committedSha256": "b889c3da100df5380bc56136fcc4c3f1d8e468af9af632a3942d1749df83023a"
+    },
+    {
+      "file": "docs/audits/H-CASH-FLOW-FIXES-20261113.md",
+      "committedSha256": "608de34a4cc448fef4c2280c488de7fdcb54962c8480b950b180fc6810147eec"
+    },
+    {
+      "file": "docs/audits/H-CASH-FLOW-RECONCILIATION-AUDIT-20261113.md",
+      "committedSha256": "9826d509c8dc01d538545d1caa8eafcc49e0a4e57de84b1f32e986111b885555"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/browser-download-tests.txt",
+      "committedSha256": "80e453fa5b93867985d2dfa160bfdb3a23337c9c60ef24846bc9f535785f392e"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/browser-live-candidate.json",
+      "committedSha256": "79476eb4beab71dee5fd04e1c0ba9599c896754dc9c58856926ceae6f705beb8"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/bundle-build.json",
+      "committedSha256": "5f98bf58a33ae767337756e8cb59d1c7c685cb3c2b55c4abff1d6756da05f132"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/changed-files.json",
+      "committedSha256": "e03f7b1a5a3389cd262d913f77fea92570bdee7acdcdd0253fdece304ba72ea9"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/detail.png",
+      "committedSha256": "85916b9da124649c356de45b77c1b22a904e0b306fe80323a640c180f6cacd72"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/fable-matrix-reference.json",
+      "committedSha256": "1d1a82c5748ebc36a2605a2c7fda65ec6ccd18cd904d66f0e37193ca87b94bd5"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/fable-reference-comparison.json",
+      "committedSha256": "492fa0f6818341dd24eafc47b310910882fa9947a72bf63a05df57c9d0197f90"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/pages-build.json",
+      "committedSha256": "9401fce825faa1ea191da54d521872b5afbeea67529e9df00828019649d52ea6"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/publication-preflight.json",
+      "committedSha256": "d234c3ff28f597a99ff0d2055a638b431df18a1b76c72fbd1f20e071a708427f"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/reader-applied.json",
+      "committedSha256": "271db101091b151059ffcac53419c889073f5f0a08d2c75cf983c5c621169ed8"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/real-source-regression.json",
+      "committedSha256": "8ac6360e7376ac5deff31ce074c956c19639acc0ca6bc6dc72880f5ce24b1c4a"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/release-sql-tests.txt",
+      "committedSha256": "dcb661a0546cba627193562b8fa3f7be165d2028d2e84ab4f697d980725ce60e"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/release-unit-tests.txt",
+      "committedSha256": "447dd313d08cb339f91fdb9aaeefef4fff0e51d02306ac41a833be0fa7981133"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/report.png",
+      "committedSha256": "3ba15e35fc7cd50b47b2f4817272bcced30293717c45f353711a662f6ca638f2"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/result.json",
+      "committedSha256": "4efdeed8b55ae19d07ae1ec436417d658595f0717c1a74ce92c12b5229b36fe5"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/source-diff.patch",
+      "committedSha256": "0682bde7ed78326dd70d6abbfe9e9882d0371e0fdec1d14252a59c096c4441fd"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/sql-tests.txt",
+      "committedSha256": "dcb661a0546cba627193562b8fa3f7be165d2028d2e84ab4f697d980725ce60e"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/unit-tests.txt",
+      "committedSha256": "8df9783a040ee7799b5d6f60ab292f18251c6150a915b93b050012481f68f4f9"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/worker-build.json",
+      "committedSha256": "48950c0e0e22dc4dcace789b95a20ef5e34c6ebfff9bcf86f55996d87538e199"
+    },
+    {
+      "file": "docs/qa/evidence/cash-flow-fixes-20261113/worker-ui-tests.txt",
+      "committedSha256": "c7cde330560b1f51ead6dc60fd55b2029a80318209eff98bfb889a8fcedf955d"
+    },
+    {
+      "file": "scripts/test-cash-flow-pv2-source.mjs",
+      "committedSha256": "64569fb833048d1ce9caed42ba73eb81e5194042a07428d35b69849735fd755f"
+    },
+    {
+      "file": "scripts/test-cash-flow-reconciliation-browser.js",
+      "committedSha256": "87cd7404f7a74dae6217202148435c090c14466479c5b0abc888e4619e02eb15"
+    },
+    {
+      "file": "scripts/test-cash-flow-reconciliation-fixes.mjs",
+      "committedSha256": "a30b521227d0450eee853c5b0a5379706810e565693e70d7643b5a42d2fb2c6c"
+    },
+    {
+      "file": "scripts/test-cash-flow-savings-sources-sql.js",
+      "committedSha256": "b4c7923dce333c332c0413ef8ff09d17ed054d7d5edcb12aa19bcdd4815465c6"
+    },
+    {
+      "file": "scripts/test-cash-flow-withdrawal-types-sql.js",
+      "committedSha256": "e3b2596f7d742854b4ff0c52ef1918f164aa2b2198029c9f4ae2021c5a17304a"
+    },
+    {
+      "file": "scripts/verify-cash-flow-reconciliation-browser-live.js",
+      "committedSha256": "5d99216d4ee334ac78deb191bad64e57713410fe5bcaba52b0b72083b1bae22f"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+      "committedSha256": "f10ad220c57b46ce061c53a1580d7da6969710ad9ff0e1adfaf00eb4230a2c2b"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-loans.mjs",
+      "committedSha256": "e30d50a1def4c2495307b93e5a855c7c2aa5a586deb019c5145e2fa5288cb3a9"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-savings.mjs",
+      "committedSha256": "61fcf370216d5a2934e1cbb982e9667477ea6ae509ea82d8f2415f2f2ad120e6"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-source-bases.mjs",
+      "committedSha256": "5687e38d36ad9fdbc21cff9396773b87cddf98480125026de77a3a98d92e098f"
+    },
+    {
+      "file": "supabase/migrations/20261113000100_reports_jc_cash_flow_withdrawal_types.sql",
+      "committedSha256": "fc2dc8a20e8ed9baf842b50458594e62bca0a60c251de8705a15e271492f508f"
+    },
+    {
+      "file": "supabase/recovery/20261113000100_reports_jc_cash_flow_withdrawal_types.sql",
+      "committedSha256": "30134c0c64e5e8b3659b6470fca20f84632a5ba876a200f28abde2fa73122679"
+    },
+    {
+      "file": "sw.js",
+      "committedSha256": "aee560566be095d25e887fac0fc04e27fea20912d230d5c5be650ed4a06a7c07"
+    }
+  ],
+  "scope": "Only focal report implementation, generated artifacts, tests, evidence and derived registry; original dirty workspace preserved"
+}

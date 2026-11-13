@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "version": "2026111303",
+  "checks": [
+    {
+      "file": "app/bundle.js",
+      "status": 200,
+      "sha256": "bc640e358b7e856df3b9f2fa8eef82fdc9b4dfbead9ee8bfb6472b4b790ba6e7"
+    },
+    {
+      "file": "app/cash-flow-projection-worker.js",
+      "status": 200,
+      "sha256": "33c860c890d6f9905144bcae146df45ff030dd8e9e5bc6ab6c4bbef9ec40e4fc"
+    },
+    {
+      "file": "sw.js",
+      "status": 200,
+      "sha256": "aee560566be095d25e887fac0fc04e27fea20912d230d5c5be650ed4a06a7c07"
+    }
+  ]
+}

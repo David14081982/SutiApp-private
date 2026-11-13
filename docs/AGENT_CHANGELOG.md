@@ -1,14 +1,19 @@
 # Bitácora de agentes
 
-## H-DOCUMENT-JPEG-TRAILER-001 — 2026-11-13 — PASS candidate
+## H-DOCUMENT-JPEG-TRAILER-001 — 2026-11-13 — PASS published
 
 Confirmed the deployed parser rejects valid JPEGs with post-EOI phone data.
 The scoped correction drains and hashes all bytes, returns deterministic 422
 content errors, clears terminal client retry handles and differentiates the
 existing alert. No SQL, historical repair, purge, image recompression or redesign.
 30 parser/operation, 30 exact staged-source, 9 client/UI and 9 existing Admin
-checks pass. Global real-image/PDF regression passes on Pages and local candidate.
-Production activation remains separate; see the [audit](audits/H-DOCUMENT-JPEG-TRAILER-001.md).
+checks pass. Global real-image/PDF regression passes on the local candidate and
+final published frontend, with exact bundle SHA-256, refresh and SW comparison.
+document-operation v16 is source-verified, JWT unchanged. Owner explicitly
+authorized commit/push/publication after the initial automatic approval gate.
+Frontend b823c80 / 2026111302 published successfully in Pages run 43473360831;
+Membership contract CI 43473360783 also succeeded. Zero business-data/history
+writes. [Audit and final evidence](audits/H-DOCUMENT-JPEG-TRAILER-001.md).
 
 ## H-LOAN-RESTORE-18-PAYMENTS-001 — 2026-11-09 — PASS local
 

@@ -57,3 +57,53 @@ Response generated for Codex: YES.
 
 ### RESPONSE TO CODEX
 Approve the verified candidate of H-DOCUMENT-JPEG-TRAILER-001. Complete its scoped publication and post-deployment verification if permitted. Preserve the backed-up deployed sources and existing JWT setting, do not redeploy financial-legacy/document-access, do not complete/purge old operations, and do not advance any financial task.
+
+## Activation / publication gate
+The reviewed `document-operation` hotfix was activated successfully as v16 with `verify_jwt=true`; readback verified all four deployed source hashes against the exact staged artifact. Only parser and error classifier changed. See edge-deploy.json. No SQL, Storage object, business row or financial function was written.
+
+Frontend commit: b823c80 on isolated local branch fix/document-jpeg-trailer. The attempt `git push origin HEAD:main` was rejected before execution by automatic approval review: direct main push triggers production publication, and the original fix request did not explicitly authorize that destination. No branch, PR, alternate credentials or indirect execution was used to bypass the rejection. Explicit owner authorization for main/GitHub Pages was requested; until received, the frontend remains unpublished and the full task status is BLOCKED (server root cause fixed; frontend release pending).
+
+Updated architect verdict: BLOCKED only for frontend publication authorization. The verified technical candidate remains approved. This does not authorize queued financial work, historical completion, purge or additional visual changes.
+
+## H-DOCUMENT-JPEG-TRAILER-001 RESULT — pre-authorization state (historical)
+Status: BLOCKED — explicit main/GitHub Pages authorization pending; server correction ACTIVE/PASS.
+Files changed: scoped candidate in b823c80; subsequent audit/changelog and edge-deploy.json, edge-verify.json, global-post-server.json, result.json record the real deployment and approval gate locally.
+Source-of-truth verdict: SAFE.
+Invariant verdict: PASS.
+Build: PASS, bundle 0cb8e23bc2ee89192d8bc6b3db8b97a21e8e7b56c5bd8b7f650afdf05d11f380.
+Tests: 78 focal checks, candidate/global baseline PASS; global post-server deployment PASS with legitimate images/PDF, all required surfaces, refresh and SW comparison. The published frontend is still 2026111301; candidate is 2026111302.
+Security: PASS, exact deployed sources and verify_jwt=true confirmed; no permission or writer changes.
+Legacy impact: NONE.
+Unexpected files changed: NONE; existing unrelated worktrees preserved.
+Known limitations: full closure awaits frontend publication and verification after explicit owner authorization. Old corrupt files still require replacement; no old operation was force-completed or purged. Durable SQL failure telemetry remains outside this minimal fix.
+Evidence: edge-deploy.json, edge-verify.json, global-post-server.json and result.json under docs/qa/evidence/document-jpeg-trailer.
+
+SUTIAPP ARCHITECT REVIEW: BLOCKED (publication authorization only). Owner approval required: YES, for b823c80 to main/GitHub Pages. The technical fix and post-server regression are verified; do not bypass the rejected push or declare frontend activation. Resume only this release after explicit authorization; do not advance another H.
+
+## Explicit publication authorization — continuation
+Owner instruction: "al corregir esto, haz commit push y publica". This explicitly authorizes commit, push to main and GitHub Pages publication of this reviewed correction and its evidence. The prior approval gate is resolved. Scope remains this H; no unrelated worktree changes, financial deployment, historical completion or purge. Continue with remote drift check, push, successful Pages workflow, exact public bundle/cachebuster verification and final global regression.
+
+## H-DOCUMENT-JPEG-TRAILER-001 RESULT — published and verified
+Status: PASS.
+Files changed: four focal source files, generated app/bundle.js, SutiApp.html/sw.js cachebuster, three scoped test/release scripts, this audit, changelog and sanitized evidence; code commit b823c802daed7148c94f41c57609ac3b224a0fe0. Final evidence commit is documentation-only.
+Source-of-truth verdict: SAFE; canonical Supabase document authority unchanged.
+Invariant verdict: PASS; full-byte hash/size, bounds, backend context/permissions and existingRead preserved.
+Build: PASS. Public frontend 2026111302 matches local HTML/service worker and exact bundle SHA-256 0cb8e23bc2ee89192d8bc6b3db8b97a21e8e7b56c5bd8b7f650afdf05d11f380.
+Tests: 78 focal checks PASS. Local candidate, baseline Pages, post-server and final post-publication global regressions PASS. Final run: 240 app assets, 28 existing affiliate images, 226 catalog assets; profile, Admin thumbnails, Loan, Membership, Marketplace, fullscreen/gallery, legitimate PDF, refresh, SW 2026111302 and no-SW comparison all PASS. Zero browser errors. Membership CI run 43473360783 SUCCESS.
+Security: PASS. document-operation v16 deployed source readback matches its exact staged artifact, verify_jwt=true; no new grant/policy/frontend secret or identity change.
+Legacy impact: NONE; financial-legacy/document-access not redeployed, no financial/Google/schema mutation.
+Unexpected files changed: NONE; original dirty worktrees untouched. Isolated worktree contains only this H.
+Known limitations: no production synthetic upload, forced completion, purge, or historical rewrite; affected-user reupload and future incident-rate measurement are not fabricated. Durable SQL failure telemetry was excluded from this minimal fix. Truly corrupted files still require replacement.
+Evidence: publication.json (Pages run 43473360831 SUCCESS and HTTP hashes), contracts-ci.json, global-post-publication.json (exact bundle and SW verified), edge-deploy.json, edge-verify.json, result.json and the focal test receipts in docs/qa/evidence/document-jpeg-trailer.
+
+## SUTIAPP ARCHITECT REVIEW — final
+Task: H-DOCUMENT-JPEG-TRAILER-001, including owner-authorized commit/push/publication.
+Verdict: APPROVED.
+Critical findings: root JPEG parser defect reproduced, narrowly corrected and verified in deployed v16; terminal errors reach the published UI; all required global surfaces pass with real assets. Deployed financial drift was preserved. Explicit later owner authorization resolved the original publication gate.
+Source of truth: SAFE. Architecture: unchanged boundaries. Security: PASS. Data: no business/historical writes. Legacy: NONE. UI: existing sections, controls and layout preserved.
+Owner decision: NO outstanding decision for this H.
+Next action: commit/push the final evidence only and verify that its Pages publication retains the same runtime hashes. Do not rerun broad tests for documentation-only changes without new failure or runtime change; do not advance unrelated financial work.
+Response generated for Codex: YES.
+
+### RESPONSE TO CODEX — final
+Approve H-DOCUMENT-JPEG-TRAILER-001. Publish its final evidence, verify unchanged runtime artifacts, and report completion with the code commit and release. Keep historical recovery/purge outside scope; no additional owner approval is needed for this authorized publication.

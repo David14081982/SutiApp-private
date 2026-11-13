@@ -46,7 +46,9 @@ async function jpeg(r){
  for(;;){let marker=pending;pending=null;
   if(entropy){for(;;){const part=await r.piece(65536);if(!part)fail('TRUNCATED_DOCUMENT');const at=part.indexOf(255);if(at<0)continue;const unread=part.length-at-1;r.offset-=unread;r.consumed-=unread;let m;do{m=(await r.bytes(1))[0];}while(m===255);if(m===0||m>=208&&m<=215)continue;marker=m;entropy=false;break;}}
   if(marker===null){if((await r.bytes(1))[0]!==255)fail('INVALID_JPEG');do{marker=(await r.bytes(1))[0];}while(marker===255);}
-  if(marker===217){if(!frame||!scan)fail('INVALID_JPEG');await r.end();return;}
+  // Phones may append metadata or a secondary image after the primary EOI.
+  // Drain, rather than ignore, it so size and SHA-256 still cover ALL bytes.
+  if(marker===217){if(!frame||!scan)fail('INVALID_JPEG');await r.drain();return;}
   if(marker===216||marker===0||marker>=208&&marker<=215)fail('INVALID_JPEG');
   const n=(await r.bytes(2)).readUInt16BE(0)-2;if(n<0)fail('INVALID_JPEG');
   if([192,193,194].includes(marker)){if(n<6)fail('INVALID_JPEG');const b=await r.bytes(6);pixels(b.readUInt16BE(3),b.readUInt16BE(1));if(b[0]!==8||![1,3,4].includes(b[5])||n!==6+3*b[5])fail('INVALID_JPEG');frame=true;await r.skip(n-6);}

@@ -1,0 +1,84 @@
+{
+  "status": "DRIFT",
+  "productionWrites": 0,
+  "reports": [
+    {
+      "slug": "document-operation",
+      "version": 15,
+      "verify_jwt": true,
+      "artifactSha256": "ebf0416b3bd9384543d96f529a01bbf82a89493e413a2b015808a7d5a6f62c59",
+      "comparisons": [
+        {
+          "file": "document-operation/index.ts",
+          "matchesBaseline": true,
+          "deployedSha256": "7a44e773852f8fe875a28c45c2293a9b5813ad8ba9fc3dfe85e861ff4329b3f3",
+          "baselineSha256": "7a44e773852f8fe875a28c45c2293a9b5813ad8ba9fc3dfe85e861ff4329b3f3"
+        },
+        {
+          "file": "_shared/document-stream.mjs",
+          "matchesBaseline": true,
+          "deployedSha256": "579f2f3e2c65333019aabec453bc12d0bf75e9f08f6f4863586320648f6787d8",
+          "baselineSha256": "579f2f3e2c65333019aabec453bc12d0bf75e9f08f6f4863586320648f6787d8"
+        },
+        {
+          "file": "_shared/document-integration.mjs",
+          "matchesBaseline": false,
+          "deployedSha256": "f88048455d310472dc797828c487d16394bf22446a56fe977fa8bb90e3974cfb",
+          "baselineSha256": "07597ce176064d71a5931255ce11e22af6a79c7769c86347f75025cc45b754d4"
+        }
+      ]
+    },
+    {
+      "slug": "document-access",
+      "version": 31,
+      "verify_jwt": true,
+      "artifactSha256": "943bc7c22b95d25c242c1d36f046c4996da9c6230d14b5d40ca5600c291d627b",
+      "comparisons": [
+        {
+          "file": "document-access/index.ts",
+          "matchesBaseline": true,
+          "deployedSha256": "5a8055823f801990c97520e9b0d9739e3ef8c055f4457f24394af9fa7ecdcce6",
+          "baselineSha256": "5a8055823f801990c97520e9b0d9739e3ef8c055f4457f24394af9fa7ecdcce6"
+        },
+        {
+          "file": "_shared/document-stream.mjs",
+          "matchesBaseline": true,
+          "deployedSha256": "579f2f3e2c65333019aabec453bc12d0bf75e9f08f6f4863586320648f6787d8",
+          "baselineSha256": "579f2f3e2c65333019aabec453bc12d0bf75e9f08f6f4863586320648f6787d8"
+        },
+        {
+          "file": "_shared/document-integration.mjs",
+          "matchesBaseline": false,
+          "deployedSha256": "f88048455d310472dc797828c487d16394bf22446a56fe977fa8bb90e3974cfb",
+          "baselineSha256": "07597ce176064d71a5931255ce11e22af6a79c7769c86347f75025cc45b754d4"
+        }
+      ]
+    },
+    {
+      "slug": "financial-legacy",
+      "version": 85,
+      "verify_jwt": true,
+      "artifactSha256": "879f7c0a65e3831e4430787887a9f392e7e6cf3ba1a899d582271b85ca1ca243",
+      "comparisons": [
+        {
+          "file": "financial-legacy/index.ts",
+          "matchesBaseline": false,
+          "deployedSha256": "fbea81b437d64e6ca7de0295d1f33b9c6bdf4471c2a995ab1a8a87314787ce35",
+          "baselineSha256": "e6a8eef4c656129b32fe3cba762fcebfd32bd2411aee30a4da53631abe4aec1e"
+        },
+        {
+          "file": "_shared/document-stream.mjs",
+          "matchesBaseline": true,
+          "deployedSha256": "579f2f3e2c65333019aabec453bc12d0bf75e9f08f6f4863586320648f6787d8",
+          "baselineSha256": "579f2f3e2c65333019aabec453bc12d0bf75e9f08f6f4863586320648f6787d8"
+        },
+        {
+          "file": "_shared/document-integration.mjs",
+          "matchesBaseline": true,
+          "deployedSha256": "07597ce176064d71a5931255ce11e22af6a79c7769c86347f75025cc45b754d4",
+          "baselineSha256": "07597ce176064d71a5931255ce11e22af6a79c7769c86347f75025cc45b754d4"
+        }
+      ]
+    }
+  ]
+}

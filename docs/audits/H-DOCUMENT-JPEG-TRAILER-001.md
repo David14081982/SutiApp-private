@@ -1,0 +1,59 @@
+# H-DOCUMENT-JPEG-TRAILER-001
+
+## PRE-CHANGE AUDIT
+Status: PASS (implementation authorized by owner request to resolve attached incident).
+Baseline: origin/main 3259c8f, isolated worktree .tmp/document-jpeg-fix. Existing dirty worktrees untouched.
+Objective: accept structurally complete JPEGs containing post-EOI phone metadata while verifying every byte; expose deterministic content rejection accurately and discard terminal retry handles.
+Scope/files: supabase/functions/_shared/document-stream.mjs; supabase/functions/_shared/document-integration.mjs; app/document-integration.js; app/screens-documentos.jsx; generated app/bundle.js and release cachebuster SutiApp.html/sw.js; scripts/test-document-jpeg-trailer.mjs; scripts/test-document-upload-errors.cjs; this audit, docs/AGENT_CHANGELOG.md, docs/qa/evidence/document-jpeg-trailer/.
+Outside scope: schema/migrations, historical association repair, orphan purge, image recompression, financial rules, Google, redesign, and unrelated workspace changes. Durable attempts/last_error SQL telemetry from the proposed plan is deferred; it is not needed to correct acceptance or retry semantics.
+Data domain/authority: documentary operations and versions in canonical Supabase (document_lab_integrity.operations, affiliate_documents, private_assets), private Storage bytes. Readers/writers remain DocumentIntegration -> document-operation -> authenticated preparation/context RPCs and service-only completion RPC. Browser pending/sessionStorage holds an opaque retry handle, never document authority.
+APIs: existing PREPARE/COMPLETE response error contract. No new writer, grant, policy, endpoint or identity mapping.
+Invariants: size limit, dimensions, SHA-256 over ALL bytes, immutable originals, authorization and current-version revalidation, existingRead unchanged, no fallback/overwrite/delete. A valid primary JPEG can have uninterpreted appended metadata/secondary image bytes; these bytes remain private original data and are never executed by this parser.
+Risk: shared parser/client across document surfaces requires global image regression on local build and Pages. Corrupt input remains rejected. Operational errors retain retry handles.
+Tests: regression reproducer before fix; chunk boundaries, trailing bytes/secondary JPEG, hash/size/truncation/dimensions/PNG rejection, existingRead, HTTP error contracts, browser recovery/message branches, build and global live image regression.
+Recovery: revert only this H's patch; no data rollback or mutation needed. Publication requires verification of exact deployed source and frontend artifacts.
+Architecture Navigator: current checkout registry STALE (53 existing changes); direct inspection confirms parser, integration, upload UI and SQL authority. No structural dependency/schema/authority change; no registry regeneration required for this behavioral correction.
+
+## SOURCE OF TRUTH / SECURITY / LEGACY
+Source-of-truth verdict: SAFE. Existing canonical authority and writers unchanged; retry handles are discarded on terminal error and cannot establish registration.
+Security: backend still derives actor/context and revalidates operation before service completion. No frontend secret, grant, cross-user authorization change, or public asset conversion.
+Legacy classification: SAFE CHANGE, documentary transport only. No financial calculation, sheet, trigger, balance or request-history writes.
+
+## UI contract
+DocumentRequirementList preserves requirement progress, tiles/list, thumbnails, status badges, select/camera/replace, viewer, loading, navigation, responsive styles and scroll. Only the existing error text changes when content is rejected; no sections or controls added.
+
+## Verification
+Local execution tooling and unpublished logs may be created under this worktree's ignored .tmp directory. Credentials are read from the existing root supabase.env in memory; never copied to artifacts. No database or Storage mutations are authorized by these tests.
+Production source inspection: document-operation v15 and document-access v31 have the exact baseline JPEG parser. Their integration helper differs only in an unused financial wrapper; financial-legacy v85 has additional deployed loan-transfer behavior. Do not redeploy financial-legacy or document-access for this hotfix: their read path uses existingRead and is unchanged. Prepare only document-operation from its own deployed artifact, applying the two exact parser/error hunks and preserving all other bytes. Scoped release tooling: scripts/release-document-jpeg-trailer.cjs; outputs and backup under ignored .tmp, sanitized receipts under this H's evidence. This is the audited release scope, not authority for historical recovery or purge.
+GitHub Pages baseline global regression PASS (all required real-asset surfaces including PDF/refresh/SW). Direct localhost backend reads fail due to allowed-origin policy; candidate regression uses local built public files routed at the allowed app origin, real unmodified backend/Storage, exact bundle hash and corrected upload-function verification after refresh.
+## H-DOCUMENT-JPEG-TRAILER-001 RESULT — verified candidate
+Status: PASS (candidate); production activation pending.
+Files changed: the four focal source files, generated bundle, HTML/SW cachebuster 2026111302, three test/release scripts, this audit, changelog and sanitized evidence. No root workspace file was modified; an initial root build invocation failed syntax validation before any write.
+Source-of-truth verdict: SAFE; canonical Supabase document authority unchanged.
+Invariant verdict: PASS; every byte hashed, declared size and 100MB limit checked, incomplete JPEG/invalid dimensions/PNG CRC still rejected; existingRead unchanged.
+Build: PASS; 179 source modules compiled using Babel 7.29.0. Only document-integration.js/screens-documentos.jsx bundle chunks changed; unrelated chunks preserved. Public artifact build PASS.
+Tests: parser/COMPLETE 30/30; same tests against exact staged Edge sources 30/30; client/error UI 9/9; existing Admin document-confirmation regression 9/9. Baseline reproducer fails for all 12 appended-JPEG cases and incorrect error contracts. Global image regression PASS on Pages and exact local candidate (local bytes at allowed app origin, no backend mocks), legitimate PDF included, refresh and with/without SW PASS.
+Security: backend permissions/JWT/context recheck retained; terminal-error classification tested; only existing authenticated operations can register. No new RLS/grant/secret/browser authority.
+Legacy impact: NONE; no loan financial writer, Google, schema or historic association changes. Deployed financial-legacy v85 deliberately untouched.
+Unexpected files changed: NONE within isolated worktree; ignored tools/backup/site are not public artifacts.
+Known limitations: no live synthetic upload inserted into production; individual screenshot cases not identified; existing orphan operations not completed or purged; optional durable SQL failure telemetry deferred. Candidate tests do not establish production activation or post-deploy incident rate.
+Evidence: docs/qa/evidence/document-jpeg-trailer/{baseline,stream,staged-stream,client,admin-confirmation,build,edge-candidate,edge-bundle,deployed-source-before}.json; global-local.log/global-pages.log; synthetic UI screenshots. All network regression runs are read-only against business data.
+
+## CLAUDE UI PRESERVATION REVIEW
+Screen: shared documentary phase in Loan, Membership and expediente.
+Original/current sections: title, progress, missing chips, document grid/list, existing error alert, origin/camera sheets, thumbnails/viewer, privacy notice.
+Missing sections: NONE. Added sections: NONE.
+Interactions/navigation/visual structure preserved: YES; source diff changes only error branches; real React event tests and global production/candidate surface regression PASS.
+Unauthorized redesign: NO. Verdict: PASS.
+
+## SUTIAPP ARCHITECT REVIEW — candidate
+Task: H-DOCUMENT-JPEG-TRAILER-001, root-cause correction and reviewable release package.
+Verdict: APPROVED for candidate scope; do not describe it as activated.
+Critical findings: deployed parser is the defective baseline; deployed integration/financial source drift exists and is preserved by reconstructing ONLY document-operation from its own artifact. The prepared package changes only parser EOI handling and documentError; no unrelated function body changes. WORK_QUEUE.md concerns a protected financial append and does not authorize test financial writes; WORK_QUEUE_HISTORY.md is absent. Current owner request authorizes this documentary correction, not unrelated queued work.
+Source of truth: unchanged. Architecture: no new dependency/schema/authority. Security: verified byte integrity and backend authority preserved. Data: no rewrite/delete/recovery. Legacy: untouched.
+Owner decision: NO new business/data decision. Production network actions remain subject to environment approval.
+Next action: activate only the validated document-operation package with drift checks; publish only this frontend patch, then verify deployed-source hashes, actual frontend bundle and global image regression. If environment approval rejects publication, report that exact gate without claiming the incident resolved in production.
+Response generated for Codex: YES.
+
+### RESPONSE TO CODEX
+Approve the verified candidate of H-DOCUMENT-JPEG-TRAILER-001. Complete its scoped publication and post-deployment verification if permitted. Preserve the backed-up deployed sources and existing JWT setting, do not redeploy financial-legacy/document-access, do not complete/purge old operations, and do not advance any financial task.

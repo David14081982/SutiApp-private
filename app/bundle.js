@@ -61,7 +61,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
  function enabled(){const c=window.__SUTIAPP_CONFIG__||{};let host='';try{host=new URL(c.supabase&&c.supabase.url).hostname;}catch(_){}return c.documentIntegration==='DOCUMENT_V1'&&/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(c.supabase.url)||c.documentIntegration==='LOCAL_PHASE4'&&['localhost','127.0.0.1'].includes(location.hostname)&&['localhost','127.0.0.1'].includes(host);}
  function context(){const c=window.PrivateResourceDemand.context();if(c!==previous){pending.clear();previous=c;}return c;}
  function checked(before){if(context()!==before)throw Error('DOCUMENT_CONTEXT_CHANGED');}
- async function invoke(name,body){const before=context(),r=await db().functions.invoke(name,{body,timeout:180000});checked(before);if(r.error){let code=r.data&&r.data.error;try{code=code||(await r.error.context.clone().json()).error;}catch(_){}throw Object.assign(Error(code||'DOCUMENT_OPERATION_UNAVAILABLE'),{code:code||'DOCUMENT_OPERATION_UNAVAILABLE'});}return r.data;}
+ async function invoke(name,body){const before=context(),r=await db().functions.invoke(name,{body,timeout:180000});checked(before);if(r.error){let detail=r.data;try{if(!detail?.error)detail=await r.error.context.clone().json();}catch(_){}const code=detail?.error||'DOCUMENT_OPERATION_UNAVAILABLE';throw Object.assign(Error(code),{code,recoverable:detail?.recoverable!==false});}return r.data;}
  async function rpc(name,args){const before=context(),r=await db().rpc(name,args);checked(before);if(r.error)throw r.error;return r.data;}
  async function recoveryKey(parts){
   const auth=window.AffiliateAuth.getState(),session=auth.session||{};let claims;
@@ -90,7 +90,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
   progress('verifying');const result=await invoke('document-operation',{action:'COMPLETE',operation_id:job.id});
   if(result.status!=='COMPLETE'||!result.document||!result.document.id)throw Error('DOCUMENT_REGISTRATION_INCOMPLETE');
   checked(before);pending.delete(key);try{sessionStorage.removeItem(key);}catch(_){}progress('complete');return Object.freeze(result.document);
-  }catch(error){if(error.code==='DOCUMENT_VERSION_CONFLICT'){pending.delete(key);sessionStorage.removeItem(key);}if(error&&typeof error==='object')error.documentPhase=phase;throw error;}
+  }catch(error){if(error.code==='DOCUMENT_VERSION_CONFLICT'||error.recoverable===false){pending.delete(key);try{sessionStorage.removeItem(key);}catch(_){}}if(error&&typeof error==='object')error.documentPhase=phase;throw error;}
  }
  async function submission(name,args){const key=JSON.stringify(['submission',context(),name,args]);let job=pending.get(key);if(!job){job={id:crypto.randomUUID()};pending.set(key,job);}try{const data=await invoke('document-operation',{action:'SUBMIT',operation_id:job.id,function_name:name,arguments:args});return{data,error:null};}catch(error){return{data:null,error};}}
  function withdraw(id,operation,reason){return invoke('document-operation',{action:'WITHDRAW',document_id:id,operation_id:operation||crypto.randomUUID(),reason:reason||'Retiro del expediente'});}
@@ -41104,7 +41104,7 @@ Object.assign(window, {
         if (window.PrivateResourceDemand.context() !== context) return;
         const code = e && (e.code || e.message),
           stage = e && e.documentPhase;
-        setError(type.label + ': ' + (confirmed ? 'el documento quedó guardado; no fue posible actualizar la vista. Vuelve a consultar el expediente.' : code === 'INVALID_DOCUMENT_FILE' ? 'el archivo no tiene un formato o tamaño permitido.' : stage === 'verifying' ? 'no se pudo confirmar el registro. Reintenta para recuperar la misma carga.' : stage === 'uploading' ? 'se interrumpió la transferencia. Selecciona el mismo archivo para reanudarla.' : 'no se pudo completar la carga. Revisa tu conexión e intenta nuevamente.'));
+        setError(type.label + ': ' + (confirmed ? 'el documento quedó guardado; no fue posible actualizar la vista. Vuelve a consultar el expediente.' : code === 'INVALID_DOCUMENT_FILE' ? 'el archivo no tiene un formato o tamaño permitido.' : code === 'INVALID_IMAGE_DIMENSIONS' ? 'la imagen supera las dimensiones permitidas. Selecciona una imagen de menor resolución.' : e && e.recoverable === false ? 'el archivo está dañado o no es compatible. Toma la foto de nuevo o selecciona otro archivo.' : stage === 'verifying' ? 'no se pudo confirmar el registro. Reintenta para recuperar la misma carga.' : stage === 'uploading' ? 'se interrumpió la transferencia. Selecciona el mismo archivo para reanudarla.' : 'no se pudo completar la carga. Revisa tu conexión e intenta nuevamente.'));
       } finally {
         if (window.PrivateResourceDemand.context() === context) setBusy(null);
         selection.current = null;

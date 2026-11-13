@@ -1,0 +1,48 @@
+{
+  "status": "PASS",
+  "isolation": "Local Chromium; actual React/Admin/Workflow sources; synthetic adapters only; no production traffic or PII",
+  "sourceSha256": {
+    "app/admin-affiliates-repository.js": "4760e443816e7d23cbab45c93f8576b0e1e2a5fd16a089d269f983e4fc8b1875",
+    "app/screens-admin-affiliates.jsx": "95b573963595ba795218586b1ea9501d64f5f872de4c31416dd3480e14891f87",
+    "app/document-workflow-repository.js": "b45bd768b8d66ee4935cf000846ad49482f5e87b92ebfdfbb7c496284c68b553"
+  },
+  "cases": [
+    {
+      "name": "repository returns workflow-confirmed original object without a post-write query",
+      "status": "PASS"
+    },
+    {
+      "name": "invalid MIME remains rejected before any upload",
+      "status": "PASS"
+    },
+    {
+      "name": "file selection starts upload automatically and busy prevents a second submit",
+      "status": "PASS"
+    },
+    {
+      "name": "confirmed replacement stays visible when further workbench reads fail; exact predecessor yields next ordinal",
+      "status": "PASS"
+    },
+    {
+      "name": "unknown ordinal read failure does not hide confirmed document or fabricate version one",
+      "status": "PASS"
+    },
+    {
+      "name": "unknown ordinal is filled by separate authorized read without replacing the confirmed row",
+      "status": "PASS"
+    },
+    {
+      "name": "late completion after selecting another affiliate never refreshes or toasts that profile",
+      "status": "PASS"
+    },
+    {
+      "name": "saved callback failure is labelled confirmed and cannot immediately submit the same file again",
+      "status": "PASS"
+    },
+    {
+      "name": "genuine upload failure retains file and existing retry button",
+      "status": "PASS"
+    }
+  ],
+  "pageErrors": []
+}

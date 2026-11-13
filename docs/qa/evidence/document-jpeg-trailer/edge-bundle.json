@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "mode": "bundle",
+  "slug": "document-operation",
+  "version": 15,
+  "verify_jwt": true,
+  "files": [
+    {
+      "file": "document-operation/index.ts",
+      "sha256": "7a44e773852f8fe875a28c45c2293a9b5813ad8ba9fc3dfe85e861ff4329b3f3"
+    },
+    {
+      "file": "_shared/document-integration.mjs",
+      "sha256": "4ee9a4c01657628828bd1f0f52cdcf58743d4088e92c0b99b64c1392b618e1e9"
+    },
+    {
+      "file": "_shared/document-stream.mjs",
+      "sha256": "74e6e86b8ed93820d04463e4e9a8758d81a163d170125f69c179523033e50adc"
+    },
+    {
+      "file": "_shared/document-crc.mjs",
+      "sha256": "f59822c1998c68857c09fe0369a963cc9b46f731e9d411ecf5e91ce600719ffb"
+    }
+  ],
+  "businessDataWrites": 0,
+  "deployments": 0
+}

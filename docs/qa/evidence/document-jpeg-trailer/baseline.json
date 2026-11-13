@@ -1,0 +1,142 @@
+{
+  "status": "FAIL",
+  "syntheticOnly": true,
+  "checks": [
+    {
+      "name": "ordinary JPEG",
+      "status": "PASS"
+    },
+    {
+      "name": "JPEG trailer 0, chunk 1",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 0, chunk 7",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 0, chunk 65536",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 1, chunk 1",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 1, chunk 7",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 1, chunk 65536",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 2, chunk 1",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 2, chunk 7",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 2, chunk 65536",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 3, chunk 1",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 3, chunk 7",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "JPEG trailer 3, chunk 65536",
+      "status": "FAIL",
+      "error": "INVALID_DOCUMENT_TRAILER"
+    },
+    {
+      "name": "trailer participates in hash",
+      "status": "FAIL",
+      "error": "The input did not match the regular expression /BYTE_INTEGRITY_MISMATCH/. Input:\n\n'Error: INVALID_DOCUMENT_TRAILER'\n"
+    },
+    {
+      "name": "declared size excludes trailer",
+      "status": "PASS"
+    },
+    {
+      "name": "declared size exceeds object",
+      "status": "PASS"
+    },
+    {
+      "name": "missing EOI",
+      "status": "PASS"
+    },
+    {
+      "name": "truncated segment",
+      "status": "PASS"
+    },
+    {
+      "name": "EOI without frame/scan",
+      "status": "PASS"
+    },
+    {
+      "name": "oversized dimensions",
+      "status": "PASS"
+    },
+    {
+      "name": "100MB cap unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "PNG CRC rejection unchanged",
+      "status": "PASS"
+    },
+    {
+      "name": "existingRead preserves original formats and verifies hash",
+      "status": "PASS"
+    },
+    {
+      "name": "all deterministic parser errors are 422 terminal",
+      "status": "FAIL",
+      "error": "Expected values to be strictly deep-equal:\n+ actual - expected\n\n  {\n    body: {\n+     error: 'DOCUMENT_OPERATION_UNAVAILABLE',\n+     recoverable: true\n-     error: 'INVALID_DOCUMENT_FILE',\n-     recoverable: false\n    },\n+   status: 409\n-   status: 422\n  }\n"
+    },
+    {
+      "name": "transient byte access remains recoverable",
+      "status": "PASS"
+    },
+    {
+      "name": "permission denial remains 403",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPLETE registers appended JPEG after verification",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n409 !== 200\n"
+    },
+    {
+      "name": "COMPLETE rejects truncation without registration",
+      "status": "FAIL",
+      "error": "Expected values to be strictly equal:\n\n409 !== 422\n"
+    },
+    {
+      "name": "COMPLETE denied before reading bytes",
+      "status": "PASS"
+    },
+    {
+      "name": "COMPLETE context recheck prevents registration",
+      "status": "PASS"
+    }
+  ]
+}

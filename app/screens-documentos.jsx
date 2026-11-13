@@ -49,6 +49,8 @@
         const code=e&&(e.code||e.message),stage=e&&e.documentPhase;
         setError(type.label+': '+(confirmed?'el documento quedó guardado; no fue posible actualizar la vista. Vuelve a consultar el expediente.':code==='INVALID_DOCUMENT_FILE'
           ?'el archivo no tiene un formato o tamaño permitido.'
+          :code==='INVALID_IMAGE_DIMENSIONS'?'la imagen supera las dimensiones permitidas. Selecciona una imagen de menor resolución.'
+          :e&&e.recoverable===false?'el archivo está dañado o no es compatible. Toma la foto de nuevo o selecciona otro archivo.'
           :stage==='verifying'?'no se pudo confirmar el registro. Reintenta para recuperar la misma carga.':stage==='uploading'?'se interrumpió la transferencia. Selecciona el mismo archivo para reanudarla.':'no se pudo completar la carga. Revisa tu conexión e intenta nuevamente.'));
       }finally{
         if(window.PrivateResourceDemand.context()===context)setBusy(null);

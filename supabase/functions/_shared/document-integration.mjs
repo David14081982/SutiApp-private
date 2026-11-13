@@ -14,8 +14,10 @@ async function verifyObject(service,descriptor,verify,options){
 }
 export function documentError(e){
  const text=String(e?.message||'');
+ const rejected=['INVALID_DOCUMENT_FILE','INVALID_DOCUMENT_TRAILER','TRUNCATED_DOCUMENT','INVALID_IMAGE_DIMENSIONS','UNSUPPORTED_MIME','BYTE_INTEGRITY_MISMATCH','INVALID_PNG_CRC','INVALID_PNG_DATA','INVALID_PNG_FILTER','INVALID_PNG_CHUNK','INVALID_PNG','INVALID_JPEG','INVALID_WEBP','INVALID_PDF'].find(x=>text===x);
  const code=['DOCUMENT_VERSION_CONFLICT','IDEMPOTENCY_ARGUMENT_MISMATCH','DOCUMENT_BYTES_UNAVAILABLE','BYTE_INTEGRITY_MISMATCH','VERIFIED_UPLOAD_REQUIRED','EVIDENCE_NOT_SEALED','PHYSICAL_PURGE_DISABLED'].find(x=>text.includes(x));
  const denied=e?.code==='42501'||/DENIED|AUTH_INVALID|AUTH_REQUIRED/.test(text);
+ if(rejected&&!denied)return{status:422,body:{error:rejected,recoverable:false}};
  return {status:denied?403:e?.status||(/INTEGRITY|INVALID_PNG|INVALID_JPEG|INVALID_PDF/.test(text)?422:409),body:{error:denied?'DOCUMENT_CONTEXT_DENIED':code||'DOCUMENT_OPERATION_UNAVAILABLE',recoverable:true}};
 }
 export async function documentOperation(body,user,service,verify){

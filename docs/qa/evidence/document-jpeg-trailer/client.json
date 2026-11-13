@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "checks": [
+    {
+      "name": "terminal error propagation and fresh retry, clone=false",
+      "status": "PASS"
+    },
+    {
+      "name": "terminal error propagation and fresh retry, clone=true",
+      "status": "PASS"
+    },
+    {
+      "name": "transient COMPLETE retry keeps same operation",
+      "status": "PASS"
+    },
+    {
+      "name": "old server without recoverable field preserves retry",
+      "status": "PASS"
+    },
+    {
+      "name": "version conflict resets handle",
+      "status": "PASS"
+    },
+    {
+      "name": "storage cleanup exception cannot mask original error",
+      "status": "PASS"
+    },
+    {
+      "name": "real upload UI: TRUNCATED_DOCUMENT",
+      "status": "PASS"
+    },
+    {
+      "name": "real upload UI: INVALID_IMAGE_DIMENSIONS",
+      "status": "PASS"
+    },
+    {
+      "name": "real upload UI: DOCUMENT_BYTES_UNAVAILABLE",
+      "status": "PASS"
+    }
+  ]
+}

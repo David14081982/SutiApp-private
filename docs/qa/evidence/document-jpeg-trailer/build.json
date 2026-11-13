@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "changedChunks": [
+    "document-integration.js",
+    "screens-documentos.jsx"
+  ],
+  "unrelatedChunksPreserved": true,
+  "bundleSha256": "0cb8e23bc2ee89192d8bc6b3db8b97a21e8e7b56c5bd8b7f650afdf05d11f380",
+  "release": "2026111302"
+}

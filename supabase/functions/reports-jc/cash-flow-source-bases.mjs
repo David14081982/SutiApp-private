@@ -88,7 +88,7 @@ export function buildCashFlowSourceBases({source,savings,investors,approvals,res
  const includedIds=new Set(source.loans.slice(1).filter(r=>loanFund(r[6])).map(r=>text(r[2])));
  for(const r of source.requests.slice(1))if(loanFund(r[4]))includedIds.add(text(r[0]));
  const tables=[
-  googleTable('Base PV2',source.loans,[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,20,25,26,27,28,29,32],r=>loanFund(r[6])||includedIds.has(text(r[2])),[0,11,15,20,32],[1,7,8,9,10,12,13,14,16,25,26,27,28,29]),
+  googleTable('Base PV2',source.loans,[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,20,25,26,27,28,29,32],r=>r.some(v=>v!==''&&v!==null&&v!==undefined),[0,11,15,20,32],[1,7,8,9,10,12,13,14,16,25,26,27,28,29]),
   googleTable('Base Solicitudes',source.requests,[0,1,2,3,4,5,6,7,8,9,10,24],r=>loanFund(r[4])||includedIds.has(text(r[0])),[9],[5,6,7,8]),
   savingsTable(savings,report),investorSourceTable(investors||{},report),loanContractTable(report,resolved,source.loans)
  ];

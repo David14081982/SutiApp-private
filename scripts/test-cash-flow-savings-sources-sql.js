@@ -32,7 +32,10 @@ replace('await db.exec(read(nextMigration));const afterFunction=await metadata()
   const {reconcileSavingsCashFlow}=await import('../supabase/functions/reports-jc/cash-flow-savings.mjs');
   for(const from of ['2026-01','2026-10','2028-01']){
    const savings=await report(from+'-01'),base=buildCashFlow({from,loans:[],savings,consultedAt:'2026-10-30T20:00:00Z'}),before=structuredClone(base.rows.find(r=>r.id==='savings_balance'));
-   const result=reconcileSavingsCashFlow({base,savings});assert.deepEqual(result.rows.find(r=>r.id==='savings_balance'),before);assert(result.savingsSourceTable.rows.length>0);
+   const result=reconcileSavingsCashFlow({base,savings});const after=result.rows.find(r=>r.id==='savings_balance');
+   assert.deepEqual(after.cells.map(c=>c.amount),before.cells.map(c=>c.amount));
+   assert.deepEqual(after.cells.map(c=>c.determinedSubtotal??c.knownAmount),before.cells.map(c=>c.knownAmount));
+   assert(after.cells.every(c=>c.amount!==null||c.status!=='PARTIAL'));assert(result.savingsSourceTable.rows.length>0);
    for(const m of result.savingsBridge.months)if(m.status==='CALCULATED')assert(m.equationValid);
   }
  });

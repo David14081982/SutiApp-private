@@ -1,0 +1,102 @@
+{
+  "files": [
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-consolidated.mjs",
+      "beforeSha256": "dfc02a9bdc015e2ed2b0cd4b127132bea6f5777d5fd117e4d3445e54ea36e435",
+      "afterSha256": "57fc3de38836bcd905af75439a9f90a29eb5cbd82d70a02d563ef50c90bd99e3"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-loans.mjs",
+      "beforeSha256": "32e863514c007db58bb53aaab876eef1131206d6b7f480e361d301b417ff3d39",
+      "afterSha256": "3004219d286bbc3f1849acd8535c201a192f2e1198557bb666741ec3bfe35de2"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-savings.mjs",
+      "beforeSha256": "f178b7d326c3bbab3a939e4c20619dff43c3e9947ea8436da8bf630a5e9bf44a",
+      "afterSha256": "2b5fc0826e06bb6bc2444f3f47a10c30b9cedcb1e4429a868a2163ebfc155f84"
+    },
+    {
+      "file": "supabase/functions/reports-jc/cash-flow-source-bases.mjs",
+      "beforeSha256": "87ff3e2d0a75bb0c13f8ba84d0af1c0ef0f69815b74f73424d0f97bb0b1847b3",
+      "afterSha256": "506a8fa37408148369dd3b4591a10377fc93d3025e0430250154cb3e755ac8b1"
+    },
+    {
+      "file": "app/cash-flow-export.js",
+      "beforeSha256": "7e9dbdfeb9bd28e49885abea7943a01342d563a7bb7392d4e220beb12a51c245",
+      "afterSha256": "66556b2a646ebad53344b1678589b51dd71f423cbcbe3c7554caf4504a276791"
+    },
+    {
+      "file": "app/cash-flow-report.jsx",
+      "beforeSha256": "49dea574d2dcf14d4dc9a4cad04a0b1b972381aab799c8992772c3d22690b385",
+      "afterSha256": "694b106c238e1f97ba6f6355e2e312fe7b1c5341da4b06b36df7a9343119a617"
+    },
+    {
+      "file": "app/cash-flow-projection-worker.js",
+      "beforeSha256": "1e28653ba5a8b8d64e48158cf4423efab3182859ba9bbc42d8f4a57d744603dd",
+      "afterSha256": "48a8269ecaed682246bb6e9c480901a8c31df480b5495c7ca7b60fd6703d1b05"
+    },
+    {
+      "file": "app/bundle.js",
+      "beforeSha256": "1dc83c818a83f63d4d8337d4f5c30511814f92f1da6810a791defbc4d33ca5aa",
+      "afterSha256": "a5c755def58cae4e6b6d94cf3ed362eeed2addad140c0097bf6b936610107e6a"
+    },
+    {
+      "file": "docs/AGENT_CHANGELOG.md",
+      "beforeSha256": "f2c09235c99f40e05850fa2c70e62bd6de5d6d398f90b02fd05d0cd0ff09b92b",
+      "afterSha256": "56fb74bff72db13df4188b5c976f1d354e3842d830fc9ac107e5ab49ac168c05"
+    },
+    {
+      "file": "scripts/test-cash-flow-pv2-source.mjs",
+      "beforeSha256": "20bf99e8c00ca4ced3f259962baf440c14698485d4049c7651f87f093aec8efb",
+      "afterSha256": "27b1ca3d676449552c29fb259f3ec4e06b895cf78dc5052afc8747653d75e001"
+    },
+    {
+      "file": "scripts/test-cash-flow-savings-sources-sql.js",
+      "beforeSha256": "2d29b520b46d3098efddfbce91d46240c0d39b15c3cecf69944e1daf2edac268",
+      "afterSha256": "b4c7923dce333c332c0413ef8ff09d17ed054d7d5edcb12aa19bcdd4815465c6"
+    },
+    {
+      "file": "SutiApp.html",
+      "beforeSha256": "c66223a101a77ecf0997bf5570e7297ed1a86bbbcea9524a09acb24bc5066638",
+      "afterSha256": "1f5cb8a6a7d7053946e46aba731e7dc1ba093dd8e74607dfd6557e125c01b3ce"
+    },
+    {
+      "file": "docs/audits/H-CASH-FLOW-FIXES-20261113.md",
+      "beforeSha256": null,
+      "afterSha256": "71bb1b88af3423b69c2a03121e4a5dbca1d91c885ce1b544c3e3e2f1c7900037"
+    },
+    {
+      "file": "scripts/test-cash-flow-reconciliation-fixes.mjs",
+      "beforeSha256": null,
+      "afterSha256": "bcb58bbfcad5fa48a7b8e810f6d6d91beb23952629ffacf99a7ecf6d94b2f2a9"
+    },
+    {
+      "file": "scripts/test-cash-flow-withdrawal-types-sql.js",
+      "beforeSha256": null,
+      "afterSha256": "e3b2596f7d742854b4ff0c52ef1918f164aa2b2198029c9f4ae2021c5a17304a"
+    },
+    {
+      "file": "scripts/test-cash-flow-reconciliation-browser.js",
+      "beforeSha256": null,
+      "afterSha256": "87cd7404f7a74dae6217202148435c090c14466479c5b0abc888e4619e02eb15"
+    },
+    {
+      "file": "supabase/migrations/20261113000100_reports_jc_cash_flow_withdrawal_types.sql",
+      "beforeSha256": null,
+      "afterSha256": "fc2dc8a20e8ed9baf842b50458594e62bca0a60c251de8705a15e271492f508f"
+    },
+    {
+      "file": "supabase/recovery/20261113000100_reports_jc_cash_flow_withdrawal_types.sql",
+      "beforeSha256": null,
+      "afterSha256": "30134c0c64e5e8b3659b6470fca20f84632a5ba876a200f28abde2fa73122679"
+    }
+  ],
+  "derivedRegistryFiles": [
+    "docs/architecture/SUTIAPP_ARCHITECTURE_REGISTRY.json",
+    "docs/architecture/registry-code.json",
+    "docs/architecture/registry-data.json",
+    "docs/architecture/registry-edges.json",
+    "docs/architecture/registry-search.json"
+  ],
+  "note": "Registry hashes excluded to avoid self-referential indexing; evidence directory is additional output."
+}

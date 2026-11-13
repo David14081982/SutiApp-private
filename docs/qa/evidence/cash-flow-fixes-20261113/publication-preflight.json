@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "baseCommit": "3bad1875f970f58e622af672d6daa487f208065f",
+  "version": "2026111303",
+  "bundleSha256": "bc640e358b7e856df3b9f2fa8eef82fdc9b4dfbead9ee8bfb6472b4b790ba6e7",
+  "workerSha256": "33c860c890d6f9905144bcae146df45ff030dd8e9e5bc6ab6c4bbef9ec40e4fc",
+  "preservedPublishedModules": 177,
+  "jsTests": 86,
+  "sqlChecks": 20,
+  "financialWrites": 0,
+  "edgeDeployment": "NOT APPLICABLE: unchanged sourceSnapshot reader; projection runs in browser worker",
+  "readerApplied": true,
+  "globalImageRegression": "NOT APPLICABLE: focal generated bundle and cachebusters only",
+  "ownerAuthorization": "al terminar los cambios haz commit push y publica"
+}

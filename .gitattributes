@@ -30,3 +30,7 @@ supabase/recovery/20261104000300_reports_jc_cash_flow_timeout.sql -text
 supabase/migrations/20261109000100_documentary_version_integrity.sql -text
 
 supabase/migrations/20261109000200_documentary_legacy_file_access.sql -text
+
+supabase/migrations/20261113000100_reports_jc_cash_flow_withdrawal_types.sql -text
+supabase/recovery/20261113000100_reports_jc_cash_flow_withdrawal_types.sql -text
+docs/qa/evidence/cash-flow-fixes-20261113/source-diff.patch -whitespace

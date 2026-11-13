@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "compiledLocalBundle": true,
+  "realWorker": true,
+  "realExcelButtonDownload": true,
+  "programIncluded": true,
+  "unresolvedDetail": true,
+  "financialWrites": 0,
+  "productionCalls": 0,
+  "externalRequests": 0
+}

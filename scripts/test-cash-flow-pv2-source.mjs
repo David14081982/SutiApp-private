@@ -78,8 +78,8 @@ test('negative principal balance is unavailable, never a negative credit',()=>{
  assert.equal(entries(r,'pending','2026-10')[0].amount,null);
  assert.equal(entries(r,'principal')[0].amount,null);assert.equal(entries(r,'unallocated')[0].amount,110);assert.equal(entries(r,'interest')[0].amount,10);assert.equal(entries(r,'admin')[0].amount,10);assert.equal(entries(r,'recovered')[0].amount,130);
 });
-test('source inputs are immutable and orphan authorization date is documented',()=>{
- const qs=[quota({U:'2026-09-03'})],before=JSON.stringify(qs),r=run(qs,[]);assert.equal(JSON.stringify(qs),before);assert.equal(entries(r,'placed')[0].date,'2026-09-03');assert.equal(r.loanContracts[0].dateBasis,'HISTORIAL P V2 · U');
+test('source inputs are immutable and authorization does not invent request date',()=>{
+ const qs=[quota({U:'2026-09-03'})],before=JSON.stringify(qs),r=run(qs,[]);assert.equal(JSON.stringify(qs),before);assert.equal(entries(r,'placed').length,0);assert(r.unassigned.some(r=>r.metric==='placed'&&r.amount===100));assert.equal(r.loanContracts[0].placementDate,null);
 });
 test('empty original U is not a date and does not invent placement',()=>{
  const r=run([quota({U:0})],[]);assert.equal(entries(r,'placed').length,0);assert.equal(entries(r,'recovered')[0].amount,120);
@@ -97,7 +97,7 @@ test('unknown balance from one loan cannot erase or inflate another determined b
  const qs=[quota({C:'L1',AD:'REVISAR',AC:''}),quota({C:'L2',AD:40,AB:10,Z:10,AC:50,B:60})];
  const r=consolidateCashFlow({base,loans:[[],...qs],requests:[[],request(),request({C:'L2'})]});
  const c=r.rows.find(r=>r.id==='fund_pettyCash_pending').cells[9];
- assert.equal(c.amount,null);assert.equal(c.knownAmount,60);assert.equal(c.status,'PARTIAL');
+ assert.equal(c.amount,null);assert.equal(c.knownAmount,null);assert.equal(c.status,'UNAVAILABLE');assert.equal(r.rows.find(r=>r.id==='fund_pettyCash_pending_determined').cells[9].amount,60);assert.equal(r.rows.find(r=>r.id==='fund_pettyCash_pending_unresolved_original').cells[9].amount,100);
 });
 
 test('principal-cap conflict protects only that loan and never caps B',()=>{

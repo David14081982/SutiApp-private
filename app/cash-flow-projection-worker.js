@@ -2,10 +2,10 @@
 report.mjs sha256 39fd5c141705ec76d8bfab813ad01470e0f981b77d647cb0e2ad85a9dea3194c
 cash-flow-investor-continuity.mjs sha256 776f7493328780bf71a39780260a83822d0c6a96c93e8d34b7416a375608e74a
 cash-flow-investors.mjs sha256 e6349197c181ce56748032e8715c4fa1ff7c91e2a6de02d8adbe8e08606d6fb2
-cash-flow-loans.mjs sha256 614a44af14dfc840c99acb0c63e205bd13330c1e19ca7222e5edcb6ee1c68eba
-cash-flow-consolidated.mjs sha256 026d04eba3b315f7cc7fe5b9e1dfdd38ebfe4da221667a190702768ea45042d6
-cash-flow-savings.mjs sha256 f178b7d326c3bbab3a939e4c20619dff43c3e9947ea8436da8bf630a5e9bf44a
-cash-flow-source-bases.mjs sha256 10edc0b75bb5da13b6e169c2bfd75138a67d5776478479e10a47e488544fad40
+cash-flow-loans.mjs sha256 e30d50a1def4c2495307b93e5a855c7c2aa5a586deb019c5145e2fa5288cb3a9
+cash-flow-consolidated.mjs sha256 de74e8735d9e32c479920f0b17858db02e0ad0abe39d84b0b90a39e8cf56cfbe
+cash-flow-savings.mjs sha256 61fcf370216d5a2934e1cbb982e9667477ea6ae509ea82d8f2415f2f2ad120e6
+cash-flow-source-bases.mjs sha256 5687e38d36ad9fdbc21cff9396773b87cddf98480125026de77a3a98d92e098f
 cash-flow.mjs sha256 6dc9b307910e93e620d993c1cb3648ef4647d85148f66e502a0b71331c63efb1
 Pure projection of an authorized in-memory snapshot; no credentials, network or persistence. */
 'use strict';
@@ -850,7 +850,10 @@ const CASH_FLOW_LOAN_FUNDS = Object.freeze({
   advance: 'Adelantos de Nómina'
 });
 const text = v => String(v ?? '').trim();
-const money = v => typeof v === 'number' && Number.isFinite(v) && v >= 0 && Number.isSafeInteger(Math.round(v * 100)) && Math.abs(v * 100 - Math.round(v * 100)) < .00001 ? Math.round(v * 100) : null;
+const money = value => {
+  const v = typeof value === 'string' && /^\d+(\.\d{1,2})?$/.test(value.trim()) ? Number(value.trim()) : value;
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 && Number.isSafeInteger(Math.round(v * 100)) && Math.abs(v * 100 - Math.round(v * 100)) < .00001 ? Math.round(v * 100) : null;
+};
 const unique = values => [...new Set(values)];
 const sum = values => {
   const n = values.reduce((a, v) => a + v, 0);
@@ -993,19 +996,21 @@ function deriveCashFlowLoans({
     const authorizationDates = unique(group.map(r => dateOf(r.v[20])).filter(Boolean));
     const orphanAuthorized = !matches.length && authorizationDates.length === 1 && !C.startsWith('ROW:');
     const authorized = approved.length > 0 || orphanAuthorized;
-    let placementDate = approved.length ? rawRequestDates.every(Boolean) && requestDates.length === 1 ? requestDates[0] : null : orphanAuthorized ? originalDates.length === 1 ? originalDates[0] : originalDates.length === 0 ? authorizationDates[0] : null : null;
-    const dateBasis = approved.length ? 'Historial de solicitudes · J' : originalDates.length === 1 ? 'HISTORIAL P V2 · AG' : 'HISTORIAL P V2 · U';
+    let placementDate = approved.length ? rawRequestDates.every(Boolean) && requestDates.length === 1 ? requestDates[0] : null : orphanAuthorized ? originalDates.length === 1 ? originalDates[0] : null : null;
+    const dateBasis = approved.length ? 'Historial de solicitudes · J' : originalDates.length === 1 ? 'HISTORIAL P V2 · AG' : 'Fecha de solicitud no registrada';
     const requestAmounts = approved.map(r => money(r.v[7])),
       sourcePrincipals = group.map(r => money(r.v[9])).filter(v => v !== null);
     const requestPrincipal = approved.length && requestAmounts.every(v => v !== null) ? one(requestAmounts) : null;
     const pv2Principal = one(sourcePrincipals);
-    let principal = approved.length ? requestPrincipal : pv2Principal;
+    let principal = group.length ? pv2Principal : requestPrincipal;
     const reasons = [];
     if (approved.length && requestPrincipal === null) reasons.push('CAPITAL_SOLICITUD_AMBIGUO');
-    if (principal !== null && sourcePrincipals.some(v => v !== principal)) {
+    if (approved.length > 1 && (requestPrincipal === null || controls.length > 1)) {
       principal = null;
-      reasons.push('CAPITAL_SOLICITUD_PV2_DIFIERE');
+      reasons.push('ID_SOLICITUD_DUPLICADO_CONFLICTIVO');
     }
+    if (requestPrincipal !== null && pv2Principal !== null && requestPrincipal !== pv2Principal) reasons.push('CAPITAL_SOLICITADO_DIFIERE_OTORGADO_PV2');
+    if (group.some(r => typeof r.v[9] === 'string' && money(r.v[9]) !== null) || approved.some(r => typeof r.v[7] === 'string' && money(r.v[7]) !== null)) reasons.push('IMPORTE_NUMERICO_ORIGINAL_EN_TEXTO');
     if (!approved.length && sourcePrincipals.length && pv2Principal === null) reasons.push('CAPITAL_PV2_AMBIGUO');
     if (controls.length > 1) reasons.push('FOLIO_AMBIGUO');
     if (requestFunds.length > 1 || rowFunds.length > 1 || fund && rowFunds.some(f => f !== fund)) reasons.push('PROGRAMA_AMBIGUO');
@@ -1060,6 +1065,7 @@ function deriveCashFlowLoans({
       });
       if (!placementDate) reasons.push('FECHA_COLOCACION_AMBIGUA');
       if (placementDate && placementDate > asOf) reasons.push('FECHA_COLOCACION_FUTURA');
+      if (!placementDate || placementDate > asOf) problem(fund, [], 'LOAN_DATE_UNRESOLVED', 'Préstamo ' + C + ': fecha de solicitud ausente, ambigua o posterior al corte; no se sustituye por autorización PV2.', sourceIds);
       if (!placementDate || principal === null) problem(fund, requestDates.length ? ['placed'] : [], 'LOAN_PLACEMENT_UNRESOLVED', 'La colocación conserva una fecha o capital sin resolver; el préstamo se cuenta una sola vez cuando su mes está identificado.', sourceIds, requestDates);
     }
     if (!authorized && group.length) reasons.push(matches.length ? 'SIN_SOLICITUD_AUTORIZADA' : 'SIN_FECHA_AUTORIZACION_VINCULADA');
@@ -1229,10 +1235,10 @@ function deriveCashFlowLoans({
         unknown[component].push(unknown[component].at(-1) + (value === null ? 1 : 0));
       }
       const identitySafe = controls.length <= 1 && rowFunds.length <= 1 && (!rowFunds.length || rowFunds[0] === fund),
-        validDate = !!placementDate && !invalidQuota;
+        validDate = !!placementDate && !invalidQuota && ordered.every(p => p.date >= placementDate);
       for (const month of months) {
         const cut = cuts.get(month.key);
-        if (placementDate && placementDate > cut) continue;
+        if (placementDate && placementDate > cut && !ordered.some(p => p.date <= cut)) continue;
         let low = 0,
           high = ordered.length;
         while (low < high) {
@@ -1243,6 +1249,8 @@ function deriveCashFlowLoans({
         const paidPrincipal = validPrincipal ? prefix.principal[low] : null;
         const pending = validDate && identitySafe && validPrincipal && paidPrincipal <= principal ? principal - paidPrincipal : null;
         const status = month.key > current ? 'SCHEDULED' : 'RECORDED';
+        const firstEvidence = [...authorizationDates, ...ordered.map(p => p.date)].sort()[0],
+          originalVisible = placementDate && placementDate <= cut || firstEvidence && firstEvidence <= cut;
         const common = {
           source: 'HISTORIAL P V2 y solicitud autorizada',
           sourceId: 'Préstamo ' + C,
@@ -1258,6 +1266,19 @@ function deriveCashFlowLoans({
           dateBasis,
           placementDate
         };
+        emit(fund, 'pending_determined', {
+          ...common,
+          id: 'determined:' + C + ':' + month.key,
+          amount: pending === null ? 0 : amount(pending),
+          basis: 'DETERMINED_BALANCE_SUBTOTAL'
+        });
+        emit(fund, 'pending_unresolved_original', {
+          ...common,
+          id: 'unresolved:' + C + ':' + month.key,
+          amount: pending === null ? originalVisible ? amount(principal) : null : 0,
+          basis: 'ORIGINAL_CAPITAL_UNRESOLVED_BALANCE',
+          note: pending === null ? 'Capital original de un préstamo cuyo saldo no se puede determinar; no es saldo pendiente ni efectivo.' : undefined
+        });
         const scheduledParts = [['interest_pending', 'interest', 'AB'], ['admin_pending', 'admin', 'Z']].map(([metric, component, column]) => ({
           metric,
           column,
@@ -1302,6 +1323,12 @@ function deriveCashFlowLoans({
           id: 'pending:' + C + ':AD:' + month.key,
           amount: null,
           note: 'El capital original no demuestra el saldo pendiente sin el calendario de cuotas.'
+        });
+        emit(fund, 'pending_unresolved_original', {
+          ...common,
+          id: 'unresolved:' + C + ':' + month.key,
+          amount: amount(principal),
+          basis: 'ORIGINAL_CAPITAL_UNRESOLVED_BALANCE'
         });
         for (const [metric, column] of [['interest_pending', 'AB'], ['admin_pending', 'Z']]) emit(fund, metric, {
           ...common,
@@ -1400,7 +1427,7 @@ function deriveCashFlowLoans({
       protectedLoans: partial,
       derivedForecastRows: 0,
       componentAuthority: 'HISTORIAL P V2 · Z, AB, AC, AD',
-      placementAuthority: 'Historial de solicitudes · A, H, J, Y; origen PV2 documentado',
+      placementAuthority: 'ID PV2 C; capital otorgado PV2 J; fecha Solicitudes J / origen AG; aprobación Y; H sólo sin calendario',
       financialWrites: 0
     }
   };
@@ -1414,7 +1441,11 @@ const deriveCashFlowLoans=modules["cash-flow-loans.mjs"]["deriveCashFlowLoans"];
 const fundGroup=modules["report.mjs"]["fundGroup"];
 const INVESTOR_DEFINITIONS=modules["cash-flow-investors.mjs"]["INVESTOR_DEFINITIONS"];
 const ReportError=modules["report.mjs"]["ReportError"];
-const cents = v => typeof v === 'number' && Number.isFinite(v) && Number.isSafeInteger(Math.round(v * 100)) && Math.abs(v * 100 - Math.round(v * 100)) < .00001 ? Math.round(v * 100) : null;
+const sourceDate=modules["report.mjs"]["sourceDate"];
+const cents = value => {
+  const v = typeof value === 'string' && /^-?\d+(\.\d{1,2})?$/.test(value.trim()) ? Number(value.trim()) : value;
+  return typeof v === 'number' && Number.isFinite(v) && Number.isSafeInteger(Math.round(v * 100)) && Math.abs(v * 100 - Math.round(v * 100)) < .00001 ? Math.round(v * 100) : null;
+};
 const percent = (part, total) => Number.isSafeInteger(part) && Number.isSafeInteger(total) && total > 0 ? Math.round(part / total * 10000) / 100 : null;
 const COMPONENTS = {
   principal: 'AD',
@@ -1422,7 +1453,7 @@ const COMPONENTS = {
   admin: 'Z'
 };
 const LABELS = CASH_FLOW_LOAN_FUNDS;
-const LOAN_ROWS = [['placed', 'Capital colocado por fecha de solicitud', 'recorded'], ['count', 'Número de préstamos otorgados', 'recorded'], ['recovered', 'Recuperación realizada', 'recorded'], ['principal', 'Capital recuperado', 'recorded'], ['interest', 'Intereses recuperados', 'recorded'], ['admin', 'Gasto administrativo recuperado', 'recorded'], ['unallocated', 'Recuperación sin desglose', 'recorded'], ['rounding', 'Diferencia de redondeo del desglose', 'recorded'], ['pending', 'Capital pendiente de recuperar', 'balance'], ['interest_pending', 'Intereses pendientes según calendario', 'balance'], ['admin_pending', 'Administración pendiente según calendario', 'balance'], ['scheduled', 'Recuperación futura programada', 'scheduled'], ['principal_scheduled', 'Capital programado', 'scheduled'], ['interest_scheduled', 'Intereses programados', 'scheduled'], ['admin_scheduled', 'Administración programada', 'scheduled'], ['unallocated_scheduled', 'Recuperación programada sin desglose', 'scheduled'], ['rounding_scheduled', 'Diferencia de redondeo programada', 'scheduled']];
+const LOAN_ROWS = [['placed', 'Capital colocado por fecha de solicitud', 'recorded'], ['count', 'Número de préstamos otorgados', 'recorded'], ['recovered', 'Recuperación realizada', 'recorded'], ['principal', 'Capital recuperado', 'recorded'], ['interest', 'Intereses recuperados', 'recorded'], ['admin', 'Gasto administrativo recuperado', 'recorded'], ['unallocated', 'Recuperación sin desglose', 'recorded'], ['rounding', 'Diferencia de redondeo del desglose', 'recorded'], ['pending', 'Capital pendiente de recuperar · total', 'balance'], ['pending_determined', 'Saldo calculable · subtotal de préstamos con desglose', 'balance'], ['pending_unresolved_original', 'Capital original de préstamos con saldo por conciliar', 'balance'], ['interest_pending', 'Intereses pendientes según calendario', 'balance'], ['admin_pending', 'Administración pendiente según calendario', 'balance'], ['scheduled', 'Recuperación futura programada', 'scheduled'], ['principal_scheduled', 'Capital programado', 'scheduled'], ['interest_scheduled', 'Intereses programados', 'scheduled'], ['admin_scheduled', 'Administración programada', 'scheduled'], ['unallocated_scheduled', 'Recuperación programada sin desglose', 'scheduled'], ['rounding_scheduled', 'Diferencia de redondeo programada', 'scheduled']];
 function consolidateCashFlow({
   base,
   loans,
@@ -1591,6 +1622,50 @@ function consolidateCashFlow({
     });
   }
   result.loanContracts = loanDerivation.loanContracts;
+  const collectionRows = new Map();
+  loans.slice(1).forEach((v, index) => {
+    if (!v.some(x => x !== '' && x !== null && x !== undefined) || Object.hasOwn(LABELS, fundGroup(v[6]))) return;
+    const label = String(v[6] ?? '').trim() || 'Programa sin identificar',
+      key = label.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const prefix = 'collection_' + (key || 'unknown');
+    if (!collectionRows.has(prefix)) {
+      collectionRows.set(prefix, {
+        recovered: prefix + '_recovered',
+        scheduled: prefix + '_scheduled'
+      });
+      addRow(prefix + '_recovered', 'Descuentos por fecha de cuota · criterio operativo', label, 'recorded', {
+        section: 'Otros programas · descuentos registrados'
+      });
+      addRow(prefix + '_scheduled', 'Descuentos futuros programados', label, 'scheduled', {
+        section: 'Otros programas · descuentos registrados'
+      });
+    }
+    const date = sourceDate(v[0]),
+      n = cents(v[1]),
+      ids = collectionRows.get(prefix),
+      id = 'pv2:' + String(index + 2),
+      kind = date && date > asOf ? ids.scheduled : ids.recovered;
+    const record = {
+      id,
+      source: 'HISTORIAL P V2',
+      sourceId: 'Fila ' + String(index + 2),
+      sourceRow: index + 2,
+      loanId: String(v[2] ?? '').trim(),
+      fund: label,
+      date,
+      amount: n === null || n < 0 ? null : n / 100,
+      registeredAmount: n === null || n < 0 ? null : n / 100,
+      basis: 'REGISTERED_CALENDAR_AFTER_CUTOFF',
+      status: date && date > asOf ? 'SCHEDULED' : 'RECORDED'
+    };
+    if (!date) {
+      unassigned.push({
+        ...record,
+        kind
+      });
+      mark(Object.values(ids), 'COLLECTION_DATE_INVALID', 'Cuota sin fecha interpretable; se conserva sin asignar mes.', [id]);
+    } else add(kind, record);
+  });
   let investor;
   try {
     investor = buildInvestorCashFlow({
@@ -1742,17 +1817,17 @@ function consolidateCashFlow({
   total('union_margin_scheduled', 'Margen financiero programado · bolsa común', 'Sindicato', 'scheduled', [['union_interest_scheduled'], ['investor_yield_scheduled', -1]], {
     emphasis: 'total'
   });
-  total('loans_recovered_total', 'Recuperación total · todos los fondos', 'Distribución consolidada de préstamos', 'recorded', recover);
-  total('loans_scheduled_total', 'Recuperación futura · todos los fondos', 'Distribución consolidada de préstamos', 'scheduled', forecast);
+  total('loans_recovered_total', 'Recuperación total · cuatro programas de préstamo', 'Distribución consolidada de préstamos', 'recorded', recover);
+  total('loans_scheduled_total', 'Recuperación futura · cuatro programas de préstamo', 'Distribución consolidada de préstamos', 'scheduled', forecast);
   for (const [component, label] of [['principal', 'Capital'], ['interest', 'Intereses'], ['admin', 'Gastos administrativos']]) for (const phase of ['', '_scheduled']) {
-    const r = total('loans_' + component + phase + '_total', label + (phase ? ' programados' : ' recuperados') + ' · todos los fondos', 'Distribución consolidada de préstamos', phase ? 'scheduled' : 'recorded', allFunds.map(f => [f.ids[component + phase]]));
+    const r = total('loans_' + component + phase + '_total', label + (phase ? ' programados' : ' recuperados') + ' · cuatro programas de préstamo', 'Distribución consolidada de préstamos', phase ? 'scheduled' : 'recorded', allFunds.map(f => [f.ids[component + phase]]));
     const denominator = rows.get(phase ? 'loans_scheduled_total' : 'loans_recovered_total');
     r.cells.forEach((c, i) => {
       c.percentage = c.amount !== null && denominator.cells[i].amount !== null ? percent(cents(c.amount), cents(denominator.cells[i].amount)) : null;
     });
   }
-  for (const [metric, label] of [['unallocated', 'Recuperaci\u00f3n sin desglose'], ['rounding', 'Diferencia de redondeo del desglose']]) for (const phase of ['', '_scheduled']) total('loans_' + metric + phase + '_total', label + (phase ? ' programada' : '') + ' \u00b7 todos los fondos', 'Distribuci\u00f3n consolidada de pr\u00e9stamos', phase ? 'scheduled' : 'recorded', allFunds.map(f => [f.ids[metric + phase]]));
-  total('cash_in', 'Total de entradas registradas', 'Flujo consolidado', 'recorded', [...recover, ['contribution'], ['investor_contribution'], ['cash_other_in']], {
+  for (const [metric, label] of [['unallocated', 'Recuperaci\u00f3n sin desglose'], ['rounding', 'Diferencia de redondeo del desglose']]) for (const phase of ['', '_scheduled']) total('loans_' + metric + phase + '_total', label + (phase ? ' programada' : '') + ' \u00b7 cuatro programas de préstamo', 'Distribuci\u00f3n consolidada de pr\u00e9stamos', phase ? 'scheduled' : 'recorded', allFunds.map(f => [f.ids[metric + phase]]));
+  total('cash_in', 'Total de entradas registradas', 'Flujo consolidado', 'recorded', [...recover, ...[...collectionRows.values()].map(r => [r.recovered]), ['contribution'], ['investor_contribution'], ['cash_other_in']], {
     emphasis: 'subtotal'
   });
   total('cash_out', 'Total de salidas registradas', 'Flujo consolidado', 'recorded', [...placed, ['withdrawal_partial'], ['withdrawal_total'], ['withdrawal_unspecified'], ['investor_yield_paid'], ['investor_capital_return'], ['cash_other_out']], {
@@ -1762,7 +1837,7 @@ function consolidateCashFlow({
   total('cash_net', 'Flujo neto registrado', 'Flujo consolidado', 'recorded', [['cash_in'], ['cash_out', -1]], {
     emphasis: 'total'
   });
-  total('cash_in_scheduled', 'Entradas futuras programadas', 'Flujo consolidado', 'scheduled', [...forecast, ['contribution_scheduled']], {
+  total('cash_in_scheduled', 'Entradas futuras programadas', 'Flujo consolidado', 'scheduled', [...forecast, ...[...collectionRows.values()].map(r => [r.scheduled]), ['contribution_scheduled']], {
     emphasis: 'subtotal'
   });
   total('cash_out_scheduled', 'Salidas futuras programadas', 'Flujo consolidado', 'scheduled', [['investor_yield_scheduled'], ['investor_capital_scheduled'], ['withdrawal_pending']], {
@@ -1771,7 +1846,14 @@ function consolidateCashFlow({
   total('cash_net_scheduled', 'Flujo neto futuro programado', 'Flujo consolidado', 'scheduled', [['cash_in_scheduled'], ['cash_out_scheduled', -1]], {
     emphasis: 'total'
   });
-  total('portfolio_pending', 'Capital pendiente de recuperar · todos los fondos', 'Flujo consolidado', 'balance', allFunds.map(f => [f.ids.pending]));
+  total('portfolio_pending', 'Capital pendiente de recuperar · cuatro programas de préstamo', 'Flujo consolidado', 'balance', allFunds.map(f => [f.ids.pending]));
+  for (const id of ['portfolio_pending', ...[...funds.values()].map(f => f.ids.pending)]) for (const c of rows.get(id).cells) if (c.amount === null && c.status !== 'NOT_APPLICABLE') {
+    c.knownAmount = null;
+    c.status = 'UNAVAILABLE';
+    c.reconciliationPending = true;
+    c.notes.push('Saldo total pendiente de conciliación. Consultar saldo calculable y capital original por conciliar; no sumar ambos como saldo.');
+  }
+  for (const row of rows.values()) if (row.id.endsWith('_recovered') || row.id === 'loans_recovered_total' || ['cash_in', 'cash_net'].includes(row.id)) for (const c of row.cells) c.notes.push('Cuotas vencidas clasificadas por criterio operativo; no son evidencia bancaria de cobro.');
   const treasury = {
     id: 'cash_available',
     label: 'Efectivo disponible (requiere fuente de tesorería)',
@@ -1821,7 +1903,7 @@ function consolidateCashFlow({
     contractualCalculation: 'ORIGINAL_SOURCE_COMPONENTS_READ_ONLY',
     fundCount: funds.size
   };
-  result.notes = ['Registro realizado y programa futuro se presentan por separado; una proyección no es un cobro.', 'Los porcentajes son participación de cada componente en el total de la misma cuota o fondo, mes y estado.', 'Totales con información parcial no representan un flujo completo; revisar detalle y pendientes sin fecha.'];
+  result.notes = ['Las cuotas con fecha menor o igual al corte se clasifican por criterio operativo; no acreditan cobro bancario. Las posteriores son programadas.', 'Los porcentajes son participación de cada componente en el total de la misma cuota o fondo, mes y estado.', 'Totales con información parcial no representan un flujo completo; revisar detalle y pendientes sin fecha.'];
   return result;
 }
 return {consolidateCashFlow};
@@ -2312,6 +2394,13 @@ function reconcileSavingsCashFlow({
       status: projectionMissing ? 'PARTIAL' : 'SCHEDULED'
     });
   }
+  for (const row of [openingRow, projectionRow, ...result.rows.filter(r => r.id === 'savings_balance')]) for (const c of row.cells) if (c.amount === null && c.status === 'PARTIAL') {
+    c.determinedSubtotal = c.knownAmount;
+    c.knownAmount = null;
+    c.status = 'UNAVAILABLE';
+    c.reconciliationPending = true;
+    c.notes.push('Saldo total pendiente por historia incompleta. La base conserva los importes registrados; no se trasladan diferencias a fechas supuestas.');
+  }
   result.rows = result.rows.flatMap(r => r.id === 'savings_balance' ? [openingRow, basisRow, r, projectionRow] : [r]);
   result.savingsBridge = {
     status: bridge.some(r => r.status === 'UNAVAILABLE') ? 'PARTIAL' : 'AVAILABLE',
@@ -2480,7 +2569,7 @@ function buildCashFlowSourceBases({
 }) {
   const includedIds = new Set(source.loans.slice(1).filter(r => loanFund(r[6])).map(r => text(r[2])));
   for (const r of source.requests.slice(1)) if (loanFund(r[4])) includedIds.add(text(r[0]));
-  const tables = [googleTable('Base PV2', source.loans, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 25, 26, 27, 28, 29, 32], r => loanFund(r[6]) || includedIds.has(text(r[2])), [0, 11, 15, 20, 32], [1, 7, 8, 9, 10, 12, 13, 14, 16, 25, 26, 27, 28, 29]), googleTable('Base Solicitudes', source.requests, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 24], r => loanFund(r[4]) || includedIds.has(text(r[0])), [9], [5, 6, 7, 8]), savingsTable(savings, report), investorSourceTable(investors || {}, report), loanContractTable(report, resolved, source.loans)];
+  const tables = [googleTable('Base PV2', source.loans, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 25, 26, 27, 28, 29, 32], r => r.some(v => v !== '' && v !== null && v !== undefined), [0, 11, 15, 20, 32], [1, 7, 8, 9, 10, 12, 13, 14, 16, 25, 26, 27, 28, 29]), googleTable('Base Solicitudes', source.requests, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 24], r => loanFund(r[4]) || includedIds.has(text(r[0])), [9], [5, 6, 7, 8]), savingsTable(savings, report), investorSourceTable(investors || {}, report), loanContractTable(report, resolved, source.loans)];
   return {
     version: 1,
     consultedAt,

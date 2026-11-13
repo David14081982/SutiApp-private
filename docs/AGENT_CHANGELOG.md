@@ -4593,3 +4593,7 @@ PR17 merged as ac0fc3e; CI and Pages approved. Initial SQL approval review rejec
 Implementados enriquecimiento del listado de Finanzas, cuota contractual/nóminas/extras, resultado documental, motivo editable en el formulario existente y corrección de adjuntos observados desde seguimiento. Preparados motor determinista, adaptador OpenAI desactivado, cola/leases/huellas, migraciones y recuperación, sustitución verificada y purga sin archivo de imágenes. No se cambian fórmulas ni writers de Google; rechazo conserva writer de workflow y aprobación humana no depende de OCR.
 
 Evidencia aislada y resultado detallado en [auditoría](audits/H-FINANCE-DOCUMENT-REVIEW-001.md). No hay instalación, llamadas OpenAI, escritura financiera real ni publicación. Pruebas con credenciales, Storage real y regresión global de imágenes quedan pendientes antes de activar. El workspace contenía cambios previos extensos: diferencias de esta H se contrastan con baseline exacto local, no con HEAD.
+
+
+## H-CASH-FLOW-FIXES-20261113
+Correcciones focales de flujo de efectivo; fuentes financieras preservadas. Auditoria y evidencia: docs/audits/H-CASH-FLOW-FIXES-20261113.md. Publicacion autorizada por el propietario el 13-nov-2026; paquete aislado sobre 3bad1875f970f58e622af672d6daa487f208065f.

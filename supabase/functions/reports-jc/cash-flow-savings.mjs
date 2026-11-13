@@ -129,6 +129,8 @@ export function reconcileSavingsCashFlow({base,savings}){
   }
   projectionRow.cells.push({...cell(projection,'SCHEDULED',['Proyección de instrucciones existentes; no presume rendimiento futuro ni crea movimientos.'],planned.map(e=>e.id)),amount:projectionMissing?null:projection/100,status:projectionMissing?'PARTIAL':'SCHEDULED'});
  }
+ // A partial historical sum is not a total balance comparable with the canonical cutoff.
+ for(const row of [openingRow,projectionRow,...result.rows.filter(r=>r.id==='savings_balance')])for(const c of row.cells)if(c.amount===null&&c.status==='PARTIAL'){c.determinedSubtotal=c.knownAmount;c.knownAmount=null;c.status='UNAVAILABLE';c.reconciliationPending=true;c.notes.push('Saldo total pendiente por historia incompleta. La base conserva los importes registrados; no se trasladan diferencias a fechas supuestas.');}
  result.rows=result.rows.flatMap(r=>r.id==='savings_balance'?[openingRow,basisRow,r,projectionRow]:[r]);
  result.savingsBridge={status:bridge.some(r=>r.status==='UNAVAILABLE')?'PARTIAL':'AVAILABLE',financialWrites:0,months:bridge};
  result.savingsSourceTable={name:'Base Ahorro',authority:'Supabase · Ahorro Voluntario',classification:'Valores originales aceptados y puente derivado de saldos; cambios de base no son efectivo',columns:['Tipo','Nombre','Número de control','Cuenta','Fecha','Quincena','Importe','Fuente','Referencia original','Columna / componente','Aplicación en el reporte','Explicación','Saldo anterior','Movimientos netos','Cambio de base sin efectivo','Saldo final','ID técnico de cuenta'],rows:detailRows};

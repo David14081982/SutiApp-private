@@ -1,9 +1,9 @@
 // Read-only monthly projection. No source writes, bank attribution or cash balance inference.
-import {fundGroup,ReportError} from './report.mjs';
+import {sourceDate,fundGroup,ReportError} from './report.mjs';
 import {deriveCashFlowLoans,CASH_FLOW_LOAN_FUNDS} from './cash-flow-loans.mjs';
 import {INVESTOR_DEFINITIONS,buildInvestorCashFlow} from './cash-flow-investors.mjs';
 
-const cents=v=>typeof v==='number'&&Number.isFinite(v)&&Number.isSafeInteger(Math.round(v*100))&&Math.abs(v*100-Math.round(v*100))<.00001?Math.round(v*100):null;
+const cents=value=>{const v=typeof value==='string'&&/^-?\d+(\.\d{1,2})?$/.test(value.trim())?Number(value.trim()):value;return typeof v==='number'&&Number.isFinite(v)&&Number.isSafeInteger(Math.round(v*100))&&Math.abs(v*100-Math.round(v*100))<.00001?Math.round(v*100):null;};
 const percent=(part,total)=>Number.isSafeInteger(part)&&Number.isSafeInteger(total)&&total>0?Math.round(part/total*10000)/100:null;
 const COMPONENTS={principal:'AD',interest:'AB',admin:'Z'};
 const LABELS=CASH_FLOW_LOAN_FUNDS;
@@ -11,7 +11,7 @@ const LOAN_ROWS=[
  ['placed','Capital colocado por fecha de solicitud','recorded'],['count','Número de préstamos otorgados','recorded'],
  ['recovered','Recuperación realizada','recorded'],['principal','Capital recuperado','recorded'],['interest','Intereses recuperados','recorded'],['admin','Gasto administrativo recuperado','recorded'],
  ['unallocated','Recuperación sin desglose','recorded'],['rounding','Diferencia de redondeo del desglose','recorded'],
- ['pending','Capital pendiente de recuperar','balance'],['interest_pending','Intereses pendientes según calendario','balance'],['admin_pending','Administración pendiente según calendario','balance'],
+ ['pending','Capital pendiente de recuperar · total','balance'],['pending_determined','Saldo calculable · subtotal de préstamos con desglose','balance'],['pending_unresolved_original','Capital original de préstamos con saldo por conciliar','balance'],['interest_pending','Intereses pendientes según calendario','balance'],['admin_pending','Administración pendiente según calendario','balance'],
  ['scheduled','Recuperación futura programada','scheduled'],['principal_scheduled','Capital programado','scheduled'],['interest_scheduled','Intereses programados','scheduled'],['admin_scheduled','Administración programada','scheduled'],['unallocated_scheduled','Recuperación programada sin desglose','scheduled'],['rounding_scheduled','Diferencia de redondeo programada','scheduled']
 ];
 export function consolidateCashFlow({base,loans,requests=[],investorsSource=null,sourceErrors={}}){
@@ -59,6 +59,23 @@ export function consolidateCashFlow({base,loans,requests=[],investorsSource=null
  for(const issue of loanDerivation.issues){const f=ensureFund({id:issue.fund,label:LABELS[issue.fund]});mark(issue.metrics.map(k=>f.ids[k]),issue.code,issue.message,issue.sourceIds,issue.dates);}
  for(const item of loanDerivation.unassigned){const group=fundGroup(item.fund),f=funds.get(group);unassigned.push({...item,kind:f?.ids[item.metric]||item.metric});}
  result.loanContracts=loanDerivation.loanContracts;
+ // Other payroll deductions are cash-flow inputs, not loan principal/interest.
+ const collectionRows=new Map();
+ loans.slice(1).forEach((v,index)=>{
+  if(!v.some(x=>x!==''&&x!==null&&x!==undefined)||Object.hasOwn(LABELS,fundGroup(v[6])))return;
+  const label=String(v[6]??'').trim()||'Programa sin identificar',key=label.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const prefix='collection_'+(key||'unknown');
+  if(!collectionRows.has(prefix)){
+   collectionRows.set(prefix,{recovered:prefix+'_recovered',scheduled:prefix+'_scheduled'});
+   addRow(prefix+'_recovered','Descuentos por fecha de cuota · criterio operativo',label,'recorded',{section:'Otros programas · descuentos registrados'});
+   addRow(prefix+'_scheduled','Descuentos futuros programados',label,'scheduled',{section:'Otros programas · descuentos registrados'});
+  }
+  const date=sourceDate(v[0]),n=cents(v[1]),ids=collectionRows.get(prefix),id='pv2:'+String(index+2),kind=date&&date>asOf?ids.scheduled:ids.recovered;
+  const record={id,source:'HISTORIAL P V2',sourceId:'Fila '+String(index+2),sourceRow:index+2,loanId:String(v[2]??'').trim(),fund:label,date,amount:n===null||n<0?null:n/100,registeredAmount:n===null||n<0?null:n/100,basis:'REGISTERED_CALENDAR_AFTER_CUTOFF',status:date&&date>asOf?'SCHEDULED':'RECORDED'};
+  if(!date){unassigned.push({...record,kind});mark(Object.values(ids),'COLLECTION_DATE_INVALID','Cuota sin fecha interpretable; se conserva sin asignar mes.',[id]);}
+  else add(kind,record);
+ });
+
  // Add investors as a separate authority/domain. Accruals and balances are not cash movements.
  let investor;
  try{investor=buildInvestorCashFlow({from:result.from,source:investorsSource,asOf});}
@@ -109,21 +126,24 @@ export function consolidateCashFlow({base,loans,requests=[],investorsSource=null
  total('union_interest_scheduled','Intereses programados · bolsa común','Sindicato','scheduled',pool.map(f=>[f.ids.interest_scheduled]));
  total('union_admin_scheduled','Administración programada · bolsa común','Sindicato','scheduled',pool.map(f=>[f.ids.admin_scheduled]));
  total('union_margin_scheduled','Margen financiero programado · bolsa común','Sindicato','scheduled',[['union_interest_scheduled'],['investor_yield_scheduled',-1]],{emphasis:'total'});
- total('loans_recovered_total','Recuperación total · todos los fondos','Distribución consolidada de préstamos','recorded',recover);
- total('loans_scheduled_total','Recuperación futura · todos los fondos','Distribución consolidada de préstamos','scheduled',forecast);
+ total('loans_recovered_total','Recuperación total · cuatro programas de préstamo','Distribución consolidada de préstamos','recorded',recover);
+ total('loans_scheduled_total','Recuperación futura · cuatro programas de préstamo','Distribución consolidada de préstamos','scheduled',forecast);
  for(const [component,label]of [['principal','Capital'],['interest','Intereses'],['admin','Gastos administrativos']])for(const phase of ['','_scheduled']){
-  const r=total('loans_'+component+phase+'_total',label+(phase?' programados':' recuperados')+' · todos los fondos','Distribución consolidada de préstamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[component+phase]]));
+  const r=total('loans_'+component+phase+'_total',label+(phase?' programados':' recuperados')+' · cuatro programas de préstamo','Distribución consolidada de préstamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[component+phase]]));
   const denominator=rows.get(phase?'loans_scheduled_total':'loans_recovered_total');r.cells.forEach((c,i)=>{c.percentage=c.amount!==null&&denominator.cells[i].amount!==null?percent(cents(c.amount),cents(denominator.cells[i].amount)):null;});
  }
- for(const [metric,label]of [['unallocated','Recuperaci\u00f3n sin desglose'],['rounding','Diferencia de redondeo del desglose']])for(const phase of ['', '_scheduled'])total('loans_'+metric+phase+'_total',label+(phase?' programada':'')+' \u00b7 todos los fondos','Distribuci\u00f3n consolidada de pr\u00e9stamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[metric+phase]]));
- total('cash_in','Total de entradas registradas','Flujo consolidado','recorded',[...recover,['contribution'],['investor_contribution'],['cash_other_in']],{emphasis:'subtotal'});
+ for(const [metric,label]of [['unallocated','Recuperaci\u00f3n sin desglose'],['rounding','Diferencia de redondeo del desglose']])for(const phase of ['', '_scheduled'])total('loans_'+metric+phase+'_total',label+(phase?' programada':'')+' \u00b7 cuatro programas de préstamo','Distribuci\u00f3n consolidada de pr\u00e9stamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[metric+phase]]));
+ total('cash_in','Total de entradas registradas','Flujo consolidado','recorded',[...recover,...[...collectionRows.values()].map(r=>[r.recovered]),['contribution'],['investor_contribution'],['cash_other_in']],{emphasis:'subtotal'});
  total('cash_out','Total de salidas registradas','Flujo consolidado','recorded',[...placed,['withdrawal_partial'],['withdrawal_total'],['withdrawal_unspecified'],['investor_yield_paid'],['investor_capital_return'],['cash_other_out']],{emphasis:'subtotal'});
  total('cash_other_net','Otros movimientos de efectivo registrados · neto','Flujo consolidado','recorded',[['investor_other']]);
  total('cash_net','Flujo neto registrado','Flujo consolidado','recorded',[['cash_in'],['cash_out',-1]],{emphasis:'total'});
- total('cash_in_scheduled','Entradas futuras programadas','Flujo consolidado','scheduled',[...forecast,['contribution_scheduled']],{emphasis:'subtotal'});
+ total('cash_in_scheduled','Entradas futuras programadas','Flujo consolidado','scheduled',[...forecast,...[...collectionRows.values()].map(r=>[r.scheduled]),['contribution_scheduled']],{emphasis:'subtotal'});
  total('cash_out_scheduled','Salidas futuras programadas','Flujo consolidado','scheduled',[['investor_yield_scheduled'],['investor_capital_scheduled'],['withdrawal_pending']],{emphasis:'subtotal'});
  total('cash_net_scheduled','Flujo neto futuro programado','Flujo consolidado','scheduled',[['cash_in_scheduled'],['cash_out_scheduled',-1]],{emphasis:'total'});
- total('portfolio_pending','Capital pendiente de recuperar · todos los fondos','Flujo consolidado','balance',allFunds.map(f=>[f.ids.pending]));
+ total('portfolio_pending','Capital pendiente de recuperar · cuatro programas de préstamo','Flujo consolidado','balance',allFunds.map(f=>[f.ids.pending]));
+ // Never display a changing partial population as a continuous total balance.
+ for(const id of ['portfolio_pending',...[...funds.values()].map(f=>f.ids.pending)])for(const c of rows.get(id).cells)if(c.amount===null&&c.status!=='NOT_APPLICABLE'){c.knownAmount=null;c.status='UNAVAILABLE';c.reconciliationPending=true;c.notes.push('Saldo total pendiente de conciliación. Consultar saldo calculable y capital original por conciliar; no sumar ambos como saldo.');}
+ for(const row of rows.values())if(row.id.endsWith('_recovered')||row.id==='loans_recovered_total'||['cash_in','cash_net'].includes(row.id))for(const c of row.cells)c.notes.push('Cuotas vencidas clasificadas por criterio operativo; no son evidencia bancaria de cobro.');
  const treasury={id:'cash_available',label:'Efectivo disponible (requiere fuente de tesorería)',group:'Flujo consolidado',kind:'balance',unit:'money',cells:months.map(()=>({amount:null,knownAmount:null,status:'UNAVAILABLE',sourceIds:[],notes:['La cartera y las obligaciones no acreditan el saldo de bancos o caja.']}))};rows.set(treasury.id,treasury);
  // Explain stock/accrual/cash separation directly in the corresponding financial cells.
  for(const id of ['union_margin_accrual','union_margin_cash','union_margin_scheduled'])for(const c of rows.get(id).cells)c.notes.push('Excluye capital y gasto administrativo. Los rendimientos corresponden a contratos de la bolsa común, no a un porcentaje por cuota. No es utilidad neta ni saldo disponible.');
@@ -139,6 +159,6 @@ export function consolidateCashFlow({base,loans,requests=[],investorsSource=null
  });
  const groupedIssues=new Map();for(const issue of issues){const k=JSON.stringify([issue.code,issue.message,issue.months,issue.affectedKinds]);if(!groupedIssues.has(k))groupedIssues.set(k,{...issue,sourceIds:[]});groupedIssues.get(k).sourceIds.push(...(issue.sourceIds||[]));}for(const issue of groupedIssues.values())issue.sourceIds=[...new Set(issue.sourceIds)];result.issues=[...groupedIssues.values()];
  result.coverage={...result.coverage,...loanDerivation.coverage,investors:investor.coverage,financialWrites:0,amortizationEngineActive:false,contractualCalculation:'ORIGINAL_SOURCE_COMPONENTS_READ_ONLY',fundCount:funds.size};
- result.notes=['Registro realizado y programa futuro se presentan por separado; una proyección no es un cobro.','Los porcentajes son participación de cada componente en el total de la misma cuota o fondo, mes y estado.','Totales con información parcial no representan un flujo completo; revisar detalle y pendientes sin fecha.'];
+ result.notes=['Las cuotas con fecha menor o igual al corte se clasifican por criterio operativo; no acreditan cobro bancario. Las posteriores son programadas.','Los porcentajes son participación de cada componente en el total de la misma cuota o fondo, mes y estado.','Totales con información parcial no representan un flujo completo; revisar detalle y pendientes sin fecha.'];
  return result;
 }

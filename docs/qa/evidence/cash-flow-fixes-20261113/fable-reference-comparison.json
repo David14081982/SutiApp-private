@@ -1,0 +1,341 @@
+{
+  "scope": "Fable 2026-11-13 matrix versus archived 2026-11-04 source; same four-loan-program definition. Different source cutoffs, NOT same-source reconciliation.",
+  "comparisons": [
+    {
+      "month": "2025-01",
+      "fablePanel": 0.0,
+      "archivedSourceAfter": 0.0,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-02",
+      "fablePanel": 26884.64,
+      "archivedSourceAfter": 26884.64,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-03",
+      "fablePanel": 114628.22,
+      "archivedSourceAfter": 114628.22,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-04",
+      "fablePanel": 255212.09,
+      "archivedSourceAfter": 255212.09,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-05",
+      "fablePanel": 332281.45,
+      "archivedSourceAfter": 332281.45,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-06",
+      "fablePanel": 442777.59,
+      "archivedSourceAfter": 442777.59,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-07",
+      "fablePanel": 671233.39,
+      "archivedSourceAfter": 671233.39,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-08",
+      "fablePanel": 649718.98,
+      "archivedSourceAfter": 649718.98,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-09",
+      "fablePanel": 696690.68,
+      "archivedSourceAfter": 696690.68,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-10",
+      "fablePanel": 956381.66,
+      "archivedSourceAfter": 956381.66,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-11",
+      "fablePanel": 1104917.24,
+      "archivedSourceAfter": 1104917.24,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2025-12",
+      "fablePanel": 933236.23,
+      "archivedSourceAfter": 933236.23,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2026-01",
+      "fablePanel": 895754.96,
+      "archivedSourceAfter": 895754.96,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2026-02",
+      "fablePanel": 710679.08,
+      "archivedSourceAfter": 710679.08,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2026-03",
+      "fablePanel": 934594.84,
+      "archivedSourceAfter": 934594.84,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2026-04",
+      "fablePanel": 907987.02,
+      "archivedSourceAfter": 907987.02,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2026-05",
+      "fablePanel": 869082.3,
+      "archivedSourceAfter": 869082.3,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2026-06",
+      "fablePanel": 884204.87,
+      "archivedSourceAfter": 884204.87,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2026-07",
+      "fablePanel": 1206261.25,
+      "archivedSourceAfter": 1206183.81,
+      "difference": -77.44,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2026-08",
+      "fablePanel": 1047562.75,
+      "archivedSourceAfter": 1047562.75,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2026-09",
+      "fablePanel": 1092544.35,
+      "archivedSourceAfter": 1102089.89,
+      "difference": 9545.54,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2026-10",
+      "fablePanel": 1611051.62,
+      "archivedSourceAfter": 1662958.0,
+      "difference": 51906.38,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2026-11",
+      "fablePanel": 2469651.22,
+      "archivedSourceAfter": 2442806.3,
+      "difference": -26844.92,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2026-12",
+      "fablePanel": 1827081.19,
+      "archivedSourceAfter": 1672484.83,
+      "difference": -154596.36,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-01",
+      "fablePanel": 1695981.74,
+      "archivedSourceAfter": 1503517.89,
+      "difference": -192463.85,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-02",
+      "fablePanel": 880486.28,
+      "archivedSourceAfter": 801100.94,
+      "difference": -79385.34,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-03",
+      "fablePanel": 1114540.88,
+      "archivedSourceAfter": 976251.02,
+      "difference": -138289.86,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-04",
+      "fablePanel": 703999.15,
+      "archivedSourceAfter": 613288.46,
+      "difference": -90710.69,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-05",
+      "fablePanel": 301107.86,
+      "archivedSourceAfter": 238659.41,
+      "difference": -62448.45,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-06",
+      "fablePanel": 198120.4,
+      "archivedSourceAfter": 164753.9,
+      "difference": -33366.5,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-07",
+      "fablePanel": 313951.25,
+      "archivedSourceAfter": 236864.6,
+      "difference": -77086.65,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-08",
+      "fablePanel": 124935.91,
+      "archivedSourceAfter": 109492.81,
+      "difference": -15443.1,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-09",
+      "fablePanel": 100315.89,
+      "archivedSourceAfter": 82008.33,
+      "difference": -18307.56,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-10",
+      "fablePanel": 132563.16,
+      "archivedSourceAfter": 104581.23,
+      "difference": -27981.93,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-11",
+      "fablePanel": 110655.84,
+      "archivedSourceAfter": 76108.57,
+      "difference": -34547.27,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2027-12",
+      "fablePanel": 65414.56,
+      "archivedSourceAfter": 53595.97,
+      "difference": -11818.59,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2028-01",
+      "fablePanel": 50164.56,
+      "archivedSourceAfter": 38345.97,
+      "difference": -11818.59,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2028-02",
+      "fablePanel": 27742.41,
+      "archivedSourceAfter": 24105.22,
+      "difference": -3637.19,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2028-03",
+      "fablePanel": 141760.29,
+      "archivedSourceAfter": 124941.69,
+      "difference": -16818.6,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2028-04",
+      "fablePanel": 32609.29,
+      "archivedSourceAfter": 27457.09,
+      "difference": -5152.2,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2028-05",
+      "fablePanel": 20790.94,
+      "archivedSourceAfter": 18972.34,
+      "difference": -1818.6,
+      "status": "DIFFERENT_SOURCE_CUTOFF"
+    },
+    {
+      "month": "2028-06",
+      "fablePanel": 14182.84,
+      "archivedSourceAfter": 14182.84,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2028-07",
+      "fablePanel": 14182.84,
+      "archivedSourceAfter": 14182.84,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2028-08",
+      "fablePanel": 14182.84,
+      "archivedSourceAfter": 14182.84,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2028-09",
+      "fablePanel": 14182.84,
+      "archivedSourceAfter": 14182.84,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2028-10",
+      "fablePanel": 14182.84,
+      "archivedSourceAfter": 14182.84,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2028-11",
+      "fablePanel": 14182.84,
+      "archivedSourceAfter": 14182.84,
+      "difference": 0.0,
+      "status": "MATCH"
+    },
+    {
+      "month": "2028-12",
+      "fablePanel": 14182.84,
+      "archivedSourceAfter": 14182.84,
+      "difference": 0.0,
+      "status": "MATCH"
+    }
+  ]
+}

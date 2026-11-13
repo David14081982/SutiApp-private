@@ -1,0 +1,530 @@
+{
+  "status": "PASS",
+  "sourceReadAt": "2026-11-04T16:31:40.782Z",
+  "sourceSha256": "5cc800c07d0bbf02b9d7ab5b3759b2d9d25664519d6512f8db058990431dcc5f",
+  "sourceRows": 20281,
+  "scope": "Archived Google 2026-11-04; NOT the 2026-11-13 Fable snapshot. Savings/investors excluded from this regression.",
+  "sourceUnchanged": true,
+  "results": [
+    {
+      "year": 2025,
+      "durationMs": 1314,
+      "reportCells": 1800,
+      "excelNumericCells": 938,
+      "excelBytes": 5825255,
+      "records": 37046,
+      "matrix": [
+        {
+          "month": "2025-01",
+          "quotaCount": 11,
+          "allProgramAmount": 15116.48,
+          "fourLoanProgramsBefore": 0,
+          "fourLoanProgramsAfter": 0,
+          "addedOtherPrograms": 15116.48,
+          "knownPlacementBefore": 413000,
+          "knownPlacementAfter": 327000
+        },
+        {
+          "month": "2025-02",
+          "quotaCount": 28,
+          "allProgramAmount": 42001.12,
+          "fourLoanProgramsBefore": 26884.64,
+          "fourLoanProgramsAfter": 26884.64,
+          "addedOtherPrograms": 15116.48,
+          "knownPlacementBefore": 463000,
+          "knownPlacementAfter": 447000
+        },
+        {
+          "month": "2025-03",
+          "quotaCount": 76,
+          "allProgramAmount": 129744.7,
+          "fourLoanProgramsBefore": 114628.22,
+          "fourLoanProgramsAfter": 114628.22,
+          "addedOtherPrograms": 15116.48,
+          "knownPlacementBefore": 442000,
+          "knownPlacementAfter": 344000
+        },
+        {
+          "month": "2025-04",
+          "quotaCount": 147,
+          "allProgramAmount": 268798.57,
+          "fourLoanProgramsBefore": 255212.09,
+          "fourLoanProgramsAfter": 255212.09,
+          "addedOtherPrograms": 13586.48,
+          "knownPlacementBefore": 770200,
+          "knownPlacementAfter": 716200
+        },
+        {
+          "month": "2025-05",
+          "quotaCount": 263,
+          "allProgramAmount": 353476.41,
+          "fourLoanProgramsBefore": 332281.45,
+          "fourLoanProgramsAfter": 332281.45,
+          "addedOtherPrograms": 21194.96,
+          "knownPlacementBefore": 612200,
+          "knownPlacementAfter": 622200
+        },
+        {
+          "month": "2025-06",
+          "quotaCount": 343,
+          "allProgramAmount": 475849.97,
+          "fourLoanProgramsBefore": 442777.59,
+          "fourLoanProgramsAfter": 442777.59,
+          "addedOtherPrograms": 33072.38,
+          "knownPlacementBefore": 396814,
+          "knownPlacementAfter": 396814
+        },
+        {
+          "month": "2025-07",
+          "quotaCount": 446,
+          "allProgramAmount": 704581.34,
+          "fourLoanProgramsBefore": 671233.39,
+          "fourLoanProgramsAfter": 671233.39,
+          "addedOtherPrograms": 33347.95,
+          "knownPlacementBefore": 513200,
+          "knownPlacementAfter": 503200
+        },
+        {
+          "month": "2025-08",
+          "quotaCount": 561,
+          "allProgramAmount": 682440.23,
+          "fourLoanProgramsBefore": 649718.98,
+          "fourLoanProgramsAfter": 649718.98,
+          "addedOtherPrograms": 32721.25,
+          "knownPlacementBefore": 706500,
+          "knownPlacementAfter": 705000
+        },
+        {
+          "month": "2025-09",
+          "quotaCount": 632,
+          "allProgramAmount": 739042.63,
+          "fourLoanProgramsBefore": 696690.68,
+          "fourLoanProgramsAfter": 696690.68,
+          "addedOtherPrograms": 42351.95,
+          "knownPlacementBefore": 719500,
+          "knownPlacementAfter": 719500
+        },
+        {
+          "month": "2025-10",
+          "quotaCount": 734,
+          "allProgramAmount": 1035423.41,
+          "fourLoanProgramsBefore": 956381.66,
+          "fourLoanProgramsAfter": 956381.66,
+          "addedOtherPrograms": 79041.75,
+          "knownPlacementBefore": 518000,
+          "knownPlacementAfter": 518000
+        },
+        {
+          "month": "2025-11",
+          "quotaCount": 796,
+          "allProgramAmount": 1230287.61,
+          "fourLoanProgramsBefore": 1104917.24,
+          "fourLoanProgramsAfter": 1104917.24,
+          "addedOtherPrograms": 125370.37,
+          "knownPlacementBefore": 487646.66,
+          "knownPlacementAfter": 487646.66
+        },
+        {
+          "month": "2025-12",
+          "quotaCount": 782,
+          "allProgramAmount": 1033946.68,
+          "fourLoanProgramsBefore": 933236.23,
+          "fourLoanProgramsAfter": 933236.23,
+          "addedOtherPrograms": 100710.45,
+          "knownPlacementBefore": 576500,
+          "knownPlacementAfter": 576500
+        }
+      ]
+    },
+    {
+      "year": 2026,
+      "durationMs": 1733,
+      "reportCells": 1800,
+      "excelNumericCells": 984,
+      "excelBytes": 10865943,
+      "records": 96890,
+      "matrix": [
+        {
+          "month": "2026-01",
+          "quotaCount": 758,
+          "allProgramAmount": 996298.73,
+          "fourLoanProgramsBefore": 895754.96,
+          "fourLoanProgramsAfter": 895754.96,
+          "addedOtherPrograms": 100543.77,
+          "knownPlacementBefore": 623000,
+          "knownPlacementAfter": 623000
+        },
+        {
+          "month": "2026-02",
+          "quotaCount": 681,
+          "allProgramAmount": 770467.5,
+          "fourLoanProgramsBefore": 710679.08,
+          "fourLoanProgramsAfter": 710679.08,
+          "addedOtherPrograms": 59788.42,
+          "knownPlacementBefore": 1023770,
+          "knownPlacementAfter": 1023770
+        },
+        {
+          "month": "2026-03",
+          "quotaCount": 712,
+          "allProgramAmount": 1033627.38,
+          "fourLoanProgramsBefore": 934594.84,
+          "fourLoanProgramsAfter": 934594.84,
+          "addedOtherPrograms": 99032.54,
+          "knownPlacementBefore": 777400,
+          "knownPlacementAfter": 777400
+        },
+        {
+          "month": "2026-04",
+          "quotaCount": 2005,
+          "allProgramAmount": 1391603.65,
+          "fourLoanProgramsBefore": 907987.02,
+          "fourLoanProgramsAfter": 907987.02,
+          "addedOtherPrograms": 483616.63,
+          "knownPlacementBefore": 724206.25,
+          "knownPlacementAfter": 724206.25
+        },
+        {
+          "month": "2026-05",
+          "quotaCount": 829,
+          "allProgramAmount": 934409.06,
+          "fourLoanProgramsBefore": 869082.3,
+          "fourLoanProgramsAfter": 869082.3,
+          "addedOtherPrograms": 65326.76,
+          "knownPlacementBefore": 786300,
+          "knownPlacementAfter": 786300
+        },
+        {
+          "month": "2026-06",
+          "quotaCount": 869,
+          "allProgramAmount": 948317.95,
+          "fourLoanProgramsBefore": 884204.87,
+          "fourLoanProgramsAfter": 884204.87,
+          "addedOtherPrograms": 64113.08,
+          "knownPlacementBefore": 988500,
+          "knownPlacementAfter": 988500
+        },
+        {
+          "month": "2026-07",
+          "quotaCount": 916,
+          "allProgramAmount": 1324349.49,
+          "fourLoanProgramsBefore": 1206183.81,
+          "fourLoanProgramsAfter": 1206183.81,
+          "addedOtherPrograms": 118165.68,
+          "knownPlacementBefore": 937500,
+          "knownPlacementAfter": 937500
+        },
+        {
+          "month": "2026-08",
+          "quotaCount": 918,
+          "allProgramAmount": 1110579.93,
+          "fourLoanProgramsBefore": 1047562.75,
+          "fourLoanProgramsAfter": 1047562.75,
+          "addedOtherPrograms": 63017.18,
+          "knownPlacementBefore": 1360300,
+          "knownPlacementAfter": 1360300
+        },
+        {
+          "month": "2026-09",
+          "quotaCount": 957,
+          "allProgramAmount": 1157037.29,
+          "fourLoanProgramsBefore": 1102089.89,
+          "fourLoanProgramsAfter": 1102089.89,
+          "addedOtherPrograms": 54947.4,
+          "knownPlacementBefore": 1781097,
+          "knownPlacementAfter": 1922097
+        },
+        {
+          "month": "2026-10",
+          "quotaCount": 1051,
+          "allProgramAmount": 1732655.96,
+          "fourLoanProgramsBefore": 1662958,
+          "fourLoanProgramsAfter": 1662958,
+          "addedOtherPrograms": 69697.96,
+          "knownPlacementBefore": 1609440,
+          "knownPlacementAfter": 2324393.86
+        },
+        {
+          "month": "2026-11",
+          "quotaCount": 1255,
+          "allProgramAmount": 2544097.17,
+          "fourLoanProgramsBefore": 2442806.3,
+          "fourLoanProgramsAfter": 2442806.3,
+          "addedOtherPrograms": 101290.87,
+          "knownPlacementBefore": 79498.21,
+          "knownPlacementAfter": 79498.21
+        },
+        {
+          "month": "2026-12",
+          "quotaCount": 1138,
+          "allProgramAmount": 1710773.77,
+          "fourLoanProgramsBefore": 1672484.83,
+          "fourLoanProgramsAfter": 1672484.83,
+          "addedOtherPrograms": 38288.94,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        }
+      ]
+    },
+    {
+      "year": 2027,
+      "durationMs": 2206,
+      "reportCells": 1800,
+      "excelNumericCells": 723,
+      "excelBytes": 7477636,
+      "records": 66958,
+      "matrix": [
+        {
+          "month": "2027-01",
+          "quotaCount": 935,
+          "allProgramAmount": 1548702.07,
+          "fourLoanProgramsBefore": 1503517.89,
+          "fourLoanProgramsAfter": 1503517.89,
+          "addedOtherPrograms": 45184.18,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-02",
+          "quotaCount": 731,
+          "allProgramAmount": 822808.78,
+          "fourLoanProgramsBefore": 801100.94,
+          "fourLoanProgramsAfter": 801100.94,
+          "addedOtherPrograms": 21707.84,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-03",
+          "quotaCount": 583,
+          "allProgramAmount": 995423.26,
+          "fourLoanProgramsBefore": 976251.02,
+          "fourLoanProgramsAfter": 976251.02,
+          "addedOtherPrograms": 19172.24,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-04",
+          "quotaCount": 431,
+          "allProgramAmount": 629925.1,
+          "fourLoanProgramsBefore": 613288.46,
+          "fourLoanProgramsAfter": 613288.46,
+          "addedOtherPrograms": 16636.64,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-05",
+          "quotaCount": 212,
+          "allProgramAmount": 249315.76,
+          "fourLoanProgramsBefore": 238659.41,
+          "fourLoanProgramsAfter": 238659.41,
+          "addedOtherPrograms": 10656.35,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-06",
+          "quotaCount": 128,
+          "allProgramAmount": 173406.08,
+          "fourLoanProgramsBefore": 164753.9,
+          "fourLoanProgramsAfter": 164753.9,
+          "addedOtherPrograms": 8652.18,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-07",
+          "quotaCount": 99,
+          "allProgramAmount": 245516.78,
+          "fourLoanProgramsBefore": 236864.6,
+          "fourLoanProgramsAfter": 236864.6,
+          "addedOtherPrograms": 8652.18,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-08",
+          "quotaCount": 75,
+          "allProgramAmount": 118144.99,
+          "fourLoanProgramsBefore": 109492.81,
+          "fourLoanProgramsAfter": 109492.81,
+          "addedOtherPrograms": 8652.18,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-09",
+          "quotaCount": 55,
+          "allProgramAmount": 87250.09,
+          "fourLoanProgramsBefore": 82008.33,
+          "fourLoanProgramsAfter": 82008.33,
+          "addedOtherPrograms": 5241.76,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-10",
+          "quotaCount": 36,
+          "allProgramAmount": 109102.97,
+          "fourLoanProgramsBefore": 104581.23,
+          "fourLoanProgramsAfter": 104581.23,
+          "addedOtherPrograms": 4521.74,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-11",
+          "quotaCount": 18,
+          "allProgramAmount": 78369.44,
+          "fourLoanProgramsBefore": 76108.57,
+          "fourLoanProgramsAfter": 76108.57,
+          "addedOtherPrograms": 2260.87,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2027-12",
+          "quotaCount": 12,
+          "allProgramAmount": 53595.97,
+          "fourLoanProgramsBefore": 53595.97,
+          "fourLoanProgramsAfter": 53595.97,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        }
+      ]
+    },
+    {
+      "year": 2028,
+      "durationMs": 1243,
+      "reportCells": 1800,
+      "excelNumericCells": 689,
+      "excelBytes": 5737447,
+      "records": 50460,
+      "matrix": [
+        {
+          "month": "2028-01",
+          "quotaCount": 9,
+          "allProgramAmount": 38345.97,
+          "fourLoanProgramsBefore": 38345.97,
+          "fourLoanProgramsAfter": 38345.97,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-02",
+          "quotaCount": 7,
+          "allProgramAmount": 24105.22,
+          "fourLoanProgramsBefore": 24105.22,
+          "fourLoanProgramsAfter": 24105.22,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-03",
+          "quotaCount": 6,
+          "allProgramAmount": 124941.69,
+          "fourLoanProgramsBefore": 124941.69,
+          "fourLoanProgramsAfter": 124941.69,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-04",
+          "quotaCount": 5,
+          "allProgramAmount": 27457.09,
+          "fourLoanProgramsBefore": 27457.09,
+          "fourLoanProgramsAfter": 27457.09,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-05",
+          "quotaCount": 4,
+          "allProgramAmount": 18972.34,
+          "fourLoanProgramsBefore": 18972.34,
+          "fourLoanProgramsAfter": 18972.34,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-06",
+          "quotaCount": 2,
+          "allProgramAmount": 14182.84,
+          "fourLoanProgramsBefore": 14182.84,
+          "fourLoanProgramsAfter": 14182.84,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-07",
+          "quotaCount": 2,
+          "allProgramAmount": 14182.84,
+          "fourLoanProgramsBefore": 14182.84,
+          "fourLoanProgramsAfter": 14182.84,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-08",
+          "quotaCount": 2,
+          "allProgramAmount": 14182.84,
+          "fourLoanProgramsBefore": 14182.84,
+          "fourLoanProgramsAfter": 14182.84,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-09",
+          "quotaCount": 2,
+          "allProgramAmount": 14182.84,
+          "fourLoanProgramsBefore": 14182.84,
+          "fourLoanProgramsAfter": 14182.84,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-10",
+          "quotaCount": 2,
+          "allProgramAmount": 14182.84,
+          "fourLoanProgramsBefore": 14182.84,
+          "fourLoanProgramsAfter": 14182.84,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-11",
+          "quotaCount": 2,
+          "allProgramAmount": 14182.84,
+          "fourLoanProgramsBefore": 14182.84,
+          "fourLoanProgramsAfter": 14182.84,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        },
+        {
+          "month": "2028-12",
+          "quotaCount": 2,
+          "allProgramAmount": 14182.84,
+          "fourLoanProgramsBefore": 14182.84,
+          "fourLoanProgramsAfter": 14182.84,
+          "addedOtherPrograms": 0,
+          "knownPlacementBefore": 0,
+          "knownPlacementAfter": 0
+        }
+      ]
+    }
+  ]
+}

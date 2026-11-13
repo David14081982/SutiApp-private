@@ -2,7 +2,7 @@
 import {sourceDate,fundGroup,requestStatus,ReportError} from './report.mjs';
 export const CASH_FLOW_LOAN_FUNDS=Object.freeze({loanSavings:'Caja de Ahorro',sutiexpress:'Sutiexpress',pettyCash:'Caja Chica',advance:'Adelantos de Nómina'});
 const text=v=>String(v??'').trim();
-const money=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0&&Number.isSafeInteger(Math.round(v*100))&&Math.abs(v*100-Math.round(v*100))<.00001?Math.round(v*100):null;
+const money=value=>{const v=typeof value==='string'&&/^\d+(\.\d{1,2})?$/.test(value.trim())?Number(value.trim()):value;return typeof v==='number'&&Number.isFinite(v)&&v>=0&&Number.isSafeInteger(Math.round(v*100))&&Math.abs(v*100-Math.round(v*100))<.00001?Math.round(v*100):null;};
 const unique=values=>[...new Set(values)];
 const sum=values=>{const n=values.reduce((a,v)=>a+v,0);if(!Number.isSafeInteger(n))throw new ReportError('AMOUNT_OVERFLOW');return n;};
 const monthEnd=key=>{const [y,m]=key.split('-').map(Number);return new Date(Date.UTC(y,m,0)).toISOString().slice(0,10);};
@@ -51,15 +51,17 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
   // An orphan calendar can identify its original placement only with a recorded authorization.
   const orphanAuthorized=!matches.length&&authorizationDates.length===1&&!C.startsWith('ROW:');
   const authorized=approved.length>0||orphanAuthorized;
-  let placementDate=approved.length?rawRequestDates.every(Boolean)&&requestDates.length===1?requestDates[0]:null:orphanAuthorized?originalDates.length===1?originalDates[0]:originalDates.length===0?authorizationDates[0]:null:null;
-  const dateBasis=approved.length?'Historial de solicitudes · J':originalDates.length===1?'HISTORIAL P V2 · AG':'HISTORIAL P V2 · U';
+  let placementDate=approved.length?rawRequestDates.every(Boolean)&&requestDates.length===1?requestDates[0]:null:orphanAuthorized?originalDates.length===1?originalDates[0]:null:null;
+  const dateBasis=approved.length?'Historial de solicitudes · J':originalDates.length===1?'HISTORIAL P V2 · AG':'Fecha de solicitud no registrada';
   const requestAmounts=approved.map(r=>money(r.v[7])),sourcePrincipals=group.map(r=>money(r.v[9])).filter(v=>v!==null);
   const requestPrincipal=approved.length&&requestAmounts.every(v=>v!==null)?one(requestAmounts):null;
   const pv2Principal=one(sourcePrincipals);
-  let principal=approved.length?requestPrincipal:pv2Principal;
+  let principal=group.length?pv2Principal:requestPrincipal;
   const reasons=[];
   if(approved.length&&requestPrincipal===null)reasons.push('CAPITAL_SOLICITUD_AMBIGUO');
-  if(principal!==null&&sourcePrincipals.some(v=>v!==principal)){principal=null;reasons.push('CAPITAL_SOLICITUD_PV2_DIFIERE');}
+  if(approved.length>1&&(requestPrincipal===null||controls.length>1)){principal=null;reasons.push('ID_SOLICITUD_DUPLICADO_CONFLICTIVO');}
+  if(requestPrincipal!==null&&pv2Principal!==null&&requestPrincipal!==pv2Principal)reasons.push('CAPITAL_SOLICITADO_DIFIERE_OTORGADO_PV2');
+  if(group.some(r=>typeof r.v[9]==='string'&&money(r.v[9])!==null)||approved.some(r=>typeof r.v[7]==='string'&&money(r.v[7])!==null))reasons.push('IMPORTE_NUMERICO_ORIGINAL_EN_TEXTO');
   if(!approved.length&&sourcePrincipals.length&&pv2Principal===null)reasons.push('CAPITAL_PV2_AMBIGUO');
   if(controls.length>1)reasons.push('FOLIO_AMBIGUO');
   if(requestFunds.length>1||rowFunds.length>1||fund&&rowFunds.some(f=>f!==fund))reasons.push('PROGRAMA_AMBIGUO');
@@ -76,6 +78,7 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
    else unassigned.push({...origin,id:'capital:'+C,metric:'placed',amount:amount(principal),status:'UNASSIGNED'});
    if(!placementDate)reasons.push('FECHA_COLOCACION_AMBIGUA');
    if(placementDate&&placementDate>asOf)reasons.push('FECHA_COLOCACION_FUTURA');
+   if(!placementDate||placementDate>asOf)problem(fund,[],'LOAN_DATE_UNRESOLVED','Préstamo '+C+': fecha de solicitud ausente, ambigua o posterior al corte; no se sustituye por autorización PV2.',sourceIds);
    if(!placementDate||principal===null)problem(fund,requestDates.length?['placed']:[],'LOAN_PLACEMENT_UNRESOLVED','La colocación conserva una fecha o capital sin resolver; el préstamo se cuenta una sola vez cuando su mes está identificado.',sourceIds,requestDates);
   }
   if(!authorized&&group.length)reasons.push(matches.length?'SIN_SOLICITUD_AUTORIZADA':'SIN_FECHA_AUTORIZACION_VINCULADA');
@@ -125,17 +128,20 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
     if(!Number.isSafeInteger(next))throw new ReportError('AMOUNT_OVERFLOW');
     prefix[component].push(next);unknown[component].push(unknown[component].at(-1)+(value===null?1:0));
    }
-   const identitySafe=controls.length<=1&&rowFunds.length<=1&&(!rowFunds.length||rowFunds[0]===fund),validDate=!!placementDate&&!invalidQuota;
+   const identitySafe=controls.length<=1&&rowFunds.length<=1&&(!rowFunds.length||rowFunds[0]===fund),validDate=!!placementDate&&!invalidQuota&&ordered.every(p=>p.date>=placementDate);
    for(const month of months){
     const cut=cuts.get(month.key);
-    if(placementDate&&placementDate>cut)continue;
+    if(placementDate&&placementDate>cut&&!ordered.some(p=>p.date<=cut))continue;
     let low=0,high=ordered.length;
     while(low<high){const mid=(low+high)>>>1;if(ordered[mid].date<=cut)low=mid+1;else high=mid;}
     const validPrincipal=!principalCapConflict&&principal!==null&&unknown.principal[low]===0;
     const paidPrincipal=validPrincipal?prefix.principal[low]:null;
     const pending=validDate&&identitySafe&&validPrincipal&&paidPrincipal<=principal?principal-paidPrincipal:null;
     const status=month.key>current?'SCHEDULED':'RECORDED';
+    const firstEvidence=[...authorizationDates,...ordered.map(p=>p.date)].sort()[0],originalVisible=placementDate&&placementDate<=cut||firstEvidence&&firstEvidence<=cut;
     const common={source:'HISTORIAL P V2 y solicitud autorizada',sourceId:'Préstamo '+C,loanId:C,folio,name,fund:CASH_FLOW_LOAN_FUNDS[fund],date:cut,status,sourceIds,originalPrincipal:amount(principal),principalApplied:amount(paidPrincipal),dateBasis,placementDate};
+    emit(fund,'pending_determined',{...common,id:'determined:'+C+':'+month.key,amount:pending===null?0:amount(pending),basis:'DETERMINED_BALANCE_SUBTOTAL'});
+    emit(fund,'pending_unresolved_original',{...common,id:'unresolved:'+C+':'+month.key,amount:pending===null?(originalVisible?amount(principal):null):0,basis:'ORIGINAL_CAPITAL_UNRESOLVED_BALANCE',note:pending===null?'Capital original de un préstamo cuyo saldo no se puede determinar; no es saldo pendiente ni efectivo.':undefined});
     const scheduledParts=[['interest_pending','interest','AB'],['admin_pending','admin','Z']].map(([metric,component,column])=>({metric,column,value:validDate&&identitySafe&&unknown[component].at(-1)===unknown[component][low]?prefix[component].at(-1)-prefix[component][low]:null}));
     if(pending===0)zeroBalance(fund,'pending','AD',month.key,common,C);
     else emit(fund,'pending',{...common,id:'pending:'+C+':AD:'+month.key,amount:amount(pending),basis:'ORIGINAL_PRINCIPAL_MINUS_SOURCE_AD',note:pending===null?'El saldo de este pr\u00e9stamo no puede determinarse sin resolver su capital, fecha o componente AD.':undefined});
@@ -150,6 +156,7 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
     const cut=cuts.get(month.key);if(!placementDate||placementDate>cut)continue;
     const common={...origin,date:cut,status:month.key>current?'SCHEDULED':'RECORDED',basis:'AUTHORIZED_PRINCIPAL_NO_CALENDAR'};
     emit(fund,'pending',{...common,id:'pending:'+C+':AD:'+month.key,amount:null,note:'El capital original no demuestra el saldo pendiente sin el calendario de cuotas.'});
+    emit(fund,'pending_unresolved_original',{...common,id:'unresolved:'+C+':'+month.key,amount:amount(principal),basis:'ORIGINAL_CAPITAL_UNRESOLVED_BALANCE'});
     for(const [metric,column]of [['interest_pending','AB'],['admin_pending','Z']])emit(fund,metric,{...common,id:'pending:'+C+':'+column+':'+month.key,amount:null,note:'El calendario original de este pr\u00e9stamo a\u00fan no est\u00e1 registrado.'});
    }
    reasons.push('CALENDARIO_AUN_NO_REGISTRADO');
@@ -178,5 +185,5 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
    sourceIds:quotaIds,quotaIds,basis:'ZERO_SOURCE_DISCLOSURES',countQuotas:quotaIds.length
   });
  }
- return {entries,issues,unassigned,loanContracts,funds:[...funds].map(id=>({id,label:CASH_FLOW_LOAN_FUNDS[id]})),coverage:{loanCount:identities.length,determinedLoans:determined,protectedLoans:partial,derivedForecastRows:0,componentAuthority:'HISTORIAL P V2 · Z, AB, AC, AD',placementAuthority:'Historial de solicitudes · A, H, J, Y; origen PV2 documentado',financialWrites:0}};
+ return {entries,issues,unassigned,loanContracts,funds:[...funds].map(id=>({id,label:CASH_FLOW_LOAN_FUNDS[id]})),coverage:{loanCount:identities.length,determinedLoans:determined,protectedLoans:partial,derivedForecastRows:0,componentAuthority:'HISTORIAL P V2 · Z, AB, AC, AD',placementAuthority:'ID PV2 C; capital otorgado PV2 J; fecha Solicitudes J / origen AG; aprobación Y; H sólo sin calendario',financialWrites:0}};
 }

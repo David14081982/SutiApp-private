@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "focal": [
+    "cash-flow-report.jsx",
+    "cash-flow-export.js"
+  ],
+  "preservedModules": 169,
+  "beforeSha256": "1dc83c818a83f63d4d8337d4f5c30511814f92f1da6810a791defbc4d33ca5aa",
+  "afterSha256": "a5c755def58cae4e6b6d94cf3ed362eeed2addad140c0097bf6b936610107e6a",
+  "html": "bundle cachebuster only"
+}

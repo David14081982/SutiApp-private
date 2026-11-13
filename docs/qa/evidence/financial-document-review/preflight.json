@@ -1,0 +1,44 @@
+{
+  "time": "2026-11-13T04:00:53.694Z",
+  "productionWrites": 0,
+  "versions": [
+    {
+      "version": "20261109000100"
+    },
+    {
+      "version": "20261109000200"
+    },
+    {
+      "version": "20261109000300"
+    },
+    {
+      "version": "20261111000100"
+    },
+    {
+      "version": "20261111000200"
+    },
+    {
+      "version": "20261111000300"
+    }
+  ],
+  "extensions": [
+    {
+      "extname": "pg_cron"
+    },
+    {
+      "extname": "pg_net"
+    },
+    {
+      "extname": "supabase_vault"
+    }
+  ],
+  "schemaHash": "b3c58580396349b17e3e27c5ae7ebaf4b074c33b95477e09349a8bbbaba94b42",
+  "functions": 26,
+  "constraints": 98,
+  "triggers": 43,
+  "edgeExists": false,
+  "edgeStatus": 404,
+  "secretNames": [
+    "ALLOWED_APP_ORIGINS"
+  ]
+}

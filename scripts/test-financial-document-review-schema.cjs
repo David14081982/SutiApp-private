@@ -1,0 +1,65 @@
+// Disposable localhost database only. No business rows imported and no Storage/OpenAI calls.
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'..'),Module=require('node:module'),originalLoad=Module._load;
+const standard=path.join(root,'.tmp/document-architecture-lab/deps/node_modules/pg');
+const driver=fs.existsSync(standard)?standard:(process.env.FINREVIEW_PG_DRIVER||'C:/tmp/sutiapp-h01-20260907/node_modules/pg');
+Module._load=function(id,...args){return originalLoad.call(this,id===standard?driver:id,...args);};
+const L=require('./document-lab/local.cjs');Module._load=originalLoad;
+(async()=>{let cluster,db;const checks=[];try{
+ cluster=await L.createCluster();await L.restoreSchema(cluster.config,cluster.dir);
+ db=L.connect(cluster.config);await db.connect();await db.query("set document.release_authorized='DOCUMENT_V1'");
+ const migrations=['20261109000100_documentary_version_integrity.sql','20261112000100_financial_document_review.sql','20261112000200_financial_document_correction.sql'];
+ for(const file of migrations)await db.query(fs.readFileSync(path.join(root,'supabase/migrations',file),'utf8'));
+ checks.push('forward migrations compile on restored schema without business imports');
+ const tables=(await db.query("select c.relname,c.relrowsecurity,c.relforcerowsecurity from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='financial_review_private' and c.relkind='r'")).rows;
+ assert.equal(tables.length,4);assert(tables.every(t=>t.relrowsecurity&&t.relforcerowsecurity));
+ assert.equal((await db.query('select enabled from financial_review_private.settings')).rows[0].enabled,false);
+ assert.equal((await db.query("select has_function_privilege('authenticated','public.claim_financial_document_review()','EXECUTE') allowed")).rows[0].allowed,false);
+ assert.equal((await db.query("select has_function_privilege('anon','public.list_financial_document_reviews(uuid[])','EXECUTE') allowed")).rows[0].allowed,false);
+ checks.push('default off, forced RLS, worker/anonymous grants denied');
+ const deny=async(sql,args,pattern)=>{await assert.rejects(db.query(sql,args),e=>pattern.test(e.message));};
+ await deny('select public.list_financial_document_reviews(array[]::uuid[])',[],/REVIEW_ACCESS_DENIED/);
+ await deny('select public.claim_financial_document_review()',[],/SERVICE_REQUIRED/);
+ const id='10000000-0000-4000-8000-000000000001',other='10000000-0000-4000-8000-000000000002';
+ // Seed only synthetic dependencies without running unrelated business workflows.
+ // Guards are restored before exercising any candidate function; not a submission E2E.
+ await db.query("set session_replication_role=replica");
+ await db.query(`insert into public.program_requests(id,actor_real_auth_user_id,affiliate_id,numero_control,program_id,program_item_id,request_type,idempotency_key,workflow_id,workflow_version,workflow_snapshot,applicant_profile_snapshot,financial_profile_snapshot,document_requirements_snapshot,created_at)
+ values($1,$2,$2,'SYNTHETIC-ONLY','prestamo',$2,'benefit',$2,$2,1,'{}','{"full_name":"SYNTHETIC PERSON"}','{"financial_employee_category_code":"SYNTHETIC"}','[]','2026-11-12T18:00:00Z')`,[id,other]);
+ await db.query("set session_replication_role=origin");
+ await db.query('insert into financial_review_private.reviews(request_id) values($1)',[id]);
+ await db.query("select set_config('request.jwt.claims','{\"role\":\"service_role\"}',false),set_config('request.jwt.claim.role','service_role',false)");
+ assert.equal((await db.query('select public.claim_financial_document_review() value')).rows[0].value,null);
+ await db.query('update financial_review_private.settings set enabled=true');
+ let job=(await db.query('select public.claim_financial_document_review() value')).rows[0].value;
+ assert.equal(job.context.applicant_name,'SYNTHETIC PERSON');assert.equal(job.context.submission_day,'2026-11-12');assert.equal(job.context.expected_periods,null);
+ assert.equal((await db.query('select public.claim_financial_document_review() value')).rows[0].value,null);
+ const finish=(lease,hash,result,error=null)=>db.query('select public.finish_financial_document_review($1,$2,$3,$4,$5,$6,$7) saved',[id,lease,hash,result,error,'SYNTHETIC_MODEL',null]);
+ assert.equal((await finish(other,job.source_hash,null,'REVIEW_UNAVAILABLE')).rows[0].saved,false);
+ await assert.rejects(finish(job.lease,job.source_hash,{version:'FINANCIAL_DOCUMENT_REVIEW_V1'}),/REVIEW_RESULT_INVALID/);
+ assert.equal((await finish(job.lease,job.source_hash,{version:'FINANCIAL_DOCUMENT_REVIEW_V1',status:'MANUAL',observations:[]})).rows[0].saved,true);
+ checks.push('worker disabled gate, one lease, exact context, stale lease and invalid verdict denial');
+ await db.query("insert into financial_review_private.payroll_periods values('SYNTHETIC','2026-10-01','2026-10-15','2026-10-15'),('SYNTHETIC','2026-10-16','2026-10-31','2026-11-05')");
+ job=(await db.query('select public.claim_financial_document_review() value')).rows[0].value;
+ assert(job);assert.equal(job.context.expected_periods.length,2);
+ await db.query("update financial_review_private.payroll_periods set available_on='2026-11-20' where period_start='2026-10-16'");
+ assert.equal((await finish(job.lease,job.source_hash,{version:'FINANCIAL_DOCUMENT_REVIEW_V1',status:'PASS'})).rows[0].saved,false);
+ assert.equal((await db.query('select phase from financial_review_private.reviews')).rows[0].phase,'QUEUED');
+ checks.push('calendar change requeues completed assessment; stale completion discarded');
+ const candidate='10000000-0000-4000-8000-000000000003';
+ await db.query("insert into document_lab_integrity.operations(id,actor_id,affiliate_id,kind,source,sha256,size,mime,arguments_hash,registration_context) values($1,$2,$2,'UPLOAD','affiliate-documents/synthetic/discarded.png',repeat('a',64),5,'image/png',repeat('b',64),'{}')",[candidate,other]);
+ await db.query("insert into financial_review_private.corrections(id,request_id,association_id,old_document,old_asset,actor,session_id,source_hash,phase) values($1,$2,$3,$3,$3,$3,'synthetic',repeat('a',64),'SUPERSEDED')",[candidate,id,other]);
+ assert.equal((await db.query("select public.financial_correction_upload_allowed('private-assets','affiliate-documents/synthetic/discarded.png') allowed")).rows[0].allowed,false);
+ assert.equal((await db.query("select public.financial_correction_upload_allowed('private-assets','unrelated/path.png') allowed")).rows[0].allowed,true);
+ await assert.rejects(db.query("update document_lab_integrity.operations set state='COMPLETE' where id=$1",[candidate]),/CORRECTION_OBSERVATION_CHANGED/);
+ assert.equal((await db.query('select public.pending_financial_document_purges() jobs')).rows[0].jobs[0].id,candidate);
+ assert.equal((await db.query('select public.finish_financial_document_purge($1) done',[candidate])).rows[0].done,true);
+ assert.equal((await db.query('select phase from financial_review_private.corrections')).rows[0].phase,'DISCARDED');
+ checks.push('discarded upload cannot register or reupload; purge targets only candidate and retains metadata');
+ for(const file of ['20261112000200_financial_document_correction.sql','20261112000100_financial_document_review.sql'])await db.query(fs.readFileSync(path.join(root,'supabase/recovery',file),'utf8'));
+ assert.equal((await db.query('select enabled from financial_review_private.settings')).rows[0].enabled,false);
+ assert.equal((await db.query('select count(*)::int n from public.program_requests')).rows[0].n,1);
+ checks.push('recovery compiles, disables processing and preserves synthetic request');
+ const report={status:'PASS',scope:'Isolated SQL contracts; not business submission/Storage/correction E2E',businessRowsImported:0,productionCalls:0,checks};
+ fs.writeFileSync(path.join(root,'docs/qa/evidence/financial-document-review/schema.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+}finally{if(db)await db.end();if(cluster)cluster.stop();}})().catch(e=>{console.error(e.stack);process.exitCode=1;});

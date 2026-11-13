@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "scope": "Isolated SQL contracts; not business submission/Storage/correction E2E",
+  "businessRowsImported": 0,
+  "productionCalls": 0,
+  "checks": [
+    "forward migrations compile on restored schema without business imports",
+    "default off, forced RLS, worker/anonymous grants denied",
+    "worker disabled gate, one lease, exact context, stale lease and invalid verdict denial",
+    "calendar change requeues completed assessment; stale completion discarded",
+    "discarded upload cannot register or reupload; purge targets only candidate and retains metadata",
+    "recovery compiles, disables processing and preserves synthetic request"
+  ]
+}

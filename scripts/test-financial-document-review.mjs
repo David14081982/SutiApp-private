@@ -1,0 +1,36 @@
+// Isolated synthetic inputs only. No credentials, network or actual documents.
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { evaluate, compareNames, validDate } from '../supabase/functions/financial-document-review/engine.mjs';
+import { extractWithOpenAI } from '../supabase/functions/financial-document-review/openai.mjs';
+import { runOne } from '../supabase/functions/financial-document-review/service.mjs';
+const docs = ['ine_front', 'ine_back', 'payroll_latest', 'payroll_previous'].map(code => ({ id: code, code, document_type_id: code, label: code }));
+const ctx = { request_id: 'synthetic', applicant_name: 'María Elena López Soto', submission_day: '2026-11-12', signature_available: true, documents: docs,
+  requirements: docs.map(d => ({ document_type_id: d.document_type_id, required: true, label: d.label })), expected_periods: [{ start: '2026-10-16', end: '2026-10-31' }, { start: '2026-10-01', end: '2026-10-15' }] };
+const raw = { documents: docs.map(d => ({ id: d.id, holder_name: 'MARIA ELENA LOPEZ SOTO', legibility: 'READABLE', type_matches: true, currency: 'MXN', net: 9840, gross: 12000, deductions: 2160, period_start: null, period_end: null, payment_date: null, valid_until: d.code.startsWith('ine') ? '2030-12-31' : null, extras: [], evidence: 'Datos sintéticos legibles.' })), signature: { comparison: 'SIMILAR', evidence: 'Trazos sintéticos comparables.' } };
+Object.assign(raw.documents[2], { period_start: '2026-10-16', period_end: '2026-10-31', payment_date: '2026-11-05', extras: [{ kind: 'BONUS', label: 'Bono', amount: 1500 }] });
+Object.assign(raw.documents[3], { period_start: '2026-10-01', period_end: '2026-10-15', payment_date: '2026-10-15', net: 9620, gross: 12000, deductions: 2380, extras: [{ kind: 'OVERTIME', label: 'Horas extras', amount: 500 }] });
+const copy = () => structuredClone(raw), checks = [];
+const test = async (name, fn) => { await fn(); checks.push({ name, status: 'PASS' }); };
+await test('net, contractual independence, average and extras in both receipts', () => { const r = evaluate(ctx, raw); assert.equal(r.status, 'PASS'); assert.equal(r.payroll.latest.net, 9840); assert.equal(r.payroll.average, 9730); assert.equal(r.payroll.receipts[1].extras[0].amount, 500); assert(!r.rejection_draft); });
+await test('no guessed payroll calendar, day 05 is accepted as payment date', () => { assert.equal(evaluate({ ...ctx, expected_periods: null }, raw).status, 'MANUAL'); });
+await test('affordability is never an automated failure', () => { const r = copy(); for (const d of r.documents) { d.net = 0; d.gross = 2160; d.deductions = 2160; } assert.equal(evaluate(ctx, r).status, 'PASS'); });
+await test('ambiguous and reordered names', () => { assert.equal(compareNames('López Soto María Elena', 'MARIA ELENA LOPEZ SOTO'), 'PASS'); assert.equal(compareNames(ctx.applicant_name, 'MARIA LOPEZ'), 'MANUAL'); });
+await test('different document holder', () => { const r = copy(); r.documents[0].holder_name = 'JUAN PEREZ DIAZ'; assert.equal(evaluate(ctx, r).status, 'FAIL'); });
+await test('unreadable net is never zero or averaged', () => { const r = copy(); r.documents[2].legibility = 'PARTIAL'; const result = evaluate(ctx, r); assert.equal(result.payroll.latest.net, null); assert.equal(result.payroll.average, null); assert.equal(result.status, 'MANUAL'); });
+await test('duplicate periods fail with specific correction slots', () => { const r = copy(); r.documents[3].period_start = r.documents[2].period_start; r.documents[3].period_end = r.documents[2].period_end; const result = evaluate(ctx, r); assert.equal(result.status, 'FAIL'); assert.equal(result.payroll.average, null); assert.equal(result.payroll.latest, null); assert(result.observations.filter(x => x.key.startsWith('duplicate')).every(x => x.correctable)); });
+await test('signature mismatch routes to manual review, never forgery accusation', () => { const r = copy(); r.signature.comparison = 'DIFFERENT'; const result = evaluate(ctx, r); assert.equal(result.status, 'MANUAL'); assert(!result.rejection_draft.includes('fals')); });
+await test('inconsistent payroll arithmetic', () => { const r = copy(); r.documents[2].net = 20000; assert.equal(evaluate(ctx, r).payroll.latest.net, null); });
+await test('wrong payroll owner cannot supply verified net or extras', () => { const r = copy(); r.documents[2].holder_name = 'JUAN PEREZ DIAZ'; const result = evaluate(ctx, r); assert.equal(result.payroll.latest.net, null); assert.equal(result.payroll.average, null); assert.deepEqual(result.payroll.receipts[0].extras, []); });
+await test('outdated and unreadable payroll periods identify replaceable slots', () => { const r = copy(); r.documents[2].period_start = '2026-09-01'; r.documents[2].period_end = '2026-09-15'; let result = evaluate(ctx, r); assert(result.observations.some(o => o.key === 'period-outdated:payroll_latest' && o.correctable)); r.documents[2].period_start = null; result = evaluate(ctx, r); assert(result.observations.some(o => o.key === 'period-missing:payroll_latest' && o.correctable)); });
+await test('generated rejection fits existing 2000-character field', () => { const r = copy(); for (const d of r.documents) { d.legibility='UNREADABLE'; d.type_matches=false; d.period_start=null; d.period_end=null; } assert(evaluate(ctx, r).rejection_draft.length <= 2000); });
+await test('missing/extra/duplicate model documents fail closed', () => { const r = copy(); r.documents[1].id = r.documents[0].id; assert.throws(() => evaluate(ctx, r), /EXTRACTION_SCHEMA/); });
+await test('invalid date and nonfinite amount rejected', () => { assert.equal(validDate('2026-02-30'), false); const r = copy(); r.documents[2].net = Infinity; assert.throws(() => evaluate(ctx, r)); });
+await test('OpenAI adapter is stateless, tool-free, and uses structured output', async () => {
+  await extractWithOpenAI({ apiKey: 'ISOLATED_NOT_A_KEY', model: 'SYNTHETIC_MODEL', context: ctx, attachments: [], fetchImpl: async (url, options) => { const b = JSON.parse(options.body); assert.equal(url, 'https://api.openai.com/v1/responses'); assert.equal(b.store, false); assert.equal(b.tools, undefined); assert.equal(b.text.format.strict, true); return { ok: true, json: async () => ({ status: 'completed', output: [{ content: [{ type: 'output_text', text: JSON.stringify(raw) }] }] }) }; } });
+});
+await test('refused/incomplete provider output is not a compliant dossier', async () => { await assert.rejects(extractWithOpenAI({ apiKey: 'ISOLATED_NOT_A_KEY', model: 'SYNTHETIC', context: ctx, attachments: [], fetchImpl: async () => ({ ok: true, json: async () => ({ status: 'incomplete' }) }) }), /OPENAI_INCOMPLETE/); });
+await test('no configured key means no queue claims and no network', async () => { let called = false; const result = await runOne({ rpc: async () => { called = true; } }, { enabled: true, apiKey: null, model: 'synthetic' }); assert.equal(called, false); assert.equal(result.phase, 'NOT_CONFIGURED'); });
+fs.mkdirSync('docs/qa/evidence/financial-document-review', { recursive: true });
+fs.writeFileSync('docs/qa/evidence/financial-document-review/engine.json', JSON.stringify({ status: 'PASS', syntheticOnly: true, openaiCalls: 0, checks }, null, 2));
+console.log(JSON.stringify({ status: 'PASS', checks: checks.length, openaiCalls: 0 }));

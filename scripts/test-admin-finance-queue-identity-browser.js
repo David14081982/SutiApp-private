@@ -16,7 +16,10 @@ async function main() {
     for (const file of ['app/vendor/react-18.3.1/react.production.min.js', 'app/vendor/react-dom-18.3.1/react-dom.production.min.js']) await page.addScriptTag({ content: read(file) });
     await page.evaluate(() => {
       window.Icon = () => null; window.money = n => '$' + n;
-      window.AffiliateAuth = { getState: () => ({ phase: 'authenticated', session: { user: { id: 'fixture' }, access_token: 'fixture' }, affiliate: { id: 'fixture' } }), subscribe: () => () => {} };
+      window.FinancialDocumentReviewRepository = { list: async () => [] }; // Isolated derived-review fixture.
+      for (const name of ['GeneratedDocuments','FinanceBlockRequestControl','SicofBehaviorCard']) window[name] = () => null; // Unrelated detail panels, isolated fixture.
+      const fixtureToken = 'fixture.' + btoa(JSON.stringify({sub:'fixture',session_id:'synthetic-session',role:'authenticated'})) + '.fixture';
+      window.AffiliateAuth = { getState: () => ({ phase: 'authenticated', session: { user: { id: 'fixture' }, access_token: fixtureToken }, affiliate: { id: 'fixture' } }), subscribe: () => () => {} };
       window.AdminRepository = { getState: () => ({ phase: 'authorized' }), subscribe: () => () => {} };
       const stage = { id: 'received', label: 'Solicitud recibida', responsible: 'Administración', state: 'current' };
       window.__rows = Array.from({ length: 35 }, (_, i) => ({ id: 'r' + i, affiliate_id: 'a' + Math.floor(i / 2), folio: 'SR-2026-' + String(210 - i).padStart(6, '0'), nombre: 'MARÍA', affiliate: { full_name: 'María Fernanda López Hernández ' + i, display_name: 'MARÍA' }, numero_control: '00001326', program_id: i === 4 ? 'casa' : 'prestamo', program_item: { name: i === 4 ? 'Terreno Los Olivos' : 'Suti Préstamo' }, requested_amount: 6000, requested_term: 12, requested_term_semantics: 'quincenal', status: 'submitted', request_type: 'benefit', created_at: new Date(Date.now() - i * 60000).toISOString(), ts: Date.now() - i * 60000, workflow_state: { available: true, stages: [stage], current_stage: stage } }));
@@ -26,13 +29,13 @@ async function main() {
       window.AffiliateRepository = { getProfilePhoto: async id => { __photoReads.push(id); await new Promise(resolve => setTimeout(resolve, 30)); if (id === 'a1') return null; if (id === 'a2') throw Error('PHOTO_DENIED'); return { signedUrl: image, expiresAt: Date.now() + 300000 }; } };
       window.__app = { admin: { has: () => false } }; window.__onCount = () => {};
     });
-    for (const file of ['app/private-resource-demand.js', 'app/admin-finance-queue-repository.js', 'app/screens-admin-finanzas.jsx']) {
+    for (const file of ['app/private-resource-demand.js', 'app/financial-document-review.jsx', 'app/admin-finance-queue-repository.js', 'app/screens-admin-finanzas.jsx']) {
       await page.addScriptTag({ content: read(file).replace('  function FinanzasModule(', '  window.__Workbench = DesktopFinancialWorkbench;\n  function FinanzasModule(') });
     }
     await page.evaluate(() => { window.__root = ReactDOM.createRoot(document.getElementById('fixture')); __root.render(React.createElement(__Workbench, { app: __app, onCount: __onCount })); });
     const rows = page.locator('[data-financial-queue-row]'); await rows.first().waitFor();
     await page.waitForFunction(() => [...document.querySelectorAll('.finwb-profile-photo img')].some(i => i.complete && i.naturalWidth));
-    assert.deepEqual(await page.locator('.finwb-queue-head>span').allTextContents(), ['Folio', 'Foto', 'Afiliado / programa', 'Monto / plazo', 'Estado / etapa', 'Antig.']);
+    assert.deepEqual(await page.locator('.finwb-queue-head>span').allTextContents(), ['Folio', 'Foto', 'Afiliado / programa', 'Préstamo / cuota', 'Nómina más reciente', 'Evaluación documental', 'Estado / acciones', 'Antig.']);
     assert.equal(await rows.first().locator('[data-financial-queue-person]').textContent(), 'María Fernanda López Hernández 0');
     assert((await rows.nth(0).textContent()).includes('Caja Chica'));
     assert((await rows.nth(1).textContent()).includes('Fondo de Emergencia'));
@@ -47,7 +50,7 @@ async function main() {
       await page.setViewportSize(viewport);
       const metrics = await rows.first().evaluate(row => {
         const c = [...row.children], r = c.map(el => el.getBoundingClientRect());
-        return { overflow: document.documentElement.scrollWidth > innerWidth || row.scrollWidth > row.clientWidth, order: r[0].right <= r[1].left && r[1].right <= r[2].left, nameVisible: getComputedStyle(c[2]).display !== 'none', photoVisible: r[1].width >= 32 };
+        return { overflow: document.documentElement.scrollWidth > innerWidth || row.scrollWidth > row.clientWidth, order: innerWidth <= 600 ? r[1].right <= r[2].left && r[0].top <= r[2].top : r[0].right <= r[1].left && r[1].right <= r[2].left, nameVisible: getComputedStyle(c[2]).display !== 'none', photoVisible: r[1].width >= 32 };
       });
       assert(!metrics.overflow && metrics.order && metrics.nameVisible && metrics.photoVisible, JSON.stringify({ viewport, metrics }));
       await page.screenshot({ path: path.join(out, 'queue-' + viewport.width + '.png') }); checks.push({ viewport, ...metrics, status: 'PASS' });

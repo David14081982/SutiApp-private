@@ -1,0 +1,75 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "openaiCalls": 0,
+  "checks": [
+    {
+      "name": "net, contractual independence, average and extras in both receipts",
+      "status": "PASS"
+    },
+    {
+      "name": "no guessed payroll calendar, day 05 is accepted as payment date",
+      "status": "PASS"
+    },
+    {
+      "name": "affordability is never an automated failure",
+      "status": "PASS"
+    },
+    {
+      "name": "ambiguous and reordered names",
+      "status": "PASS"
+    },
+    {
+      "name": "different document holder",
+      "status": "PASS"
+    },
+    {
+      "name": "unreadable net is never zero or averaged",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate periods fail with specific correction slots",
+      "status": "PASS"
+    },
+    {
+      "name": "signature mismatch routes to manual review, never forgery accusation",
+      "status": "PASS"
+    },
+    {
+      "name": "inconsistent payroll arithmetic",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong payroll owner cannot supply verified net or extras",
+      "status": "PASS"
+    },
+    {
+      "name": "outdated and unreadable payroll periods identify replaceable slots",
+      "status": "PASS"
+    },
+    {
+      "name": "generated rejection fits existing 2000-character field",
+      "status": "PASS"
+    },
+    {
+      "name": "missing/extra/duplicate model documents fail closed",
+      "status": "PASS"
+    },
+    {
+      "name": "invalid date and nonfinite amount rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "OpenAI adapter is stateless, tool-free, and uses structured output",
+      "status": "PASS"
+    },
+    {
+      "name": "refused/incomplete provider output is not a compliant dossier",
+      "status": "PASS"
+    },
+    {
+      "name": "no configured key means no queue claims and no network",
+      "status": "PASS"
+    }
+  ]
+}

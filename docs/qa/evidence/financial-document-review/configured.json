@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "model": "gpt-5.6-terra",
+  "enabled": false,
+  "serverSecretsInstalled": 4,
+  "vaultWorkerConfigured": true
+}

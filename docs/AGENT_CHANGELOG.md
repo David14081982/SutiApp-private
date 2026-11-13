@@ -4571,3 +4571,10 @@ Authorized employee-number correction policy: only current assignments, includin
 ## H-EMPLOYEE-NUMBER-CORRECTION-001 - published and applied, 2026-11-11
 
 PR17 merged as ac0fc3e; CI and Pages approved. Initial SQL approval review rejected the application before execution. The owner then explicitly authorized migration 20261111000200 without additional preproduction. Applied at16:40:31Z and verified readonly at16:40:47Z: four exact bodies, preserved security metadata/bindings, nine business tables unchanged. No affiliate creation or document/Storage mutation; 14262 retains five document references. Published artifacts match; anonymous login smoke passes390/1440. Three inherited failures remain documented. Recovery tested locally, original backup retained locally. [Publication receipt](qa/evidence/employee-number-correction/publication-result.json).
+
+
+## 2026-11-12 — H-FINANCE-DOCUMENT-REVIEW-001 — candidato local
+
+Implementados enriquecimiento del listado de Finanzas, cuota contractual/nóminas/extras, resultado documental, motivo editable en el formulario existente y corrección de adjuntos observados desde seguimiento. Preparados motor determinista, adaptador OpenAI desactivado, cola/leases/huellas, migraciones y recuperación, sustitución verificada y purga sin archivo de imágenes. No se cambian fórmulas ni writers de Google; rechazo conserva writer de workflow y aprobación humana no depende de OCR.
+
+Evidencia aislada y resultado detallado en [auditoría](audits/H-FINANCE-DOCUMENT-REVIEW-001.md). No hay instalación, llamadas OpenAI, escritura financiera real ni publicación. Pruebas con credenciales, Storage real y regresión global de imágenes quedan pendientes antes de activar. El workspace contenía cambios previos extensos: diferencias de esta H se contrastan con baseline exacto local, no con HEAD.

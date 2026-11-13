@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "privateDocumentsSent": 0,
+  "modelRequested": "gpt-5-mini",
+  "providerCalls": 1,
+  "httpStatus": 200,
+  "productionChanges": 0,
+  "modelUsed": "gpt-5-mini-2025-08-07",
+  "usage": {
+    "input_tokens": 1940,
+    "input_tokens_details": {
+      "cache_write_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens": 1719,
+    "output_tokens_details": {
+      "reasoning_tokens": 1088
+    },
+    "total_tokens": 3659
+  },
+  "checks": [
+    "latest_net_9840",
+    "two_receipt_average_9730",
+    "period_and_day05_payment",
+    "bonus_1500",
+    "overtime_500",
+    "missing_signature_remains_manual"
+  ],
+  "documentsSent": 2
+}

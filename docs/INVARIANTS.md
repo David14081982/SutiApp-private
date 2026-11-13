@@ -571,3 +571,13 @@ finales focal y global en producción terminaron con PASS.
 ## H-LOAN-HISTORICAL-FUND-RESOLUTION-COMPLETE-001
 
 Classify the obligation program before resolving a loan fund. Never blanket-ignore an unknown loan name or replace missing installments with zero. Never assign a historical fund by weak similarity. Cross-program classification cannot delete historical rows or override an explicit canonical financial contract. No-credit and historical-review states are distinct; a failed quote cannot display animated sample amounts as a result.
+
+
+## H-FINANCE-DOCUMENT-REVIEW-001 — invariantes del candidato local
+
+- El resultado documental nunca autoriza ni rechaza automáticamente ni bloquea aprobación humana por calidad de imagen.
+- Neto no legible, identidad dudosa, moneda no identificada o aritmética inconsistente se presenta como no verificado; nunca cero ni promedio inventado. Bonos/horas extra no se vuelven a sumar al neto.
+- Dos periodos distintos y legibles son necesarios para el promedio. La vigencia usa la fecha original de solicitud y calendario explícito, no la fecha de ejecución.
+- Sustitución sólo propia, observada y pendiente; verificar nuevo contenido antes de cambiar el vínculo. Eliminar bytes anteriores sólo con exclusividad demostrada; nunca romper otra referencia. Excepción focal autorizada a la inmutabilidad del adjunto pendiente, no a la evidencia de otros dominios.
+- Revisiones obsoletas se descartan. Rechazo sugerido se valida contra la huella vigente dentro de la transacción del writer existente. Ningún fallo introduce mocks, declaraciones de ingreso o valores de ejemplo en producción.
+- Cargas descartadas no pueden registrarse ni volver a cargarse en su ruta; la recuperación mantiene esa protección y los metadatos.

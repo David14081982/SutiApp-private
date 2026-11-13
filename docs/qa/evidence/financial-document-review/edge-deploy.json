@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "mode": "deploy",
+  "files": [
+    {
+      "file": "financial-document-review/index.ts",
+      "sha256": "5034b9016099f7d173df0e4622b56017935aa32a9d006f3616067ccf5e8e85a9"
+    },
+    {
+      "file": "_shared/document-stream.mjs",
+      "sha256": "976aa047f70c33482b38433fe37089945bc0cee13ad3d9227e90c4ad16cf229c"
+    },
+    {
+      "file": "_shared/document-crc.mjs",
+      "sha256": "38604fbb65853657253c75317bf0f0c6d016e9a21ec6be1d849b9966363ece43"
+    },
+    {
+      "file": "financial-document-review/service.mjs",
+      "sha256": "be77b9320000f95a069a00d2b05ea50ff0b36401c783bb21ba779636a229f384"
+    },
+    {
+      "file": "financial-document-review/engine.mjs",
+      "sha256": "3522eff926e449f25a9f00d11c7d90105ba5512757f11f14f886bd61411979da"
+    },
+    {
+      "file": "financial-document-review/openai.mjs",
+      "sha256": "6d5e560c8a1b31186dca00471ffa5dc1094f4b493647d3aa112bc34b74cd5959"
+    }
+  ],
+  "deployed": true,
+  "version": 1
+}

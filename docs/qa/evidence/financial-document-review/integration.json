@@ -1,0 +1,11 @@
+{
+  "scope": "LOCAL_AUTH_STORAGE_EDGE_SYNTHETIC",
+  "productionWrites": 0,
+  "checks": [
+    "real JWT, cross-account denial, worker authentication and retry idempotency",
+    "verified new bytes linked, old object physically absent, reevaluation queued, request unchanged",
+    "superseded uploaded candidate deleted, late completion and reupload denied",
+    "shared historical document cannot be replaced or deleted"
+  ],
+  "status": "PASS"
+}

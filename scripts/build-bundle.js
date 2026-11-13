@@ -16,7 +16,7 @@ if (babelPath) {
 
 // H-SICOF-001 integration: private repositories and focal UI dependencies.
 const files = [
-  'document-transfer.js', 'document-integration.js',
+  'document-transfer.js', 'document-integration.js', 'financial-document-review-repository.js', 'financial-document-review.jsx',
   'finance-blocks-repository.js', 'finance-blocks.jsx', 'loan-availability-admin.js',
   'sutifinanzas-repository.js', 'sutifinanzas-admin.jsx',
   'reports-jc-repository.js', 'reports-jc-export.js', 'cash-flow-export.js', 'cash-flow-report.jsx', 'reports-jc-admin.jsx', 'savings-refunds-repository.js', 'savings-refunds-admin.jsx', 'savings-regularization-admin.jsx',

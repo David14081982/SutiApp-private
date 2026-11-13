@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "mode": "ROLLED_BACK_REHEARSAL",
+  "migrations": [
+    {
+      "file": "20261112000100_financial_document_review.sql",
+      "sha256": "3d30c457a52cd9afe4a1b4db28685b7cb304fd04faa50d2a4decca81cf6278bc"
+    },
+    {
+      "file": "20261112000200_financial_document_correction.sql",
+      "sha256": "36f94112f6cb897e1c15950464124365f4981859c742976c10bdbe61cdfc840e"
+    }
+  ],
+  "businessBefore": {
+    "public.program_requests": {
+      "n": "635",
+      "digest": "b50a67a4967a183623b7682ad0bb7e16"
+    },
+    "public.request_documents": {
+      "n": "3656",
+      "digest": "26511d8dca739950962f76a3c5c88749"
+    },
+    "public.affiliate_documents": {
+      "n": "5620",
+      "digest": "32b8bf909fb506c2ae72e2ff96ef793e"
+    },
+    "public.private_assets": {
+      "n": "20490",
+      "digest": "04c7830f5a5ffe56cadb151d1e583a15"
+    },
+    "document_lab_integrity.assets": {
+      "n": "315",
+      "digest": "808f1cb9f3052069236d6e9397c8ebb4"
+    },
+    "storage.objects": {
+      "n": "21568",
+      "digest": "cc15fa7b8f0f80a5cc199c281e4d4c7f"
+    }
+  },
+  "businessRowsChanged": 0,
+  "workerEnabled": false,
+  "queued": 14
+}

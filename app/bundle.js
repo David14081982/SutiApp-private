@@ -99,6 +99,256 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
  window.DocumentIntegration=Object.freeze({enabled,normalizeFile,access,upload,withdraw,evidence,submission,generated});
 })();
 })();
+/* @@file financial-document-review-repository.js */
+(function(){
+/* Derived documentary review. No local persistence or financial decision writer. */
+(function () {
+  'use strict';
+  const db = () => window.SutiSupabase.getClient();
+  const context = () => window.PrivateResourceDemand.context();
+  async function rpc(name, args) {
+    const before = context(), r = await db().rpc(name, args);
+    if (before !== context()) throw Error('DOCUMENT_CONTEXT_CHANGED');
+    if (r.error) throw r.error; return r.data;
+  }
+  async function list(ids) {
+    if (!ids.length) return [];
+    try { return await rpc('list_financial_document_reviews', { p_request_ids: ids }); }
+    catch (error) {
+      if (error.message === 'DOCUMENT_CONTEXT_CHANGED') throw error;
+      // Missing feature is explicit. It never substitutes mock/payroll-declaration data.
+      const phase = error.code === 'PGRST202' || error.code === '42883' ? 'NOT_CONFIGURED' : 'ERROR';
+      return ids.map(request_id => ({ request_id, phase, result: null }));
+    }
+  }
+  const self = id => rpc('get_self_financial_document_review', { p_request_id: id });
+  const reject = (id, hash, comment, actionId) => rpc('reject_with_financial_document_review', { p_request_id: id, p_source_hash: hash, p_comment: comment, p_client_action_id: actionId });
+  async function invoke(body) {
+    const before = context(), r = await db().functions.invoke('financial-document-review', { body });
+    if (before !== context()) throw Error('DOCUMENT_CONTEXT_CHANGED');
+    if (r.error) { let code = r.data?.error; try { code ||= (await r.error.context.clone().json()).error; } catch (_) {} throw Error(code || 'DOCUMENT_REVIEW_OPERATION_UNAVAILABLE'); }
+    return r.data;
+  }
+  async function replace(review, document, file, operationId, progress) {
+    const before = context(), type = { ...document, id: document.document_type_id };
+    const preparedFile = await window.DocumentWorkflowRepository.prepareFile(type, file, progress, 'file');
+    if (before !== context()) throw Error('DOCUMENT_CONTEXT_CHANGED');
+    const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', await preparedFile.arrayBuffer())), b => b.toString(16).padStart(2, '0')).join('');
+    const prepared = await invoke({ action: 'PREPARE_CORRECTION', operation_id: operationId, request_id: review.request_id, association_id: document.id, source_hash: review.source_hash, mime: preparedFile.type, size: preparedFile.size, sha256: digest });
+    if (prepared.state !== 'COMPLETE') {
+      progress('uploading');
+      const r = await db().storage.from(prepared.bucket).upload(prepared.path, preparedFile, { upsert: false, contentType: preparedFile.type });
+      if (before !== context()) throw Error('DOCUMENT_CONTEXT_CHANGED');
+      if (r.error && !/already exists|duplicate/i.test(r.error.message || '')) throw r.error;
+    }
+    progress('verifying');
+    const result = await invoke({ action: 'COMPLETE_CORRECTION', operation_id: prepared.operation_id });
+    window.dispatchEvent(new Event('suti:request-changed'));
+    return result;
+  }
+  function message(error) {
+    const text = String(error?.message || '');
+    if (text.includes('CORRECTION_SHARED_DOCUMENT')) return 'El documento también pertenece a otro expediente. Finanzas debe revisar su sustitución.';
+    if (/CORRECTION_REQUEST_CLOSED/.test(text)) return 'La solicitud ya fue resuelta. Actualiza su seguimiento.';
+    if (/CORRECTION_UPLOAD_ALREADY_PENDING/.test(text)) return 'Hay una carga pendiente. Vuelve a seleccionar el mismo archivo para completar la sustitución.';
+    if (/CORRECTION_OBSERVATION_CHANGED|DOCUMENT_VERSION_CONFLICT/.test(text)) return 'El expediente cambió. Actualiza antes de sustituir el documento.';
+    if (/INVALID_DOCUMENT_FILE/.test(text)) return 'El formato o tamaño del archivo no está permitido.';
+    return 'No se pudo confirmar la sustitución. Puedes reintentar con el mismo archivo.';
+  }
+  window.FinancialDocumentReviewRepository = Object.freeze({ list, self, replace, message, reject });
+})();
+})();
+/* @@file financial-document-review.jsx */
+(function(){
+(function () {
+  'use strict';
+
+  const h = React.createElement;
+  const money = value => typeof value === 'number' && Number.isFinite(value) ? value.toLocaleString('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    minimumFractionDigits: 2
+  }) : 'No verificado';
+  const date = value => value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split('-').reverse().join('/') : 'Periodo no verificado';
+  const labels = {
+    PASS: 'Cumple',
+    FAIL: 'No cumple',
+    MANUAL: 'Requiere revisión manual'
+  };
+  function styles() {
+    if (document.getElementById('financial-review-queue-styles')) return;
+    const node = document.createElement('style');
+    node.id = 'financial-review-queue-styles';
+    node.textContent = `
+    .finwb-root .finwb-queue .finwb-queue-head,.finwb-root .finwb-queue .finwb-row{grid-template-columns:82px 36px minmax(130px,1.2fr) minmax(110px,.8fr) minmax(165px,1fr) minmax(180px,1.1fr) minmax(155px,.9fr) 42px;gap:12px;padding:15px 14px}
+    .finwb-root .finwb-queue .finwb-row>span,.finwb-root .finwb-queue .finwb-queue-head>span{display:block;min-width:0}
+    .finwb-root .finwb-queue .finwb-row>.finwb-profile-photo{display:grid}
+    .finreview-payroll,.finreview-evaluation{display:flex!important;flex-direction:column;gap:4px;font-size:12px;line-height:1.4}
+    .finreview-payroll>strong{font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums}
+    .finreview-payroll small,.finreview-evaluation small{font-size:11px;color:var(--ink-2)}
+    .finreview-extras{display:flex;flex-wrap:wrap;gap:4px}.finreview-extra{padding:3px 6px;border-radius:6px;background:#fff2dd;color:#795018;font-size:10.5px}
+    .finreview-verdict{font-size:11px;font-weight:850;padding:4px 7px;border-radius:8px;width:fit-content}.finreview-verdict.pass{background:#e7f6ed;color:#12613d}.finreview-verdict.fail{background:#fdeaea;color:#a52323}.finreview-verdict.manual{background:#fff2dd;color:#795018}
+    .finreview-observation{font-size:11px;color:var(--ink-2)}.finreview-evaluation summary{font-size:11px;color:var(--guinda);cursor:pointer}.finreview-evaluation ul{padding-left:16px;margin:5px 0;font-size:11px}
+    .finreview-installment{display:block;margin-top:7px;font-size:14px;font-weight:850;font-variant-numeric:tabular-nums}.finreview-installment small{display:block;font-size:10px;color:var(--ink-2);font-weight:650}
+    .finreview-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}.finreview-actions button{border:1px solid var(--hairline);border-radius:8px;padding:6px 8px;background:var(--surface);color:var(--guinda);font:800 11px inherit;cursor:pointer}.finreview-actions button:last-child{background:var(--guinda);color:white}.finreview-actions button:disabled{opacity:.5}
+    @media(min-width:768px) and (max-width:1150px){.finwb-root .finwb-queue{overflow:auto}.finwb-root .finwb-queue .finwb-row,.finwb-root .finwb-queue .finwb-queue-head{min-width:1100px}}
+    @media(max-width:767px){.finwb-root .finwb-queue .finwb-queue-head{display:none}.finwb-root .finwb-queue .finwb-row{grid-template-columns:36px minmax(0,1fr) minmax(0,1fr);gap:10px;padding:14px 10px}.finwb-root .finwb-queue .finwb-row>span:nth-child(1){grid-column:2/4;grid-row:1}.finwb-root .finwb-queue .finwb-row>span:nth-child(2){grid-column:1;grid-row:1/3}.finwb-root .finwb-queue .finwb-row>span:nth-child(3){grid-column:2/4;grid-row:2}.finwb-root .finwb-queue .finwb-row>span:nth-child(4){grid-column:2;grid-row:3}.finwb-root .finwb-queue .finwb-row>span:nth-child(5){grid-column:3;grid-row:3}.finwb-root .finwb-queue .finwb-row>span:nth-child(6){grid-column:2/4;grid-row:4}.finwb-root .finwb-queue .finwb-row>span:nth-child(7){grid-column:2/4;grid-row:5}.finwb-root .finwb-queue .finwb-row>span:nth-child(8){grid-column:1;grid-row:3;font-size:10px}.finreview-payroll>strong{font-size:15px}}
+    `;
+    document.head.appendChild(node);
+  }
+  function PayrollCell({
+    review
+  }) {
+    const result = review?.phase === 'COMPLETE' ? review.result : null,
+      payroll = result?.payroll,
+      latest = payroll?.latest;
+    if (!payroll) return h('span', {
+      className: 'finreview-payroll'
+    }, h('strong', null, 'Neto no verificado'), h('small', null, review?.phase === 'CLOSED' ? 'Sin evaluaci?n registrada' : review?.phase === 'ERROR' ? 'Lectura no disponible' : review?.phase === 'NOT_CONFIGURED' ? 'Evaluación automática no activada' : 'Pendiente de evaluación'));
+    return h('span', {
+      className: 'finreview-payroll'
+    }, h('strong', null, money(latest?.net)), h('small', null, 'Neto del último recibo'), h('small', null, latest ? date(latest.period_start) + ' – ' + date(latest.period_end) : 'Recibo más reciente sin determinar'), h('small', null, payroll.average != null ? 'Promedio de dos: ' + money(payroll.average) : payroll.receipts.length === 1 ? 'Sólo un talón disponible' : 'Promedio no verificable'), h('span', {
+      className: 'finreview-extras'
+    }, payroll.receipts.flatMap(receipt => (receipt.extras || []).map((extra, i) => h('span', {
+      key: receipt.document_id + ':' + i,
+      className: 'finreview-extra',
+      title: extra.label
+    }, (extra.kind === 'BONUS' ? 'Bono' : extra.kind === 'OVERTIME' ? 'Horas extras' : extra.label) + ': ' + (extra.amount == null ? 'importe no legible' : money(extra.amount)) + ' · ' + date(receipt.period_end))))));
+  }
+  function EvaluationCell({
+    review
+  }) {
+    const result = review?.phase === 'COMPLETE' ? review.result : null;
+    if (!result) {
+      const text = review?.phase === 'CLOSED' ? 'Sin evaluaci?n registrada' : review?.phase === 'PROCESSING' ? 'Evaluando documentos…' : review?.phase === 'STALE' ? 'Documento cambiado · reevaluación pendiente' : review?.phase === 'ERROR' ? 'Requiere revisión manual' : review?.phase === 'NOT_CONFIGURED' ? 'Evaluación automática no activada' : 'Pendiente de evaluación';
+      return h('span', {
+        className: 'finreview-evaluation'
+      }, h('span', {
+        className: 'finreview-verdict manual'
+      }, text), review?.phase === 'ERROR' && h('small', null, 'No fue posible completar la evaluación automática.'));
+    }
+    const observations = result.observations || [];
+    return h('span', {
+      className: 'finreview-evaluation'
+    }, h('span', {
+      className: 'finreview-verdict ' + result.status.toLowerCase()
+    }, labels[result.status]), h('small', null, result.passed_count + ' de ' + result.check_count + ' comprobaciones documentales'), observations.length > 0 && h('span', {
+      className: 'finreview-observation'
+    }, observations[0].message), observations.length > 1 && h('details', {
+      onClick: e => e.stopPropagation(),
+      onKeyDown: e => e.stopPropagation()
+    }, h('summary', null, 'Ver ' + (observations.length - 1) + ' observaciones más'), h('ul', null, observations.slice(1).map(o => h('li', {
+      key: o.key
+    }, o.message)))));
+  }
+  function Corrections({
+    requestId
+  }) {
+    const [review, setReview] = React.useState(null),
+      [busy, setBusy] = React.useState(''),
+      [notice, setNotice] = React.useState('');
+    const jobs = React.useRef(new Map()),
+      mounted = React.useRef(true),
+      generation = React.useRef(0);
+    const refresh = React.useCallback(async () => {
+      const version = generation.current;
+      try {
+        const r = await window.FinancialDocumentReviewRepository.self(requestId);
+        if (mounted.current && version === generation.current) setReview(r);
+      } catch (_) {
+        if (mounted.current && version === generation.current) setReview(null);
+      }
+    }, [requestId]);
+    React.useEffect(() => {
+      mounted.current = true;
+      generation.current++;
+      setReview(null);
+      setBusy('');
+      setNotice('');
+      jobs.current.clear();
+      refresh();
+      const timer = setInterval(refresh, 15000);
+      return () => {
+        mounted.current = false;
+        generation.current++;
+        clearInterval(timer);
+      };
+    }, [refresh]);
+    const replace = async (document, file) => {
+      if (!file || busy) return;
+      setBusy(document.id);
+      setNotice('Preparando documento…');
+      const version = generation.current,
+        active = () => mounted.current && version === generation.current;
+      // In-memory idempotency: no private document or model result in browser storage.
+      let job = jobs.current.get(document.id);
+      if (!job || job.file !== file) {
+        job = {
+          id: crypto.randomUUID(),
+          file
+        };
+        jobs.current.set(document.id, job);
+      }
+      try {
+        await window.FinancialDocumentReviewRepository.replace(review, document, file, job.id, phase => {
+          if (active()) setNotice(phase === 'uploading' ? 'Subiendo documento…' : 'Verificando sustitución…');
+        });
+        if (active()) {
+          setNotice('Documento sustituido. Reevaluación pendiente.');
+          jobs.current.delete(document.id);
+          await refresh();
+        }
+      } catch (error) {
+        if (active()) setNotice(window.FinancialDocumentReviewRepository.message(error));
+      } finally {
+        if (active()) setBusy('');
+      }
+    };
+    if (!review?.can_correct || !review.result?.observations?.length && !notice) return null;
+    return h('div', {
+      'data-document-corrections': requestId,
+      style: {
+        marginTop: 16,
+        padding: 16,
+        background: 'var(--surface)',
+        borderRadius: 16
+      }
+    }, h('strong', null, 'Observaciones de tus documentos'), h('ul', null, (review.result?.observations || []).map(o => h('li', {
+      key: o.key,
+      style: {
+        marginTop: 6,
+        fontSize: 13
+      }
+    }, o.message))), (review.documents || []).map(document => h('label', {
+      key: document.id,
+      style: {
+        display: 'block',
+        marginTop: 12,
+        fontSize: 13
+      }
+    }, document.label + ' · Sustituir documento observado', h('input', {
+      type: 'file',
+      accept: document.accepted_mime_types.join(','),
+      disabled: !!busy || document.file_upload_allowed === false,
+      onChange: e => replace(document, e.target.files[0]),
+      style: {
+        display: 'block',
+        marginTop: 6,
+        maxWidth: '100%'
+      }
+    }))), notice && h('p', {
+      role: 'status',
+      style: {
+        fontSize: 13
+      }
+    }, notice));
+  }
+  window.FinancialReviewPayrollCell = PayrollCell;
+  window.FinancialReviewEvaluationCell = EvaluationCell;
+  window.FinancialDocumentCorrections = Corrections;
+  window.ensureFinancialReviewQueueStyles = styles;
+})();
+})();
 /* @@file finance-blocks-repository.js */
 (function(){
 /* Administrative restrictions: Supabase is the only authority. No persistent cache. */
@@ -23213,19 +23463,24 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   'use strict';
   async function enrich(rows) {
     const loanIds = rows.filter(row => row.program_id === 'prestamo').map(row => row.id);
-    const funds = new Map();
+    const funds = new Map(), payments = new Map();
     if (loanIds.length) {
       // Existing permission-gated financial projection; one read, no per-row detail hydration.
       const financialRows = await window.ProgramRequestRepository.listFinancialMobile();
       for (const row of financialRows) {
         const snapshot = row.financial_submission_snapshot;
         funds.set(row.id, snapshot && snapshot.financialResult && snapshot.financialResult.fund);
+        const result = snapshot && snapshot.financialResult;
+        payments.set(row.id, result && typeof result.paymentPerPeriod === 'number' ? result.paymentPerPeriod : null);
       }
       if (loanIds.some(id => !funds.has(id))) throw new Error('FINANCE_QUEUE_FUND_READ_INCOMPLETE');
     }
+    const reviews = new Map((await window.FinancialDocumentReviewRepository.list(loanIds)).map(review => [review.request_id, review]));
     return Object.freeze(rows.map(row => Object.freeze(Object.assign({}, row, {
       nombre: String(row.affiliate && row.affiliate.full_name || '').trim() || 'Nombre completo no registrado',
       requested_fund: funds.get(row.id) || null,
+      payment_per_period: payments.get(row.id) ?? null,
+      documentary_review: !['submitted','in_review','requires_financial_processing'].includes(row.status) && reviews.get(row.id)?.phase !== 'COMPLETE' ? { phase: 'CLOSED', result: null } : reviews.get(row.id) || null,
     }))));
   }
   async function historicalReviews(affiliateId) {
@@ -39163,6 +39418,8 @@ Object.assign(window, {
       showApplicant: false
     }), window.DocumentIntegration && window.DocumentIntegration.enabled() && React.createElement(window.DocumentEvidencePanel, {
       contextId: requestId
+    }), window.FinancialDocumentCorrections && React.createElement(window.FinancialDocumentCorrections, {
+      requestId
     }),
     // rejection reason
     s.motivo && React.createElement('div', {
@@ -58860,7 +59117,16 @@ Object.assign(window, {
       [actionResult, setActionResult] = useState(null);
     const [resolution, setResolution] = useState(null);
     const resolutionAttempt = React.useRef(null);
+    const [queueAction, setQueueAction] = useState(null);
+    const suggestedNote = React.useRef({
+      requestId: null,
+      hash: null,
+      text: ''
+    });
     useEffect(ensureWorkbenchStyles, []);
+    useEffect(() => {
+      window.ensureFinancialReviewQueueStyles && window.ensureFinancialReviewQueueStyles();
+    }, []);
     const load = React.useCallback(async quiet => {
       try {
         if (!quiet) setPhase('loading');
@@ -58881,6 +59147,15 @@ Object.assign(window, {
     }, [onCount, initialAffiliateId]);
     useEffect(() => {
       load(false);
+    }, [load]);
+    useEffect(() => {
+      const refresh = () => load(true);
+      const timer = setInterval(refresh, 30000);
+      window.addEventListener('suti:request-changed', refresh);
+      return () => {
+        clearInterval(timer);
+        window.removeEventListener('suti:request-changed', refresh);
+      };
     }, [load]);
     const programs = React.useMemo(() => Array.from(new Map(rows.map(row => [row.program_id + ':' + (row.request_type || ''), programLabel(row)])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
     const stages = React.useMemo(() => Array.from(new Map(rows.map(row => [currentStage(row) && currentStage(row).id, stageLabel(row)]).filter(item => item[0])).entries()).sort((a, b) => a[1].localeCompare(b[1], 'es')), [rows]);
@@ -58980,6 +59255,40 @@ Object.assign(window, {
     useEffect(() => {
       if (!actionOptions.some(item => item.id === action)) setAction(actionOptions[0] && actionOptions[0].id || '');
     }, [actionOptions, action]);
+    useEffect(() => {
+      if (!queueAction || detailPhase !== 'loaded' || detail?.id !== queueAction.id) return;
+      const choice = queueAction.action === 'reject' ? actionOptions.find(x => x.id === 'reject') : actionOptions.find(x => ['approveLoan', 'approveProduct', 'approveRent', 'advance', 'quoteAdvance'].includes(x.id));
+      if (choice) setAction(choice.id);
+      setQueueAction(null);
+    }, [queueAction, detail, detailPhase, actionOptions]);
+    useEffect(() => {
+      if (action !== 'reject' || !selected || detail?.id !== selected.id) return;
+      const review = selected.documentary_review,
+        hash = review?.source_hash || null;
+      const draft = review?.phase === 'COMPLETE' ? review.result?.rejection_draft || '' : '';
+      const old = suggestedNote.current;
+      if (old.requestId !== selected.id || old.hash !== hash || old.text !== draft) {
+        setActionNote(current => old.requestId === selected.id && old.hash !== hash ? '' : !current || current === old.text ? draft : current);
+        if (old.requestId === selected.id && old.hash && old.hash !== hash) setFeedback({
+          tone: 'warning',
+          text: 'Los documentos cambiaron. Revisa las observaciones vigentes antes de confirmar el rechazo.'
+        });
+        suggestedNote.current = {
+          requestId: selected.id,
+          hash,
+          text: draft
+        };
+      }
+    }, [action, selected, detail]);
+    const openQueueAction = (event, row, kind) => {
+      event.stopPropagation();
+      setSelectedId(row.id);
+      setDetailOpen(true);
+      setQueueAction({
+        id: row.id,
+        action: kind
+      });
+    };
     const clearFilters = () => {
       setSearch('');
       setStatusFilter('all');
@@ -59164,7 +59473,8 @@ Object.assign(window, {
         const actionId = actionAttempts.current.get(fingerprint) || window.ProgramRequestRepository.newIdempotencyKey();
         actionAttempts.current.set(fingerprint, actionId);
         if (adminAction) persistedEvent = await window.ProgramRequestRepository.recordAdminAction(currentId, adminAction, actionNote.trim(), actionId);else if (action === 'advance' || action === 'reject' || action === 'quoteAdvance') {
-          const result = await window.ProgramRequestRepository.transitionWorkflow(currentId, action === 'reject' ? 'REJECT' : 'ADVANCE', actionNote.trim(), actionId, action === 'quoteAdvance' ? {
+          const proposal = suggestedNote.current;
+          const result = action === 'reject' && proposal.requestId === currentId && proposal.hash && proposal.text ? await window.FinancialDocumentReviewRepository.reject(currentId, proposal.hash, actionNote.trim(), actionId) : await window.ProgramRequestRepository.transitionWorkflow(currentId, action === 'reject' ? 'REJECT' : 'ADVANCE', actionNote.trim(), actionId, action === 'quoteAdvance' ? {
             amount: quoteAmount,
             validUntil: quoteValidUntil
           } : null);
@@ -59204,7 +59514,15 @@ Object.assign(window, {
         setQuoteAmount('');
         if (advance && nextId !== currentId) setSelectedId(nextId);
       } catch (actionError) {
-        setFeedback({
+        if (String(actionError?.message || '').includes('REVIEW_SOURCE_CHANGED')) {
+          setConfirmation(null);
+          setActionNote('');
+          setFeedback({
+            tone: 'warning',
+            text: 'El solicitante cambió sus documentos. Revisa las observaciones actuales antes de confirmar el rechazo.'
+          });
+          await load(true);
+        } else setFeedback({
           tone: 'error',
           text: humanActionError(actionError)
         });
@@ -59791,7 +60109,7 @@ Object.assign(window, {
       'data-financial-queue': 'true'
     }, h('div', {
       className: 'finwb-queue-head'
-    }, h('span', null, 'Folio'), h('span', null, 'Foto'), h('span', null, 'Afiliado / programa'), h('span', null, 'Monto / plazo'), h('span', null, 'Estado / etapa'), h('span', null, 'Antig.')), h('div', {
+    }, h('span', null, 'Folio'), h('span', null, 'Foto'), h('span', null, 'Afiliado / programa'), h('span', null, 'Préstamo / cuota'), h('span', null, 'Nómina más reciente'), h('span', null, 'Evaluación documental'), h('span', null, 'Estado / acciones'), h('span', null, 'Antig.')), h('div', {
       className: 'finwb-queue-body'
     }, phase === 'loading' ? h('div', {
       className: 'finwb-empty'
@@ -59833,11 +60151,32 @@ Object.assign(window, {
       className: 'finwb-amount'
     }, moneyValue(row.requested_amount != null ? row.requested_amount : row.quoted_amount)), h('span', {
       className: 'finwb-sub'
-    }, row.requested_term ? row.requested_term + ' · ' + (row.requested_term_semantics || 'pagos') : row.request_type === 'quote' ? 'Cotización' : 'Sin plazo financiero')), h('span', null, badge(statusMeta(row.status), 'data-financial-human-status', statusMeta(row.status).label), h('span', {
+    }, row.requested_term ? row.requested_term + ' · ' + (row.requested_term_semantics || 'pagos') : row.request_type === 'quote' ? 'Cotización' : 'Sin plazo financiero'), row.program_id === 'prestamo' && h('span', {
+      className: 'finreview-installment'
+    }, row.payment_per_period == null ? 'Cuota no disponible' : moneyValue(row.payment_per_period), h('small', null, 'Por pago · condiciones de la solicitud'))), h('span', null, row.program_id === 'prestamo' ? h(window.FinancialReviewPayrollCell, {
+      review: row.documentary_review
+    }) : h('span', {
+      className: 'finwb-sub'
+    }, 'No aplica')), h('span', null, row.program_id === 'prestamo' ? h(window.FinancialReviewEvaluationCell, {
+      review: row.documentary_review
+    }) : h('span', {
+      className: 'finwb-sub'
+    }, 'Sin evaluación de préstamo')), h('span', null, badge(statusMeta(row.status), 'data-financial-human-status', statusMeta(row.status).label), h('span', {
       className: 'finwb-stage'
     }, stageLabel(row)), h(RowAuthorizationPdf, {
       row
-    }), rowFeedback[row.id] && h('span', {
+    }), row.program_id === 'prestamo' && app.admin.has('program_requests.write') && ['submitted', 'in_review', 'requires_financial_processing'].includes(row.status) && h('span', {
+      className: 'finreview-actions',
+      onKeyDown: e => e.stopPropagation()
+    }, h('button', {
+      type: 'button',
+      disabled: busy,
+      onClick: e => openQueueAction(e, row, 'reject')
+    }, 'Rechazar'), h('button', {
+      type: 'button',
+      disabled: busy,
+      onClick: e => openQueueAction(e, row, 'approve')
+    }, 'Aprobar')), rowFeedback[row.id] && h('span', {
       className: 'finwb-stage',
       'data-financial-inline-feedback': rowFeedback[row.id]
     }, rowFeedback[row.id] === 'saving' ? 'Guardando…' : rowFeedback[row.id] === 'success' ? '✓ Actualizado' : '! Error')), h('span', {

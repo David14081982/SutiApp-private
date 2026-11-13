@@ -1,7 +1,7 @@
 {
   "status": "PASS",
   "mode": "deploy",
-  "version": 4,
+  "version": 5,
   "verifyJwt": true,
   "files": [
     {
@@ -26,7 +26,7 @@
     },
     {
       "file": "financial-document-review/openai.mjs",
-      "sha256": "0bcfba9fab64c413eab9914a10137179be317addb988962183d7bd5e7f6a3eb5"
+      "sha256": "bb0cffbca96504db31d322151e7a21c7b84467772431fc8d7b9e737b2bc4b5bd"
     }
   ]
 }

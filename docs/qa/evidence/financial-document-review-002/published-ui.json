@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "site": "https://sutiapp.com/SutiApp.html",
+  "rows": 250,
+  "installmentCells": 217,
+  "reviewCells": 217,
+  "approvalButtons": 7,
+  "closedNotQueued": 210,
+  "backendNotConfigured": false,
+  "browserErrors": 0,
+  "financialWrites": 0,
+  "privateValuesLogged": 0,
+  "reportedCaseVerified": true,
+  "bothPayrollPeriodsVisible": true
+}

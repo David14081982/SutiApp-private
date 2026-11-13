@@ -69,7 +69,7 @@ export async function extractWithOpenAI({ apiKey, model, context, attachments, f
   const reread = new Map(second.extraction.documents.map(d => [d.id, d]));
   first.extraction.documents = first.extraction.documents.map(before => {
     const after = reread.get(before.id); if (!after) return before;
-    const conflicting = ['net', 'gross', 'deductions', 'period_start', 'period_end', 'payment_date', 'valid_until', 'valid_from_year', 'valid_until_year'].some(k => before[k] != null && after[k] != null && before[k] !== after[k]) || before.holder_name && after.holder_name && compareNames(before.holder_name, after.holder_name) !== 'PASS' || before.currency && after.currency && before.currency !== after.currency && ['MXN', 'USD', 'EUR', 'CAD'].includes(before.currency);
+    const conflicting = ['net', 'gross', 'deductions', 'period_start', 'period_end', 'payment_date', 'valid_until', 'valid_from_year', 'valid_until_year'].some(k => before[k] != null && after[k] != null && before[k] !== after[k]) || before.holder_name && after.holder_name && compareNames(before.holder_name, after.holder_name) !== 'PASS' || before.currency && after.currency && before.currency !== after.currency && /^[A-Z]{3}$/.test(before.currency);
     if (conflicting) return { ...before, legibility: 'PARTIAL', evidence: 'Las dos lecturas contienen datos contradictorios; requiere revisión manual.' };
     // Never replace a previously readable field by a missing reread field.
     if (after.legibility !== 'READABLE' || after.type_matches !== true) return before;

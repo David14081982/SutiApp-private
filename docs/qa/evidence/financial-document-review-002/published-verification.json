@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "commit": "17ebb13d0b79b5f91144bd35bcda785232715e7c",
+  "url": "https://sutiapp.com/SutiApp.html",
+  "checks": [
+    {
+      "file": "SutiApp.html",
+      "sha256": "2ce4191441717ca9aa936abcb3c527efcb1ebf86a644494ed43656a4a19437b7"
+    },
+    {
+      "file": "app/bundle.js",
+      "sha256": "d9d4ebf228676bc539dcd26bf6e7df5336f7c2477944d28d3210028529bea323"
+    },
+    {
+      "file": "sw.js",
+      "sha256": "148a841baac6173a022333b09bff083c826cfa6079c2d8669ba362b9fd613732"
+    }
+  ]
+}

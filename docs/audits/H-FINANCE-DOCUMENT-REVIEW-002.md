@@ -41,3 +41,43 @@ The owner's general correction request and subsequent no-fixed-dates instruction
 Pending refresh completed: 13 existing derivatives queued, fingerprint of all program_requests unchanged, zero approved/rejected requests touched. Evidence: pending-refresh.json. Identity/photo/navigation responsive regression six cases PASS; Pages deployment artifact PASS with zero forbidden files. No SQL migration or schema change.
 
 Focal architect review before Pages publication: APPROVED for the bounded correction. Inspection confirms unchanged backend auth/RLS/leases and financial writers, source-preserving reread, deterministic totals guard, no calendar policy inferred, exact UI scope, no raw extraction or secrets in committed evidence. Registry requires regeneration because the adapter now imports the engine helpers; this dependency update and its checks are in progress. Next instruction: publish the bounded commit, verify exact public asset hashes and the reported row with both periods, then close evidence. No unrelated workflow or financial append is authorized.
+
+## Published runtime verification
+
+Commit 17ebb13d0b79b5f91144bd35bcda785232715e7c published successfully (Pages run 43375062284). Exact public HTML, bundle and service-worker hashes match the committed bytes, cache version 2026111301. Authenticated published UI verified SR-2026-000934 as Cumple, its reported net, both payroll period ranges and enabled human approval. Zero browser errors, no financial writes, no private values logged. All 250 existing queue rows remain. Evidence: published-ui.json and published-verification.json.
+
+Architecture-index acceptance initially failed because this audit was updated while its incremental-fixture test ran; it detected the concurrent change correctly. The fixture was removed by the test's finally block and the index regenerated. Repeat the registry acceptance on a stable tree; this tooling failure is not a runtime pass and must not be hidden. No registry fixture is permitted in the committed release.
+
+## Final result
+
+Stable-tree architecture acceptance PASS: generation, freshness, stale detection, lookup, reverse mappings, permissions, incremental fixture add/remove, secrets and determinism. No fixture remains. Final review additionally generalized the conflicting-currency guard to any explicit three-letter currency code (including BRL/JPY), tested it, and deployed Edge v5; this internal condition adds no dependency. Final engine/adapter suite: 26 PASS. Deno and managed bundle rechecked successfully. Refresh the derived index incrementally for those exact source/evidence hashes before the final evidence commit.
+
+All 14 pending reviews completed: 8 PASS, 5 MANUAL, 1 FAIL, zero technical errors. This is a documentary outcome only; no loan was approved/rejected, no original files were changed, and no financial values or Google rows were written. SR-2026-000934 remains the verified reported case; it was not resent for an unrelated diagnostic. The generic final currency guard does not change its MXN result.
+
+H-FINANCE-DOCUMENT-REVIEW-002 RESULT
+Status: PASS
+Files changed: focal Edge adapter/engine/service, existing payroll cell, generated bundle/cache references, three focal tests, decisions/authority clarification, audit/evidence and five derived registry files. Primary dirty checkout untouched.
+Source-of-truth verdict: PASS; pinned original documents and request snapshots remain authoritative; only derived evaluations renewed.
+Invariant verdict: PASS; human financial decisions preserved, no fixed payroll calendar, no invented expiry day/month, contradictory/unverifiable readings remain manual.
+Build: PASS; 179-source frontend, Deno check, managed Edge v5 bundle, Pages artifact with zero forbidden files.
+Tests: 26 engine/adapter, five UI groups, six identity/photo groups, live synthetic vision, actual reported-case worker, published row/periods/approval availability, exact public asset hashes, complete architecture suite.
+Security: unchanged auth/RLS/leases/shared Storage code; server-only key; no raw private documents/extraction or secrets in evidence.
+Legacy impact: none; zero financial writes or Google access.
+Unexpected files changed: no unrelated files staged; prior generated test artifacts restored; registry fixture absent.
+Known limitations: OCR is not infallible; unknown currency, contradictory text or unreadable evidence stays manual. Signature similarity is advisory. Staff determines payroll-period acceptability and the lending decision.
+Evidence: docs/qa/evidence/financial-document-review-002.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-FINANCE-DOCUMENT-REVIEW-002
+Verdict: APPROVED
+Critical findings: original false negatives reproduced and corrected; actual case and published UI verified; no financial decision automation.
+Source of truth: unchanged original authorities; refreshed advisory derivatives only.
+Architecture: existing endpoint and UI cell, no shared runtime/Storage changes; derived dependency index refreshed.
+Security: PASS for preserved boundaries and tested provider/failure behavior.
+Data: originals and business records preserved; 14 completed documentary reevaluations.
+Legacy: no impact.
+Owner decision: NO; the owner explicitly delegated payroll-date applicability to staff.
+Next action: close this correction after the bounded evidence commit; no new H or financial append authorized.
+Response generated for Codex: YES
+
+RESPONSE TO CODEX: Approve this focal correction. Commit only the tested source guard, derived registry and publication evidence; verify the push. Do not alter closed requests, original documents, financial writers or unrelated primary-workspace changes.

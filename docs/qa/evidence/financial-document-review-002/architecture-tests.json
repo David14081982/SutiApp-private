@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "command": "python scripts/test-architecture-registry.py",
+  "checks": ["generation", "freshness", "stale", "lookup", "screen", "table", "column", "reverse", "admin", "permissions", "tests", "fallback", "incremental", "secrets", "determinism"],
+  "fixtureRemaining": false,
+  "initialConcurrentAuditChangeFailureDisclosed": true
+}

@@ -102,6 +102,10 @@
     {
       "name": "INE missing year triggers only INE reread and preserves original signature",
       "status": "PASS"
+    },
+    {
+      "name": "explicit foreign currency cannot be overwritten by a reread",
+      "status": "PASS"
     }
   ]
 }

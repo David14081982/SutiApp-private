@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "phases": [
+    {
+      "phase": "COMPLETE",
+      "n": 14
+    }
+  ],
+  "results": [
+    {
+      "verdict": "FAIL",
+      "n": 1
+    },
+    {
+      "verdict": "MANUAL",
+      "n": 5
+    },
+    {
+      "verdict": "PASS",
+      "n": 8
+    }
+  ],
+  "errors": []
+}

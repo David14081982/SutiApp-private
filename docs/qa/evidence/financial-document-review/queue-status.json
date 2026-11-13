@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "phases": [
+    {
+      "phase": "COMPLETE",
+      "n": 1
+    },
+    {
+      "phase": "QUEUED",
+      "n": 13
+    }
+  ],
+  "results": [
+    {
+      "verdict": "MANUAL",
+      "n": 1
+    }
+  ],
+  "errors": []
+}

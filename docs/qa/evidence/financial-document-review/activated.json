@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "enabled": true,
+  "model": "gpt-5.6-terra",
+  "cadence": "one request per minute",
+  "humanDecisionUnchanged": true
+}

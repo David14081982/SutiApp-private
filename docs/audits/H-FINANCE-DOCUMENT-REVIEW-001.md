@@ -1,5 +1,30 @@
 # H-FINANCE-DOCUMENT-REVIEW-001
 
+## Final publication and activation — 2026-11-13 UTC
+
+Status: PASS for the authorized integration/publication. Implementation commit `04a8811f6d36c6cff0fbc900fdfd561a427ff89a`, followed by UTF-8 label correction `e236da05396c5cb1b4e45ef086c429d28656fad3`. Pages deployment 43368379395 succeeded. Public HTML, bundle and service worker match that commit by SHA-256. The exact final published bundle passed the required global image/document/PDF/admin/fullscreen/refresh/with-and-without-service-worker suite with zero browser errors and zero business mutations. A prior run that emitted no result was stopped and repeated with progress-only instrumentation; original assertions and data paths were unchanged. Final bundle SHA-256: `dca5fcae65ee52a418e5d54a30e3c30fc5879fa6a09f357d424cdd80ecec2c99`.
+
+Real published Finance UI: 250 rows, 217 installment/review cells, seven available approval buttons in that page, 210 closed rows explicitly without a recorded evaluation; zero browser errors and zero financial writes. Closed historical requests are not claimed by the worker. The last correction changes only two accented labels and generated cache references, not shared image behavior or architecture. Registry was FRESH before that copy-only change; documentation/evidence changes do not add an architectural dependency.
+
+Supabase: migrations 20261112000100 and 20261112000200 installed with six business/Storage fingerprints preserved; new Edge version 1. OPENAI_API_KEY and worker configuration are server-side only. Worker enabled after published acceptance, with one scheduled job per minute and independent request leases. First real provider processing returned processed=true, saved=true, COMPLETE; the derived verdict was MANUAL, with no error. Initial backlog: 14, first checkpoint: one complete and 13 queued. No approval, rejection, balance/formula change or Google write was made by this release.
+
+Known functional limits remain explicit: payroll calendars must be supplied per employee category; without one, date compliance requires manual review. Visual signature comparison does not certify authenticity. Protected shared/historical files and unsupported OCR sizes/formats require manual handling. Human approval remains available for every documentary outcome. Model output is advisory evidence, not credit capacity or a financial decision.
+
+H-FINANCE-DOCUMENT-REVIEW-001 RESULT
+Status: PASS
+Files changed: bounded 55-file integration plus four-file accent/cache correction; subsequent evidence only. Unrelated primary-workspace work excluded.
+Source-of-truth verdict: PASS — contractual quota, pinned documents and private derived review remain distinct.
+Invariant verdict: PASS for the tested replacement/retention/authorization boundaries; no financial state transition performed.
+Build: PASS, 179-source release bundle and allowlisted Pages artifact.
+Tests: engine 17; isolated UI 5; identity/photo 6; SQL 6; real local Auth/Storage/Edge four groups; managed bundle/type checks; real synthetic OpenAI; final published UI/hash/global regression; first real worker processing.
+Security: server-only secrets, actual cross-account denial, worker authentication, default-off installation, fresh-source checks and shared-reference deletion protection verified.
+Legacy impact: no financial formulas, writers, balances or Google changes.
+Unexpected files changed: none in the published scope; temporary laboratory dependencies and logs remain ignored.
+Known limitations: explicit calendars and advisory/document-format limits above.
+Evidence: docs/qa/evidence/financial-document-review; private diagnostic logs and exact reproduction runner in the task area; committed integration runner documents local prerequisites.
+
+Final architect review: APPROVED for the requested publication. No further implementation phase or financial approval is authorized by this closure. Next instruction: allow the configured documentary queue to continue; obtain actual payroll calendar policy before configuring date-compliance rules.
+
 ## Release verification — 2026-11-13 UTC
 
 The owner authorized commit/upload/publication. Isolated release is based on main ac3750a; unrelated primary-workspace changes are excluded. The two forward migrations are installed atomically and registered, with identical before/after fingerprints for program_requests, request_documents, affiliate_documents, private_assets, integrity assets and Storage metadata. Worker remains disabled at this checkpoint. New Edge version 1 is deployed, managed bundle/type checks passed, server secrets installed without Git exposure, unauthorized RUN denied and authorized disabled RUN returned NOT_CONFIGURED. Model gpt-5.6-terra passed a real synthetic-only payroll probe. No real financial decision or Google write was performed.

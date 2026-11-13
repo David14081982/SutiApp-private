@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "folio": "SR-2026-000934",
+  "phase": "COMPLETE",
+  "error": null,
+  "revision": "2026-11-13.2",
+  "verdict": "PASS",
+  "netVerified": true,
+  "netMatchesReportedExample": true,
+  "averageVerified": true,
+  "ineValidityVerified": true,
+  "calendarFinding": false,
+  "observationCategories": [],
+  "analysis": {
+    "passes": 1,
+    "reread_status": "NOT_NEEDED",
+    "reread_documents": 0
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "openaiCalls": 0,
+  "checks": [
+    {
+      "name": "net, contractual independence, average and extras in both receipts",
+      "status": "PASS"
+    },
+    {
+      "name": "calendar is not a condition; day 05 is informational",
+      "status": "PASS"
+    },
+    {
+      "name": "affordability is never an automated failure",
+      "status": "PASS"
+    },
+    {
+      "name": "ambiguous and reordered names",
+      "status": "PASS"
+    },
+    {
+      "name": "different document holder",
+      "status": "PASS"
+    },
+    {
+      "name": "unreadable net is never zero or averaged",
+      "status": "PASS"
+    },
+    {
+      "name": "duplicate periods fail with specific correction slots",
+      "status": "PASS"
+    },
+    {
+      "name": "signature mismatch routes to manual review, never forgery accusation",
+      "status": "PASS"
+    },
+    {
+      "name": "inconsistent payroll arithmetic",
+      "status": "PASS"
+    },
+    {
+      "name": "wrong payroll owner cannot supply verified net or extras",
+      "status": "PASS"
+    },
+    {
+      "name": "staff determines period recency; missing dates still require review",
+      "status": "PASS"
+    },
+    {
+      "name": "generated rejection fits existing 2000-character field",
+      "status": "PASS"
+    },
+    {
+      "name": "missing/extra/duplicate model documents fail closed",
+      "status": "PASS"
+    },
+    {
+      "name": "invalid date and nonfinite amount rejected",
+      "status": "PASS"
+    },
+    {
+      "name": "OpenAI adapter is stateless, tool-free, and uses structured output",
+      "status": "PASS"
+    },
+    {
+      "name": "refused/incomplete provider output is not a compliant dossier",
+      "status": "PASS"
+    },
+    {
+      "name": "no configured key means no queue claims and no network",
+      "status": "PASS"
+    },
+    {
+      "name": "INE year range is accepted without inventing a month/day",
+      "status": "PASS"
+    },
+    {
+      "name": "expired, future and conflicting INE years remain findings",
+      "status": "PASS"
+    },
+    {
+      "name": "symbol alone is not MXN and net reasons are distinct",
+      "status": "PASS"
+    },
+    {
+      "name": "one bounded focused reread restores missing net and uses original detail",
+      "status": "PASS"
+    },
+    {
+      "name": "readable documents do not consume a second call",
+      "status": "PASS"
+    },
+    {
+      "name": "conflicting reread stays manual instead of selecting a convenient number",
+      "status": "PASS"
+    },
+    {
+      "name": "failed or mismatched reread cannot upgrade the first assessment",
+      "status": "PASS"
+    },
+    {
+      "name": "INE missing year triggers only INE reread and preserves original signature",
+      "status": "PASS"
+    }
+  ]
+}

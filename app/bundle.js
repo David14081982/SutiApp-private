@@ -207,7 +207,9 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
     }, h('strong', null, 'Neto no verificado'), h('small', null, review?.phase === 'CLOSED' ? 'Sin evaluación registrada' : review?.phase === 'ERROR' ? 'Lectura no disponible' : review?.phase === 'NOT_CONFIGURED' ? 'Evaluación automática no activada' : 'Pendiente de evaluación'));
     return h('span', {
       className: 'finreview-payroll'
-    }, h('strong', null, money(latest?.net)), h('small', null, 'Neto del último recibo'), h('small', null, latest ? date(latest.period_start) + ' – ' + date(latest.period_end) : 'Recibo más reciente sin determinar'), h('small', null, payroll.average != null ? 'Promedio de dos: ' + money(payroll.average) : payroll.receipts.length === 1 ? 'Sólo un talón disponible' : 'Promedio no verificable'), h('span', {
+    }, h('strong', null, money(latest?.net)), h('small', null, 'Neto del último recibo'), payroll.receipts.map(receipt => h('small', {
+      key: receipt.document_id
+    }, (receipt.document_id === latest?.document_id ? 'Último: ' : 'Talón: ') + date(receipt.period_start) + ' – ' + date(receipt.period_end))), !latest && h('small', null, 'Recibo más reciente sin determinar'), h('small', null, payroll.average != null ? 'Promedio de dos: ' + money(payroll.average) : payroll.receipts.length === 1 ? 'Sólo un talón disponible' : 'Promedio no verificable'), h('span', {
       className: 'finreview-extras'
     }, payroll.receipts.flatMap(receipt => (receipt.extras || []).map((extra, i) => h('span', {
       key: receipt.document_id + ':' + i,

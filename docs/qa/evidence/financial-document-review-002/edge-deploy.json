@@ -1,0 +1,32 @@
+{
+  "status": "PASS",
+  "mode": "deploy",
+  "version": 4,
+  "verifyJwt": true,
+  "files": [
+    {
+      "file": "financial-document-review/index.ts",
+      "sha256": "5034b9016099f7d173df0e4622b56017935aa32a9d006f3616067ccf5e8e85a9"
+    },
+    {
+      "file": "_shared/document-stream.mjs",
+      "sha256": "976aa047f70c33482b38433fe37089945bc0cee13ad3d9227e90c4ad16cf229c"
+    },
+    {
+      "file": "_shared/document-crc.mjs",
+      "sha256": "38604fbb65853657253c75317bf0f0c6d016e9a21ec6be1d849b9966363ece43"
+    },
+    {
+      "file": "financial-document-review/service.mjs",
+      "sha256": "b9e18ae3613c79a1d69b6f8900ab8edd75958bfe03af71c08cf91075e81cefbe"
+    },
+    {
+      "file": "financial-document-review/engine.mjs",
+      "sha256": "6c1b2726b71b31a0f14bbb3a7ee671c08fb7110d9010666362294be701b61d61"
+    },
+    {
+      "file": "financial-document-review/openai.mjs",
+      "sha256": "0bcfba9fab64c413eab9914a10137179be317addb988962183d7bd5e7f6a3eb5"
+    }
+  ]
+}

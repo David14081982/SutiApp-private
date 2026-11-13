@@ -39,7 +39,7 @@ export async function runOne(service, config, extract = extractWithOpenAI) {
       attachments.push({ id: 'signature', mime: 'image/' + signature[1], base64: signature[2] });
     }
     const read = await extract({ apiKey: config.apiKey, model: config.model, context: ctx, attachments });
-    result = evaluate(ctx, read.extraction); usage = read.usage;
+    result = evaluate(ctx, read.extraction); result.analysis = read.analysis || null; usage = read.usage;
   } catch (e) {
     const allowed = ['DOCUMENT_NOT_ANALYZABLE', 'DOCUMENT_UNAVAILABLE', 'DOCUMENT_INTEGRITY_MISMATCH', 'SIGNATURE_NOT_ANALYZABLE', 'OPENAI_RATE_LIMIT', 'OPENAI_REQUEST_FAILED', 'OPENAI_INCOMPLETE', 'OPENAI_OUTPUT_INVALID', 'EXTRACTION_SCHEMA_INVALID'];
     error = allowed.includes(e?.message) ? e.message : 'REVIEW_UNAVAILABLE';

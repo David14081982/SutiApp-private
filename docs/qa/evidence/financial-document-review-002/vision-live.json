@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "syntheticOnly": true,
+  "privateDocumentsSent": 0,
+  "checks": [
+    "small_footer_net",
+    "Mexican_payroll_currency_evidence",
+    "rotated_INE_year_range",
+    "no_invented_expiry_date",
+    "two_receipt_average",
+    "no_fixed_calendar"
+  ],
+  "analysis": {
+    "passes": 1,
+    "reread_documents": 0,
+    "reread_status": "NOT_NEEDED"
+  },
+  "usage": {
+    "input_tokens": 8056,
+    "input_tokens_details": {
+      "cache_write_tokens": 8053,
+      "cached_tokens": 0
+    },
+    "output_tokens": 854,
+    "output_tokens_details": {
+      "reasoning_tokens": 176
+    },
+    "total_tokens": 8910
+  }
+}

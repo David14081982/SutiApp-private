@@ -2,7 +2,7 @@
 const fs=require('fs'),path=require('path'),assert=require('assert/strict');
 const {chromium}=require('C:/tmp/sutiapp-playwright-audit/node_modules/playwright-core');
 const root=path.resolve(__dirname,'..'),read=f=>fs.readFileSync(path.join(root,f),'utf8');
-const out=path.join(root,'docs/qa/evidence/financial-document-review');fs.mkdirSync(out,{recursive:true});
+const out=path.join(root,'docs/qa/evidence/financial-document-review-002');fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],checks=[];
@@ -18,7 +18,7 @@ const out=path.join(root,'docs/qa/evidence/financial-document-review');fs.mkdirS
   for(const k of ['GeneratedDocuments','FinanceBlockRequestControl','SicofBehaviorCard'])window[k]=()=>null;
   const stage={id:'review',label:'Revisión de documentos',state:'current'},next={id:'approval',label:'Autorización',state:'upcoming',status_references:['approved']};
   const observation={key:'name',status:'MANUAL',message:'El nombre de la INE requiere revisión manual.',document_id:'ine',correctable:true};
-  const payroll={latest:{document_id:'latest',net:9840,period_start:'2026-10-16',period_end:'2026-10-31'},average:9730,receipts:[{document_id:'latest',period_end:'2026-10-31',extras:[{kind:'BONUS',label:'Bono',amount:1500}]},{document_id:'previous',period_end:'2026-10-15',extras:[{kind:'OVERTIME',label:'Horas extras',amount:500}]}]};
+  const payroll={latest:{document_id:'latest',net:9840,period_start:'2026-10-16',period_end:'2026-10-31'},average:9730,receipts:[{document_id:'latest',period_start:'2026-10-16',period_end:'2026-10-31',extras:[{kind:'BONUS',label:'Bono',amount:1500}]},{document_id:'previous',period_start:'2026-10-01',period_end:'2026-10-15',extras:[{kind:'OVERTIME',label:'Horas extras',amount:500}]}]};
   window.__reviews=[{request_id:'r0',source_hash:'v1',phase:'COMPLETE',result:{status:'MANUAL',payroll,observations:[observation],passed_count:8,check_count:9,rejection_draft:observation.message}},{request_id:'r1',source_hash:'v2',phase:'COMPLETE',result:{status:'FAIL',payroll,observations:[{...observation,message:'Los dos talones repiten el mismo periodo.'}],passed_count:7,check_count:9,rejection_draft:'Los dos talones repiten el mismo periodo.'}},{request_id:'r2',phase:'PROCESSING',result:null}];
   window.FinancialDocumentReviewRepository={list:async()=>__reviews};
   window.__rows=Array.from({length:3},(_,i)=>({id:'r'+i,folio:'DEMO-00'+i,affiliate_id:'a'+i,affiliate:{full_name:['María Elena López Soto','Carlos Alberto Pérez Díaz','Ana Lucía Hernández Ruiz'][i]},numero_control:'DEMO'+i,program_id:'prestamo',status:'requires_financial_processing',requested_amount:12000,requested_term:12,requested_term_semantics:'quincenal',financial_processing_status:'pending',created_at:'2026-11-12T18:00:00Z',ts:3-i,request_type:'benefit',workflow_state:{available:true,current_stage:stage,stages:[stage,next],can_reject:true},documents_available:true,request_documents:[],current_documents_available:true,current_affiliate_documents:[],admin_events_available:true,admin_events:[],terms_available:true,terms_accepted:true,financial_submission_snapshot:{financialResult:{fund:'Caja Chica',amount:12000,paymentCount:12,paymentPeriod:'quincenal',paymentPerPeriod:1180,total:14160}}}));
@@ -29,6 +29,7 @@ const out=path.join(root,'docs/qa/evidence/financial-document-review');fs.mkdirS
  await page.evaluate(()=>{window.__root=ReactDOM.createRoot(document.getElementById('fixture'));__root.render(React.createElement(__Workbench,{app:__app,onCount:__count}));});
  const rows=page.locator('[data-financial-queue-row]');await rows.first().waitFor();
  assert.equal(await rows.count(),3);assert((await rows.first().innerText()).includes('9,840'));assert((await rows.first().innerText()).includes('1,180'));assert((await rows.first().innerText()).includes('9,730'));assert((await rows.first().innerText()).includes('Horas extras'));
+ assert((await rows.first().innerText()).includes('16/10/2026 – 31/10/2026'));assert((await rows.first().innerText()).includes('01/10/2026 – 15/10/2026'));
  for(let i=0;i<3;i++)assert.equal(await rows.nth(i).getByRole('button',{name:'Aprobar',exact:true}).isEnabled(),true);
  checks.push('latest net, contractual installment, average, extras in both receipts; approval enabled for FAIL/MANUAL/PROCESSING');
  await rows.first().getByRole('button',{name:'Rechazar',exact:true}).click();await page.locator('dialog[open]').waitFor();

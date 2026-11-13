@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "checks": [
+    "latest net, contractual installment, average, extras in both receipts; approval enabled for FAIL/MANUAL/PROCESSING",
+    "queue rejection opens existing detail, prefills existing field, never writes automatically",
+    "same-source refresh preserves edits; document change clears obsolete rejection before saving",
+    "original row/detail navigation preserved",
+    "desktop/tablet/mobile local screenshots, no page overflow"
+  ],
+  "errors": [],
+  "networkCalls": 0,
+  "syntheticOnly": true
+}

@@ -26,7 +26,7 @@
   }
   function PayrollCell({ review }) {
     const result = review?.phase === 'COMPLETE' ? review.result : null, payroll = result?.payroll, latest = payroll?.latest;
-    if (!payroll) return h('span', { className: 'finreview-payroll' }, h('strong', null, 'Neto no verificado'), h('small', null, review?.phase === 'CLOSED' ? 'Sin evaluaci?n registrada' : review?.phase === 'ERROR' ? 'Lectura no disponible' : review?.phase === 'NOT_CONFIGURED' ? 'Evaluación automática no activada' : 'Pendiente de evaluación'));
+    if (!payroll) return h('span', { className: 'finreview-payroll' }, h('strong', null, 'Neto no verificado'), h('small', null, review?.phase === 'CLOSED' ? 'Sin evaluación registrada' : review?.phase === 'ERROR' ? 'Lectura no disponible' : review?.phase === 'NOT_CONFIGURED' ? 'Evaluación automática no activada' : 'Pendiente de evaluación'));
     return h('span', { className: 'finreview-payroll' }, h('strong', null, money(latest?.net)),
       h('small', null, 'Neto del último recibo'), h('small', null, latest ? date(latest.period_start) + ' – ' + date(latest.period_end) : 'Recibo más reciente sin determinar'),
       h('small', null, payroll.average != null ? 'Promedio de dos: ' + money(payroll.average) : payroll.receipts.length === 1 ? 'Sólo un talón disponible' : 'Promedio no verificable'),
@@ -36,7 +36,7 @@
   function EvaluationCell({ review }) {
     const result = review?.phase === 'COMPLETE' ? review.result : null;
     if (!result) {
-      const text = review?.phase === 'CLOSED' ? 'Sin evaluaci?n registrada' : review?.phase === 'PROCESSING' ? 'Evaluando documentos…' : review?.phase === 'STALE' ? 'Documento cambiado · reevaluación pendiente' : review?.phase === 'ERROR' ? 'Requiere revisión manual' : review?.phase === 'NOT_CONFIGURED' ? 'Evaluación automática no activada' : 'Pendiente de evaluación';
+      const text = review?.phase === 'CLOSED' ? 'Sin evaluación registrada' : review?.phase === 'PROCESSING' ? 'Evaluando documentos…' : review?.phase === 'STALE' ? 'Documento cambiado · reevaluación pendiente' : review?.phase === 'ERROR' ? 'Requiere revisión manual' : review?.phase === 'NOT_CONFIGURED' ? 'Evaluación automática no activada' : 'Pendiente de evaluación';
       return h('span', { className: 'finreview-evaluation' }, h('span', { className: 'finreview-verdict manual' }, text), review?.phase === 'ERROR' && h('small', null, 'No fue posible completar la evaluación automática.'));
     }
     const observations = result.observations || [];

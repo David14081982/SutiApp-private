@@ -17,17 +17,18 @@ assert.match(documents,/className:'mr-doc-thumb',src:thumbnail\.url/);
 assert.match(documents,/onError:\(\)=>refreshThumbnail\(doc\)/);
 assert.match(documents,/viewer&&viewer\.context===resourceContext&&h\(window\.DocumentViewer/);
 assert.match(documents,/data-document-action':action/);
-assert.match(documents,/className:'mr-doc-replace'/);
+assert.match(documents,/className:'mr-doc-act mr-doc-replace'/);
 assert.match(documents,/await onChanged\(\)/);
 assert.match(documents,/\},\[thumbnailKey,resourceContext\]\)/);
 assert.doesNotMatch(documents,/doc\.signedUrl|window\.open|about:blank/);
 
-assert.match(membership,/\.mr-doc-thumb\{[^}]*object-fit:cover/);
-assert.match(membership,/\.mr-doc-tile\.is-filled \.mr-doc-pick\{background:linear-gradient/);
-assert.doesNotMatch(membership,/\.mr-doc-tile\.is-filled \.mr-doc-pick\{background:#14213d/);
-assert.match(membership,/\.mr-doc-veil\{[^}]*rgba\(10,6,8,\.02\)/);
-assert.match(membership,/\.mr-doc-replace\{/);
-assert.match(membership,/\.mr-doc-status\{position:absolute/);
+// Unified document cards: the shared component owns the card layout; screens do not overlay actions on the image.
+assert.doesNotMatch(membership,/\.mr-doc-/);
+assert.match(documents,/\.mr-doc-thumb\{[^}]*object-fit:cover/);
+assert.match(documents,/\.mr-doc-actions\{display:grid/);
+assert.match(documents,/\.mr-doc-replace\{background:var\(--guinda-50\)/);
+assert.doesNotMatch(documents,/\.mr-doc-(replace|view|status)\{position:absolute/);
+assert.doesNotMatch(documents,/mr-doc-veil|mr-doc-status/);
 
 assert.match(viewer,/function DocumentViewer/);
 assert.match(viewer,/React\.createElement\(ImageViewer/);

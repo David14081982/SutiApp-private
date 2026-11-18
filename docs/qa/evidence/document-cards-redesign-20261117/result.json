@@ -1,0 +1,239 @@
+{
+ "errors": [
+  "Failed to load resource: the server responded with a status of 404 (Not Found)"
+ ],
+ "checks": {
+  "01-loan-390": {
+   "cards": 5,
+   "overlaps": 0,
+   "hOverflow": false,
+   "pills": [
+    "Pendiente de revisión",
+    "Pendiente de revisión",
+    "Histórico importado",
+    "Histórico importado",
+    "Pendiente de revisión"
+   ],
+   "meta": [
+    "Subido 14 nov · JPG",
+    "Subido 14 nov · JPG",
+    "De tu expediente anterior",
+    "De tu expediente anterior",
+    "Subido 14 nov · PDF"
+   ],
+   "buttons": [
+    [
+     "Ver Foto perfil",
+     "Ver Foto perfil",
+     "Reemplazar Foto perfil",
+     "Retirar Foto perfil"
+    ],
+    [
+     "Ver INE FRENTE",
+     "Ver INE FRENTE",
+     "Reemplazar INE FRENTE",
+     "Retirar INE FRENTE"
+    ],
+    [
+     "Ver INE REVERSO",
+     "Ver INE REVERSO",
+     "Reemplazar INE REVERSO",
+     "Retirar INE REVERSO"
+    ],
+    [
+     "Ver TALON ULTIMA QUINCENA",
+     "Ver TALON ULTIMA QUINCENA",
+     "Reemplazar TALON ULTIMA QUINCENA",
+     "Retirar TALON ULTIMA QUINCENA"
+    ],
+    [
+     "Ver TALON PENULTIMA QUINCENA",
+     "Ver TALON PENULTIMA QUINCENA",
+     "Reemplazar TALON PENULTIMA QUINCENA",
+     "Retirar TALON PENULTIMA QUINCENA"
+    ]
+   ]
+  },
+  "02-loan-340-largest": {
+   "cards": 5,
+   "overlaps": 0,
+   "hOverflow": false,
+   "pills": [
+    "Pendiente de revisión",
+    "Pendiente de revisión",
+    "Histórico importado",
+    "Histórico importado",
+    "Pendiente de revisión"
+   ],
+   "meta": [
+    "Subido 14 nov · JPG",
+    "Subido 14 nov · JPG",
+    "De tu expediente anterior",
+    "De tu expediente anterior",
+    "Subido 14 nov · PDF"
+   ],
+   "buttons": [
+    [
+     "Ver Foto perfil",
+     "Ver Foto perfil",
+     "Reemplazar Foto perfil",
+     "Retirar Foto perfil"
+    ],
+    [
+     "Ver INE FRENTE",
+     "Ver INE FRENTE",
+     "Reemplazar INE FRENTE",
+     "Retirar INE FRENTE"
+    ],
+    [
+     "Ver INE REVERSO",
+     "Ver INE REVERSO",
+     "Reemplazar INE REVERSO",
+     "Retirar INE REVERSO"
+    ],
+    [
+     "Ver TALON ULTIMA QUINCENA",
+     "Ver TALON ULTIMA QUINCENA",
+     "Reemplazar TALON ULTIMA QUINCENA",
+     "Retirar TALON ULTIMA QUINCENA"
+    ],
+    [
+     "Ver TALON PENULTIMA QUINCENA",
+     "Ver TALON PENULTIMA QUINCENA",
+     "Reemplazar TALON PENULTIMA QUINCENA",
+     "Retirar TALON PENULTIMA QUINCENA"
+    ]
+   ]
+  },
+  "03-loan-320": {
+   "cards": 5,
+   "overlaps": 0,
+   "hOverflow": false,
+   "pills": [
+    "Pendiente de revisión",
+    "Pendiente de revisión",
+    "Histórico importado",
+    "Histórico importado",
+    "Pendiente de revisión"
+   ],
+   "meta": [
+    "Subido 14 nov · JPG",
+    "Subido 14 nov · JPG",
+    "De tu expediente anterior",
+    "De tu expediente anterior",
+    "Subido 14 nov · PDF"
+   ],
+   "buttons": [
+    [
+     "Ver Foto perfil",
+     "Ver Foto perfil",
+     "Reemplazar Foto perfil",
+     "Retirar Foto perfil"
+    ],
+    [
+     "Ver INE FRENTE",
+     "Ver INE FRENTE",
+     "Reemplazar INE FRENTE",
+     "Retirar INE FRENTE"
+    ],
+    [
+     "Ver INE REVERSO",
+     "Ver INE REVERSO",
+     "Reemplazar INE REVERSO",
+     "Retirar INE REVERSO"
+    ],
+    [
+     "Ver TALON ULTIMA QUINCENA",
+     "Ver TALON ULTIMA QUINCENA",
+     "Reemplazar TALON ULTIMA QUINCENA",
+     "Retirar TALON ULTIMA QUINCENA"
+    ],
+    [
+     "Ver TALON PENULTIMA QUINCENA",
+     "Ver TALON PENULTIMA QUINCENA",
+     "Reemplazar TALON PENULTIMA QUINCENA",
+     "Retirar TALON PENULTIMA QUINCENA"
+    ]
+   ]
+  },
+  "sheet": {
+   "title": "Reemplazar documento",
+   "options": [
+    {
+     "kind": "camera",
+     "title": "Tomar foto",
+     "detail": "Usa la cámara de tu teléfono"
+    },
+    {
+     "kind": "gallery",
+     "title": "Elegir de la galería",
+     "detail": "JPG o PNG"
+    },
+    {
+     "kind": "pdf",
+     "title": "Subir PDF",
+     "detail": "Máximo 100 MB"
+    }
+   ],
+   "tips": [
+    "Buena luz, sin reflejos",
+    "Las 4 esquinas visibles",
+    "Texto legible"
+   ],
+   "keep": "El documento actual permanecerá intacto hasta completar la nueva carga."
+  },
+  "galleryPicker": {
+   "accept": "image/jpeg,image/png,.jfif",
+   "capture": null
+  },
+  "pdfPicker": {
+   "accept": "application/pdf",
+   "capture": null
+  },
+  "photoOptions": [
+   "camera",
+   "gallery"
+  ],
+  "systemObservation": {
+   "text": "El archivo está dañado o no es compatible. Toma la foto de nuevo o selecciona otro archivo.",
+   "cls": "mr-doc-tile is-filled has-thumbnail is-error",
+   "topAlert": false
+  },
+  "06-states-390": {
+   "cards": 3,
+   "overlaps": 0,
+   "hOverflow": false,
+   "pills": [
+    "Verificado",
+    "Rechazado",
+    "Falta subir"
+   ],
+   "meta": [
+    "Subido 15 nov · JPG",
+    "Subido 13 nov · JPG",
+    "JPG, PNG o PDF · máx. 100 MB"
+   ],
+   "buttons": [
+    [
+     "Ver INE FRENTE",
+     "Ver INE FRENTE",
+     "Reemplazar INE FRENTE",
+     "Retirar INE FRENTE"
+    ],
+    [
+     "Reemplazar COMPROBANTE DE DOMICILIO",
+     "Volver a subir COMPROBANTE DE DOMICILIO",
+     "Retirar COMPROBANTE DE DOMICILIO"
+    ],
+    [
+     "Adjuntar ESTADO DE CUENTA",
+     "Subir ESTADO DE CUENTA"
+    ]
+   ]
+  },
+  "uploadSheet": {
+   "title": "Subir documento",
+   "keep": false
+  }
+ }
+}

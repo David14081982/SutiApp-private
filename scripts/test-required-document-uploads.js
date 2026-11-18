@@ -5,5 +5,5 @@ assert.match(membership,/requirements\('membership',offering\.id\)/);assert.matc
 assert.match(loan,/requirements\('prestamo'\)/);assert.match(loan,/Promise\.allSettled/);assert.match(loan,/StepDocuments/);assert.match(loan,/phase:documentState\.phase/);assert.match(loan,/Reintentar/);
 assert.match(workflow,/previewUnavailable/);assert.doesNotMatch(workflow,/if\(s\.error\)throw s\.error/);assert.match(read('app/screens-documentos.jsx'),/canUpload/);
 assert.match(workflow,/selfPreview/);assert.match(workflow,/list_effective_affiliate_documents/);
-assert.match(read('app/screens-documentos.jsx'),/Adjuntar archivo/);assert.match(read('app/screens-documentos.jsx'),/Tomar foto/);assert.match(read('app/screens-documentos.jsx'),/capture','environment/);assert.match(workflow,/p_source:source\.toUpperCase\(\)/);
+assert.match(read('app/screens-documentos.jsx'),/Elegir de la galería/);assert.match(read('app/screens-documentos.jsx'),/Subir PDF/);assert.match(read('app/screens-documentos.jsx'),/Tomar foto/);assert.match(read('app/screens-documentos.jsx'),/capture','environment/);assert.match(workflow,/p_source:source\.toUpperCase\(\)/);
 console.log('Required document upload resilience PASS');

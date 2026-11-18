@@ -152,7 +152,7 @@ async function main(){
   await page.locator('[data-document-authority="supabase"][data-document-phase="ready"]').waitFor();
   await perform('selfReplacement',async()=>{
    const row=page.locator('[data-document-authority="supabase"] [data-document-type-id="'+typeId+'"]');await row.locator('[data-document-action="replace"]').click();
-   const chooser=page.waitForEvent('filechooser');await page.locator('[data-document-origin="file"]').click();await(await chooser).setFiles(file);
+   const chooser=page.waitForEvent('filechooser');await page.locator('[data-document-origin="gallery"]').click();await(await chooser).setFiles(file);
    await row.locator('[data-document-action="replace"]').waitFor();
   });
   assert.equal(checkpoint.steps.selfReplacement.replacesDocumentId,checkpoint.steps.adminReplacement.documentId,'SELF_HISTORY_CHAIN_MISMATCH');

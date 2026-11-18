@@ -4597,3 +4597,8 @@ Evidencia aislada y resultado detallado en [auditoría](audits/H-FINANCE-DOCUMEN
 
 ## H-CASH-FLOW-FIXES-20261113
 Correcciones focales de flujo de efectivo; fuentes financieras preservadas. Auditoria y evidencia: docs/audits/H-CASH-FLOW-FIXES-20261113.md. Publicacion autorizada por el propietario el 13-nov-2026; paquete aislado sobre 3bad1875f970f58e622af672d6daa487f208065f.
+
+
+## 2026-11-17 — H-DOCUMENT-CARDS-REDESIGN-001 — publicación autorizada por el propietario (17-nov-2026)
+
+Rediseño visual aprobado por el propietario (incluye límite real de 100 MB, Retirar visible y rechazados sin Ver) del paso Documentos compartido (`UnifiedDocumentPhase`/`DocumentRequirementList` variante `tiles`): Suti Préstamo, Solicitud de membresía, Renta Car y Pago de producto de programa. Tarjeta por fila con miniatura, un solo estado, observación de revisión o del sistema dentro de la tarjeta y acciones Ver/Reemplazar fuera de la imagen; la hoja Reemplazar ofrece Tomar foto, Elegir de la galería y Subir PDF según los tipos aceptados del documento (límite mostrado desde `max_file_size_bytes`). Sin cambios en repositorios, RPC, reglas, requisitos ni habilitación de Continuar; se retiran sólo los estilos de Membresía y Renta Car que encimaban elementos sobre la imagen y se agregan los iconos `sun`, `scan` y `archive`. Bundle regenerado (sólo cambian `icons.jsx`, `screens-documentos.jsx`, `renta-car.jsx` y `screens-membership-application.jsx`), caché 2026111701. Pruebas focales verdes; fallos heredados idénticos en baseline `origin/main`. Evidencia visual sintética: [capturas y medición](qa/evidence/document-cards-redesign-20261117/result.json).

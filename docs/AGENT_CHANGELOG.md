@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — 2026-11-19 — backend APPLIED / VERIFIED; frontend publicado con autorización del propietario
+## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — 2026-11-19 — PASS published
 
 «Votaciones y consultas»: título y textos editables por tarjeta, fecha de cierre opcional,
 opciones propias por pregunta (Sí/No editables + agregadas, una elección), respuesta libre,
@@ -12,6 +12,10 @@ nuevas PASS y la suite previa de votación en vivo (25) PASS sin cambios; tres t
 sin desbordes. Bundle focal: 176/179 trozos idénticos al publicado. Archivos de app:
 `screens-voting.jsx`, `voting-repository.js`, `screens-admin.jsx` (sólo la etiqueta del menú),
 `bundle.js`, `SutiApp.html` (cachebuster). Evidencia: `docs/qa/evidence/voting-consultas-20261119/`.
+Publicado con autorización del propietario: restore point + migración aplicada y verificada,
+matriz contra funciones instaladas PASS, commit 0ca5a79, GitHub Pages SUCCESS, bundle servido
+idéntico (SHA-256 997a3929…) y carga productiva sin errores. El fallo de «Membership Google
+contract» es previo (también en 0d1cb49) y ajeno a Votaciones.
 
 ## H-DOCUMENT-JPEG-TRAILER-001 — 2026-11-13 — PASS published
 

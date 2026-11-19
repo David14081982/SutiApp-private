@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "commit": "0ca5a79ab3dcf7fcf161ad62d5bc5da730ff25c4",
+  "pagesDeploy": {
+    "runId": 44541950253,
+    "conclusion": "success"
+  },
+  "servedCachebuster": "app/bundle.js?v=voting-consultas-20261119-001",
+  "servedBundleSha256": "997a39296a6d7da89ced1ebfb3a9125154de1362d7a6fd435bcc51b65ec1b27d",
+  "matchesBuild": true,
+  "headlessProductionLoad": {
+    "pageErrors": 0,
+    "loginRendered": true,
+    "votingComponents": true,
+    "answerRpc": "cast_voting_answer"
+  },
+  "unrelatedPreexistingFailure": "Membership Google contract workflow (mr-doc-tile CSS assertion) also failed on 0d1cb49 before this release",
+  "restoreTag": "restore/pre-votaciones-consultas-20261119",
+  "verifiedAt": "2026-11-19T14:19:12.477Z"
+}

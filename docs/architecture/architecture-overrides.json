@@ -8,7 +8,9 @@
         "votaciones",
         "voting",
         "votos",
-        "consultas sindicales"
+        "consultas sindicales",
+        "votaciones y consultas",
+        "encuestas"
       ]
     },
     {
@@ -884,7 +886,10 @@
       "domain": "voting",
       "aliases": [
         "Votaciones afiliado",
-        "Votaciones"
+        "Votaciones",
+        "Votaciones y consultas",
+        "Consultas",
+        "Título de la tarjeta"
       ],
       "source_of_truth": "SUPABASE"
     },
@@ -896,7 +901,11 @@
       "aliases": [
         "Votaciones Admin",
         "Votos identificados",
-        "Pregunta activa"
+        "Pregunta activa",
+        "Votaciones y consultas",
+        "Textos de la tarjeta",
+        "Respuesta libre",
+        "Respuesta definitiva"
       ],
       "source_of_truth": "SUPABASE"
     },
@@ -928,7 +937,11 @@
         "identity": "get_effective_affiliate_id",
         "audit": "admin_audit_log",
         "live_signal": "Realtime postgres_changes on voting_live_state (RLS voting_live_visible)",
-        "electorate": "voting_electorate(audience), derived on read"
+        "electorate": "voting_electorate(audience), derived on read",
+        "answer_writer": "cast_voting_answer (cast_voting_vote kept for older clients)",
+        "card_texts": "voting_consultations.presentation",
+        "answer_types": "voting_questions.answer_kind / options / final",
+        "close_date": "voting_consultations.closes_on optional"
       }
     },
     {

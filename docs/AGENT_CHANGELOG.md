@@ -1,5 +1,18 @@
 # Bitácora de agentes
 
+## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — 2026-11-19 — backend APPLIED / VERIFIED; frontend publicado con autorización del propietario
+
+«Votaciones y consultas»: título y textos editables por tarjeta, fecha de cierre opcional,
+opciones propias por pregunta (Sí/No editables + agregadas, una elección), respuesta libre,
+respuesta definitiva o modificable por pregunta, pantalla en vivo con barras por opción y sólo
+conteo de respuestas libres, VER/Excel con etiqueta o texto, menú renombrado. Worktree aislado
+desde `origin/main` (eefd9e2). Backend: 16 grupos SQL PASS con ROLLBACK, recovery exacto PASS,
+control negativo FAIL esperado, producción idéntica antes/después. Navegador: 18 verificaciones
+nuevas PASS y la suite previa de votación en vivo (25) PASS sin cambios; tres tamaños de texto
+sin desbordes. Bundle focal: 176/179 trozos idénticos al publicado. Archivos de app:
+`screens-voting.jsx`, `voting-repository.js`, `screens-admin.jsx` (sólo la etiqueta del menú),
+`bundle.js`, `SutiApp.html` (cachebuster). Evidencia: `docs/qa/evidence/voting-consultas-20261119/`.
+
 ## H-DOCUMENT-JPEG-TRAILER-001 — 2026-11-13 — PASS published
 
 Confirmed the deployed parser rejects valid JPEGs with post-EOI phone data.

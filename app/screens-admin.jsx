@@ -34,7 +34,7 @@
     {id:'sutifinanzas',label:'SUTIFINANZAS',icon:'finance',desc:'Gasto por Secretaría · consulta de Google Sheets',ready:true,registration:{version:'20261004000200',totalOnly:false,boundary:'Google Sheets direct read-only Gasto por secretaría; no financial persistence',readPermissions:['program_requests.read'],writePermissions:[],sections:[],backendEvidence:'supabase/functions/sutifinanzas/report.mjs',isolatedTest:'scripts/test-sutifinanzas.js'}},
     { id:'document_generation',label:'Documentos y Firmas',icon:'doc',desc:'Plantillas, firmantes y documentos autorizados',ready:true },
     { id: 'login_history', label: 'Historial de accesos', icon: 'clock', desc: 'Inicios de sesión y teléfonos', ready: true },
-    { id: 'votaciones', label: 'Votaciones', icon: 'checkCircle', desc: 'Consultas, preguntas y resultados', ready: true },
+    { id: 'votaciones', label: 'Votaciones y consultas', icon: 'checkCircle', desc: 'Consultas, preguntas y resultados', ready: true },
     { id: 'votaciones_nominal', label: 'Votos identificados', icon: 'doc', desc: 'Exportación nominal autorizada', ready: true },
     { id: 'administrators', label: 'Administradores', icon: 'shield', desc: 'Altas, asignaciones y revocación', ready: true },
     { id: 'screen_permissions', label: 'Permisos por pantalla', icon: 'lock', desc: 'Responsables y acciones exactas', ready: true },

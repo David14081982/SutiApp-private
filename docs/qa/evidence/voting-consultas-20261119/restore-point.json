@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "schema": "voting_restore_private",
+  "suffix": "20261119",
+  "gitTag": "restore/pre-votaciones-consultas-20261119",
+  "baseCommit": "eefd9e267dc72d8bbc5b84f18d726a7d0c39f2c7",
+  "counts": {
+    "votes": 128,
+    "questions": 5,
+    "live_state": 2,
+    "consultations": 2
+  },
+  "rowHashes": {
+    "votes": "a0ac8812a73ec624b57da8f10ec57ff9",
+    "questions": "ca7cad15aab841ef5b85882a46e9546a",
+    "live_state": "a5ca7556767adc2e89a543d5e37c35e7",
+    "consultations": "21950d727bdd7f333e10ea4a8e8a661c"
+  },
+  "functions": {
+    "voting_can(text)": "8b2ea47edf9c7552cffc137a7a6ed028",
+    "get_voting_live(uuid)": "fbd3736f291eef4772625d5dbc15f0d9",
+    "list_voting_votes(uuid)": "95c3a713802450483641d75d01695d78",
+    "voting_immutable_vote()": "9b94484bdeed75665eb8a4b5eaeb0d9d",
+    "voting_live_touch(uuid)": "4617680f4811505608d9d935714fd746",
+    "voting_electorate(jsonb)": "d5fc0eec80aa2cb4d9c53fcec5043cc7",
+    "voting_live_visible(uuid)": "e0c24916274d710eac087af188f2ed5e",
+    "count_voting_electorate(jsonb)": "2ac349d79b583eab0e12d3f18895b952",
+    "voting_audience_matches(jsonb)": "a46ad282e6d2ef0f7f3a10f51a490dc4",
+    "cast_voting_vote(uuid,uuid,text)": "4d663d4bc203763476e3235d1b502d93",
+    "list_voting_consultations(boolean)": "ba2783ee52e10870ef37bb3e3a5d7dac",
+    "delete_voting_votes(uuid,uuid,uuid)": "b47d9e0c1b058ad6bb91b4b8bf404fd6",
+    "voting_question_result(uuid,integer)": "f2a8130e6d3413df662e8b14b8ac09dc",
+    "set_voting_active_question(uuid,uuid)": "5cfdc6c79c3819a459df9017748d3b8c",
+    "export_voting_consultation(uuid,boolean)": "8268f0674e69120a810f1e18c186c7e5",
+    "save_voting_consultation(uuid,integer,jsonb)": "7acefa470678b2b16d401c1a909fa662",
+    "voting_consultation_action(uuid,integer,text)": "b6845e680b49fed6a6f787e4d1d63e88"
+  },
+  "createdAt": "2026-11-19T14:12:05.917Z"
+}

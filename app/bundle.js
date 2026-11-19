@@ -13794,16 +13794,18 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
   'use strict';
   async function rpc(name,args){const r=await window.SutiSupabase.getClient().rpc(name,args);if(r.error)throw r.error;return r.data;}
   const resultHeaders=['Consulta','Pregunta','Sí','No','Abstención','Total','Participación %'];
+  // Consultations with their own options (H-SUTIAPP-VOTACIONES-CONSULTAS-004): one row per answer option.
+  const optionResultHeaders=['Consulta','Pregunta','Respuesta','Respuestas','% de respuestas','Total','Participación %'];
   const identifiedHeaders=['Folio','Fecha','Hora','Consulta','Pregunta','Respuesta','Número de control','Nombre','Correo','Sindicato','Nivel/tipo de empleado'];
   function csv(rows,identified){
-    const headers=identified?identifiedHeaders:resultHeaders;
+    const headers=identified?identifiedHeaders:rows.length&&Object.prototype.hasOwnProperty.call(rows[0],'Respuesta')?optionResultHeaders:resultHeaders;
     const escape=value=>{let s=String(value==null?'':value);if(/^[\s]*[=+@-]/.test(s)||/^[\t\r\n]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';};
     return '\uFEFFsep=;\r\n'+[headers.map(escape).join(';'),...rows.map(row=>headers.map(k=>escape(row[k])).join(';'))].join('\r\n');
   }
-  async function download(id,identified){
+  async function download(id,identified,kind){
     const rows=await rpc('export_voting_consultation',{p_id:id,p_identified:!!identified});
     const url=URL.createObjectURL(new Blob([csv(rows,identified)],{type:'text/csv;charset=utf-8;'}));
-    const a=document.createElement('a');a.href=url;a.download='votaciones-'+(identified?'votos':'resultados')+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const a=document.createElement('a');a.href=url;a.download=(kind==='consultation'?'consultas-'+(identified?'respuestas':'resultados'):'votaciones-'+(identified?'votos':'resultados'))+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   // voting_live_state only carries ids and a timestamp (RLS by audience): any change means "reload from the RPC".
   let channels=0;
@@ -13819,8 +13821,8 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
   }
   window.VotingRepository=Object.freeze({
     list:admin=>rpc('list_voting_consultations',{p_admin:!!admin}),
-    vote:(c,q,answer)=>rpc('cast_voting_vote',{p_consultation:c,p_question:q,p_answer:answer}),
-    save:c=>rpc('save_voting_consultation',{p_id:c.id||null,p_version:c.version||null,p_value:{title:c.title,closes_on:c.closes_on,published:c.published,audience:c.audience,questions:c.questions.map(q=>({id:q.id||null,title:q.title,detail:q.detail||''}))}}),
+    vote:(c,q,answer,text)=>rpc('cast_voting_answer',{p_consultation:c,p_question:q,p_answer:answer,p_text:text==null?null:String(text)}),
+    save:c=>rpc('save_voting_consultation',{p_id:c.id||null,p_version:c.version||null,p_value:{title:c.title,closes_on:c.closes_on||null,published:c.published,audience:c.audience,presentation:c.presentation||{},questions:c.questions.map(q=>({id:q.id||null,title:q.title,detail:q.detail||'',answer_kind:q.answer_kind==='text'?'text':'options',options:q.answer_kind!=='text'&&Array.isArray(q.options)&&q.options.length?q.options.map(o=>({id:o.id,label:o.label})):null,final:q.final!==false}))}}),
     action:(c,action)=>rpc('voting_consultation_action',{p_id:c.id,p_version:c.version,p_action:action}),
     activate:(consultation,question)=>rpc('set_voting_active_question',{p_consultation:consultation,p_question:question||null}),
     live:consultation=>rpc('get_voting_live',{p_consultation:consultation}),
@@ -13833,6 +13835,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
 })();
 /* @@file screens-voting.jsx */
 (function(){
+function _extends() { return _extends = Object.assign ? Object.assign.bind() : function (n) { for (var e = 1; e < arguments.length; e++) { var t = arguments[e]; for (var r in t) ({}).hasOwnProperty.call(t, r) && (n[r] = t[r]); } return n; }, _extends.apply(null, arguments); }
 /* Owner Pantalla A/B, integrated into existing Home and Admin. Live flow: one question on air, controlled from Admin. */
 (function () {
   const {
@@ -13842,30 +13845,121 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
   } = React;
   const R = () => window.VotingRepository;
   const nf = n => Number(n || 0).toLocaleString('es-MX');
-  const options = [{
+  // Answer options: the question's own list (H-SUTIAPP-VOTACIONES-CONSULTAS-004) or the original Sí / No / Abstención.
+  const legacyOptions = [{
     id: 'si',
-    label: 'Sí',
-    icon: 'check',
-    color: '#13794A'
+    label: 'Sí'
   }, {
     id: 'no',
-    label: 'No',
-    icon: 'ban',
-    color: '#B3261E'
+    label: 'No'
   }, {
     id: 'abs',
-    label: 'Abstención',
-    icon: 'minus',
-    color: '#5a6378'
+    label: 'Abstención'
   }];
+  const optionLook = {
+    si: {
+      icon: 'check',
+      color: '#13794A'
+    },
+    no: {
+      icon: 'ban',
+      color: '#B3261E'
+    },
+    abs: {
+      icon: 'minus',
+      color: '#5a6378'
+    }
+  };
+  const palette = ['#910022', '#1E5AA8', '#8A5A00', '#6B3FA0', '#0F766E', '#5a6378'];
+  const optionsOf = q => q && q.answer_kind === 'text' ? [] : (Array.isArray(q && q.options) && q.options.length ? q.options : legacyOptions).map((o, i) => ({
+    ...o,
+    ...(optionLook[o.id] || {
+      icon: 'dot',
+      color: palette[i % palette.length],
+      custom: true
+    })
+  }));
+  const isLegacy = list => list.length === 3 && list.every((o, i) => o.id === legacyOptions[i].id && o.label === legacyOptions[i].label);
+  const defaultOptions = kind => (kind === 'consultation' ? legacyOptions.slice(0, 2) : legacyOptions).map(o => ({
+    id: o.id,
+    label: o.label
+  }));
+  const newOptionId = list => {
+    let id;
+    do {
+      id = 'o' + Math.random().toString(36).slice(2, 8);
+    } while (list.some(o => o.id === id));
+    return id;
+  };
+  // Card texts: each consultation may override them in Admin; an empty text uses the suggestion of its type.
+  const TEXTS = {
+    voting: {
+      header: 'Votaciones',
+      open_label: 'VOTACIÓN ABIERTA',
+      closed_label: 'VOTACIÓN CERRADA',
+      closed_title: 'La votación ya cerró',
+      closed_text: 'Ya no se reciben votos.',
+      footer: 'Tu voto es secreto frente a otros afiliados y definitivo. Administradores con permiso específico pueden consultarlo.',
+      confirm_title: 'Confirma tu voto',
+      confirm_button: 'Confirmar voto',
+      success: 'Voto registrado'
+    },
+    consultation: {
+      header: 'Consultas',
+      open_label: 'CONSULTA ABIERTA',
+      closed_label: 'CONSULTA CERRADA',
+      closed_title: 'La consulta ya cerró',
+      closed_text: 'Ya no se reciben respuestas.',
+      footer: 'Tus respuestas son confidenciales frente a otros afiliados. Administradores con permiso específico pueden consultarlas.',
+      confirm_title: 'Confirma tu respuesta',
+      confirm_button: 'Enviar respuesta',
+      success: 'Respuesta registrada'
+    }
+  };
+  const TEXT_FIELDS = [['header', 'TÍTULO DE LA TARJETA', 80], ['open_label', 'ETIQUETA ABIERTA', 40], ['closed_label', 'ETIQUETA CERRADA', 40], ['closed_title', 'MENSAJE AL CERRAR', 120], ['closed_text', 'DETALLE AL CERRAR', 240], ['footer', 'LEYENDA DEL PIE', 400], ['confirm_title', 'TÍTULO DE CONFIRMACIÓN', 80], ['confirm_button', 'BOTÓN DE CONFIRMACIÓN', 40], ['success', 'AVISO AL RESPONDER', 80]];
+  const kinds = [['voting', 'Votación', 'ballot', 'Textos de votación: voto secreto y definitivo'], ['consultation', 'Consulta', 'message', 'Textos neutros: encuestas, asistencia o datos']];
+  const kindOf = c => c && c.presentation && c.presentation.kind === 'consultation' ? 'consultation' : 'voting';
+  const textOf = (c, key) => {
+    const v = c && c.presentation && c.presentation[key];
+    return typeof v === 'string' && v.trim() ? v.trim() : TEXTS[kindOf(c)][key];
+  };
+  // Fixed wording that follows the type (not editable).
+  const WORDS = {
+    voting: {
+      pick: 'Vas a votar',
+      tap: 'Toca para votar la pregunta ',
+      registered: 'Tu voto quedó registrado. La siguiente pregunta aparecerá aquí en cuanto se active.',
+      final: 'Tu voto es definitivo: una vez emitido no podrás cambiarlo. Otros afiliados no conocerán tu respuesta.',
+      changeable: 'Podrás cambiar tu voto mientras la pregunta siga activa. Otros afiliados no conocerán tu respuesta.',
+      dup: 'Ya votaste esta pregunta. Tu voto es definitivo.',
+      voted: 'ya votaron',
+      unit: ['voto', 'votos'],
+      cast: ['voto emitido', 'votos emitidos'],
+      impersonation: 'Tomar control permite consultar, pero no emitir votos.'
+    },
+    consultation: {
+      pick: 'Vas a responder',
+      tap: 'Toca para responder la pregunta ',
+      registered: 'Tu respuesta quedó registrada. La siguiente pregunta aparecerá aquí en cuanto se active.',
+      final: 'Tu respuesta es definitiva: una vez enviada no podrás cambiarla. Otros afiliados no la conocerán.',
+      changeable: 'Podrás cambiar tu respuesta mientras la pregunta siga activa. Otros afiliados no la conocerán.',
+      dup: 'Ya respondiste esta pregunta. Tu respuesta es definitiva.',
+      voted: 'ya respondieron',
+      unit: ['respuesta', 'respuestas'],
+      cast: ['respuesta', 'respuestas'],
+      impersonation: 'Tomar control permite consultar, pero no enviar respuestas.'
+    }
+  };
+  const wordsOf = c => WORDS[kindOf(c)];
   const modes = [['all', 'Todos', 'globe', 'Toda la audiencia; votar requiere identidad autenticada'], ['registered', 'Solo registrados', 'user', 'Usuarios con sesión iniciada'], ['segment', 'Segmentado', 'filter', 'Por cargo, sindicato y nivel'], ['emails', 'Solo estas personas', 'message', 'Lista de correos autorizados']];
   const extraIcons = {
+    dot: '<circle cx="12" cy="12" r="5"/>',
     screen: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/>',
     expand: '<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>',
     shrink: '<path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/>'
   };
   // Module additions to the owner CSS: waiting states, question on air, automatic total and the big screen.
-  const liveCss = ".voting-affiliate .wait{display:flex;gap:12px;align-items:center;padding:16px 0 0;border-top:1px solid var(--line)}.voting-affiliate .wico{width:40px;height:40px;border-radius:12px;background:var(--guinda-50);color:var(--guinda);display:grid;place-items:center;flex-shrink:0}.voting-affiliate .wait.done .wico{background:var(--ok-bg);color:var(--ok)}.voting-affiliate .wait b{display:block;font-size:var(--text-14-5,14.5px);font-weight:800;line-height:1.3;overflow-wrap:anywhere}.voting-affiliate .wait s{display:block;text-decoration:none;font-size:var(--text-12,12px);font-weight:600;color:var(--ink-3);line-height:1.4;margin-top:3px}.voting-affiliate .q[data-voting-on-air]{animation:voting-reveal .32s ease}" + ".voting-ui .dot{display:inline-block;width:8px;height:8px;border-radius:999px;background:currentColor;flex-shrink:0;animation:voting-pulse 1.6s ease-in-out infinite}@keyframes voting-pulse{0%,100%{opacity:1}50%{opacity:.3}}" + ".voting-admin .qrow.live{box-shadow:0 0 0 2px var(--guinda),var(--neo-sm)}.voting-admin .qlive{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--hairline);padding-top:6px}.voting-admin .qlivelabel{display:inline-flex;align-items:center;gap:7px;font-size:var(--text-12,12px);font-weight:800;color:var(--ink-3);min-width:0}.voting-admin .qlive.on .qlivelabel{color:var(--guinda)}.voting-admin .total-field{display:flex;align-items:center;gap:8px;font-weight:800;min-height:46px;color:var(--ink)}.voting-admin .total-note{display:block;font-size:var(--text-11-5,11.5px);font-weight:600;color:var(--ink-3);margin-top:5px;line-height:1.35}" + ".voting-live{position:fixed;inset:0;z-index:10050;overflow:auto;background:var(--grad-guinda);color:#fff;display:flex;flex-direction:column;gap:clamp(16px,2.4vw,40px);padding:clamp(18px,3vw,56px) clamp(16px,4vw,80px);outline:none;-webkit-font-smoothing:antialiased}.voting-live .lseal{position:fixed;right:-3vw;top:-5vw;display:block;width:min(42vw,600px);aspect-ratio:1/1;opacity:.12;pointer-events:none;filter:brightness(0) invert(1)}.voting-live .lseal img{display:block;width:100%;height:100%;object-fit:contain}.voting-live .ltools{position:absolute;top:clamp(10px,1.4vw,24px);right:clamp(10px,1.4vw,24px);display:flex;gap:8px;z-index:2}.voting-live .ltool{width:44px;height:44px;border-radius:12px;border:none;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer;opacity:.55;transition:opacity .2s}.voting-live .ltool:hover,.voting-live .ltool:focus-visible{opacity:1}.voting-live button:focus-visible{outline-color:#fff}" + ".voting-live .lhead{position:relative;padding-right:112px;min-width:0}.voting-live .lstate{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--guinda);padding:6px 14px;border-radius:999px;font-size:clamp(12px,1.05vw,18px);font-weight:800;letter-spacing:.08em}.voting-live .lstate.final,.voting-live .lstate.wait,.voting-live .lstate.closed{background:rgba(255,255,255,.18);color:#fff}.voting-live .lstate.draft{background:#FFF4D6;color:#7A4B00}.voting-live .ltitle{font-size:clamp(22px,2.6vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:12px 0 0;overflow-wrap:anywhere;text-wrap:balance}.voting-live .lsub{font-size:clamp(14px,1.3vw,22px);font-weight:700;opacity:.85;margin-top:6px}" + ".voting-live .lgrid{position:relative;flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(20px,3.2vw,64px);align-items:center}.voting-live .lq{min-width:0}.voting-live .lnum{font-size:clamp(13px,1.2vw,20px);font-weight:800;letter-spacing:.1em;opacity:.8}.voting-live .lqtext{font-size:clamp(28px,3.8vw,72px);font-weight:800;line-height:1.12;letter-spacing:-.02em;margin:10px 0 0;overflow-wrap:anywhere;text-wrap:balance}.voting-live .lqdet{font-size:clamp(15px,1.5vw,26px);font-weight:600;line-height:1.4;opacity:.85;margin:14px 0 0;overflow-wrap:anywhere}" + ".voting-live .lpart{margin-top:clamp(20px,3vw,52px);background:rgba(255,255,255,.12);border-radius:clamp(18px,1.6vw,28px);padding:clamp(16px,1.8vw,32px)}.voting-live .lbig{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.voting-live .lbig b{font-size:clamp(48px,6.4vw,124px);font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.voting-live .lbig span{font-size:clamp(16px,1.7vw,30px);font-weight:700;opacity:.9}.voting-live .ltrack{display:block;height:clamp(10px,1vw,16px);border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden;margin-top:clamp(12px,1.4vw,22px)}.voting-live .lfill{display:block;height:100%;border-radius:999px;background:#fff;transform-origin:left center;transition:transform .48s cubic-bezier(.2,0,0,1)}.voting-live .lmeta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:clamp(14px,1.3vw,24px);font-weight:800;font-variant-numeric:tabular-nums}.voting-live .lnext{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(14px,1.6vw,26px);font-size:clamp(14px,1.3vw,22px);font-weight:800;background:rgba(255,255,255,.16);padding:10px 16px;border-radius:999px}" + ".voting-live .lres{min-width:0;background:var(--surface);color:var(--ink);border-radius:clamp(20px,2vw,36px);box-shadow:0 40px 90px -30px rgba(20,33,61,.5);padding:clamp(18px,2.4vw,44px);display:flex;flex-direction:column;gap:clamp(14px,1.8vw,32px)}.voting-live .lrowtop{display:flex;justify-content:space-between;align-items:center;gap:12px}.voting-live .llabel{display:inline-flex;align-items:center;gap:12px;font-size:clamp(18px,1.9vw,34px);font-weight:800;min-width:0}.voting-live .lico{width:clamp(34px,2.6vw,48px);height:clamp(34px,2.6vw,48px);border-radius:12px;color:#fff;display:grid;place-items:center;flex-shrink:0}.voting-live .lpct{font-size:clamp(26px,3vw,56px);font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.voting-live .lbar{display:block;height:clamp(14px,1.4vw,24px);border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:10px}.voting-live .lbarfill{display:block;height:100%;border-radius:999px;transform-origin:left center;transition:transform .48s cubic-bezier(.2,0,0,1)}.voting-live .lcount{font-size:clamp(13px,1.2vw,20px);font-weight:700;color:var(--ink-3);margin-top:6px;font-variant-numeric:tabular-nums}.voting-live .ltotal{border-top:1px solid var(--hairline);padding-top:clamp(10px,1.2vw,20px);font-size:clamp(14px,1.3vw,22px);font-weight:800;color:var(--ink-2)}" + ".voting-live .lcenter{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}.voting-live .lwaitico{width:clamp(84px,8vw,140px);height:clamp(84px,8vw,140px);border-radius:999px;background:rgba(255,255,255,.16);display:grid;place-items:center}.voting-live .lwaitt{font-size:clamp(26px,3.4vw,64px);font-weight:800;letter-spacing:-.02em;margin:10px 0 0;overflow-wrap:anywhere}.voting-live .lwaits{font-size:clamp(15px,1.5vw,26px);font-weight:600;opacity:.85;margin:0}.voting-live .lretry{margin-top:12px;border:none;border-radius:14px;background:#fff;color:var(--guinda);font-weight:800;font-size:16px;padding:12px 22px;cursor:pointer}.voting-live .lerror{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);max-width:calc(100% - 32px);background:rgba(20,33,61,.88);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px}" + "@media (max-width:860px),(orientation:portrait){.voting-live .lgrid{grid-template-columns:minmax(0,1fr);align-items:start}}";
+  const liveCss = ".voting-affiliate .wait{display:flex;gap:12px;align-items:center;padding:16px 0 0;border-top:1px solid var(--line)}.voting-affiliate .wico{width:40px;height:40px;border-radius:12px;background:var(--guinda-50);color:var(--guinda);display:grid;place-items:center;flex-shrink:0}.voting-affiliate .wait.done .wico{background:var(--ok-bg);color:var(--ok)}.voting-affiliate .wait b{display:block;font-size:var(--text-14-5,14.5px);font-weight:800;line-height:1.3;overflow-wrap:anywhere}.voting-affiliate .wait s{display:block;text-decoration:none;font-size:var(--text-12,12px);font-weight:600;color:var(--ink-3);line-height:1.4;margin-top:3px}.voting-affiliate .q[data-voting-on-air]{animation:voting-reveal .32s ease}" + ".voting-ui .dot{display:inline-block;width:8px;height:8px;border-radius:999px;background:currentColor;flex-shrink:0;animation:voting-pulse 1.6s ease-in-out infinite}@keyframes voting-pulse{0%,100%{opacity:1}50%{opacity:.3}}" + ".voting-admin .qrow.live{box-shadow:0 0 0 2px var(--guinda),var(--neo-sm)}.voting-admin .qlive{flex-basis:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--hairline);padding-top:6px}.voting-admin .qlivelabel{display:inline-flex;align-items:center;gap:7px;font-size:var(--text-12,12px);font-weight:800;color:var(--ink-3);min-width:0}.voting-admin .qlive.on .qlivelabel{color:var(--guinda)}.voting-admin .total-field{display:flex;align-items:center;gap:8px;font-weight:800;min-height:46px;color:var(--ink)}.voting-admin .total-note{display:block;font-size:var(--text-11-5,11.5px);font-weight:600;color:var(--ink-3);margin-top:5px;line-height:1.35}" + ".voting-live{position:fixed;inset:0;z-index:10050;overflow:auto;background:var(--grad-guinda);color:#fff;display:flex;flex-direction:column;gap:clamp(16px,2.4vw,40px);padding:clamp(18px,3vw,56px) clamp(16px,4vw,80px);outline:none;-webkit-font-smoothing:antialiased}.voting-live .lseal{position:fixed;right:-3vw;top:-5vw;display:block;width:min(42vw,600px);aspect-ratio:1/1;opacity:.12;pointer-events:none;filter:brightness(0) invert(1)}.voting-live .lseal img{display:block;width:100%;height:100%;object-fit:contain}.voting-live .ltools{position:absolute;top:clamp(10px,1.4vw,24px);right:clamp(10px,1.4vw,24px);display:flex;gap:8px;z-index:2}.voting-live .ltool{width:44px;height:44px;border-radius:12px;border:none;background:rgba(255,255,255,.16);color:#fff;display:grid;place-items:center;cursor:pointer;opacity:.55;transition:opacity .2s}.voting-live .ltool:hover,.voting-live .ltool:focus-visible{opacity:1}.voting-live button:focus-visible{outline-color:#fff}" + ".voting-live .lhead{position:relative;padding-right:112px;min-width:0}.voting-live .lstate{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--guinda);padding:6px 14px;border-radius:999px;font-size:clamp(12px,1.05vw,18px);font-weight:800;letter-spacing:.08em}.voting-live .lstate.final,.voting-live .lstate.wait,.voting-live .lstate.closed{background:rgba(255,255,255,.18);color:#fff}.voting-live .lstate.draft{background:#FFF4D6;color:#7A4B00}.voting-live .ltitle{font-size:clamp(22px,2.6vw,48px);font-weight:800;letter-spacing:-.02em;line-height:1.15;margin:12px 0 0;overflow-wrap:anywhere;text-wrap:balance}.voting-live .lsub{font-size:clamp(14px,1.3vw,22px);font-weight:700;opacity:.85;margin-top:6px}" + ".voting-live .lgrid{position:relative;flex:1;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:clamp(20px,3.2vw,64px);align-items:center}.voting-live .lq{min-width:0}.voting-live .lnum{font-size:clamp(13px,1.2vw,20px);font-weight:800;letter-spacing:.1em;opacity:.8}.voting-live .lqtext{font-size:clamp(28px,3.8vw,72px);font-weight:800;line-height:1.12;letter-spacing:-.02em;margin:10px 0 0;overflow-wrap:anywhere;text-wrap:balance}.voting-live .lqdet{font-size:clamp(15px,1.5vw,26px);font-weight:600;line-height:1.4;opacity:.85;margin:14px 0 0;overflow-wrap:anywhere}" + ".voting-live .lpart{margin-top:clamp(20px,3vw,52px);background:rgba(255,255,255,.12);border-radius:clamp(18px,1.6vw,28px);padding:clamp(16px,1.8vw,32px)}.voting-live .lbig{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.voting-live .lbig b{font-size:clamp(48px,6.4vw,124px);font-weight:900;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}.voting-live .lbig span{font-size:clamp(16px,1.7vw,30px);font-weight:700;opacity:.9}.voting-live .ltrack{display:block;height:clamp(10px,1vw,16px);border-radius:999px;background:rgba(255,255,255,.22);overflow:hidden;margin-top:clamp(12px,1.4vw,22px)}.voting-live .lfill{display:block;height:100%;border-radius:999px;background:#fff;transform-origin:left center;transition:transform .48s cubic-bezier(.2,0,0,1)}.voting-live .lmeta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:clamp(14px,1.3vw,24px);font-weight:800;font-variant-numeric:tabular-nums}.voting-live .lnext{display:inline-flex;align-items:center;gap:10px;margin-top:clamp(14px,1.6vw,26px);font-size:clamp(14px,1.3vw,22px);font-weight:800;background:rgba(255,255,255,.16);padding:10px 16px;border-radius:999px}" + ".voting-live .lres{min-width:0;background:var(--surface);color:var(--ink);border-radius:clamp(20px,2vw,36px);box-shadow:0 40px 90px -30px rgba(20,33,61,.5);padding:clamp(18px,2.4vw,44px);display:flex;flex-direction:column;gap:clamp(14px,1.8vw,32px)}.voting-live .lrowtop{display:flex;justify-content:space-between;align-items:center;gap:12px}.voting-live .llabel{display:inline-flex;align-items:center;gap:12px;font-size:clamp(18px,1.9vw,34px);font-weight:800;min-width:0}.voting-live .lico{width:clamp(34px,2.6vw,48px);height:clamp(34px,2.6vw,48px);border-radius:12px;color:#fff;display:grid;place-items:center;flex-shrink:0}.voting-live .lpct{font-size:clamp(26px,3vw,56px);font-weight:900;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.voting-live .lbar{display:block;height:clamp(14px,1.4vw,24px);border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:10px}.voting-live .lbarfill{display:block;height:100%;border-radius:999px;transform-origin:left center;transition:transform .48s cubic-bezier(.2,0,0,1)}.voting-live .lcount{font-size:clamp(13px,1.2vw,20px);font-weight:700;color:var(--ink-3);margin-top:6px;font-variant-numeric:tabular-nums}.voting-live .ltotal{border-top:1px solid var(--hairline);padding-top:clamp(10px,1.2vw,20px);font-size:clamp(14px,1.3vw,22px);font-weight:800;color:var(--ink-2)}" + ".voting-live .lcenter{position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px}.voting-live .lwaitico{width:clamp(84px,8vw,140px);height:clamp(84px,8vw,140px);border-radius:999px;background:rgba(255,255,255,.16);display:grid;place-items:center}.voting-live .lwaitt{font-size:clamp(26px,3.4vw,64px);font-weight:800;letter-spacing:-.02em;margin:10px 0 0;overflow-wrap:anywhere}.voting-live .lwaits{font-size:clamp(15px,1.5vw,26px);font-weight:600;opacity:.85;margin:0}.voting-live .lretry{margin-top:12px;border:none;border-radius:14px;background:#fff;color:var(--guinda);font-weight:800;font-size:16px;padding:12px 22px;cursor:pointer}.voting-live .lerror{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);max-width:calc(100% - 32px);background:rgba(20,33,61,.88);color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px}" + "@media (max-width:860px),(orientation:portrait){.voting-live .lgrid{grid-template-columns:minmax(0,1fr);align-items:start}}" + ".voting-affiliate .card+.shead{margin-top:22px}.voting-affiliate .opts .opt.custom{flex:1 1 calc(40% - 8px);min-width:0;padding:10px 8px}.voting-affiliate .opt.custom span{white-space:normal;overflow-wrap:anywhere;text-align:center;line-height:1.25}.voting-affiliate .opt[aria-pressed=\"true\"]{box-shadow:0 0 0 2px currentColor,var(--neo-sm)}" + ".voting-affiliate .field{display:block;width:100%;min-width:0;border:none;outline:none;background:var(--surface-2);border-radius:13px;padding:13px 14px;font-size:var(--text-14-5,14.5px);font-family:inherit;color:var(--ink);resize:vertical}.voting-affiliate .tcount{display:block;text-align:right;font-size:var(--text-11,11px);font-weight:700;color:var(--ink-3);margin-top:4px}" + ".voting-affiliate .answered{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px}.voting-affiliate .answered .answer{font-size:var(--text-14-5,14.5px);font-weight:800;line-height:1.3;overflow-wrap:anywhere;margin-top:2px}.voting-affiliate .answered .btn{flex:0 0 auto;min-height:44px;padding:0 16px;font-size:var(--text-13,13px)}.voting-affiliate .pick .big.long{font-size:var(--text-15,15px);font-weight:700;overflow-wrap:anywhere}" + ".voting-live .llabel{overflow-wrap:anywhere}.voting-admin .opedit{display:flex;gap:8px;align-items:center}.voting-admin .opedit+.opedit{margin-top:8px}.voting-admin .opedit .field{flex:1}.voting-admin .opdot{width:12px;height:12px;border-radius:999px;flex-shrink:0}.voting-admin .textgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px 12px}.voting-admin .vrow s.vtext{color:var(--ink-2);margin-top:4px}";
   // «VER»: every vote of a consultation, grouped by person, with delete actions.
   const votesCss = ".voting-admin .vbtn{height:36px;padding:0 12px;border-radius:11px;border:none;background:var(--guinda-50);color:var(--guinda);font-family:inherit;font-size:var(--text-12,12px);font-weight:800;letter-spacing:.06em;cursor:pointer;flex-shrink:0}" + ".voting-admin .vsum{font-size:var(--text-12,12px);font-weight:700;color:var(--ink-3);margin:0 0 10px}.voting-admin .vperson{background:var(--surface);border-radius:16px;box-shadow:var(--neo-sm);padding:13px}.voting-admin .vperson+.vperson{margin-top:10px}" + ".voting-admin .vhead{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}.voting-admin .vhead>div{flex:1 1 160px;min-width:0}.voting-admin .vhead b{font-size:var(--text-14,14px);font-weight:800;display:block;overflow-wrap:anywhere}.voting-admin .vhead s{font-size:var(--text-11-5,11.5px);font-weight:600;color:var(--ink-3);text-decoration:none;display:block;margin-top:2px;overflow-wrap:anywhere}" + ".voting-admin .vdel{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:11px;border:none;cursor:pointer;font-family:inherit;background:var(--bad-bg);color:var(--bad);font-size:var(--text-12,12px);font-weight:800}.voting-admin .vdel[disabled]{opacity:.55;cursor:default}" + ".voting-admin .vrow{display:flex;align-items:center;gap:10px;border-top:1px solid var(--hairline);margin-top:10px;padding-top:10px}.voting-admin .vrow>div{flex:1;min-width:0}.voting-admin .vrow b{font-size:var(--text-13,13px);font-weight:700;display:block;line-height:1.3;overflow-wrap:anywhere}.voting-admin .vrow s{font-size:var(--text-11,11px);font-weight:600;color:var(--ink-3);text-decoration:none;display:block;margin-top:3px;overflow-wrap:anywhere}" + ".voting-admin .vconfirm{background:var(--surface);border-radius:16px;box-shadow:var(--neo-sm);padding:15px;line-height:1.5}.voting-admin .vconfirm p{margin:0 0 14px}";
   const enterFull = () => {
@@ -13904,9 +13998,9 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
   function Style() {
     return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("style", null, window.VotingDesign.css), /*#__PURE__*/React.createElement("style", null, liveCss), /*#__PURE__*/React.createElement("style", null, votesCss));
   }
-  function errorText(e) {
+  function errorText(e, w) {
     const s = String(e?.message || e);
-    return s.includes('23505') || e?.code === '23505' ? 'Ya votaste esta pregunta. Tu voto es definitivo.' : s.includes('CHANGED') ? 'La consulta cambió en otra sesión. Vuelve a cargarla antes de guardar.' : s.includes('HAS_VOTES') ? 'Esta pregunta ya tiene votos y conserva su texto original.' : s.includes('IMPERSONATION') ? 'No puedes votar durante Tomar control.' : s.includes('NOT_ACTIVE') ? 'Esta pregunta ya no está activa. Espera la siguiente.' : s.includes('UNAVAILABLE') ? 'Esta votación ya no está disponible.' : s.includes('DENIED') ? 'No tienes permiso para esta acción.' : s.includes('INVALID') ? 'Revisa los datos de la consulta.' : 'No pudimos confirmar la operación. Reintenta para consultar su estado.';
+    return s.includes('23505') || e?.code === '23505' ? (w || WORDS.voting).dup : s.includes('CHANGED') ? 'La consulta cambió en otra sesión. Vuelve a cargarla antes de guardar.' : s.includes('HAS_VOTES') ? 'Esta pregunta ya tiene votos y conserva su texto original.' : s.includes('IMPERSONATION') ? 'No puedes votar durante Tomar control.' : s.includes('NOT_ACTIVE') ? 'Esta pregunta ya no está activa. Espera la siguiente.' : s.includes('UNAVAILABLE') ? 'Esta votación ya no está disponible.' : s.includes('DENIED') ? 'No tienes permiso para esta acción.' : s.includes('INVALID') ? 'Revisa los datos de la consulta.' : 'No pudimos confirmar la operación. Reintenta para consultar su estado.';
   }
   function Sheet({
     admin = false,
@@ -14117,6 +14211,11 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     const q = onAirOf(c);
     return c.open && q && !q.mine ? q : null;
   };
+  // The question on air that this person already answered and may still change (question not final).
+  const changeableOf = c => {
+    const q = onAirOf(c);
+    return c.open && q && q.mine && q.final === false ? q : null;
+  };
   function Waiting({
     icon,
     title,
@@ -14149,13 +14248,17 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       } = useVoting(false),
       [collapsed, setCollapsed] = useState({}),
       [pick, setPick] = useState(null),
-      [busy, setBusy] = useState(false);
+      [busy, setBusy] = useState(false),
+      [changing, setChanging] = useState({}),
+      [drafts, setDrafts] = useState({});
     const lock = useRef(false),
       onAir = useRef({});
     useEffect(() => {
       if (state.loading) {
         setPick(null);
         setCollapsed({});
+        setChanging({});
+        setDrafts({});
         onAir.current = {};
       }
     }, [state.loading]);
@@ -14173,8 +14276,9 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         ...reopen
       }));
       if (pick && !busy) {
-        const c = state.consultations.find(x => x.id === pick.c.id);
-        if (!c || !pendingOf(c) || pendingOf(c).id !== pick.q.id) {
+        const c = state.consultations.find(x => x.id === pick.c.id),
+          q = c && (pendingOf(c) || changeableOf(c));
+        if (!q || q.id !== pick.q.id) {
           setPick(null);
           app?.toast?.('Esa pregunta ya no está activa');
         }
@@ -14187,8 +14291,19 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       setError('');
       const target = pick;
       try {
-        const v = await R().vote(target.c.id, target.q.id, target.o.id);
+        const v = await R().vote(target.c.id, target.q.id, target.o ? target.o.id : 'text', target.o ? null : target.text);
         setPick(null);
+        setChanging(s => ({
+          ...s,
+          [target.c.id]: null
+        }));
+        setDrafts(s => {
+          const next = {
+            ...s
+          };
+          delete next[target.q.id];
+          return next;
+        });
         setState(s => ({
           ...s,
           consultations: s.consultations.map(c => c.id !== target.c.id ? c : {
@@ -14197,23 +14312,26 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
               ...q,
               mine: {
                 answer: v.answer,
+                answer_text: v.answer_text ?? null,
                 folio: v.folio,
                 cast_at: v.cast_at
               }
             })
           })
         }));
-        app?.toast?.('Voto registrado · folio ' + v.folio);
+        app?.toast?.(textOf(target.c, 'success') + ' · folio ' + v.folio);
         await reload().catch(() => {});
       } catch (e) {
-        setError(errorText(e));
+        setError(errorText(e, wordsOf(target.c)));
         await reload().catch(() => {});
-        setError(errorText(e));
+        setError(errorText(e, wordsOf(target.c)));
       } finally {
         lock.current = false;
         setBusy(false);
       }
     };
+    // Each card carries its own header (Admin «Título de la tarjeta»), so nothing is shown while loading.
+    if (state.loading && !error) return null;
     if (!state.loading && !error && !state.consultations.length) return null;
     return /*#__PURE__*/React.createElement("section", {
       className: "voting-ui voting-affiliate",
@@ -14222,32 +14340,49 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       style: {
         padding: '0 20px'
       }
-    }, /*#__PURE__*/React.createElement(Style, null), /*#__PURE__*/React.createElement("div", {
-      className: "shead"
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "ico"
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: "ballot",
-      size: 15
-    })), /*#__PURE__*/React.createElement("h2", null, "Votaciones")), state.loading && /*#__PURE__*/React.createElement("p", {
-      role: "status"
-    }, "Cargando votaciones\u2026"), error && /*#__PURE__*/React.createElement("div", {
+    }, /*#__PURE__*/React.createElement(Style, null), error && !state.consultations.length && /*#__PURE__*/React.createElement("div", {
       className: "error",
       role: "alert"
     }, error, /*#__PURE__*/React.createElement("button", {
       onClick: () => reload().catch(() => {})
-    }, "Reintentar")), state.consultations.map(c => {
+    }, "Reintentar")), state.consultations.map((c, ci) => {
+      const w = wordsOf(c),
+        header = textOf(c, 'header'),
+        newHeader = ci === 0 || textOf(state.consultations[ci - 1], 'header') !== header;
       const total = c.questions.length,
         n = c.questions.filter(q => q.mine).length,
         current = onAirOf(c),
         q = pendingOf(c),
-        index = q ? c.questions.indexOf(q) : -1,
+        own = changeableOf(c),
+        editing = !!own && changing[c.id] === own.id,
+        ask = q || (editing ? own : null),
+        shown = q || own,
+        index = shown ? c.questions.indexOf(shown) : -1,
         expanded = !collapsed[c.id],
         finished = total > 0 && n === total;
-      const hint = expanded ? 'Ocultar las preguntas' : !c.open ? 'Ver tu avance' : q ? 'Toca para votar la pregunta ' + (index + 1) : finished ? 'Ya respondiste todas las preguntas' : 'Espera la siguiente pregunta';
-      return /*#__PURE__*/React.createElement("article", {
+      const hint = expanded ? 'Ocultar las preguntas' : !c.open ? 'Ver tu avance' : q ? w.tap + (index + 1) : finished ? 'Ya respondiste todas las preguntas' : 'Espera la siguiente pregunta';
+      const opts = ask ? optionsOf(ask) : [],
+        custom = !!ask && !isLegacy(opts),
+        draft = ask ? drafts[ask.id] ?? '' : '';
+      const mine = own && own.mine,
+        mineOption = mine && mine.answer_text == null ? optionsOf(own).find(o => o.id === mine.answer) : null;
+      return /*#__PURE__*/React.createElement(React.Fragment, {
+        key: c.id
+      }, newHeader && /*#__PURE__*/React.createElement("div", {
+        className: "shead",
+        "data-voting-header": "true"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "ico"
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: "ballot",
+        size: 15
+      })), /*#__PURE__*/React.createElement("h2", null, header)), ci === 0 && error && /*#__PURE__*/React.createElement("div", {
+        className: "error",
+        role: "alert"
+      }, error, /*#__PURE__*/React.createElement("button", {
+        onClick: () => reload().catch(() => {})
+      }, "Reintentar")), /*#__PURE__*/React.createElement("article", {
         className: "card",
-        key: c.id,
         "data-voting-consultation": c.id
       }, /*#__PURE__*/React.createElement("button", {
         className: "head",
@@ -14286,7 +14421,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       }, /*#__PURE__*/React.createElement(Icon, {
         name: c.open ? 'clock' : 'lock',
         size: 12
-      }), c.open ? 'VOTACIÓN ABIERTA' : 'VOTACIÓN CERRADA'), /*#__PURE__*/React.createElement("span", {
+      }), c.open ? textOf(c, 'open_label') : textOf(c, 'closed_label')), /*#__PURE__*/React.createElement("span", {
         className: "hrow"
       }, /*#__PURE__*/React.createElement("span", {
         style: {
@@ -14304,11 +14439,11 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         style: {
           display: 'block'
         }
-      }, "Fecha el ", new Date(c.closes_on + 'T12:00:00').toLocaleDateString('es-MX', {
+      }, c.closes_on ? 'Fecha el ' + new Date(c.closes_on + 'T12:00:00').toLocaleDateString('es-MX', {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
-      }), " \xB7 ", nf(c.electorate), " afiliados convocados"), /*#__PURE__*/React.createElement("span", {
+      }) + ' · ' : '', nf(c.electorate), " afiliados convocados"), /*#__PURE__*/React.createElement("span", {
         className: "hhint",
         style: {
           display: 'block'
@@ -14331,12 +14466,12 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         id: 'voting-' + c.id
       }, !c.open ? /*#__PURE__*/React.createElement(Waiting, {
         icon: "lock",
-        title: "La votaci\xF3n ya cerr\xF3",
-        text: finished ? 'Respondiste todas las preguntas.' : 'Ya no se reciben votos.'
-      }) : q ? /*#__PURE__*/React.createElement("div", {
+        title: textOf(c, 'closed_title'),
+        text: finished ? 'Respondiste todas las preguntas.' : textOf(c, 'closed_text')
+      }) : ask ? /*#__PURE__*/React.createElement("div", {
         className: "q",
-        key: q.id,
-        "data-voting-question": q.id,
+        key: ask.id,
+        "data-voting-question": ask.id,
         "data-voting-on-air": "true"
       }, /*#__PURE__*/React.createElement("div", {
         className: "qtop"
@@ -14349,26 +14484,127 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         }
       }, /*#__PURE__*/React.createElement("div", {
         className: "qtext"
-      }, q.title), /*#__PURE__*/React.createElement("div", {
+      }, ask.title), /*#__PURE__*/React.createElement("div", {
         className: "qdet"
-      }, q.detail))), /*#__PURE__*/React.createElement("div", {
+      }, ask.detail))), ask.answer_kind === 'text' ? /*#__PURE__*/React.createElement("div", {
+        style: {
+          marginTop: 12
+        }
+      }, /*#__PURE__*/React.createElement("textarea", {
+        className: "field",
+        rows: 3,
+        maxLength: 500,
+        "aria-label": 'Tu respuesta a la pregunta ' + (index + 1),
+        disabled: !state.can_vote || busy,
+        value: draft,
+        onChange: e => {
+          const value = e.target.value;
+          setDrafts(s => ({
+            ...s,
+            [ask.id]: value
+          }));
+        }
+      }), /*#__PURE__*/React.createElement("span", {
+        className: "tcount",
+        "aria-hidden": "true"
+      }, draft.length, "/500"), /*#__PURE__*/React.createElement("button", {
+        className: "btn pri",
+        style: {
+          width: '100%',
+          marginTop: 8
+        },
+        disabled: !state.can_vote || busy || !draft.trim(),
+        onClick: () => {
+          setError('');
+          setPick({
+            c,
+            q: ask,
+            o: null,
+            i: index,
+            text: draft.trim()
+          });
+        }
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: "check"
+      }), "Enviar respuesta")) : /*#__PURE__*/React.createElement("div", {
         className: "opts"
-      }, options.map(o => /*#__PURE__*/React.createElement("button", {
+      }, opts.map(o => /*#__PURE__*/React.createElement("button", {
         key: o.id,
-        className: 'opt ' + o.id,
+        className: 'opt ' + (custom ? 'custom' : o.id),
+        style: custom ? {
+          color: o.color
+        } : undefined,
+        "aria-pressed": editing ? ask.mine?.answer === o.id : undefined,
         disabled: !state.can_vote || busy,
         onClick: () => {
           setError('');
           setPick({
             c,
-            q,
+            q: ask,
             o,
             i: index
           });
         }
       }, /*#__PURE__*/React.createElement(Icon, {
         name: o.icon
-      }), /*#__PURE__*/React.createElement("span", null, o.label))))) : finished ? /*#__PURE__*/React.createElement(Waiting, {
+      }), /*#__PURE__*/React.createElement("span", null, o.label)))), editing && /*#__PURE__*/React.createElement("button", {
+        className: "btn sec",
+        style: {
+          width: '100%',
+          marginTop: 10
+        },
+        disabled: busy,
+        onClick: () => setChanging(s => ({
+          ...s,
+          [c.id]: null
+        }))
+      }, "Cancelar cambio")) : own ? /*#__PURE__*/React.createElement("div", {
+        className: "q",
+        key: own.id,
+        "data-voting-question": own.id,
+        "data-voting-answered": "true"
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "qtop"
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "qnum voted"
+      }, index + 1), /*#__PURE__*/React.createElement("div", {
+        style: {
+          flex: 1,
+          minWidth: 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "qtext"
+      }, own.title), /*#__PURE__*/React.createElement("div", {
+        className: "qdet"
+      }, own.detail))), /*#__PURE__*/React.createElement("div", {
+        className: "answered"
+      }, /*#__PURE__*/React.createElement("div", {
+        style: {
+          minWidth: 0,
+          flex: '1 1 160px'
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "kicker"
+      }, "TU RESPUESTA"), /*#__PURE__*/React.createElement("div", {
+        className: "answer",
+        style: {
+          color: mineOption ? mineOption.color : 'var(--ink)'
+        }
+      }, mineOption ? mineOption.label : '“' + (mine.answer_text || '') + '”')), /*#__PURE__*/React.createElement("button", {
+        className: "btn sec",
+        disabled: !state.can_vote || busy,
+        onClick: () => {
+          setError('');
+          if (mine.answer_text != null) setDrafts(s => ({
+            ...s,
+            [own.id]: mine.answer_text
+          }));
+          setChanging(s => ({
+            ...s,
+            [c.id]: own.id
+          }));
+        }
+      }, "Cambiar respuesta"))) : finished ? /*#__PURE__*/React.createElement(Waiting, {
         done: true,
         icon: "checkCircle",
         title: "Ya respondiste todas las preguntas",
@@ -14376,57 +14612,77 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       }) : /*#__PURE__*/React.createElement(Waiting, {
         icon: "clock",
         title: "Espera la siguiente pregunta",
-        text: current && current.mine ? 'Tu voto quedó registrado. La siguiente pregunta aparecerá aquí en cuanto se active.' : 'La pregunta aparecerá aquí en cuanto se active.'
+        text: current && current.mine ? w.registered : 'La pregunta aparecerá aquí en cuanto se active.'
       }), /*#__PURE__*/React.createElement("div", {
         className: "foot"
       }, /*#__PURE__*/React.createElement(Icon, {
         name: "shield",
         size: 14
-      }), /*#__PURE__*/React.createElement("span", null, !state.can_vote ? 'Tomar control permite consultar, pero no emitir votos.' : 'Tu voto es secreto frente a otros afiliados y definitivo. Administradores con permiso específico pueden consultarlo.'))));
-    }), pick && /*#__PURE__*/React.createElement(Sheet, {
-      textSize: app?.textPreference?.value,
-      title: "Confirma tu voto",
-      close: () => setPick(null),
-      busy: busy
-    }, /*#__PURE__*/React.createElement("div", {
-      className: "kicker"
-    }, "PREGUNTA ", pick.i + 1), /*#__PURE__*/React.createElement("div", {
-      style: {
-        fontSize: '1rem',
-        fontWeight: 800,
-        lineHeight: 1.3,
-        marginTop: 4
-      }
-    }, pick.q.title), /*#__PURE__*/React.createElement("div", {
-      className: 'pick mine ' + pick.o.id
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: pick.o.icon,
-      size: 24
-    }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
-      className: "lil"
-    }, "Vas a votar"), /*#__PURE__*/React.createElement("div", {
-      className: "big"
-    }, pick.o.label))), /*#__PURE__*/React.createElement("div", {
-      className: "warn"
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: "shield",
-      size: 15
-    }), /*#__PURE__*/React.createElement("span", null, "Tu voto es definitivo: una vez emitido no podr\xE1s cambiarlo. Otros afiliados no conocer\xE1n tu respuesta.")), error && /*#__PURE__*/React.createElement("p", {
-      className: "error",
-      role: "alert"
-    }, error), /*#__PURE__*/React.createElement("div", {
-      className: "btns"
-    }, /*#__PURE__*/React.createElement("button", {
-      className: "btn sec",
-      disabled: busy,
-      onClick: () => setPick(null)
-    }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
-      className: "btn pri",
-      disabled: busy,
-      onClick: confirm
-    }, /*#__PURE__*/React.createElement(Icon, {
-      name: "checkCircle"
-    }), busy ? 'Confirmando…' : 'Confirmar voto'))));
+      }), /*#__PURE__*/React.createElement("span", null, !state.can_vote ? w.impersonation : textOf(c, 'footer'))))));
+    }), pick && (() => {
+      const w = wordsOf(pick.c);
+      return /*#__PURE__*/React.createElement(Sheet, {
+        textSize: app?.textPreference?.value,
+        title: textOf(pick.c, 'confirm_title'),
+        close: () => setPick(null),
+        busy: busy
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "kicker"
+      }, "PREGUNTA ", pick.i + 1), /*#__PURE__*/React.createElement("div", {
+        style: {
+          fontSize: '1rem',
+          fontWeight: 800,
+          lineHeight: 1.3,
+          marginTop: 4
+        }
+      }, pick.q.title), pick.o ? /*#__PURE__*/React.createElement("div", {
+        className: 'pick mine ' + (pick.o.custom ? '' : pick.o.id),
+        style: pick.o.custom ? {
+          background: 'var(--surface-2)',
+          color: pick.o.color
+        } : undefined
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: pick.o.icon,
+        size: 24
+      }), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+        className: "lil"
+      }, w.pick), /*#__PURE__*/React.createElement("div", {
+        className: "big"
+      }, pick.o.label))) : /*#__PURE__*/React.createElement("div", {
+        className: "pick mine abs"
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: "message",
+        size: 24
+      }), /*#__PURE__*/React.createElement("div", {
+        style: {
+          minWidth: 0
+        }
+      }, /*#__PURE__*/React.createElement("div", {
+        className: "lil"
+      }, w.pick), /*#__PURE__*/React.createElement("div", {
+        className: "big long"
+      }, pick.text))), /*#__PURE__*/React.createElement("div", {
+        className: "warn"
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: "shield",
+        size: 15
+      }), /*#__PURE__*/React.createElement("span", null, pick.q.final === false ? w.changeable : w.final)), error && /*#__PURE__*/React.createElement("p", {
+        className: "error",
+        role: "alert"
+      }, error), /*#__PURE__*/React.createElement("div", {
+        className: "btns"
+      }, /*#__PURE__*/React.createElement("button", {
+        className: "btn sec",
+        disabled: busy,
+        onClick: () => setPick(null)
+      }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
+        className: "btn pri",
+        disabled: busy,
+        onClick: confirm
+      }, /*#__PURE__*/React.createElement(Icon, {
+        name: "checkCircle"
+      }), busy ? 'Confirmando…' : textOf(pick.c, 'confirm_button'))));
+    })());
   }
   // Big screen for the room: follows the question on air; between questions it keeps the last one with its final count.
   // Watermark = Sello institucional managed in Admin → Ícono e instalación (app_settings via useVisualBranding, same source as
@@ -14490,8 +14746,9 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     const q = data?.question,
       r = q?.results,
       electorate = Number(data?.electorate || 0),
-      voted = Number(r?.total || 0);
-    const status = !data ? null : !data.published ? ['draft', 'NO PUBLICADA'] : !data.open ? ['closed', 'VOTACIÓN CERRADA'] : data.active ? ['live', 'EN VIVO'] : q ? ['final', 'RESULTADO FINAL'] : ['wait', 'EN ESPERA'];
+      voted = Number(r?.total || 0),
+      w = wordsOf(data);
+    const status = !data ? null : !data.published ? ['draft', 'NO PUBLICADA'] : !data.open ? ['closed', textOf(data, 'closed_label')] : data.active ? ['live', 'EN VIVO'] : q ? ['final', 'RESULTADO FINAL'] : ['wait', 'EN ESPERA'];
     return ReactDOM.createPortal(/*#__PURE__*/React.createElement("div", {
       ref: ref,
       className: "voting-ui voting-live",
@@ -14574,7 +14831,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       className: "lbig"
     }, /*#__PURE__*/React.createElement("b", {
       "data-voting-live-voted": true
-    }, nf(voted)), /*#__PURE__*/React.createElement("span", null, "de ", nf(electorate), " ya votaron")), /*#__PURE__*/React.createElement("span", {
+    }, nf(voted)), /*#__PURE__*/React.createElement("span", null, "de ", nf(electorate), " ", w.voted)), /*#__PURE__*/React.createElement("span", {
       className: "ltrack"
     }, /*#__PURE__*/React.createElement("span", {
       className: "lfill",
@@ -14595,8 +14852,28 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       className: "lres",
       "aria-live": "polite",
       "aria-label": "Resultados de la pregunta"
-    }, options.map(o => {
-      const pct = voted ? Math.round(r[o.id] / voted * 100) : 0;
+    }, q.answer_kind === 'text' ? /*#__PURE__*/React.createElement("div", {
+      className: "lrow",
+      "data-voting-live-option": "text"
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "lrowtop"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "llabel"
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "lico",
+      style: {
+        background: '#910022'
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "message",
+      size: 20
+    })), "Respuesta libre"), /*#__PURE__*/React.createElement("span", {
+      className: "lpct"
+    }, nf(voted))), /*#__PURE__*/React.createElement("div", {
+      className: "lcount"
+    }, voted === 1 ? 'persona respondió' : 'personas respondieron')) : optionsOf(q).map(o => {
+      const count = Number(r.counts?.[o.id] ?? r[o.id] ?? 0),
+        pct = voted ? Math.round(count / voted * 100) : 0;
       return /*#__PURE__*/React.createElement("div", {
         className: "lrow",
         key: o.id,
@@ -14625,10 +14902,10 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         }
       })), /*#__PURE__*/React.createElement("div", {
         className: "lcount"
-      }, nf(r[o.id]), " ", Number(r[o.id]) === 1 ? 'voto' : 'votos'));
+      }, nf(count), " ", count === 1 ? w.unit[0] : w.unit[1]));
     }), /*#__PURE__*/React.createElement("div", {
       className: "ltotal"
-    }, nf(voted), " ", voted === 1 ? 'voto emitido' : 'votos emitidos'))), error && data && /*#__PURE__*/React.createElement("div", {
+    }, nf(voted), " ", voted === 1 ? w.cast[0] : w.cast[1]))), error && data && /*#__PURE__*/React.createElement("div", {
       className: "lerror",
       role: "alert"
     }, error)), document.body);
@@ -14686,7 +14963,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     for (const p of people) p.votes.sort((a, b) => (a.question_number ?? 1e9) - (b.question_number ?? 1e9));
     const term = find.trim().toLowerCase(),
       shown = term ? people.filter(p => [p.name, p.numero_control, p.email].some(x => String(x || '').toLowerCase().includes(term))) : people;
-    const label = v => options.find(o => o.id === v.answer)?.label;
+    const label = v => v.answer_text != null ? 'Respuesta libre' : v.answer_label || legacyOptions.find(o => o.id === v.answer)?.label || v.answer;
     const when = v => new Date(v.cast_at).toLocaleString('es-MX', {
       dateStyle: 'short',
       timeStyle: 'short'
@@ -14782,7 +15059,9 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       "data-voting-votes-vote": v.id
     }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, v.question_number ? 'Pregunta ' + v.question_number : 'Pregunta archivada', " \xB7 ", v.question_title), /*#__PURE__*/React.createElement("s", null, /*#__PURE__*/React.createElement("span", {
       className: 'chip' + (v.answer === 'si' ? ' ok' : v.answer === 'no' ? ' bad' : '')
-    }, label(v)), " ", when(v), " \xB7 ", v.folio)), canDelete && /*#__PURE__*/React.createElement("button", {
+    }, label(v)), " ", when(v), " \xB7 ", v.folio), v.answer_text != null && /*#__PURE__*/React.createElement("s", {
+      className: "vtext"
+    }, "\u201C", v.answer_text, "\u201D")), canDelete && /*#__PURE__*/React.createElement("button", {
       className: "icobtn sm",
       disabled: busy,
       "aria-label": 'Borrar voto de ' + (p.name || 'esta persona') + ' en ' + (v.question_number ? 'pregunta ' + v.question_number : 'pregunta archivada'),
@@ -14900,7 +15179,20 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     };
     const edit = c => {
       setError('');
-      setDraft(JSON.parse(JSON.stringify(c)));
+      const x = JSON.parse(JSON.stringify(c));
+      x.presentation = x.presentation && typeof x.presentation === 'object' ? x.presentation : {};
+      x.has_close = x.has_close ?? !!x.closes_on;
+      x.closes_on = x.closes_on || '';
+      x.questions = (x.questions || []).map(q => ({
+        ...q,
+        answer_kind: q.answer_kind === 'text' ? 'text' : 'options',
+        options: q.answer_kind === 'text' ? [] : optionsOf(q).map(o => ({
+          id: o.id,
+          label: o.label
+        })),
+        final: q.final !== false
+      }));
+      setDraft(x);
     };
     const update = patch => setDraft(c => ({
       ...c,
@@ -14909,7 +15201,11 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     const newDraft = () => edit({
       title: '',
       closes_on: '',
+      has_close: true,
       published: false,
+      presentation: {
+        kind: 'voting'
+      },
       audience: {
         mode: 'all',
         unions: [],
@@ -14924,6 +15220,8 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       setLive(id);
     };
     const canEdit = d?.id ? p.update : p.create;
+    const summaryOf = q => [q.answer_kind === 'text' ? 'Respuesta libre' : !isLegacy(optionsOf(q)) ? 'Opciones: ' + optionsOf(q).map(o => o.label).join(' · ') : '', q.final === false ? 'Respuesta modificable' : ''].filter(Boolean).join(' · ');
+    const questionProblem = !question ? '' : !question.title.trim() ? 'Falta la pregunta' : question.answer_kind !== 'text' && question.options.some(o => !o.label.trim()) ? 'Falta el nombre de una opción' : question.answer_kind !== 'text' && new Set(question.options.map(o => o.label.trim().toLowerCase())).size !== question.options.length ? 'Hay opciones repetidas' : '';
     const audienceLabel = c => c.audience.mode === 'emails' ? c.audience.emails.length + ' correos' : modes.find(m => m[0] === c.audience.mode)?.[1];
     const addMail = () => {
       const values = mail.split(/[,;\s]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -14979,7 +15277,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       onClick: () => d ? setDraft(null) : onBack()
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "back"
-    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", null, d ? d.id ? 'Editar consulta' : 'Nueva consulta' : 'Votaciones'), /*#__PURE__*/React.createElement("div", {
+    })), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", null, d ? d.id ? 'Editar consulta' : 'Nueva consulta' : 'Votaciones y consultas'), /*#__PURE__*/React.createElement("div", {
       className: "sub"
     }, d ? d.questions.length + ' preguntas' : state.consultations.length + ' consultas · ' + state.consultations.filter(c => c.open).length + ' abiertas'))), /*#__PURE__*/React.createElement("div", {
       className: "scroll"
@@ -15017,7 +15315,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       onClick: () => edit(c)
     }, /*#__PURE__*/React.createElement("h3", null, c.title), /*#__PURE__*/React.createElement("div", {
       className: "meta"
-    }, c.questions.length, " preguntas \xB7 ", p.results ? nf(c.questions.reduce((s, q) => s + (q.results?.total || 0), 0)) + ' votos · ' : '', "cierra ", c.closes_on), /*#__PURE__*/React.createElement("div", {
+    }, c.questions.length, " preguntas \xB7 ", p.results ? nf(c.questions.reduce((s, q) => s + (q.results?.total || 0), 0)) + ' votos · ' : '', c.closes_on ? 'cierra ' + c.closes_on : 'sin fecha de cierre'), /*#__PURE__*/React.createElement("div", {
       className: "chips"
     }, /*#__PURE__*/React.createElement("span", {
       className: 'chip ' + (c.open ? 'ok' : 'bad')
@@ -15068,7 +15366,41 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }, /*#__PURE__*/React.createElement("i", null)))))) : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
       icon: "ballot",
       title: "Datos de la consulta"
-    }), /*#__PURE__*/React.createElement("label", null, /*#__PURE__*/React.createElement("span", {
+    }), /*#__PURE__*/React.createElement("span", {
+      className: "lab"
+    }, "TIPO"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginBottom: 12
+      }
+    }, kinds.map(m => /*#__PURE__*/React.createElement("button", {
+      className: "mode",
+      key: m[0],
+      "data-voting-kind": m[0],
+      disabled: !canEdit || busy,
+      "aria-pressed": kindOf(d) === m[0],
+      onClick: () => update({
+        presentation: {
+          ...d.presentation,
+          kind: m[0]
+        }
+      })
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "ico"
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: m[2]
+    })), /*#__PURE__*/React.createElement("span", {
+      style: {
+        flex: 1,
+        minWidth: 0
+      }
+    }, /*#__PURE__*/React.createElement("b", null, m[1]), /*#__PURE__*/React.createElement("s", null, m[3])), kindOf(d) === m[0] && /*#__PURE__*/React.createElement("span", {
+      style: {
+        color: 'var(--guinda)'
+      }
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "checkCircle",
+      size: 20
+    }))))), /*#__PURE__*/React.createElement("label", null, /*#__PURE__*/React.createElement("span", {
       className: "sr-only"
     }, "T\xEDtulo"), /*#__PURE__*/React.createElement("input", {
       className: "field",
@@ -15091,15 +15423,21 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       }
     }, /*#__PURE__*/React.createElement("span", {
       className: "lab"
-    }, "CIERRA EL"), /*#__PURE__*/React.createElement("input", {
+    }, "CIERRA EL"), d.has_close ? /*#__PURE__*/React.createElement("input", {
       className: "field",
       type: "date",
+      "aria-label": "Fecha de cierre",
       disabled: !canEdit || busy,
       value: d.closes_on,
       onChange: e => update({
         closes_on: e.target.value
       })
-    })), /*#__PURE__*/React.createElement("div", {
+    }) : /*#__PURE__*/React.createElement("span", {
+      className: "field total-field",
+      style: {
+        color: 'var(--ink-3)'
+      }
+    }, "Sin fecha de cierre")), /*#__PURE__*/React.createElement("div", {
       style: {
         flex: '1 1 140px'
       }
@@ -15116,7 +15454,22 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       size: 17
     }), total === null ? 'Calculando…' : total === undefined ? 'No disponible' : nf(total)), /*#__PURE__*/React.createElement("span", {
       className: "total-note"
-    }, "Autom\xE1tico seg\xFAn \xABQui\xE9n puede ver esta votaci\xF3n\xBB"))), /*#__PURE__*/React.createElement("div", {
+    }, "Autom\xE1tico seg\xFAn \xABQui\xE9n puede ver esta consulta\xBB"))), /*#__PURE__*/React.createElement("div", {
+      className: "switchrow"
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("b", null, d.has_close ? 'Con fecha de cierre' : 'Sin fecha de cierre'), /*#__PURE__*/React.createElement("s", null, d.has_close ? 'Deja de recibir respuestas al terminar ese día' : 'Abierta mientras esté publicada; deja de recibir respuestas al desactivar la pregunta u ocultarla')), /*#__PURE__*/React.createElement("button", {
+      className: "tog",
+      role: "switch",
+      "aria-checked": !!d.has_close,
+      "aria-label": "Tiene fecha de cierre",
+      disabled: !canEdit || busy,
+      onClick: () => update({
+        has_close: !d.has_close
+      })
+    }, /*#__PURE__*/React.createElement("i", null))), /*#__PURE__*/React.createElement("div", {
       className: "switchrow"
     }, /*#__PURE__*/React.createElement("div", {
       style: {
@@ -15132,9 +15485,42 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         published: !d.published
       })
     }, /*#__PURE__*/React.createElement("i", null))), /*#__PURE__*/React.createElement(SectionTitle, {
+      icon: "message",
+      title: "Textos de la tarjeta",
+      sub: "Lo que ve el afiliado en Inicio. Si dejas un campo vac\xEDo se usa el texto sugerido en gris."
+    }), /*#__PURE__*/React.createElement("div", {
+      className: "textgrid"
+    }, TEXT_FIELDS.map(([key, label, max]) => {
+      const props = {
+        className: 'field',
+        'aria-label': label,
+        'data-voting-text': key,
+        maxLength: max,
+        disabled: !canEdit || busy,
+        value: d.presentation?.[key] || '',
+        placeholder: TEXTS[kindOf(d)][key],
+        onChange: e => update({
+          presentation: {
+            ...d.presentation,
+            [key]: e.target.value
+          }
+        })
+      };
+      return /*#__PURE__*/React.createElement("label", {
+        key: key,
+        style: {
+          display: 'block',
+          minWidth: 0
+        }
+      }, /*#__PURE__*/React.createElement("span", {
+        className: "lab"
+      }, label), key === 'footer' || key === 'closed_text' ? /*#__PURE__*/React.createElement("textarea", _extends({
+        rows: key === 'footer' ? 3 : 2
+      }, props)) : /*#__PURE__*/React.createElement("input", props));
+    })), /*#__PURE__*/React.createElement(SectionTitle, {
       icon: "menu",
       title: "Preguntas",
-      sub: "Se vota S\xED \xB7 No \xB7 Abstenci\xF3n \xB7 activa una pregunta a la vez para mostrarla al instante; los dem\xE1s cambios se aplican al guardar la consulta"
+      sub: "Activa una pregunta a la vez para mostrarla al instante; los dem\xE1s cambios se aplican al guardar la consulta"
     }), d.questions.map((q, i) => {
       const on = !!q.id && saved?.active_question_id === q.id,
         results = q.id && saved?.questions.find(x => x.id === q.id)?.results || q.results;
@@ -15160,7 +15546,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         })
       }, /*#__PURE__*/React.createElement("b", null, q.title), q.detail && /*#__PURE__*/React.createElement("s", null, q.detail), /*#__PURE__*/React.createElement("div", {
         className: "count"
-      }, results ? options.map(o => o.label + ' ' + (results.total ? Math.round(results[o.id] / results.total * 100) : 0) + '%').join(' · ') + ' · ' + nf(results.total) + ' votos' : p.results ? 'Sin votos todavía' : 'Resultados restringidos'), q.locked && /*#__PURE__*/React.createElement("s", null, "Texto definitivo: esta pregunta ya tiene votos.")), /*#__PURE__*/React.createElement("div", {
+      }, results ? q.answer_kind === 'text' ? nf(results.total) + ' ' + (Number(results.total) === 1 ? 'respuesta' : 'respuestas') : optionsOf(q).map(o => o.label + ' ' + (results.total ? Math.round(Number(results.counts?.[o.id] ?? results[o.id] ?? 0) / results.total * 100) : 0) + '%').join(' · ') + ' · ' + nf(results.total) + ' votos' : p.results ? 'Sin votos todavía' : 'Resultados restringidos'), summaryOf(q) && /*#__PURE__*/React.createElement("s", null, summaryOf(q)), q.locked && /*#__PURE__*/React.createElement("s", null, "Texto y opciones definitivos: esta pregunta ya tiene votos.")), /*#__PURE__*/React.createElement("div", {
         style: {
           display: 'flex',
           flexDirection: 'column',
@@ -15217,7 +15603,10 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         title: '',
         detail: '',
         key: crypto.randomUUID(),
-        index: -1
+        index: -1,
+        answer_kind: 'options',
+        options: defaultOptions(kindOf(d)),
+        final: true
       }),
       style: {
         marginTop: 12
@@ -15226,7 +15615,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       name: "plus"
     }), "Agregar pregunta"), /*#__PURE__*/React.createElement(SectionTitle, {
       icon: "users",
-      title: "Qui\xE9n puede ver esta votaci\xF3n",
+      title: "Qui\xE9n puede ver esta consulta",
       sub: "Mismo motor de segmentaci\xF3n del resto del panel"
     }), modes.map(m => /*#__PURE__*/React.createElement("button", {
       className: "mode",
@@ -15329,7 +15718,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       size: 13
     })))))), d.id && p.results && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
       icon: "screen",
-      title: "Votaci\xF3n en vivo",
+      title: kindOf(d) === 'consultation' ? 'Consulta en vivo' : 'Votación en vivo',
       sub: "Pantalla gigante con la pregunta activa y su conteo en tiempo real"
     }), /*#__PURE__*/React.createElement("button", {
       className: "btn pri",
@@ -15338,7 +15727,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       onClick: () => openLive(d.id)
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "screen"
-    }), "Votaci\xF3n en vivo")), d.id && p.export_identified_votes && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
+    }), kindOf(d) === 'consultation' ? 'Consulta en vivo' : 'Votación en vivo')), d.id && p.export_identified_votes && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement(SectionTitle, {
       icon: "users",
       title: "Votos emitidos",
       sub: "Qui\xE9n vot\xF3 qu\xE9; puedes borrar un voto o todos los de una persona"
@@ -15362,13 +15751,13 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }, p.results && /*#__PURE__*/React.createElement("button", {
       className: "btn sec",
       disabled: busy,
-      onClick: () => mutate(() => R().download(d.id, false))
+      onClick: () => mutate(() => R().download(d.id, false, kindOf(d)))
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "finance"
     }), "Resultados"), p.export_identified_votes && /*#__PURE__*/React.createElement("button", {
       className: "btn sec",
       disabled: busy,
-      onClick: () => mutate(() => R().download(d.id, true))
+      onClick: () => mutate(() => R().download(d.id, true, kindOf(d)))
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "doc"
     }), "Votos emitidos")), p.delete && /*#__PURE__*/React.createElement("button", {
@@ -15388,17 +15777,20 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       }
     }, "Cancelar"), canEdit && /*#__PURE__*/React.createElement("button", {
       className: "btn pri",
-      disabled: busy || !d.title.trim() || !d.closes_on || d.published && !d.questions.length,
-      onClick: () => mutate(() => R().save(d), () => setDraft(null)),
+      disabled: busy || !d.title.trim() || d.has_close && !d.closes_on || d.published && !d.questions.length,
+      onClick: () => mutate(() => R().save({
+        ...d,
+        closes_on: d.has_close ? d.closes_on : null
+      }), () => setDraft(null)),
       style: {
         flex: 2
       }
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "check"
-    }), busy ? 'Guardando…' : !d.title.trim() ? 'Falta el título' : !d.closes_on ? 'Falta la fecha de cierre' : 'Guardar consulta')), question && /*#__PURE__*/React.createElement(Sheet, {
+    }), busy ? 'Guardando…' : !d.title.trim() ? 'Falta el título' : d.has_close && !d.closes_on ? 'Falta la fecha de cierre' : 'Guardar consulta')), question && /*#__PURE__*/React.createElement(Sheet, {
       textSize: app?.textPreference?.value,
       admin: true,
-      title: "Pregunta de la votaci\xF3n",
+      title: "Pregunta",
       close: () => setQuestion(null)
     }, /*#__PURE__*/React.createElement("label", null, /*#__PURE__*/React.createElement("span", {
       className: "lab"
@@ -15427,26 +15819,126 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
         ...q,
         detail: e.target.value
       }))
-    })), /*#__PURE__*/React.createElement("p", {
+    })), /*#__PURE__*/React.createElement("span", {
       className: "lab",
       style: {
-        margin: '14px 0 16px',
+        marginTop: 14
+      }
+    }, "TIPO DE RESPUESTA"), /*#__PURE__*/React.createElement("div", {
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 7
+      }
+    }, [['options', 'Opciones'], ['text', 'Respuesta libre']].map(([k, l]) => /*#__PURE__*/React.createElement("button", {
+      className: "tag",
+      key: k,
+      "data-voting-answer-kind": k,
+      "aria-pressed": question.answer_kind === k,
+      disabled: question.locked,
+      onClick: () => setQuestion(q => ({
+        ...q,
+        answer_kind: k,
+        options: k === 'text' ? [] : q.options && q.options.length ? q.options : defaultOptions(kindOf(d))
+      }))
+    }, l))), question.answer_kind === 'text' ? /*#__PURE__*/React.createElement("p", {
+      className: "lab",
+      style: {
+        margin: '10px 0 0',
+        lineHeight: 1.5
+      }
+    }, "El afiliado escribe su respuesta (hasta 500 caracteres). En la pantalla en vivo solo se muestra cu\xE1ntas personas respondieron; los textos se consultan en VER y en Excel.") : /*#__PURE__*/React.createElement("div", {
+      style: {
+        marginTop: 10
+      },
+      "data-voting-options": "true"
+    }, question.options.map((o, i) => /*#__PURE__*/React.createElement("div", {
+      className: "opedit",
+      key: o.id
+    }, /*#__PURE__*/React.createElement("span", {
+      className: "opdot",
+      style: {
+        background: (optionLook[o.id] || {}).color || palette[i % palette.length]
+      }
+    }), /*#__PURE__*/React.createElement("input", {
+      className: "field",
+      "aria-label": 'Opción ' + (i + 1),
+      maxLength: 120,
+      disabled: question.locked,
+      value: o.label,
+      onChange: e => {
+        const value = e.target.value;
+        setQuestion(q => ({
+          ...q,
+          options: q.options.map((x, j) => j === i ? {
+            ...x,
+            label: value
+          } : x)
+        }));
+      }
+    }), /*#__PURE__*/React.createElement("button", {
+      className: "icobtn sm",
+      "aria-label": 'Quitar opción ' + (i + 1),
+      disabled: question.locked || question.options.length <= 2,
+      onClick: () => setQuestion(q => ({
+        ...q,
+        options: q.options.filter((_, j) => j !== i)
+      }))
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "trash",
+      size: 16
+    })))), /*#__PURE__*/React.createElement("button", {
+      className: "btn sec sm",
+      style: {
+        marginTop: 10
+      },
+      disabled: question.locked || question.options.length >= 20,
+      onClick: () => setQuestion(q => ({
+        ...q,
+        options: [...q.options, {
+          id: newOptionId(q.options),
+          label: ''
+        }]
+      }))
+    }, /*#__PURE__*/React.createElement(Icon, {
+      name: "plus",
+      size: 18
+    }), "Agregar opci\xF3n")), /*#__PURE__*/React.createElement("div", {
+      className: "switchrow"
+    }, /*#__PURE__*/React.createElement("div", {
+      style: {
+        flex: 1
+      }
+    }, /*#__PURE__*/React.createElement("b", null, "Respuesta definitiva"), /*#__PURE__*/React.createElement("s", null, question.final !== false ? 'Una vez enviada, el afiliado no puede cambiarla.' : 'El afiliado puede cambiarla mientras la pregunta esté activa.')), /*#__PURE__*/React.createElement("button", {
+      className: "tog",
+      role: "switch",
+      "aria-checked": question.final !== false,
+      "aria-label": "Respuesta definitiva",
+      onClick: () => setQuestion(q => ({
+        ...q,
+        final: q.final === false
+      }))
+    }, /*#__PURE__*/React.createElement("i", null))), question.locked && /*#__PURE__*/React.createElement("p", {
+      className: "lab",
+      style: {
+        margin: '12px 0 0',
         lineHeight: 1.5
       }
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "shield",
       size: 15
-    }), " Las opciones son siempre S\xED, No y Abstenci\xF3n, y el voto del afiliado es definitivo."), /*#__PURE__*/React.createElement("div", {
+    }), " Esta pregunta ya tiene respuestas: su texto y sus opciones son definitivos."), /*#__PURE__*/React.createElement("div", {
       style: {
         display: 'flex',
-        gap: 10
+        gap: 10,
+        marginTop: 16
       }
     }, /*#__PURE__*/React.createElement("button", {
       className: "btn sec",
       onClick: () => setQuestion(null)
     }, "Cancelar"), /*#__PURE__*/React.createElement("button", {
       className: "btn pri",
-      disabled: !question.title.trim() || question.locked,
+      disabled: !!questionProblem,
       onClick: () => {
         const {
           index,
@@ -15461,7 +15953,7 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
       }
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "check"
-    }), question.title.trim() ? 'Guardar pregunta' : 'Falta la pregunta'))), archive && /*#__PURE__*/React.createElement(Sheet, {
+    }), questionProblem || 'Guardar pregunta'))), archive && /*#__PURE__*/React.createElement(Sheet, {
       error: error,
       textSize: app?.textPreference?.value,
       admin: true,
@@ -15500,13 +15992,13 @@ window.VotingDesign=Object.freeze({css:".voting-affiliate{--guinda:#910022;--gui
     }, p.results && /*#__PURE__*/React.createElement("button", {
       className: "btn sec",
       disabled: busy,
-      onClick: () => mutate(() => R().download(exports.id, false), () => setExports(null))
+      onClick: () => mutate(() => R().download(exports.id, false, kindOf(exports)), () => setExports(null))
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "finance"
     }), "Resultados"), p.export_identified_votes && /*#__PURE__*/React.createElement("button", {
       className: "btn sec",
       disabled: busy,
-      onClick: () => mutate(() => R().download(exports.id, true), () => setExports(null))
+      onClick: () => mutate(() => R().download(exports.id, true, kindOf(exports)), () => setExports(null))
     }, /*#__PURE__*/React.createElement(Icon, {
       name: "doc"
     }), "Votos emitidos"))), live && /*#__PURE__*/React.createElement(VotingLive, {
@@ -83212,7 +83704,7 @@ Object.assign(window, {
     ready: true
   }, {
     id: 'votaciones',
-    label: 'Votaciones',
+    label: 'Votaciones y consultas',
     icon: 'checkCircle',
     desc: 'Consultas, preguntas y resultados',
     ready: true

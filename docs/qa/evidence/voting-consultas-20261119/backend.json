@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "migrationSha256": "bbed01b8d5ede70d4eff09a072d65cec96c8546f544140de93132bdc400aa6e5",
+  "recoverySha256": "1468ee36766fae892cff24b1ed7c4703500f01435f12fe628adda6a5d057e9b7",
+  "groups": [
+    "affiliate_off_air",
+    "answer_types_and_option_rules",
+    "card_texts_and_optional_close_date",
+    "close_date_still_closes",
+    "custom_options_on_air",
+    "duplicate",
+    "existing_consultations_identical",
+    "exports",
+    "free_text",
+    "immutability",
+    "locks_and_old_clients",
+    "non_final_answers",
+    "permissions",
+    "recovery_with_data",
+    "schema_grants_defaults",
+    "ver_delete"
+  ],
+  "matrixMs": 1831,
+  "recovery": {
+    "withNewData": "functions byte-identical, new RPC dropped, columns in use preserved, existing consultations identical",
+    "withoutNewData": "exact schema, constraints, triggers, functions and ACLs"
+  },
+  "productionBeforeAndAfter": {
+    "consultations": 2,
+    "questions": 5,
+    "votes": 128,
+    "identical": true
+  },
+  "fixturesPersisted": 0
+}

@@ -1,5 +1,30 @@
 # Registro de decisiones arquitectónicas
 
+## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — Votaciones y consultas, 2026-11-19 (ADR-114)
+
+El propietario pide que el módulo de Votaciones sirva también para consultas que no son
+votaciones («¿tienes hijos menores de edad?», confirmación de asistencia), sin modificar lo
+existente. Decisiones del propietario: se mantiene una sola pregunta al aire activada por el
+encargado (ADR-112 intacto); cada tarjeta tiene su propio título y textos editables en Admin
+(etiquetas abierta/cerrada, mensaje y detalle al cerrar, pie, confirmación, aviso); el tipo
+«Votación»/«Consulta» sólo sugiere textos; la fecha de cierre es opcional por consulta y, sin
+ella, la consulta deja de recibir respuestas sólo al apagar la pregunta u ocultarla (sin botón
+«Cerrar»); cada pregunta es de opciones (Sí/No con nombres editables y opciones agregables, el
+afiliado elige una) o de respuesta libre (máx. 500 caracteres); cada pregunta decide si su
+respuesta es definitiva o puede cambiarse mientras está al aire; sólo un administrador borra
+respuestas (VER); la pantalla en vivo muestra sólo el conteo de respuestas libres y los textos
+se consultan en VER y Excel; el menú pasa a «Votaciones y consultas».
+
+Autoridad sin cambios: `voting_consultations`, `voting_questions`, `voting_votes` y
+`voting_live_state`. Todo es aditivo; los valores por defecto reproducen el comportamiento
+anterior y las consultas existentes conservan textos, Sí/No/Abstención y formato de Excel.
+Punto de restauración: tag `restore/pre-votaciones-consultas-20261119` y tablas
+`voting_restore_private.*_20261119`. Véase la evidencia en
+`docs/qa/evidence/voting-consultas-20261119/`.
+
+Estado: migración `20261119000100` aplicada y verificada el 2026-11-19 con autorización del
+propietario; frontend `voting-consultas-20261119-001` publicado en la misma fecha.
+
 ## H-FINANCIAL-MOSTRAR-OVERRIDE-001 — excepción autorizada, 2026-11-06
 
 El propietario solicita que el administrador pueda seleccionar MOSTRAR para

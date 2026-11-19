@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "version": "voting-consultas-20261119-001",
+  "cssVersion": null,
+  "previousCachebuster": "app/bundle.js?v=2026111701",
+  "changed": [
+    "voting-repository.js",
+    "screens-voting.jsx",
+    "screens-admin.jsx"
+  ],
+  "preservedChunks": 176,
+  "totalChunks": 179,
+  "compilerReproducesPublished": true,
+  "whitespaceOnlyDrift": [],
+  "sha256": "997a39296a6d7da89ced1ebfb3a9125154de1362d7a6fd435bcc51b65ec1b27d"
+}

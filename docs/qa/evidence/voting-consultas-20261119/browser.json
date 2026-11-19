@@ -1,0 +1,26 @@
+{
+  "status": "PASS",
+  "checks": [
+    "header_per_card_nothing_while_loading",
+    "card_texts_and_optional_date",
+    "same_header_grouped",
+    "custom_options_layout_three_sizes",
+    "custom_option_answer",
+    "duplicate_message_follows_type",
+    "free_text_answer",
+    "non_final_change",
+    "closed_custom_texts",
+    "impersonation_wording",
+    "admin_list",
+    "admin_question_summaries",
+    "locked_question_final_editable",
+    "new_consultation_payload",
+    "voting_defaults",
+    "big_screen",
+    "ver_labels_and_text",
+    "csv_headers_and_names"
+  ],
+  "errors": [],
+  "scope": "Isolated browser fixtures only; backend rules tested in SQL with ROLLBACK (backend.json).",
+  "productionWrites": 0
+}

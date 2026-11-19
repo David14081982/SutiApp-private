@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "installedFunctions": true,
+  "note": "Same matrix as backend.json without the forward migration; capture and read both use the installed functions, so both sides are compared with the new keys removed.",
+  "groups": [
+    "affiliate_off_air",
+    "answer_types_and_option_rules",
+    "card_texts_and_optional_close_date",
+    "close_date_still_closes",
+    "custom_options_on_air",
+    "duplicate",
+    "existing_consultations_identical",
+    "exports",
+    "free_text",
+    "immutability",
+    "locks_and_old_clients",
+    "non_final_answers",
+    "permissions",
+    "schema_grants_defaults",
+    "ver_delete"
+  ],
+  "productionIdentical": true,
+  "counts": {
+    "consultations": 2,
+    "questions": 5,
+    "votes": 128
+  }
+}

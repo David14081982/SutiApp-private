@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "migration_recorded": 1,
+  "consultations": 2,
+  "questions": 5,
+  "votes": 128,
+  "votes_preserved": true,
+  "consultations_preserved": true,
+  "questions_preserved": true,
+  "consultations_default": true,
+  "questions_default": true,
+  "votes_default": true,
+  "answer_rpc_authenticated": true,
+  "answer_rpc_anon": false,
+  "helper_authenticated": false,
+  "votes_select": false,
+  "menu": "Votaciones y consultas",
+  "answer_check": "CHECK ((answer ~ '^[a-z0-9_-]{1,40}$'::text))",
+  "historyUnchanged": true
+}

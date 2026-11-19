@@ -444,6 +444,14 @@ y la exclusión del registro Google en INV-153. Las demás restricciones financi
 - **INV-226:** publicar promociones requiere aprobación administrativa real; pop-ups requieren el beneficio del plan y conservan revisión/publicación existentes. Los cambios empresariales permitidos se proyectan públicamente sin fuentes alternas.
 - **INV-227:** el lector comercial empresarial no expone firmas, documentos, snapshots financieros ni registros eliminados; no concede SELECT de program_requests. Historial estadístico se habilita por plan y se deriva de operaciones canónicas.
 
+## Votaciones y consultas — ADR-114
+
+- **INV-243:** las consultas existentes no cambian: `presentation` `{}`, `options` NULL (Sí/No/Abstención), `answer_kind` `options` y `final` true reproducen exactamente el comportamiento, los textos y el formato de exportación anteriores. Guardar con un cliente que no envía estos campos conserva los almacenados.
+- **INV-244:** una respuesta sólo se acepta si es una opción de su pregunta (o texto de 1–500 caracteres en una pregunta de respuesta libre), con la pregunta al aire, la consulta publicada, abierta (sin fecha o con fecha vigente) y la audiencia correcta. El único escritor es `cast_voting_answer`; `cast_voting_vote` delega en él.
+- **INV-245:** una respuesta sólo cambia si su pregunta no es definitiva, mientras está al aire, en la misma fila y folio; el disparador de inmutabilidad sólo admite ese cambio (respuesta, texto y `changed_at`) y se audita `CHANGE_VOTE` sin su contenido. Una pregunta con respuestas conserva texto, tipo y opciones; «definitiva» sigue editable.
+- **INV-246:** los textos libres nunca llegan a la pantalla en vivo, al listado del afiliado ajeno ni a la exportación de resultados; sólo a su autor, a VER y a la exportación nominal, con los permisos existentes.
+- **INV-247:** el afiliado sólo recibe tipo, opciones y texto de la pregunta al aire (extiende INV-229).
+
 ## Votación en vivo — ADR-112
 
 - **INV-228:** una consulta tiene como máximo una pregunta al aire (`voting_live_state`, una fila por consulta). `cast_voting_vote` rechaza cualquier pregunta que no sea la activa; cambiar la pregunta toma lock exclusivo y espera a los votos en curso, así ningún voto entra después de que la pregunta sale del aire.

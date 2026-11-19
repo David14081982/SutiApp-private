@@ -745,6 +745,10 @@ Eliminar archiva consultas/preguntas y preserva votos. Preguntas con votos conse
 
 El padrón convocado deja de ser dato capturado: `voting_electorate(audience)` lo deriva de `affiliates` (activos; registrados = con cuenta vinculada; segmento por códigos de sindicato/categoría y cargo; lista = correos de la audiencia). Resultados en vivo: `get_voting_live` con permiso de resultados. Migración `20260916000200`; recovery versionado restaura las funciones exactas del punto de restauración `voting_restore_private` sin borrar consultas, preguntas, votos ni bitácora.
 
+## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — Votaciones y consultas
+
+Las mismas autoridades de Votaciones guardan la configuración nueva: `voting_consultations.presentation` (tipo y textos de la tarjeta; vacío = textos sugeridos) y `closes_on` opcional; `voting_questions.answer_kind`, `options` (NULL = Sí/No/Abstención) y `final`; `voting_votes.answer_text` y `changed_at`. `cast_voting_answer` es el único escritor de respuestas (`cast_voting_vote` se conserva para clientes anteriores y delega en él). `VotingRepository` sigue transportando sólo RPC; sin caché ni fallback. Migración `20261119000100`; recovery versionado restaura las funciones exactas sin borrar consultas, preguntas ni respuestas.
+
 ## H-SUTIAPP-CONVENIOS-ANUNCIOS-001 — Anuncios de Convenios
 
 `public.banners` es la autoridad única de los anuncios del «Espacio publicitario» de Convenios (`placement = 'marketplace'`), incluidos su audiencia (`audience_mode` y códigos de sindicato, categoría, género y etiqueta del catálogo `segmentation_catalog_entries`) y su color de acento. Las imágenes viven en Storage `app-assets` registradas en `app_assets`. El frontend lee con `list_public_banners`, que aplica el motor existente `matches_current_affiliate_audience`; el Admin escribe con `AdminRepository.saveManaged('banners')` y archiva con `archive_admin_banner`. `admin-store.jsx` (localStorage) ya no es lector ni escritor de anuncios.

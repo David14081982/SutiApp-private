@@ -32,7 +32,12 @@ assert.deepEqual(Array.from(legacy.slice(4,9)),['','','','','']);
 const approvedRepositorySha256='6a5c78695a60dfe0860cfe383b01a96ab949b7f3bf4473202fbffdbf586a3561';
 assert.equal(crypto.createHash('sha256').update(read('app/program-request-repository.js')).digest('hex'),approvedRepositorySha256,'Approved documentary/finance repository boundary changed');
 const ui=read('app/screens-membership-application.jsx'),original=baseline('app/screens-membership-application.jsx');
-assert.equal(ui.match(/const CSS=`([\s\S]*?)`;/)[1],original.match(/const CSS=`([\s\S]*?)`;/)[1]);
+// H-DOCUMENT-CARDS-REDESIGN-001 (0d1cb49, autorizado por el propietario el 17-nov-2026) llevó las
+// tarjetas de documentos al componente compartido y retiró de esta hoja sus reglas .mr-doc-*.
+// Esa es la única diferencia admitida frente al baseline auditado; cualquier otra sigue fallando.
+const cssOf=(source)=>source.match(/const CSS=`([\s\S]*?)`;/)[1];
+assert.ok(!ui.includes('mr-doc-'),'Retired membership document-card classes must stay unused');
+assert.equal(cssOf(ui),cssOf(original).split('\n').filter((line)=>!/^\s*\.mr-doc-/.test(line)).join('\n'));
 for(const label of ['mr-hero','mr-figures','mr-tracker','UnifiedDocumentPhase','mr-data','mr-privacy','mr-footer','RequestSubmissionSuccess'])assert(ui.includes(label));
 const q={contract_version:'MEMBERSHIP_PAYMENT_V1',membership_offering_id:'offering',quote_hash:'a'.repeat(64),financialResult:financial};
 let response={data:q},calls=[];
@@ -47,6 +52,6 @@ vm.createContext(sandbox);vm.runInContext(read('app/membership-repository.js'),s
   response={data:{...q,financialResult:{...financial,rate:1}}};await assert.rejects(()=>sandbox.window.MembershipRepository.paymentQuote('offering'),/QUOTE_INVALID/);
   const result={status:'PASS',googleColumnsEtoI:Array.from(row.slice(4,9)),doubleCharge:false,legacyRequestsUnchanged:true,
     sharedRepositoryNonMembershipIdentical:true,approvedRepositoryRef:'f6cfae303ce32c6d2102fce5a664f4292f596118',approvedRepositorySha256,approvedAdminReadBoundaryVerified:true,approvedFinanceBlockBoundaryVerified:true,financeBlockChecks,financeBlockMutations,
-    googleOtherColumnsIdentical:true,uiCssIdentical:true,quoteAuthorityAndErrors:true,externalWrites:0};
+    googleOtherColumnsIdentical:true,uiCssIdenticalExceptRetiredDocumentCards:true,quoteAuthorityAndErrors:true,externalWrites:0};
   fs.writeFileSync(path.join(out,'contracts.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
 })().catch(e=>{console.error(e.message);process.exitCode=1;});

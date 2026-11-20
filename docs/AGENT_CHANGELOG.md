@@ -1,5 +1,17 @@
 # Bitácora de agentes
 
+## H-MEMBERSHIP-CONTRACT-CSS-001 — 2026-11-20 — PASS (sólo prueba; autorizado por el propietario)
+
+El flujo «Membership Google contract» fallaba desde el 18-nov: `test-membership-payment-contract.js`
+exigía que la hoja de estilos de `screens-membership-application.jsx` fuera idéntica al baseline
+auditado 9f880bf, y H-DOCUMENT-CARDS-REDESIGN-001 (0d1cb49, autorizado el 17-nov) retiró de ella las
+reglas `.mr-doc-*` al mover las tarjetas al componente compartido. Verificado: es la única diferencia
+(baseline sin `.mr-doc-*` == actual) y la pantalla ya no usa esas clases. La prueba ahora admite sólo
+esa diferencia y exige que las clases sigan sin usarse; el resto del contrato, que no corría desde
+el 18-nov por esa línea, PASS (columnas E–I, Z, cotización, frontera del repositorio, bloqueos
+financieros). Mutaciones: cambiar otra regla de estilo FAIL; volver a usar `mr-doc-` FAIL. Sin
+cambios de aplicación, base de datos ni bundle.
+
 ## H-AFFILIATE-EXPEDIENTE-MODAL-001 — 2026-11-20 — PASS published (autorizado por el propietario)
 
 Admin › Afiliados: el padrón ocupa todo el ancho (columnas Afiliado / Estado / Acceso app /

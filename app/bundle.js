@@ -80725,7 +80725,7 @@ Object.assign(window, {
       }
     }, h('div', {
       className: 'aff-edit-heading'
-    }, h('strong', null, 'Editar información'), h('small', null, text(profile.display_name || profile.full_name) + ' · Control ' + text(profile.numero_control))), h('fieldset', {
+    }, h('strong', null, 'Editar información'), h('small', null, text(profile.full_name || profile.display_name) + ' · Control ' + text(profile.numero_control))), h('fieldset', {
       className: 'aff-edit-grid',
       disabled: busy
     }, EDIT_FIELDS.map(([key, label]) => h('label', {
@@ -81287,14 +81287,16 @@ Object.assign(window, {
     }, h('header', {
       className: 'aff-sheet-head'
     }, h(Avatar, {
-      row: p,
+      row: {
+        full_name: text(p.full_name || p.display_name, 'Afiliado')
+      },
       photo,
       large: true
     }), h('div', {
       className: 'aff-sheet-identity'
     }, h('h2', {
       id: 'aff-sheet-title'
-    }, text(p.display_name || p.full_name, 'Afiliado')), h('p', null, meta), h('div', {
+    }, text(p.full_name || p.display_name, 'Afiliado')), h('p', null, meta), h('div', {
       className: 'aff-sheet-badges'
     }, h(Badge, {
       tone: p.is_archived ? 'danger' : statusTone(p.affiliate_status_raw)
@@ -82786,7 +82788,7 @@ Object.assign(window, {
     .aff-chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:800;white-space:nowrap}.aff-chip-ok{background:#E6F5EE;color:#12704B}.aff-chip-pend{background:#FDF4E3;color:#8A5A0B}.aff-chip-bad{background:#FBEEF1;color:#910022}.aff-chip-sys{background:#E8EEFB;color:#24448F}.aff-chip-gray{background:#EEF1F6;color:#3D4A66}
     .aff-request-list{display:flex;flex-direction:column;border:1px solid var(--hairline);border-radius:16px;overflow:hidden}.aff-request-row{display:flex;align-items:center;gap:12px;padding:12px 14px}.aff-request-row+.aff-request-row{border-top:1px solid var(--hairline)}.aff-request-row>span:first-child{flex:1;min-width:0}.aff-request-row strong{display:block;font-size:12.5px}.aff-request-row small{display:block;margin-top:2px;font-size:11px;color:var(--ink-3)}
     .aff-sheet-overlay{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;padding:24px;box-sizing:border-box}.aff-sheet-backdrop{position:absolute;inset:0;margin:0;padding:0;border:0;background:rgba(20,33,61,.48);cursor:default}.aff-sheet{position:relative;width:720px;max-width:100%;max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background:#fff;box-shadow:0 40px 90px -20px rgba(20,33,61,.5);outline:none;color:var(--ink)}.aff-sheet.is-editing{height:calc(100dvh - 48px)}.aff-sheet-content{flex:1;min-height:0;display:flex;flex-direction:column;width:100%}
-    .aff-sheet-head{flex:none;display:flex;align-items:center;gap:14px;padding:16px 16px 14px 20px;border-bottom:1px solid var(--hairline)}.aff-sheet-head .aff-avatar.is-large{width:48px;height:48px;border-radius:15px;font-size:15px}.aff-sheet-identity{flex:1;min-width:0}.aff-sheet-identity h2{margin:0;font-size:17px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-sheet-identity p{margin:2px 0 6px;font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-sheet-badges{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.aff-sheet-badges small{font-size:10px;color:var(--ink-3)}.aff-sheet-nav{flex:none;align-self:flex-start;display:flex;gap:6px}.aff-sheet-head.is-compact{min-height:72px}.aff-sheet-status-title{flex:1;margin:0;font-size:16px}
+    .aff-sheet-head{flex:none;display:flex;align-items:center;gap:14px;padding:16px 16px 14px 20px;border-bottom:1px solid var(--hairline)}.aff-sheet-head .aff-avatar.is-large{width:48px;height:48px;border-radius:15px;font-size:15px}.aff-sheet-identity{flex:1;min-width:0}.aff-sheet-identity h2{margin:0;font-size:17px;line-height:1.25;overflow-wrap:anywhere}.aff-sheet-identity p{margin:2px 0 6px;font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-sheet-badges{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.aff-sheet-badges small{font-size:10px;color:var(--ink-3)}.aff-sheet-nav{flex:none;align-self:flex-start;display:flex;gap:6px}.aff-sheet-head.is-compact{min-height:72px}.aff-sheet-status-title{flex:1;margin:0;font-size:16px}
     .aff-sheet-icon{width:40px;height:40px;padding:0;border:1px solid #E1E5EE;border-radius:12px;background:#fff;color:var(--ink);display:grid;place-items:center;cursor:pointer}.aff-sheet-icon.is-close{border-color:transparent;background:#EEF1F6}
     .aff-sheet-tabs{flex:none;display:flex;gap:2px;overflow-x:auto;padding:0 12px;border-bottom:1px solid var(--hairline)}.aff-sheet-tabs button{flex:none;border:0;background:transparent;padding:13px 10px;color:var(--ink-3);font:650 12px var(--font);white-space:nowrap;cursor:pointer}.aff-sheet-tabs button[aria-current=page]{color:var(--guinda);font-weight:850;box-shadow:inset 0 -3px 0 var(--guinda)}
     .aff-sheet-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:18px 20px!important}.aff-sheet-body.is-editing{display:flex;flex-direction:column;padding:0!important}.aff-sheet .aff-edit{height:100%;padding:16px 20px}

@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## H-AFFILIATE-CARD-FULLNAME-001 — 2026-11-20 — PASS published (autorizado por el propietario)
+
+Ficha flotante de Admin › Afiliados: el título, las iniciales y el encabezado de «Editar
+información» muestran `full_name` (antes `display_name`), igual que el padrón; el nombre largo ocupa
+hasta dos renglones en lugar de cortarse. Versión `2026112003` en los 4 puntos. Sin cambios de base
+de datos. Local: pruebas de Afiliados y permisos globales PASS; navegador 1440 y 390 px: título igual
+al padrón, sin cortes ni desborde, cero escrituras. Restablecimiento:
+`restore/pre-ficha-fullname-20261120` (dba1579) o revertir el commit.
+
 ## H-AFFILIATE-ROSTER-FULLNAME-001 — 2026-11-20 — PASS published (autorizado por el propietario)
 
 Admin › Afiliados: cada fila del padrón muestra `full_name` (antes `display_name`) y sus iniciales;

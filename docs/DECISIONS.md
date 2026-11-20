@@ -1,5 +1,24 @@
 # Registro de decisiones arquitectónicas
 
+## H-AFFILIATE-DOSSIER-PROGRAMS-001 — Expediente completo por programa y Ahorro, 2026-11-20 (ADR-117)
+
+El propietario observa que el expediente completo sólo mostraba préstamos y decide: una carpeta por
+programa (Préstamos, Membresías, Tours, y así sucesivamente) con subcarpetas por solicitud; Ahorro
+incluido de la misma forma y siempre al final; la pestaña Solicitudes también lista Ahorro; el ZIP
+de una carpeta se llama «folio + espacio + nombre completo» y, sin folio, «nombre de la carpeta +
+nombre completo».
+
+Las solicitudes de programas ya vienen en `get_admin_affiliate_workbench` (ADR-116). Las de Ahorro
+viven en `public.savings_requests` (legacy protegido): se agregan a esa misma consulta, sólo lectura,
+únicamente si la cuenta ya recibe solicitudes (lista de 3 por `auth_user_id`) y además tiene la
+autoridad vigente de Ahorro (`savings.read` + `admin_module_boundary(['savings'])`), la misma que
+`document-access` exige para la evidencia `SAVINGS`. No cambia ninguna fila, regla, cálculo ni
+permiso de Ahorro. Los documentos se listan con `list_document_evidence` /
+`list_generated_document_evidence` del dominio correspondiente. De 76 solicitudes de Ahorro, 73
+ingresos no tienen archivos guardados (su autorización PDF nunca se generó); se muestran sin archivos.
+Rollback: `supabase/recovery/20261120000200_affiliate_savings_requests_in_workbench.sql` (vuelve a
+ADR-116) más revertir el commit del frontend.
+
 ## H-AFFILIATE-EXPEDIENTE-MODAL-001 — Ficha flotante y expediente completo de Afiliados, 2026-11-20 (ADR-116)
 
 El propietario pide, con los diseños `Afiliados.dc.html` y `Main.dc.html` como referencia de

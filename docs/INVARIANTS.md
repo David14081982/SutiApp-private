@@ -602,3 +602,9 @@ Classify the obligation program before resolving a loan fund. Never blanket-igno
 - **INV-252:** `affiliate_loan_dossier_private` no es accesible desde el navegador (sin `usage`, `select` ni `execute` para `anon`/`authenticated`) y no modifica roles, asignaciones, permisos globales, RLS, Storage ni las pantallas Finanzas/Solicitudes.
 - **INV-253:** el expediente completo y los ZIP son de solo lectura: listan con las consultas documentales existentes y bajan cada archivo con la URL firmada que autoriza `document-access`; no escriben filas ni bitácora de descarga. Descargar un archivo o un ZIP exige `affiliates.write`; «Exportar expediente» de la ficha incluye sólo la versión vigente de cada documento del expediente base.
 - **INV-254:** ninguna pantalla de Afiliados muestra códigos internos (estados y procedencia de documentos, estados y programas de solicitud, acciones y campos de auditoría, categoría y sindicato): se traducen con la tabla única de `screens-admin-affiliates.jsx`; un código no catalogado se muestra como «Estado no catalogado».
+
+## Expediente completo por programa y Ahorro — ADR-117
+
+- **INV-255:** `get_admin_affiliate_workbench` entrega `savings_requests` y `capabilities.savings` sólo cuando la cuenta ya recibe solicitudes (INV-251) y además tiene `savings.read` y la frontera del módulo Ahorro; nunca escribe ni modifica datos de Ahorro.
+- **INV-256:** el expediente completo agrupa las solicitudes por programa en orden Préstamos, Membresías, Tours, demás por nombre y Ahorro al final; sólo aparecen los programas con solicitudes y se numeran seguidos tras «01 Expediente base».
+- **INV-257:** todo ZIP del expediente se llama «folio nombre completo» (solicitud) o «carpeta nombre completo» (resto) y contiene una sola carpeta principal con ese mismo nombre; los nombres de los archivos internos no cambian.

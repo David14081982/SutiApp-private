@@ -1,5 +1,32 @@
 # Bitácora de agentes
 
+## H-AFFILIATE-DOSSIER-PROGRAMS-001 — 2026-11-20 — migración aplicada en producción; frontend en publicación (autorizado por el propietario)
+
+Expediente completo de Admin › Afiliados: una carpeta por programa con sus solicitudes (Préstamos,
+Membresías, Tours, después cualquier programa nuevo por nombre) y Ahorro siempre al final; sólo los
+programas que la persona tiene, numerados seguidos tras «01 Expediente base». Cada solicitud: folio,
+estado, «01 Documentos de la solicitud» y «02 Generados por SutiApp»; las de Ahorro sin archivos
+muestran «Sin documentos guardados». La pestaña Solicitudes lista también Ahorro. Nombres de ZIP:
+«folio nombre completo» para una solicitud y «carpeta nombre completo» para las demás (Expediente
+completo, Expediente base —también «Exportar expediente» de la ficha—, Préstamos, Selección…); al
+descomprimir, la carpeta principal se llama igual. Backend (ADR-117): migración
+`20261120000200_affiliate_savings_requests_in_workbench` agrega a la ficha las solicitudes de
+`public.savings_requests` (vía `savings_participants.affiliate_id`) sólo si la cuenta ya recibe
+solicitudes (lista de 3, ADR-116) y tiene `savings.read` + frontera de Ahorro; PGlite 8/8 (cadena
+v1 → 000100 → 000200 → reversas, md5 exactos). Navegador local antes de la migración (control
+8787): 02 Préstamos / 03 Membresías, sin códigos ni desborde, ZIP de solicitud, de programa y base
+con carpeta principal igual al nombre del ZIP; cero escrituras. Versión `2026112004` en los 4
+puntos. Pruebas de Afiliados y permisos globales PASS.
+Producción (autorizado): etiqueta `restore/pre-expediente-programas-20261120` (b0dc64e) y copia de la
+función en `affiliate_loan_dossier_restore_private.workbench_20261120_savings` (md5 f96711d0…). Ensayo
+revertido: sólo las 3 autorizadas reciben Ahorro (3 solicitudes del control 12098); el resto no; la
+reversa devuelve f96711d0…. Migración aplicada (sha256 1c310063…, registrada); ensayo de la reversa
+sobre producción migrada, revertido. Ningún dato de Ahorro modificado: huella de las 76 solicitudes
+idéntica antes y después (430d818e…). Navegador local tras la migración (control 12098): 04 Ahorro
+al final con retiro (2 archivos), baja sin documentos e ingreso con autorización no generada (sin
+botón de descarga), ZIP `AHO-… NOMBRE.zip` con carpeta igual; cero escrituras. Evidencia:
+`docs/qa/evidence/affiliates-dossier-programs-20261120/`.
+
 ## H-AFFILIATE-CARD-FULLNAME-001 — 2026-11-20 — PASS published (autorizado por el propietario)
 
 Ficha flotante de Admin › Afiliados: el título, las iniciales y el encabezado de «Editar

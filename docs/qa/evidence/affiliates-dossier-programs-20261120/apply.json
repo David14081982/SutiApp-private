@@ -1,0 +1,28 @@
+{
+  "mode": "apply",
+  "status": "PASS",
+  "sha": "1c31006399ef40151508d5d9a9020c75d76116076344726c72efab513ab18b55",
+  "at": "2026-11-20T23:02:21.903Z",
+  "before": {
+    "workbench_md5": "f96711d0a6570dd1c138438cace701dd",
+    "dossier_schema": 1,
+    "savings_requests": 76,
+    "savings_fingerprint": "430d818eb0530c214ebd61a3a3e60058",
+    "migration_recorded": 0,
+    "restore_point": true,
+    "program_requests": 720,
+    "affiliates": 1095,
+    "requests_fingerprint": "b6c66169ea7ad67a25ae4b3708cfd1d8"
+  },
+  "after": {
+    "workbench_md5": "db6cffb16a22a40a6c695dd818472936",
+    "dossier_schema": 1,
+    "savings_requests": 76,
+    "savings_fingerprint": "430d818eb0530c214ebd61a3a3e60058",
+    "migration_recorded": 1,
+    "restore_point": true,
+    "program_requests": 720,
+    "affiliates": 1095,
+    "requests_fingerprint": "b6c66169ea7ad67a25ae4b3708cfd1d8"
+  }
+}

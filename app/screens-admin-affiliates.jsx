@@ -41,12 +41,22 @@
   const PROVENANCE=Object.freeze({HUMAN_REVIEWED:'Revisado por el equipo',HISTORICAL_IMPORT:'Histórico importado',WORKFLOW_STATUS:'Registrado por el flujo de revisión'});
   const REQUEST_STATUS=Object.freeze({submitted:['Enviada','pend'],requires_financial_processing:['Pendiente de revisión','pend'],in_review:['En revisión','pend'],approved:['Aprobada','ok'],rejected:['Rechazada','bad'],cancelled:['Cancelada','gray']});
   const PROGRAM_LABEL=Object.freeze({prestamo:'Préstamo',membership:'Membresía',tours:'Tours'});
+  // H-AFFILIATE-DOSSIER-PROGRAMS-001: una carpeta por programa en este orden; los demás por nombre y Ahorro siempre al final.
+  const PROGRAM_FOLDER=Object.freeze({prestamo:'Préstamos',membership:'Membresías',tours:'Tours'});
+  const PROGRAM_ORDER=Object.freeze(['prestamo','membership','tours']);
+  const SAVINGS_TYPE=Object.freeze({JOIN:'Ingreso al ahorro',CHANGE_AMOUNT:'Cambio de monto',WITHDRAW:'Retiro de ahorro',TERMINATE:'Dejar de ahorrar',EXTRAORDINARY_WITHDRAWAL:'Retiro especial'});
+  const SAVINGS_STATUS=Object.freeze({SUBMITTED:['Recibida','pend'],UNDER_REVIEW:['En revisión','pend'],APPROVED:['Aprobada','ok'],REJECTED:['Rechazada','bad'],CANCELLED:['Cancelada','gray'],SETTLED:['Pagada','ok']});
   const AUDIT_ACTION=Object.freeze({CREATE:'Alta en el padrón',UPDATE:'Actualización de datos',STATUS_CHANGE:'Cambio de estado',ARCHIVE:'Archivado',RESTORE:'Restaurado',PROFILE_FIELD_CHANGE:'Cambio de dato del perfil',ADMIN_DOCUMENT_DELETE:'Retiro de documento'});
-  const GENERATED_LABEL=Object.freeze({LOAN_APPROVAL:['Autorización del préstamo','AUTORIZACION'],PROGRAM_FINANCING_APPROVAL:['Autorización de financiamiento','AUTORIZACION'],MEMBERSHIP_APPROVAL:['Autorización de membresía','AUTORIZACION']});
+  const GENERATED_LABEL=Object.freeze({LOAN_APPROVAL:['Autorización del préstamo','AUTORIZACION'],PROGRAM_FINANCING_APPROVAL:['Autorización de financiamiento','AUTORIZACION'],MEMBERSHIP_APPROVAL:['Autorización de membresía','AUTORIZACION'],SAVINGS_ENROLLMENT_APPROVAL:['Autorización de ingreso al ahorro','AUTORIZACION'],SAVINGS_WITHDRAWAL_APPROVAL:['Autorización de retiro de ahorro','AUTORIZACION']});
   const FIELD_LABEL=Object.freeze(Object.assign(Object.fromEntries(EDIT_FIELDS),{financial_union_code:'Sindicato',financial_employee_category_code:'Categoría',affiliate_status_raw:'Estado',numero_control:'Número de control',documents:'Documentos'}));
   const docStatus=(code)=>DOC_STATUS[code]||['Estado no catalogado','gray'];
   const requestStatus=(code)=>REQUEST_STATUS[code]||['Estado no catalogado','gray'];
-  const programLabel=(code)=>PROGRAM_LABEL[code]||'Programa';
+  const humanize=(code)=>{const value=String(code||'').replace(/[_-]+/g,' ').trim().toLowerCase();return value?value.charAt(0).toUpperCase()+value.slice(1):'Programa';};
+  const programLabel=(code)=>PROGRAM_LABEL[code]||humanize(code);
+  const programFolder=(code)=>PROGRAM_FOLDER[code]||humanize(code);
+  const savingsStatus=(code)=>SAVINGS_STATUS[code]||['Estado no catalogado','gray'];
+  // Nombre de archivo legible para ZIP: conserva espacios y acentos; sólo quita caracteres no permitidos.
+  const personFileName=(value)=>String(value||'Afiliado').replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()||'Afiliado';
   const fieldLabel=(code)=>FIELD_LABEL[code]||String(code||'').replace(/_raw$/,'').replace(/_/g,' ');
   const money=(value)=>Number.isFinite(Number(value))&&value!==null&&value!==''?Number(value).toLocaleString('es-MX',{style:'currency',currency:'MXN',maximumFractionDigits:0}):'';
   function shortDate(value){if(!value)return '—';try{return new Intl.DateTimeFormat('es-MX',{day:'2-digit',month:'short',year:'numeric'}).format(new Date(value));}catch(_){return '—';}}
@@ -261,13 +271,17 @@
     const p=data.profile||{},documents=data.documents||[],requests=data.requests||[],audit=data.audit||[],cap=data.capabilities||{};
     // «Solicitudes» solo existe para las personas autorizadas: el backend entrega capabilities.requests.
     const tab=requestedTab==='requests'&&!cap.requests?'general':requestedTab;
+    const positive=(value)=>Number(value)>0?money(value):'';
+    const requestRows=requests.map((row)=>({key:row.id,folio:row.folio,title:programLabel(row.program_id),amount:positive(row.requested_amount),date:row.created_at,status:requestStatus(row.status)}))
+      .concat((data.savings_requests||[]).map((row)=>({key:'savings:'+row.id,folio:row.folio,title:'Ahorro · '+(SAVINGS_TYPE[row.request_type]||'Solicitud'),amount:positive(row.requested_amount),date:row.submitted_at,status:savingsStatus(row.status)})))
+      .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
     const[exporting,setExporting]=React.useState(false),[exportMsg,setExportMsg]=React.useState('');
     const exportBase=async()=>{
-      if(exporting)return;const files=baseFiles(data).current.filter((file)=>file.available).map((file)=>Object.assign({},file,{path:file.fileName}));
-      const zipName=fileSafe(p.numero_control)+'_Expediente_base.zip';
+      if(exporting)return;const folder='Expediente base '+personFileName(p.full_name||p.display_name),zipName=folder+'.zip';
+      const files=baseFiles(data).current.filter((file)=>file.available).map((file)=>Object.assign({},file,{path:folder+'/'+file.fileName}));
       if(!files.length){setExportMsg('No hay archivos disponibles en el expediente base.');return;}
       setExporting(true);setExportMsg('Preparando '+zipName+' · '+files.length+' archivo(s) del expediente base. No incluye documentos de préstamos.');
-      try{const result=await window.AdminAffiliatesRepository.downloadDossierZip({zipName,files,affiliateId:p.id,onProgress:(done,total)=>setExportMsg('Preparando '+zipName+' · '+done+' de '+total+' archivo(s)…')});setExportMsg(zipName+' descargado · '+result.included+' archivo(s) del expediente base'+(result.failed?' · '+result.failed+' no se pudieron incluir (ver ARCHIVOS_NO_INCLUIDOS.txt)':'')+'. No incluye documentos de préstamos.');}
+      try{const result=await window.AdminAffiliatesRepository.downloadDossierZip({zipName,folder,files,affiliateId:p.id,onProgress:(done,total)=>setExportMsg('Preparando '+zipName+' · '+done+' de '+total+' archivo(s)…')});setExportMsg(zipName+' descargado · '+result.included+' archivo(s) del expediente base'+(result.failed?' · '+result.failed+' no se pudieron incluir (ver ARCHIVOS_NO_INCLUIDOS.txt)':'')+'. No incluye documentos de préstamos.');}
       catch(_){setExportMsg('No fue posible preparar el ZIP. Intenta de nuevo.');}
       finally{setExporting(false);}
     };
@@ -277,7 +291,7 @@
     if(tab==='general')content=h('div',null,p.is_archived&&h('div',{className:'aff-archive-summary'},h('strong',null,'Afiliado archivado'),h('span',null,'Archivado '+date(p.archived_at)+' · Estado previo: '+text(p.archive_previous_status_raw)),h('span',null,'Motivo: '+text(p.archive_reason)),h('span',null,'Actor: '+text(p.archived_by_auth_user_id))),h('div',{className:'aff-facts'},h(Field,{label:'Nombre completo',value:p.full_name}),h(Field,{label:'Nombre visible',value:p.display_name}),h(Field,{label:'Correo',value:p.historical_email_raw}),h(Field,{label:'Teléfono',value:p.phone_raw}),h(Field,{label:'RFC',value:p.rfc_raw}),h(Field,{label:'CURP',value:p.curp_raw}),h(Field,{label:'Fecha de nacimiento',value:p.birth_date_raw}),h(Field,{label:'Género',value:p.gender_raw}),h(Field,{label:'Estado civil',value:p.marital_status_raw}),h(Field,{label:'Número de hijos',value:p.children_count_raw}),h(Field,{label:'Domicilio',value:p.address_raw}),h(Field,{label:'Ciudad',value:p.city_raw})));
     else if(tab==='affiliation')content=h('div',{className:'aff-facts'},h(Field,{label:'Número de control',value:p.numero_control}),h(Field,{label:'Estado administrativo',value:p.affiliate_status_raw}),h(Field,{label:'Afiliación',value:p.affiliation_raw}),h(Field,{label:'Sindicato',value:catalogLabel(p.financial_union_code,(data.options||{}).union)}),h(Field,{label:'Categoría',value:catalogLabel(p.financial_employee_category_code,(data.options||{}).employment_category)}),h(Field,{label:'Unidad',value:p.unit_raw}),h(Field,{label:'Puesto',value:p.employment_position_raw}),h(Field,{label:'Área',value:p.employment_area_raw}),h(Field,{label:'Ingreso sindicato',value:p.union_enrollment_date_raw}),h(Field,{label:'Fecha de baja',value:p.termination_date_raw}));
     else if(tab==='documents')content=!cap.documents?h('div',{className:'aff-boundary'},'Se requiere documents.read o assets.read para consultar el expediente.'):h('div',null,h('div',{className:'aff-metrics'},h(Metric,{value:documents.length,label:'documentos'}),h(Metric,{value:requiredCount?verified+'/'+requiredCount:'—',label:'obligatorios verificados',tone:requiredCount&&verified===requiredCount?'ok':''}),h(Metric,{value:pending,label:'pendientes',tone:pending?'warn':''})),h('div',{className:'aff-action-pair aff-document-actions'},app.admin.has('documents.write')&&h('button',{'data-affiliate-upload-open':'true',className:'aff-primary',onClick:()=>onUpload()},h(I,{name:'upload',size:16}),' Cargar o reemplazar'),h('button',{className:'aff-secondary',onClick:()=>onOpenModule('documents_admin',{affiliateId:p.id})},'Abrir Document Workbench')),h('div',{className:'aff-document-grid'},documents.length?documents.map((row)=>h('div',{key:row.id,className:'aff-document-entry'},h(DocumentCard,{row,affiliateId:p.id}),app.admin.has('documents.write')&&h('button',{type:'button',className:'aff-secondary aff-document-replace','data-affiliate-document-replace':row.id,'aria-label':'Reemplazar '+(row.type_label||row.document_type&&row.document_type.label||'documento'),onClick:()=>onUpload(row.document_type_id||row.type_id)},'Reemplazar documento'),h('button',{type:'button',className:'aff-document-delete','data-affiliate-document-delete':row.id,onClick:()=>onDelete(row)},h(I,{name:'trash',size:12}),window.DocumentIntegration&&window.DocumentIntegration.enabled()?' Retirar documento':' Eliminar documento'))):!(data.empty_document_slots||[]).length&&h(Empty,{title:'Expediente vacío',sub:'No hay documentos canónicos relacionados.'}),(data.empty_document_slots||[]).map(slot=>h('div',{key:slot.type_id,className:'aff-document-entry','data-empty-document-slot':slot.type_id},h('div',{className:'aff-boundary'},h('strong',null,slot.type_label),h('p',null,'Sin documento cargado')),app.admin.has('documents.write')&&h('button',{className:'aff-secondary',onClick:()=>onUpload(slot.type_id)},'Cargar documento')))),(data.pending_document_deletions||[]).map(op=>h('div',{key:op.operation_id,className:'aff-boundary'},'Hay una eliminación pendiente de finalizar. ',h('button',{className:'aff-secondary',onClick:()=>onResumeDelete(op)},'Finalizar eliminación'))));
-    else if(tab==='requests')content=!cap.requests?h('div',{className:'aff-boundary'},'Se requiere program_requests.read para consultar solicitudes.'):h('div',null,h('div',{className:'aff-request-list'},requests.length?requests.map((row)=>{const amount=money(row.requested_amount);return h('div',{key:row.id,className:'aff-request-row'},h('span',null,h('strong',null,text(row.folio,'Sin folio')+' · '+programLabel(row.program_id)+(amount?' · '+amount:'')),h('small',null,'Creada '+date(row.created_at))),h(Chip,{meta:requestStatus(row.status)}));}):h(Empty,{title:'Sin solicitudes',sub:'No hay trámites relacionados con este afiliado.'})),h('div',{className:'aff-action-pair'},h('button',{className:'aff-secondary',onClick:()=>onOpenModule('requests',{affiliateId:p.id})},'Solicitudes generales'),h('button',{className:'aff-secondary',onClick:()=>onOpenModule('finanzas',{affiliateId:p.id})},'Solicitudes financieras'),app.admin.has('savings.read')&&h('button',{'data-affiliate-open-savings':'true',className:'aff-secondary',onClick:()=>onOpenModule('savings',{affiliateId:p.id})},'Caja de Ahorro')));
+    else if(tab==='requests')content=!cap.requests?h('div',{className:'aff-boundary'},'Se requiere program_requests.read para consultar solicitudes.'):h('div',null,h('div',{className:'aff-request-list'},requestRows.length?requestRows.map((row)=>h('div',{key:row.key,className:'aff-request-row'},h('span',null,h('strong',null,text(row.folio,'Sin folio')+' · '+row.title+(row.amount?' · '+row.amount:'')),h('small',null,'Creada '+date(row.date))),h(Chip,{meta:row.status}))):h(Empty,{title:'Sin solicitudes',sub:'No hay trámites relacionados con este afiliado.'})),h('div',{className:'aff-action-pair'},h('button',{className:'aff-secondary',onClick:()=>onOpenModule('requests',{affiliateId:p.id})},'Solicitudes generales'),h('button',{className:'aff-secondary',onClick:()=>onOpenModule('finanzas',{affiliateId:p.id})},'Solicitudes financieras'),app.admin.has('savings.read')&&h('button',{'data-affiliate-open-savings':'true',className:'aff-secondary',onClick:()=>onOpenModule('savings',{affiliateId:p.id})},'Caja de Ahorro')));
     else if(tab==='access'){const auth=authMeta(p);content=h('div',null,h('div',{className:'aff-access-card'},h(I,{name:p.is_archived?'lock':p.auth_linked?'checkCircle':'lock',size:24}),h('div',null,h('strong',null,'Acceso a SutiApp'),h(Badge,{tone:p.is_archived?'danger':auth.tone},p.is_archived?'Archivado · operaciones bloqueadas':auth.label),h('p',null,p.is_archived?'La cuenta Auth se conserva, pero el backend no resuelve una identidad operativa hasta restaurar el registro.':'La afiliación administrativa y la cuenta Auth son autoridades separadas. Cambiar el estado no archiva ni elimina su acceso.'))),!p.is_archived&&app.admin.has('affiliates.impersonate')&&h(Assistance,{profile:p,app}),h(AccessRepair,{key:p.id,profile:p,app,onSaved,onOpenAffiliate}));}
     else content=h('div',{className:'aff-timeline'},audit.length?audit.map((event)=>h('div',{key:event.id},h('span',null),h('section',null,h('strong',null,AUDIT_ACTION[event.action]||'Evento administrativo'),h('small',null,date(event.at)),h('p',null,text(event.reason,'Evento registrado')),event.changed_fields&&h('em',null,event.changed_fields.map(fieldLabel).join(', '))))):h(Empty,{title:'Sin eventos administrativos',sub:'Los cambios nuevos aparecerán aquí con actor, motivo y fecha.'}));
     const canWrite=app.admin.has('affiliates.write'),catalog=data.options||{},meta=['Control '+text(p.numero_control),catalogLabel(p.financial_employee_category_code,catalog.employment_category)||p.affiliation_raw,p.unit_raw].filter(Boolean).join(' · ');
@@ -397,62 +411,85 @@
   }
 
   /* H-AFFILIATE-EXPEDIENTE-MODAL-001 — Expediente completo: carpetas desplegables en el mismo lugar, visor y ZIP.
-     02 Préstamos solo aparece cuando el backend entrega capabilities.requests (lista de personas autorizadas). */
+     Las carpetas de programas (y Ahorro, al final) sólo aparecen cuando el backend entrega capabilities.requests /
+     capabilities.savings (lista de personas autorizadas, ADR-116/117). */
   const fileNode=(file)=>({id:'f:'+file.kind+':'+file.id,folder:false,name:file.label,file});
   const folderNode=(id,name,kids,extra)=>Object.assign({id,folder:true,name,kids},extra||{});
   function countFiles(node){return node.folder?node.kids.reduce((sum,kid)=>sum+countFiles(kid),0):1;}
-  function loanFolder(entry,control){
-    const request=entry.request,folio=text(request.folio,'Sin folio'),prefix=control+'_'+fileSafe(folio)+'_',used=new Map();
+  function countAvailable(node){return node.folder?node.kids.reduce((sum,kid)=>sum+countAvailable(kid),0):node.file.available?1:0;}
+  // Una carpeta por solicitud (programa o Ahorro): documentos guardados al enviarla y PDF generados por SutiApp.
+  function requestFolder(entry,control){
+    const request=entry.request,savings=entry.domain==='savings',folio=text(request.folio,'Sin folio'),prefix=control+'_'+fileSafe(folio)+'_',used=new Map(),id='req:'+entry.domain+':'+request.id;
     const unique=(name)=>{const count=(used.get(name)||0)+1;used.set(name,count);return count===1?name:name.replace(/(\.[a-z0-9]+)$/,'_'+count+'$1');};
-    const evidence=entry.evidence.map((row)=>{const type=row.document_type||{},status=row.status_at_submission;return fileNode({kind:'REQUEST',id:row.id,label:type.label||'Documento',fileName:unique(prefix+fileSafe(String(type.code||'DOCUMENTO').toUpperCase())+'.'+extOf(row.mimeType)),mime:row.mimeType,status:docStatus(status),approved:status==='VERIFIED',date:row.created_at,available:row.available!==false});});
-    const newest=new Map();entry.generated.forEach((row)=>{const prior=newest.get(row.document_type);if(!prior||(Number(row.business_version)||1)>(Number(prior.business_version)||1))newest.set(row.document_type,row);});
+    const evidence=(entry.evidence||[]).map((row)=>{const type=row.document_type||{},status=row.status_at_submission;return fileNode({kind:savings?'SAVINGS':'REQUEST',id:row.id,label:type.label||'Documento',fileName:unique(prefix+fileSafe(String(type.code||'DOCUMENTO').toUpperCase())+'.'+extOf(row.mimeType)),mime:row.mimeType,status:savings?['Copia al enviar','gray']:docStatus(status),approved:!savings&&status==='VERIFIED',date:row.created_at,available:row.available!==false});});
+    const newest=new Map();(entry.generated||[]).forEach((row)=>{const prior=newest.get(row.document_type);if(!prior||(Number(row.business_version)||1)>(Number(prior.business_version)||1))newest.set(row.document_type,row);});
     const generated=[...newest.values()].map((row)=>{const meta=GENERATED_LABEL[row.document_type]||['Documento generado','DOCUMENTO'];return fileNode({kind:'GENERATED',id:row.id,label:meta[0],fileName:unique(prefix+meta[1]+'_v'+(Number(row.business_version)||1)+'.pdf'),mime:'application/pdf',status:row.status==='READY'?['Generado por SutiApp','sys']:row.status==='FAILED'?['No se pudo generar','bad']:['En preparación','pend'],approved:row.status==='READY',date:row.occurred_at,available:row.status==='READY'});});
-    const kids=[folderNode('loan:'+request.id+':docs','01 Documentos de la solicitud',evidence,{sub:evidence.length+' archivo(s) · estado que tenían al enviar la solicitud'}),folderNode('loan:'+request.id+':generated','02 Generados por SutiApp',generated)].filter((node)=>node.kids.length);
-    const amount=money(request.requested_amount);
-    return folderNode('loan:'+request.id,folio,kids,{chip:requestStatus(request.status),date:request.created_at,sub:[amount,countFiles({folder:true,kids})+' archivo(s)'].filter(Boolean).join(' · ')+(entry.error?' · No se pudieron consultar sus documentos':'')});
+    const kids=[folderNode(id+':docs','01 Documentos de la solicitud',evidence,{sub:evidence.length+' archivo(s) · '+(savings?'copia guardada al enviar la solicitud':'estado que tenían al enviar la solicitud')}),folderNode(id+':generated','02 Generados por SutiApp',generated)].filter((node)=>node.kids.length);
+    const files=countFiles({folder:true,kids}),amount=Number(request.requested_amount)>0?money(request.requested_amount):'';
+    const state=entry.loading?'Cargando documentos…':entry.error?'No se pudieron consultar sus documentos':files?files+' archivo(s)':'Sin documentos guardados';
+    return folderNode(id,folio,kids,{folio,chip:savings?savingsStatus(request.status):requestStatus(request.status),date:savings?request.submitted_at:request.created_at,sub:[savings?SAVINGS_TYPE[request.request_type]||'Solicitud de ahorro':'',amount,state].filter(Boolean).join(' · ')});
   }
   function DossierView({data,app}){
     const p=data.profile||{},cap=data.capabilities||{},control=fileSafe(p.numero_control),canDownload=app.admin.has('affiliates.write');
-    const loans=React.useMemo(()=>(data.requests||[]).filter((row)=>row.program_id==='prestamo'),[data]);
-    const[loanState,setLoanState]=React.useState({phase:cap.requests&&loans.length?'loading':'ready',rows:[]});
-    const[expanded,setExpanded]=React.useState({loans:true}),[selected,setSelected]=React.useState({}),[options,setOptions]=React.useState({cover:true,hist:false,approved:false});
+    // Solicitudes de programas (ficha) y de Ahorro; el backend sólo las entrega a las personas autorizadas.
+    const entries=React.useMemo(()=>(cap.requests?(data.requests||[]).map((request)=>({domain:'program',request})):[]).concat(cap.savings?(data.savings_requests||[]).map((request)=>({domain:'savings',request})):[]),[data,cap.requests,cap.savings]);
+    const fullName=personFileName(p.full_name||p.display_name);
+    const[loanState,setLoanState]=React.useState({phase:entries.length?'loading':'ready',rows:[]});
+    const[expanded,setExpanded]=React.useState({}),[selected,setSelected]=React.useState({}),[options,setOptions]=React.useState({cover:true,hist:false,approved:false});
     const[busy,setBusy]=React.useState(false),[message,setMessage]=React.useState(''),[viewer,setViewer]=React.useState(null),active=React.useRef(true);
     React.useEffect(()=>{active.current=true;return()=>{active.current=false;};},[]);
     React.useEffect(()=>{
-      if(!cap.requests||!loans.length){setLoanState({phase:'ready',rows:[]});return;}
+      if(!entries.length){setLoanState({phase:'ready',rows:[]});return;}
       let current=true;setLoanState({phase:'loading',rows:[]});
-      window.AdminAffiliatesRepository.loanDossier(loans).then((rows)=>{if(current)setLoanState({phase:'ready',rows});}).catch(()=>{if(current)setLoanState({phase:'error',rows:[]});});
+      window.AdminAffiliatesRepository.requestDossier(entries).then((rows)=>{if(current)setLoanState({phase:'ready',rows});}).catch(()=>{if(current)setLoanState({phase:'error',rows:[]});});
       return()=>{current=false;};
-    },[p.id,cap.requests,loans]);
+    },[p.id,entries]);
     const root=React.useMemo(()=>{
       const base=baseFiles(data),baseKids=base.current.map(fileNode);
       if(base.previous.length)baseKids.push(folderNode('base:previous','Versiones anteriores',base.previous.map(fileNode),{kind:'hist',chip:['Solo consulta','gray']}));
       const kids=[folderNode('base','01 Expediente base',baseKids)];
-      if(cap.requests)kids.push(folderNode('loans','02 Préstamos',loanState.rows.map((entry)=>loanFolder(entry,control)),{sub:loanState.phase==='loading'?'Cargando solicitudes de préstamo…':loanState.phase==='error'?'No fue posible consultar los préstamos. Recarga la ficha.':!loans.length?'Sin solicitudes de préstamo':null}));
+      const loaded=new Map(loanState.rows.map((row)=>[row.domain+':'+row.request.id,row]));
+      const folderOf=(entry)=>requestFolder(loaded.get(entry.domain+':'+entry.request.id)||Object.assign({evidence:[],generated:[],loading:loanState.phase==='loading',error:loanState.phase==='error'},entry),control);
+      const groups=new Map();entries.filter((entry)=>entry.domain==='program').forEach((entry)=>{const key=entry.request.program_id||'otros';if(!groups.has(key))groups.set(key,[]);groups.get(key).push(entry);});
+      const order=[...groups.keys()].sort((a,b)=>{const ia=PROGRAM_ORDER.indexOf(a),ib=PROGRAM_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||programFolder(a).localeCompare(programFolder(b),'es');});
+      const savingsEntries=entries.filter((entry)=>entry.domain==='savings');
+      order.map((key)=>[key,programFolder(key),groups.get(key)]).concat(savingsEntries.length?[['savings','Ahorro',savingsEntries]]:[]).forEach(([key,label,list],position)=>{
+        const folders=list.map(folderOf);kids.push(folderNode('program:'+key,String(position+2).padStart(2,'0')+' '+label,folders,{defaultOpen:true,sub:list.length+' solicitud(es) · '+countFiles({folder:true,kids:folders})+' archivo(s)'}));
+      });
       return folderNode('root','Todo el expediente',kids);
-    },[data,cap.requests,loanState,loans,control]);
-    const index=React.useMemo(()=>{const map=new Map();(function walk(node){map.set(node.id,node);if(node.folder)node.kids.forEach(walk);})(root);return map;},[root]);
+    },[data,entries,loanState,control]);
+    const index=React.useMemo(()=>{const map=new Map(),parent=new Map();(function walk(node){map.set(node.id,node);if(node.folder)node.kids.forEach((kid)=>{parent.set(kid.id,node);walk(kid);});})(root);map.parentOf=(node)=>parent.get(node.id);return map;},[root]);
+    const isOpen=(node)=>expanded[node.id]!==undefined?expanded[node.id]:!!node.defaultOpen;
     const total=countFiles(root);
-    const rows=[];(function walk(list,depth){list.forEach((node)=>{rows.push({node,depth});if(node.folder&&expanded[node.id])walk(node.kids,depth+1);});})(root.kids,0);
+    const rows=[];(function walk(list,depth){list.forEach((node)=>{rows.push({node,depth});if(node.folder&&isOpen(node))walk(node.kids,depth+1);});})(root.kids,0);
     // Archivos a incluir en un ZIP según las opciones; una carpeta elegida explícitamente siempre se incluye.
     const collect=(node,prefix,out)=>{
       if(node.folder){if(node.kind==='hist'&&!options.hist)return;node.kids.forEach((kid)=>collect(kid,prefix+folderSafe(node.name)+'/',out));return;}
       const file=node.file;if(file.available&&(!options.approved||file.approved))out.push(Object.assign({},file,{path:prefix+file.fileName}));
     };
-    const filesOf=(nodes)=>{const out=[];nodes.forEach((node)=>{if(node.folder)node.kids.forEach((kid)=>collect(kid,node===root?'':folderSafe(node.name)+'/',out));else collect(node,'',out);});const seen=new Set();return out.filter((file)=>{const key=file.kind+':'+file.id;if(seen.has(key))return false;seen.add(key);return true;});};
-    const runZip=async(nodes,zipName)=>{
-      if(busy)return;const files=filesOf(nodes);
+    // Todo ZIP lleva una carpeta principal con el mismo nombre que el archivo.
+    const filesOf=(nodes,top)=>{const out=[],single=nodes.length===1&&nodes[0].folder&&nodes[0]!==root&&top!==undefined&&!top.startsWith('Selección ');nodes.forEach((node)=>{if(node.folder)node.kids.forEach((kid)=>collect(kid,top+'/'+(node===root||single?'':folderSafe(node.name)+'/'),out));else collect(node,top+'/',out);});const seen=new Set();return out.filter((file)=>{const key=file.kind+':'+file.id;if(seen.has(key))return false;seen.add(key);return true;});};
+    const runZip=async(nodes,top)=>{
+      const zipName=top+'.zip';
+      if(busy)return;const files=filesOf(nodes,top);
       if(!files.length){setMessage('No hay archivos disponibles con las opciones elegidas.');return;}
       setBusy(true);setMessage('Preparando '+zipName+' · 0 de '+files.length+' archivo(s)…');
-      const cover=options.cover?{name:control+'_INDICE.pdf',title:'Índice del expediente · '+text(p.full_name||p.display_name,'Afiliado')+' · Control '+text(p.numero_control),lines:(failed)=>{const missing=new Set(failed.map((file)=>file.path));return ['Generado el '+date(new Date())+' · '+files.length+' archivo(s) · '+zipName,''].concat(files.map((file)=>file.path+'  ·  '+file.status[0]+'  ·  '+shortDate(file.date)+(missing.has(file.path)?'  ·  NO INCLUIDO':'')));}}:null;
-      try{const result=await window.AdminAffiliatesRepository.downloadDossierZip({zipName,files,affiliateId:p.id,index:cover,onProgress:(done,count)=>{if(active.current)setMessage('Preparando '+zipName+' · '+done+' de '+count+' archivo(s)…');}});if(active.current)setMessage(zipName+' descargado · '+result.included+' archivo(s)'+(result.failed?' · '+result.failed+' no se pudieron incluir (ver ARCHIVOS_NO_INCLUIDOS.txt)':'')+'.');}
+      const cover=options.cover?{name:top+'/'+control+'_INDICE.pdf',title:'Índice del expediente · '+text(p.full_name||p.display_name,'Afiliado')+' · Control '+text(p.numero_control),lines:(failed)=>{const missing=new Set(failed.map((file)=>file.path));return ['Generado el '+date(new Date())+' · '+files.length+' archivo(s) · '+zipName,''].concat(files.map((file)=>file.path+'  ·  '+file.status[0]+'  ·  '+shortDate(file.date)+(missing.has(file.path)?'  ·  NO INCLUIDO':'')));}}:null;
+      try{const result=await window.AdminAffiliatesRepository.downloadDossierZip({zipName,folder:top,files,affiliateId:p.id,index:cover,onProgress:(done,count)=>{if(active.current)setMessage('Preparando '+zipName+' · '+done+' de '+count+' archivo(s)…');}});if(active.current)setMessage(zipName+' descargado · '+result.included+' archivo(s)'+(result.failed?' · '+result.failed+' no se pudieron incluir (ver ARCHIVOS_NO_INCLUIDOS.txt)':'')+'.');}
       catch(_){if(active.current)setMessage('No fue posible preparar el ZIP. Intenta de nuevo.');}
       finally{if(active.current)setBusy(false);}
     };
-    const zipNameOf=(node)=>node===root?control+'_Expediente_completo.zip':control+'_'+fileSafe(node.name)+'.zip';
+    // Nombre del ZIP: «folio nombre completo» para una solicitud; «carpeta nombre completo» para las demás.
+    const labelOf=(node)=>String(node.name).replace(/^\d+\s+/,'');
+    const zipNameOf=(node)=>{
+      if(node===root)return 'Expediente completo '+fullName;
+      if(node.folio)return personFileName(node.folio)+' '+fullName;
+      for(let up=index.parentOf(node);up;up=index.parentOf(up))if(up.folio)return personFileName(up.folio)+' '+fullName+' - '+labelOf(node);
+      return labelOf(node)+' '+fullName;
+    };
     const view=async(file)=>{if(!file.available)return;try{const source=await window.AdminAffiliatesRepository.dossierFileUrl(file.kind,file.id,p.id);if(active.current)setViewer({source,mimeType:file.mime,title:file.label});}catch(_){if(active.current)setMessage('No fue posible abrir '+file.label+'.');}};
     const downloadFile=async(file)=>{if(busy)return;setBusy(true);setMessage('Descargando '+file.fileName+'…');try{await window.AdminAffiliatesRepository.downloadDossierFile(file,p.id);if(active.current)setMessage(file.fileName+' descargado.');}catch(_){if(active.current)setMessage('No fue posible descargar '+file.fileName+'.');}finally{if(active.current)setBusy(false);}};
-    const selectedNodes=Object.keys(selected).map((id)=>index.get(id)).filter(Boolean),selectedFiles=filesOf(selectedNodes),allSelected=root.kids.length>0&&root.kids.every((node)=>selected[node.id]);
+    const selectedNodes=Object.keys(selected).map((id)=>index.get(id)).filter(Boolean),selectedFiles=filesOf(selectedNodes,'Selección '+fullName),allSelected=root.kids.length>0&&root.kids.every((node)=>selected[node.id]);
     const toggle=(id)=>setSelected((current)=>{const next=Object.assign({},current);if(next[id])delete next[id];else next[id]=true;return next;});
     const summary=data.document_summary||{},required=Number(summary.required_count)||0,verified=Number(summary.verified_required_count)||0;
     const row=({node,depth})=>{
@@ -460,13 +497,13 @@
       return h('div',{key:node.id,className:'aff-dossier-row'+(isSelected?' is-selected':'')+(depth?' is-nested':'')+(canDownload?'':' no-select'),'data-dossier-node':node.id},
         canDownload&&h('label',{className:'aff-dossier-check'},h('input',{type:'checkbox','aria-label':'Seleccionar '+node.name,checked:isSelected,onChange:()=>toggle(node.id)})),
         h('div',{className:'aff-dossier-name',style:{paddingLeft:depth*18}},node.folder?
-          h('button',{type:'button',className:'aff-dossier-folder','aria-expanded':!!expanded[node.id],onClick:()=>setExpanded((current)=>Object.assign({},current,{[node.id]:!current[node.id]}))},h('span',{className:'aff-dossier-chev','aria-hidden':'true'},h(I,{name:'chevR',size:15})),h('span',{className:'aff-dossier-ficon','aria-hidden':'true'},h(I,{name:'folder',size:18})),h('span',{className:'aff-dossier-label'},h('strong',null,node.name),h('small',null,node.sub||(node.kids.length+' elemento(s) · '+count+' archivo(s)')),h('span',{className:'aff-dossier-inline-status'},h(Chip,{meta:node.chip||['Carpeta','gray']})))):
+          h('button',{type:'button',className:'aff-dossier-folder','aria-expanded':isOpen(node),onClick:()=>setExpanded((current)=>Object.assign({},current,{[node.id]:!isOpen(node)}))},h('span',{className:'aff-dossier-chev','aria-hidden':'true'},h(I,{name:'chevR',size:15})),h('span',{className:'aff-dossier-ficon','aria-hidden':'true'},h(I,{name:'folder',size:18})),h('span',{className:'aff-dossier-label'},h('strong',null,node.name),h('small',null,node.sub||(node.kids.length+' elemento(s) · '+count+' archivo(s)')),h('span',{className:'aff-dossier-inline-status'},h(Chip,{meta:node.chip||['Carpeta','gray']})))):
           h('div',{className:'aff-dossier-file'},h('button',{type:'button',className:'aff-dossier-thumb',disabled:!file.available,'aria-label':'Ver '+file.label,onClick:()=>view(file)},h('i'),h('i'),h('i'),h('i'),h('b',null,extOf(file.mime).toUpperCase())),h('span',{className:'aff-dossier-label'},h('strong',{title:file.label},file.label),h('small',{title:file.fileName},file.available?file.fileName:'Archivo no disponible'),h('span',{className:'aff-dossier-inline-status'},h(Chip,{meta:file.status}))))),
         h('span',{className:'aff-dossier-status'},h(Chip,{meta:node.folder?node.chip||['Carpeta','gray']:file.status})),
         h('span',{className:'aff-dossier-date'},node.folder?(node.date?shortDate(node.date):'—'):shortDate(file.date)),
         h('span',{className:'aff-dossier-actions'},
           !node.folder&&file.available&&h('button',{type:'button',className:'aff-dossier-act','aria-label':'Ver '+file.label,onClick:()=>view(file)},h(I,{name:'eye',size:17})),
-          canDownload&&(node.folder?count>0:file.available)&&h('button',{type:'button',className:'aff-dossier-act is-download',disabled:busy,'aria-label':node.folder?'Descargar carpeta '+node.name+' en ZIP':'Descargar '+file.fileName,onClick:()=>node.folder?runZip([node],zipNameOf(node)):downloadFile(file)},h(I,{name:'download',size:17}))));
+          canDownload&&(node.folder?countAvailable(node)>0:file.available)&&h('button',{type:'button',className:'aff-dossier-act is-download',disabled:busy,'aria-label':node.folder?'Descargar carpeta '+node.name+' en ZIP':'Descargar '+file.fileName,onClick:()=>node.folder?runZip([node],zipNameOf(node)):downloadFile(file)},h(I,{name:'download',size:17}))));
     };
     return h('div',{'data-admin-affiliate-dossier':p.id,className:'aff-dossier-page','data-noreveal':'true'},
       h('section',{className:'aff-dossier-person'},h(Avatar,{row:p,large:true}),h('div',null,h('h2',null,text(p.display_name||p.full_name,'Afiliado')),h('p',null,['Control '+text(p.numero_control),catalogLabel(p.financial_employee_category_code,(data.options||{}).employment_category)||p.affiliation_raw,p.unit_raw].filter(Boolean).join(' · '))),
@@ -475,7 +512,7 @@
         h('div',{className:'aff-dossier-top'},h('div',null,h('h2',null,'Todo el expediente'),h('p',null,root.kids.length+' elemento(s) · '+total+' archivo(s) en total')),
           canDownload&&h('button',{type:'button','data-dossier-download-all':'true',className:'aff-dossier-zip',disabled:busy||!total,onClick:()=>runZip([root],zipNameOf(root))},h(I,{name:'download',size:18}),' Descargar esta carpeta (.zip)')),
         canDownload&&h('div',{className:'aff-dossier-opts'},h('span',null,'Al descargar, incluir:'),[['cover','Índice en PDF'],['hist','Versiones anteriores'],['approved','Solo aprobados']].map(([key,label])=>h('label',{key},h('input',{type:'checkbox',checked:options[key],onChange:()=>setOptions((current)=>Object.assign({},current,{[key]:!current[key]}))}),label))),
-        canDownload&&selectedNodes.length>0&&h('div',{role:'status',className:'aff-dossier-selbar'},h('span',null,selectedNodes.length+' seleccionado(s) · '+selectedFiles.length+' archivo(s)'),h('button',{type:'button',onClick:()=>setSelected({})},'Quitar selección'),h('button',{type:'button',className:'is-primary',disabled:busy||!selectedFiles.length,onClick:()=>runZip(selectedNodes,control+'_Seleccion.zip')},'Descargar selección (.zip)')),
+        canDownload&&selectedNodes.length>0&&h('div',{role:'status',className:'aff-dossier-selbar'},h('span',null,selectedNodes.length+' seleccionado(s) · '+selectedFiles.length+' archivo(s)'),h('button',{type:'button',onClick:()=>setSelected({})},'Quitar selección'),h('button',{type:'button',className:'is-primary',disabled:busy||!selectedFiles.length,onClick:()=>runZip(selectedNodes,'Selección '+fullName)},'Descargar selección (.zip)')),
         message&&h('p',{role:'status',className:'aff-dossier-msg'},message),
         h('div',{className:'aff-dossier-table'},
           h('div',{className:'aff-dossier-row is-head'+(canDownload?'':' no-select')},canDownload&&h('label',{className:'aff-dossier-check'},h('input',{type:'checkbox','aria-label':'Seleccionar todo',checked:allSelected,onChange:()=>setSelected(allSelected?{}:Object.fromEntries(root.kids.map((node)=>[node.id,true])))})),h('span',null,'Nombre'),h('span',{className:'aff-dossier-status'},'Estado'),h('span',{className:'aff-dossier-date'},'Fecha'),h('span',{className:'aff-dossier-actions'},'Acciones')),

@@ -96,13 +96,14 @@
      Solo lectura: cada lista y cada URL firmada las autoriza el backend con las consultas existentes
      (list_document_evidence / list_generated_document_evidence / document-access). Nada se guarda ni se registra. */
   function requireIntegration(){if(!window.DocumentIntegration||!window.DocumentIntegration.enabled())throw new Error('LOAN_DOSSIER_UNAVAILABLE');}
-  async function loanDossier(requests){
+  // entries: [{domain:'program'|'savings',request}]. Cada solicitud lista sus documentos con la consulta de su dominio.
+  async function requestDossier(entries){
     requirePermission('affiliates.read');requireIntegration();
-    const loans=(requests||[]).filter((row)=>row&&row.program_id==='prestamo'),out=[];
-    for(let index=0;index<loans.length;index+=4){
-      out.push(...await Promise.all(loans.slice(index,index+4).map(async(request)=>{
-        try{const[evidence,generated]=await Promise.all([window.DocumentIntegration.evidence(request.id,'REQUEST','ADMIN'),window.DocumentIntegration.generated(request.id,'program','ADMIN')]);return Object.freeze({request,evidence:Object.freeze(evidence||[]),generated:Object.freeze(generated||[]),error:false});}
-        catch(_){return Object.freeze({request,evidence:Object.freeze([]),generated:Object.freeze([]),error:true});}
+    const list=(entries||[]).filter((entry)=>entry&&entry.request&&entry.request.id&&['program','savings'].includes(entry.domain)),out=[];
+    for(let index=0;index<list.length;index+=4){
+      out.push(...await Promise.all(list.slice(index,index+4).map(async({domain,request})=>{
+        try{const[evidence,generated]=await Promise.all([window.DocumentIntegration.evidence(request.id,domain==='savings'?'SAVINGS':'REQUEST','ADMIN'),window.DocumentIntegration.generated(request.id,domain,'ADMIN')]);return Object.freeze({domain,request,evidence:Object.freeze(evidence||[]),generated:Object.freeze(generated||[]),error:false});}
+        catch(_){return Object.freeze({domain,request,evidence:Object.freeze([]),generated:Object.freeze([]),error:true});}
       })));
     }
     return Object.freeze(out);
@@ -110,7 +111,7 @@
   async function dossierFileUrl(kind,id,affiliateId){
     requirePermission('affiliates.read');
     if(kind==='BASE'){const preview=await previewDocument(id,affiliateId);if(!preview||!preview.signedUrl)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return preview.signedUrl;}
-    requireIntegration();const access=await window.DocumentIntegration.access(kind==='GENERATED'?'GENERATED':'REQUEST',id,'ADMIN');
+    requireIntegration();const access=await window.DocumentIntegration.access(['GENERATED','SAVINGS'].includes(kind)?kind:'REQUEST',id,'ADMIN');
     if(!access||!access.signedUrl)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return access.signedUrl;
   }
   async function fileBytes(file,affiliateId){const response=await fetch(await dossierFileUrl(file.kind,file.id,affiliateId),{credentials:'omit',cache:'no-store'});if(!response.ok)throw new Error('DOCUMENT_DOWNLOAD_FAILED');return response.blob();}
@@ -134,17 +135,17 @@
     const bytes=new Uint8Array(out.length);for(let index=0;index<out.length;index++)bytes[index]=out.charCodeAt(index)&255;return bytes;
   }
   // ZIP en el navegador con los archivos que la cuenta ya puede abrir. Sin compresión (imágenes/PDF ya comprimidos).
-  async function downloadDossierZip({zipName,files,affiliateId,index,onProgress}){
+  async function downloadDossierZip({zipName,folder,files,affiliateId,index,onProgress}){
     requirePermission('affiliates.write');if(!window.JSZip)throw new Error('ZIP_UNAVAILABLE');if(!files||!files.length)throw new Error('ZIP_EMPTY');
     const zip=new window.JSZip(),queue=files.slice(),failed=[];let done=0;
     const worker=async()=>{for(;;){const file=queue.shift();if(!file)return;try{zip.file(file.path,await fileBytes(file,affiliateId),{binary:true});}catch(_){failed.push(file);}done++;if(onProgress)onProgress(done,files.length);}};
     await Promise.all([worker(),worker(),worker()]);
     if(failed.length===files.length)throw new Error('ZIP_FILES_UNAVAILABLE');
     if(index)zip.file(index.name,indexPdf(index.title,index.lines(failed)),{binary:true});
-    if(failed.length)zip.file('ARCHIVOS_NO_INCLUIDOS.txt','No se pudieron descargar estos archivos al preparar el ZIP:\r\n'+failed.map((file)=>file.path).join('\r\n')+'\r\n');
+    if(failed.length)zip.file((folder?folder+'/':'')+'ARCHIVOS_NO_INCLUIDOS.txt','No se pudieron descargar estos archivos al preparar el ZIP:\r\n'+failed.map((file)=>file.path).join('\r\n')+'\r\n');
     saveBlob(await zip.generateAsync({type:'blob',compression:'STORE'}),zipName);
     return Object.freeze({included:files.length-failed.length,failed:failed.length});
   }
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,loanDossier,dossierFileUrl,downloadDossierFile,downloadDossierZip,MAX_DOCUMENT_SIZE});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,requestDossier,dossierFileUrl,downloadDossierFile,downloadDossierZip,MAX_DOCUMENT_SIZE});
 })();
 

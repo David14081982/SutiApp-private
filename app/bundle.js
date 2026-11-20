@@ -23828,13 +23828,14 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
      Solo lectura: cada lista y cada URL firmada las autoriza el backend con las consultas existentes
      (list_document_evidence / list_generated_document_evidence / document-access). Nada se guarda ni se registra. */
   function requireIntegration(){if(!window.DocumentIntegration||!window.DocumentIntegration.enabled())throw new Error('LOAN_DOSSIER_UNAVAILABLE');}
-  async function loanDossier(requests){
+  // entries: [{domain:'program'|'savings',request}]. Cada solicitud lista sus documentos con la consulta de su dominio.
+  async function requestDossier(entries){
     requirePermission('affiliates.read');requireIntegration();
-    const loans=(requests||[]).filter((row)=>row&&row.program_id==='prestamo'),out=[];
-    for(let index=0;index<loans.length;index+=4){
-      out.push(...await Promise.all(loans.slice(index,index+4).map(async(request)=>{
-        try{const[evidence,generated]=await Promise.all([window.DocumentIntegration.evidence(request.id,'REQUEST','ADMIN'),window.DocumentIntegration.generated(request.id,'program','ADMIN')]);return Object.freeze({request,evidence:Object.freeze(evidence||[]),generated:Object.freeze(generated||[]),error:false});}
-        catch(_){return Object.freeze({request,evidence:Object.freeze([]),generated:Object.freeze([]),error:true});}
+    const list=(entries||[]).filter((entry)=>entry&&entry.request&&entry.request.id&&['program','savings'].includes(entry.domain)),out=[];
+    for(let index=0;index<list.length;index+=4){
+      out.push(...await Promise.all(list.slice(index,index+4).map(async({domain,request})=>{
+        try{const[evidence,generated]=await Promise.all([window.DocumentIntegration.evidence(request.id,domain==='savings'?'SAVINGS':'REQUEST','ADMIN'),window.DocumentIntegration.generated(request.id,domain,'ADMIN')]);return Object.freeze({domain,request,evidence:Object.freeze(evidence||[]),generated:Object.freeze(generated||[]),error:false});}
+        catch(_){return Object.freeze({domain,request,evidence:Object.freeze([]),generated:Object.freeze([]),error:true});}
       })));
     }
     return Object.freeze(out);
@@ -23842,7 +23843,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   async function dossierFileUrl(kind,id,affiliateId){
     requirePermission('affiliates.read');
     if(kind==='BASE'){const preview=await previewDocument(id,affiliateId);if(!preview||!preview.signedUrl)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return preview.signedUrl;}
-    requireIntegration();const access=await window.DocumentIntegration.access(kind==='GENERATED'?'GENERATED':'REQUEST',id,'ADMIN');
+    requireIntegration();const access=await window.DocumentIntegration.access(['GENERATED','SAVINGS'].includes(kind)?kind:'REQUEST',id,'ADMIN');
     if(!access||!access.signedUrl)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return access.signedUrl;
   }
   async function fileBytes(file,affiliateId){const response=await fetch(await dossierFileUrl(file.kind,file.id,affiliateId),{credentials:'omit',cache:'no-store'});if(!response.ok)throw new Error('DOCUMENT_DOWNLOAD_FAILED');return response.blob();}
@@ -23866,18 +23867,18 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     const bytes=new Uint8Array(out.length);for(let index=0;index<out.length;index++)bytes[index]=out.charCodeAt(index)&255;return bytes;
   }
   // ZIP en el navegador con los archivos que la cuenta ya puede abrir. Sin compresión (imágenes/PDF ya comprimidos).
-  async function downloadDossierZip({zipName,files,affiliateId,index,onProgress}){
+  async function downloadDossierZip({zipName,folder,files,affiliateId,index,onProgress}){
     requirePermission('affiliates.write');if(!window.JSZip)throw new Error('ZIP_UNAVAILABLE');if(!files||!files.length)throw new Error('ZIP_EMPTY');
     const zip=new window.JSZip(),queue=files.slice(),failed=[];let done=0;
     const worker=async()=>{for(;;){const file=queue.shift();if(!file)return;try{zip.file(file.path,await fileBytes(file,affiliateId),{binary:true});}catch(_){failed.push(file);}done++;if(onProgress)onProgress(done,files.length);}};
     await Promise.all([worker(),worker(),worker()]);
     if(failed.length===files.length)throw new Error('ZIP_FILES_UNAVAILABLE');
     if(index)zip.file(index.name,indexPdf(index.title,index.lines(failed)),{binary:true});
-    if(failed.length)zip.file('ARCHIVOS_NO_INCLUIDOS.txt','No se pudieron descargar estos archivos al preparar el ZIP:\r\n'+failed.map((file)=>file.path).join('\r\n')+'\r\n');
+    if(failed.length)zip.file((folder?folder+'/':'')+'ARCHIVOS_NO_INCLUIDOS.txt','No se pudieron descargar estos archivos al preparar el ZIP:\r\n'+failed.map((file)=>file.path).join('\r\n')+'\r\n');
     saveBlob(await zip.generateAsync({type:'blob',compression:'STORE'}),zipName);
     return Object.freeze({included:files.length-failed.length,failed:failed.length});
   }
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,loanDossier,dossierFileUrl,downloadDossierFile,downloadDossierZip,MAX_DOCUMENT_SIZE});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,requestDossier,dossierFileUrl,downloadDossierFile,downloadDossierZip,MAX_DOCUMENT_SIZE});
 })();
 })();
 /* @@file program-request-repository.js */
@@ -79949,6 +79950,28 @@ Object.assign(window, {
     membership: 'Membresía',
     tours: 'Tours'
   });
+  // H-AFFILIATE-DOSSIER-PROGRAMS-001: una carpeta por programa en este orden; los demás por nombre y Ahorro siempre al final.
+  const PROGRAM_FOLDER = Object.freeze({
+    prestamo: 'Préstamos',
+    membership: 'Membresías',
+    tours: 'Tours'
+  });
+  const PROGRAM_ORDER = Object.freeze(['prestamo', 'membership', 'tours']);
+  const SAVINGS_TYPE = Object.freeze({
+    JOIN: 'Ingreso al ahorro',
+    CHANGE_AMOUNT: 'Cambio de monto',
+    WITHDRAW: 'Retiro de ahorro',
+    TERMINATE: 'Dejar de ahorrar',
+    EXTRAORDINARY_WITHDRAWAL: 'Retiro especial'
+  });
+  const SAVINGS_STATUS = Object.freeze({
+    SUBMITTED: ['Recibida', 'pend'],
+    UNDER_REVIEW: ['En revisión', 'pend'],
+    APPROVED: ['Aprobada', 'ok'],
+    REJECTED: ['Rechazada', 'bad'],
+    CANCELLED: ['Cancelada', 'gray'],
+    SETTLED: ['Pagada', 'ok']
+  });
   const AUDIT_ACTION = Object.freeze({
     CREATE: 'Alta en el padrón',
     UPDATE: 'Actualización de datos',
@@ -79961,7 +79984,9 @@ Object.assign(window, {
   const GENERATED_LABEL = Object.freeze({
     LOAN_APPROVAL: ['Autorización del préstamo', 'AUTORIZACION'],
     PROGRAM_FINANCING_APPROVAL: ['Autorización de financiamiento', 'AUTORIZACION'],
-    MEMBERSHIP_APPROVAL: ['Autorización de membresía', 'AUTORIZACION']
+    MEMBERSHIP_APPROVAL: ['Autorización de membresía', 'AUTORIZACION'],
+    SAVINGS_ENROLLMENT_APPROVAL: ['Autorización de ingreso al ahorro', 'AUTORIZACION'],
+    SAVINGS_WITHDRAWAL_APPROVAL: ['Autorización de retiro de ahorro', 'AUTORIZACION']
   });
   const FIELD_LABEL = Object.freeze(Object.assign(Object.fromEntries(EDIT_FIELDS), {
     financial_union_code: 'Sindicato',
@@ -79972,7 +79997,15 @@ Object.assign(window, {
   }));
   const docStatus = code => DOC_STATUS[code] || ['Estado no catalogado', 'gray'];
   const requestStatus = code => REQUEST_STATUS[code] || ['Estado no catalogado', 'gray'];
-  const programLabel = code => PROGRAM_LABEL[code] || 'Programa';
+  const humanize = code => {
+    const value = String(code || '').replace(/[_-]+/g, ' ').trim().toLowerCase();
+    return value ? value.charAt(0).toUpperCase() + value.slice(1) : 'Programa';
+  };
+  const programLabel = code => PROGRAM_LABEL[code] || humanize(code);
+  const programFolder = code => PROGRAM_FOLDER[code] || humanize(code);
+  const savingsStatus = code => SAVINGS_STATUS[code] || ['Estado no catalogado', 'gray'];
+  // Nombre de archivo legible para ZIP: conserva espacios y acentos; sólo quita caracteres no permitidos.
+  const personFileName = value => String(value || 'Afiliado').replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() || 'Afiliado';
   const fieldLabel = code => FIELD_LABEL[code] || String(code || '').replace(/_raw$/, '').replace(/_/g, ' ');
   const money = value => Number.isFinite(Number(value)) && value !== null && value !== '' ? Number(value).toLocaleString('es-MX', {
     style: 'currency',
@@ -81042,14 +81075,31 @@ Object.assign(window, {
       cap = data.capabilities || {};
     // «Solicitudes» solo existe para las personas autorizadas: el backend entrega capabilities.requests.
     const tab = requestedTab === 'requests' && !cap.requests ? 'general' : requestedTab;
+    const positive = value => Number(value) > 0 ? money(value) : '';
+    const requestRows = requests.map(row => ({
+      key: row.id,
+      folio: row.folio,
+      title: programLabel(row.program_id),
+      amount: positive(row.requested_amount),
+      date: row.created_at,
+      status: requestStatus(row.status)
+    })).concat((data.savings_requests || []).map(row => ({
+      key: 'savings:' + row.id,
+      folio: row.folio,
+      title: 'Ahorro · ' + (SAVINGS_TYPE[row.request_type] || 'Solicitud'),
+      amount: positive(row.requested_amount),
+      date: row.submitted_at,
+      status: savingsStatus(row.status)
+    }))).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
     const [exporting, setExporting] = React.useState(false),
       [exportMsg, setExportMsg] = React.useState('');
     const exportBase = async () => {
       if (exporting) return;
+      const folder = 'Expediente base ' + personFileName(p.full_name || p.display_name),
+        zipName = folder + '.zip';
       const files = baseFiles(data).current.filter(file => file.available).map(file => Object.assign({}, file, {
-        path: file.fileName
+        path: folder + '/' + file.fileName
       }));
-      const zipName = fileSafe(p.numero_control) + '_Expediente_base.zip';
       if (!files.length) {
         setExportMsg('No hay archivos disponibles en el expediente base.');
         return;
@@ -81059,6 +81109,7 @@ Object.assign(window, {
       try {
         const result = await window.AdminAffiliatesRepository.downloadDossierZip({
           zipName,
+          folder,
           files,
           affiliateId: p.id,
           onProgress: (done, total) => setExportMsg('Preparando ' + zipName + ' · ' + done + ' de ' + total + ' archivo(s)…')
@@ -81222,15 +81273,12 @@ Object.assign(window, {
       className: 'aff-boundary'
     }, 'Se requiere program_requests.read para consultar solicitudes.') : h('div', null, h('div', {
       className: 'aff-request-list'
-    }, requests.length ? requests.map(row => {
-      const amount = money(row.requested_amount);
-      return h('div', {
-        key: row.id,
-        className: 'aff-request-row'
-      }, h('span', null, h('strong', null, text(row.folio, 'Sin folio') + ' · ' + programLabel(row.program_id) + (amount ? ' · ' + amount : '')), h('small', null, 'Creada ' + date(row.created_at))), h(Chip, {
-        meta: requestStatus(row.status)
-      }));
-    }) : h(Empty, {
+    }, requestRows.length ? requestRows.map(row => h('div', {
+      key: row.key,
+      className: 'aff-request-row'
+    }, h('span', null, h('strong', null, text(row.folio, 'Sin folio') + ' · ' + row.title + (row.amount ? ' · ' + row.amount : '')), h('small', null, 'Creada ' + date(row.date))), h(Chip, {
+      meta: row.status
+    }))) : h(Empty, {
       title: 'Sin solicitudes',
       sub: 'No hay trámites relacionados con este afiliado.'
     })), h('div', {
@@ -81699,7 +81747,8 @@ Object.assign(window, {
   }
 
   /* H-AFFILIATE-EXPEDIENTE-MODAL-001 — Expediente completo: carpetas desplegables en el mismo lugar, visor y ZIP.
-     02 Préstamos solo aparece cuando el backend entrega capabilities.requests (lista de personas autorizadas). */
+     Las carpetas de programas (y Ahorro, al final) sólo aparecen cuando el backend entrega capabilities.requests /
+     capabilities.savings (lista de personas autorizadas, ADR-116/117). */
   const fileNode = file => ({
     id: 'f:' + file.kind + ':' + file.id,
     folder: false,
@@ -81715,33 +81764,39 @@ Object.assign(window, {
   function countFiles(node) {
     return node.folder ? node.kids.reduce((sum, kid) => sum + countFiles(kid), 0) : 1;
   }
-  function loanFolder(entry, control) {
+  function countAvailable(node) {
+    return node.folder ? node.kids.reduce((sum, kid) => sum + countAvailable(kid), 0) : node.file.available ? 1 : 0;
+  }
+  // Una carpeta por solicitud (programa o Ahorro): documentos guardados al enviarla y PDF generados por SutiApp.
+  function requestFolder(entry, control) {
     const request = entry.request,
+      savings = entry.domain === 'savings',
       folio = text(request.folio, 'Sin folio'),
       prefix = control + '_' + fileSafe(folio) + '_',
-      used = new Map();
+      used = new Map(),
+      id = 'req:' + entry.domain + ':' + request.id;
     const unique = name => {
       const count = (used.get(name) || 0) + 1;
       used.set(name, count);
       return count === 1 ? name : name.replace(/(\.[a-z0-9]+)$/, '_' + count + '$1');
     };
-    const evidence = entry.evidence.map(row => {
+    const evidence = (entry.evidence || []).map(row => {
       const type = row.document_type || {},
         status = row.status_at_submission;
       return fileNode({
-        kind: 'REQUEST',
+        kind: savings ? 'SAVINGS' : 'REQUEST',
         id: row.id,
         label: type.label || 'Documento',
         fileName: unique(prefix + fileSafe(String(type.code || 'DOCUMENTO').toUpperCase()) + '.' + extOf(row.mimeType)),
         mime: row.mimeType,
-        status: docStatus(status),
-        approved: status === 'VERIFIED',
+        status: savings ? ['Copia al enviar', 'gray'] : docStatus(status),
+        approved: !savings && status === 'VERIFIED',
         date: row.created_at,
         available: row.available !== false
       });
     });
     const newest = new Map();
-    entry.generated.forEach(row => {
+    (entry.generated || []).forEach(row => {
       const prior = newest.get(row.document_type);
       if (!prior || (Number(row.business_version) || 1) > (Number(prior.business_version) || 1)) newest.set(row.document_type, row);
     });
@@ -81759,17 +81814,20 @@ Object.assign(window, {
         available: row.status === 'READY'
       });
     });
-    const kids = [folderNode('loan:' + request.id + ':docs', '01 Documentos de la solicitud', evidence, {
-      sub: evidence.length + ' archivo(s) · estado que tenían al enviar la solicitud'
-    }), folderNode('loan:' + request.id + ':generated', '02 Generados por SutiApp', generated)].filter(node => node.kids.length);
-    const amount = money(request.requested_amount);
-    return folderNode('loan:' + request.id, folio, kids, {
-      chip: requestStatus(request.status),
-      date: request.created_at,
-      sub: [amount, countFiles({
+    const kids = [folderNode(id + ':docs', '01 Documentos de la solicitud', evidence, {
+      sub: evidence.length + ' archivo(s) · ' + (savings ? 'copia guardada al enviar la solicitud' : 'estado que tenían al enviar la solicitud')
+    }), folderNode(id + ':generated', '02 Generados por SutiApp', generated)].filter(node => node.kids.length);
+    const files = countFiles({
         folder: true,
         kids
-      }) + ' archivo(s)'].filter(Boolean).join(' · ') + (entry.error ? ' · No se pudieron consultar sus documentos' : '')
+      }),
+      amount = Number(request.requested_amount) > 0 ? money(request.requested_amount) : '';
+    const state = entry.loading ? 'Cargando documentos…' : entry.error ? 'No se pudieron consultar sus documentos' : files ? files + ' archivo(s)' : 'Sin documentos guardados';
+    return folderNode(id, folio, kids, {
+      folio,
+      chip: savings ? savingsStatus(request.status) : requestStatus(request.status),
+      date: savings ? request.submitted_at : request.created_at,
+      sub: [savings ? SAVINGS_TYPE[request.request_type] || 'Solicitud de ahorro' : '', amount, state].filter(Boolean).join(' · ')
     });
   }
   function DossierView({
@@ -81780,14 +81838,20 @@ Object.assign(window, {
       cap = data.capabilities || {},
       control = fileSafe(p.numero_control),
       canDownload = app.admin.has('affiliates.write');
-    const loans = React.useMemo(() => (data.requests || []).filter(row => row.program_id === 'prestamo'), [data]);
+    // Solicitudes de programas (ficha) y de Ahorro; el backend sólo las entrega a las personas autorizadas.
+    const entries = React.useMemo(() => (cap.requests ? (data.requests || []).map(request => ({
+      domain: 'program',
+      request
+    })) : []).concat(cap.savings ? (data.savings_requests || []).map(request => ({
+      domain: 'savings',
+      request
+    })) : []), [data, cap.requests, cap.savings]);
+    const fullName = personFileName(p.full_name || p.display_name);
     const [loanState, setLoanState] = React.useState({
-      phase: cap.requests && loans.length ? 'loading' : 'ready',
+      phase: entries.length ? 'loading' : 'ready',
       rows: []
     });
-    const [expanded, setExpanded] = React.useState({
-        loans: true
-      }),
+    const [expanded, setExpanded] = React.useState({}),
       [selected, setSelected] = React.useState({}),
       [options, setOptions] = React.useState({
         cover: true,
@@ -81805,7 +81869,7 @@ Object.assign(window, {
       };
     }, []);
     React.useEffect(() => {
-      if (!cap.requests || !loans.length) {
+      if (!entries.length) {
         setLoanState({
           phase: 'ready',
           rows: []
@@ -81817,7 +81881,7 @@ Object.assign(window, {
         phase: 'loading',
         rows: []
       });
-      window.AdminAffiliatesRepository.loanDossier(loans).then(rows => {
+      window.AdminAffiliatesRepository.requestDossier(entries).then(rows => {
         if (current) setLoanState({
           phase: 'ready',
           rows
@@ -81831,7 +81895,7 @@ Object.assign(window, {
       return () => {
         current = false;
       };
-    }, [p.id, cap.requests, loans]);
+    }, [p.id, entries]);
     const root = React.useMemo(() => {
       const base = baseFiles(data),
         baseKids = base.current.map(fileNode);
@@ -81840,19 +81904,51 @@ Object.assign(window, {
         chip: ['Solo consulta', 'gray']
       }));
       const kids = [folderNode('base', '01 Expediente base', baseKids)];
-      if (cap.requests) kids.push(folderNode('loans', '02 Préstamos', loanState.rows.map(entry => loanFolder(entry, control)), {
-        sub: loanState.phase === 'loading' ? 'Cargando solicitudes de préstamo…' : loanState.phase === 'error' ? 'No fue posible consultar los préstamos. Recarga la ficha.' : !loans.length ? 'Sin solicitudes de préstamo' : null
-      }));
+      const loaded = new Map(loanState.rows.map(row => [row.domain + ':' + row.request.id, row]));
+      const folderOf = entry => requestFolder(loaded.get(entry.domain + ':' + entry.request.id) || Object.assign({
+        evidence: [],
+        generated: [],
+        loading: loanState.phase === 'loading',
+        error: loanState.phase === 'error'
+      }, entry), control);
+      const groups = new Map();
+      entries.filter(entry => entry.domain === 'program').forEach(entry => {
+        const key = entry.request.program_id || 'otros';
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(entry);
+      });
+      const order = [...groups.keys()].sort((a, b) => {
+        const ia = PROGRAM_ORDER.indexOf(a),
+          ib = PROGRAM_ORDER.indexOf(b);
+        return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || programFolder(a).localeCompare(programFolder(b), 'es');
+      });
+      const savingsEntries = entries.filter(entry => entry.domain === 'savings');
+      order.map(key => [key, programFolder(key), groups.get(key)]).concat(savingsEntries.length ? [['savings', 'Ahorro', savingsEntries]] : []).forEach(([key, label, list], position) => {
+        const folders = list.map(folderOf);
+        kids.push(folderNode('program:' + key, String(position + 2).padStart(2, '0') + ' ' + label, folders, {
+          defaultOpen: true,
+          sub: list.length + ' solicitud(es) · ' + countFiles({
+            folder: true,
+            kids: folders
+          }) + ' archivo(s)'
+        }));
+      });
       return folderNode('root', 'Todo el expediente', kids);
-    }, [data, cap.requests, loanState, loans, control]);
+    }, [data, entries, loanState, control]);
     const index = React.useMemo(() => {
-      const map = new Map();
+      const map = new Map(),
+        parent = new Map();
       (function walk(node) {
         map.set(node.id, node);
-        if (node.folder) node.kids.forEach(walk);
+        if (node.folder) node.kids.forEach(kid => {
+          parent.set(kid.id, node);
+          walk(kid);
+        });
       })(root);
+      map.parentOf = node => parent.get(node.id);
       return map;
     }, [root]);
+    const isOpen = node => expanded[node.id] !== undefined ? expanded[node.id] : !!node.defaultOpen;
     const total = countFiles(root);
     const rows = [];
     (function walk(list, depth) {
@@ -81861,7 +81957,7 @@ Object.assign(window, {
           node,
           depth
         });
-        if (node.folder && expanded[node.id]) walk(node.kids, depth + 1);
+        if (node.folder && isOpen(node)) walk(node.kids, depth + 1);
       });
     })(root.kids, 0);
     // Archivos a incluir en un ZIP según las opciones; una carpeta elegida explícitamente siempre se incluye.
@@ -81876,10 +81972,12 @@ Object.assign(window, {
         path: prefix + file.fileName
       }));
     };
-    const filesOf = nodes => {
-      const out = [];
+    // Todo ZIP lleva una carpeta principal con el mismo nombre que el archivo.
+    const filesOf = (nodes, top) => {
+      const out = [],
+        single = nodes.length === 1 && nodes[0].folder && nodes[0] !== root && top !== undefined && !top.startsWith('Selección ');
       nodes.forEach(node => {
-        if (node.folder) node.kids.forEach(kid => collect(kid, node === root ? '' : folderSafe(node.name) + '/', out));else collect(node, '', out);
+        if (node.folder) node.kids.forEach(kid => collect(kid, top + '/' + (node === root || single ? '' : folderSafe(node.name) + '/'), out));else collect(node, top + '/', out);
       });
       const seen = new Set();
       return out.filter(file => {
@@ -81889,9 +81987,10 @@ Object.assign(window, {
         return true;
       });
     };
-    const runZip = async (nodes, zipName) => {
+    const runZip = async (nodes, top) => {
+      const zipName = top + '.zip';
       if (busy) return;
-      const files = filesOf(nodes);
+      const files = filesOf(nodes, top);
       if (!files.length) {
         setMessage('No hay archivos disponibles con las opciones elegidas.');
         return;
@@ -81899,7 +81998,7 @@ Object.assign(window, {
       setBusy(true);
       setMessage('Preparando ' + zipName + ' · 0 de ' + files.length + ' archivo(s)…');
       const cover = options.cover ? {
-        name: control + '_INDICE.pdf',
+        name: top + '/' + control + '_INDICE.pdf',
         title: 'Índice del expediente · ' + text(p.full_name || p.display_name, 'Afiliado') + ' · Control ' + text(p.numero_control),
         lines: failed => {
           const missing = new Set(failed.map(file => file.path));
@@ -81909,6 +82008,7 @@ Object.assign(window, {
       try {
         const result = await window.AdminAffiliatesRepository.downloadDossierZip({
           zipName,
+          folder: top,
           files,
           affiliateId: p.id,
           index: cover,
@@ -81923,7 +82023,14 @@ Object.assign(window, {
         if (active.current) setBusy(false);
       }
     };
-    const zipNameOf = node => node === root ? control + '_Expediente_completo.zip' : control + '_' + fileSafe(node.name) + '.zip';
+    // Nombre del ZIP: «folio nombre completo» para una solicitud; «carpeta nombre completo» para las demás.
+    const labelOf = node => String(node.name).replace(/^\d+\s+/, '');
+    const zipNameOf = node => {
+      if (node === root) return 'Expediente completo ' + fullName;
+      if (node.folio) return personFileName(node.folio) + ' ' + fullName;
+      for (let up = index.parentOf(node); up; up = index.parentOf(up)) if (up.folio) return personFileName(up.folio) + ' ' + fullName + ' - ' + labelOf(node);
+      return labelOf(node) + ' ' + fullName;
+    };
     const view = async file => {
       if (!file.available) return;
       try {
@@ -81951,7 +82058,7 @@ Object.assign(window, {
       }
     };
     const selectedNodes = Object.keys(selected).map(id => index.get(id)).filter(Boolean),
-      selectedFiles = filesOf(selectedNodes),
+      selectedFiles = filesOf(selectedNodes, 'Selección ' + fullName),
       allSelected = root.kids.length > 0 && root.kids.every(node => selected[node.id]);
     const toggle = id => setSelected(current => {
       const next = Object.assign({}, current);
@@ -81987,9 +82094,9 @@ Object.assign(window, {
       }, node.folder ? h('button', {
         type: 'button',
         className: 'aff-dossier-folder',
-        'aria-expanded': !!expanded[node.id],
+        'aria-expanded': isOpen(node),
         onClick: () => setExpanded(current => Object.assign({}, current, {
-          [node.id]: !current[node.id]
+          [node.id]: !isOpen(node)
         }))
       }, h('span', {
         className: 'aff-dossier-chev',
@@ -82043,7 +82150,7 @@ Object.assign(window, {
       }, h(I, {
         name: 'eye',
         size: 17
-      })), canDownload && (node.folder ? count > 0 : file.available) && h('button', {
+      })), canDownload && (node.folder ? countAvailable(node) > 0 : file.available) && h('button', {
         type: 'button',
         className: 'aff-dossier-act is-download',
         disabled: busy,
@@ -82106,7 +82213,7 @@ Object.assign(window, {
       type: 'button',
       className: 'is-primary',
       disabled: busy || !selectedFiles.length,
-      onClick: () => runZip(selectedNodes, control + '_Seleccion.zip')
+      onClick: () => runZip(selectedNodes, 'Selección ' + fullName)
     }, 'Descargar selección (.zip)')), message && h('p', {
       role: 'status',
       className: 'aff-dossier-msg'

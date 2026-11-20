@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## H-AFFILIATES-GOOGLE-SHEET-001 — 2026-11-19 — Edge Function DEPLOYED / VERIFIED; frontend pendiente de autorización
+## H-AFFILIATES-GOOGLE-SHEET-001 — 2026-11-19 — Edge Function DEPLOYED / VERIFIED; frontend publicado con autorización del propietario
 
 Botón «Abrir en Google Sheets» en Admin › Afiliados (junto a «Exportar Excel», mismo permiso
 `data_exports.read`, oculto en Eliminados): la Edge Function nueva `affiliates-google-sheet` lee
@@ -16,7 +16,10 @@ sin desborde, cero escrituras Supabase, cero errores). `test-admin-affiliates.js
 el código de esta H; cachebuster `affiliates-google-sheet-20261119-001`. Edge Function v1
 desplegada (ACTIVE, `verify_jwt`, 5 marcadores verificados en el bundle remoto) con token de un día
 del propietario; en vivo: anónimo 401, admin 200 / 719 filas en 4.4 s, pestaña escrita, huella de
-`public.affiliates` idéntica antes y después (1091 / 719 / e3612ee5…). Evidencia:
+`public.affiliates` idéntica antes y después (1091 / 719 / e3612ee5…). Publicado: commit 88184cf,
+Pages PASS, sutiapp.com sirve `affiliates-google-sheet-20261119-001` con SHA-256 idéntico al local
+(74a6d703…); el propietario confirmó la pestaña en su hoja. «Membership Google contract» ya fallaba
+en las tres publicaciones previas (ajeno). Evidencia:
 `docs/qa/evidence/affiliates-google-sheet-20261119/`.
 
 ## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — 2026-11-19 — PASS published

@@ -20,7 +20,9 @@ escribir donde el propietario la haga Editor. Sin migración.
 
 Estado: Edge Function `affiliates-google-sheet` v1 desplegada (ACTIVE, `verify_jwt`) y verificada
 en vivo el 2026-11-19: anónimo 401, admin 200 con 719 filas, huella de `public.affiliates` idéntica
-antes y después. Frontend pendiente de autorización de publicación.
+antes y después. Frontend publicado con autorización del propietario el 2026-11-19 (commit
+88184cf, bundle `affiliates-google-sheet-20261119-001`, SHA-256 servido = local); el propietario
+confirmó que la pestaña aparece en su hoja.
 
 ## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — Votaciones y consultas, 2026-11-19 (ADR-114)
 

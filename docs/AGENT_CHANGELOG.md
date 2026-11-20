@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## H-AFFILIATE-DOSSIER-PROGRAMS-001 — 2026-11-20 — migración aplicada en producción; frontend en publicación (autorizado por el propietario)
+## H-AFFILIATE-DOSSIER-PROGRAMS-001 — 2026-11-20 — PASS published (autorizado por el propietario)
 
 Expediente completo de Admin › Afiliados: una carpeta por programa con sus solicitudes (Préstamos,
 Membresías, Tours, después cualquier programa nuevo por nombre) y Ahorro siempre al final; sólo los
@@ -26,6 +26,11 @@ idéntica antes y después (430d818e…). Navegador local tras la migración (co
 al final con retiro (2 archivos), baja sin documentos e ingreso con autorización no generada (sin
 botón de descarga), ZIP `AHO-… NOMBRE.zip` con carpeta igual; cero escrituras. Evidencia:
 `docs/qa/evidence/affiliates-dossier-programs-20261120/`.
+Publicado: commit 079e9f6, Pages y Membership contract PASS; sutiapp.com sirve `2026112004` (bundle
+SHA-256 idéntico al commit, 19000183…). En vivo (control 12098): pestaña Solicitudes con Préstamos,
+Membresías y Ahorro; carpetas 01 Expediente base / 02 Préstamos / 03 Membresías / 04 Ahorro; ZIP
+`Expediente base NOMBRE` y `AHO-… NOMBRE` con carpeta interna igual; sin códigos ni desborde; cero
+escrituras. Rollback: recovery 20261120000200 + revertir 079e9f6 (o `restore/pre-expediente-programas-20261120`).
 
 ## H-AFFILIATE-CARD-FULLNAME-001 — 2026-11-20 — PASS published (autorizado por el propietario)
 

@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## H-AFFILIATE-EXPEDIENTE-MODAL-001 — 2026-11-20 — migración aplicada en producción; frontend en publicación (autorizado por el propietario)
+## H-AFFILIATE-EXPEDIENTE-MODAL-001 — 2026-11-20 — PASS published (autorizado por el propietario)
 
 Admin › Afiliados: el padrón ocupa todo el ancho (columnas Afiliado / Estado / Acceso app /
 Expediente base con barra) y la ficha se abre en una ventana flotante de 720 px (cabecera fija con
@@ -48,6 +48,13 @@ igual; la reversa devuelve el md5 exacto. Migración aplicada (sha256 80bc2ead�
 `schema_migrations`), verificada por cuenta; ensayo de la reversa sobre producción migrada, revertido:
 md5 original exacto. Huella de las 720 solicitudes idéntica antes y después (b6c66169…). Evidencia:
 `docs/qa/evidence/affiliates-expediente-20261120/`.
+Publicado: commit b0096c1, Pages PASS; sutiapp.com sirve `2026112001` en el bundle, el registro del
+worker y `sw.js`, con bundle SHA-256 idéntico al commit (7b37e368…). En vivo con la cuenta del
+propietario: padrón sin panel lateral, ficha de 720 px, 6 pestañas sin códigos, Solicitudes con
+montos, expediente completo con 4 préstamos, visor y ZIP de carpeta desde el dominio real; cero
+escrituras. «Membership Google contract» falla desde el 18-nov (aserción de CSS de Membresías tras
+el rediseño de tarjetas de documentos 0d1cb49), ajeno a esta H. Rollback: recovery SQL + revertir
+b0096c1 (o volver a `restore/pre-affiliates-expediente-20261120`).
 
 ## H-AFFILIATES-GOOGLE-SHEET-001 — 2026-11-19 — Edge Function DEPLOYED / VERIFIED; frontend publicado con autorización del propietario
 

@@ -81095,7 +81095,7 @@ Object.assign(window, {
       [exportMsg, setExportMsg] = React.useState('');
     const exportBase = async () => {
       if (exporting) return;
-      const folder = 'Expediente base ' + personFileName(p.full_name || p.display_name),
+      const folder = personFileName(String(p.numero_control || '').trim() + ' ' + (p.full_name || p.display_name || '')),
         zipName = folder + '.zip';
       const files = baseFiles(data).current.filter(file => file.available).map(file => Object.assign({}, file, {
         path: folder + '/' + file.fileName
@@ -81973,9 +81973,9 @@ Object.assign(window, {
       }));
     };
     // Todo ZIP lleva una carpeta principal con el mismo nombre que el archivo.
-    const filesOf = (nodes, top) => {
+    const filesOf = (nodes, top, selection) => {
       const out = [],
-        single = nodes.length === 1 && nodes[0].folder && nodes[0] !== root && top !== undefined && !top.startsWith('Selección ');
+        single = nodes.length === 1 && nodes[0].folder && nodes[0] !== root && !selection;
       nodes.forEach(node => {
         if (node.folder) node.kids.forEach(kid => collect(kid, top + '/' + (node === root || single ? '' : folderSafe(node.name) + '/'), out));else collect(node, top + '/', out);
       });
@@ -81987,10 +81987,10 @@ Object.assign(window, {
         return true;
       });
     };
-    const runZip = async (nodes, top) => {
+    const runZip = async (nodes, top, selection) => {
       const zipName = top + '.zip';
       if (busy) return;
-      const files = filesOf(nodes, top);
+      const files = filesOf(nodes, top, selection);
       if (!files.length) {
         setMessage('No hay archivos disponibles con las opciones elegidas.');
         return;
@@ -82024,13 +82024,9 @@ Object.assign(window, {
       }
     };
     // Nombre del ZIP: «folio nombre completo» para una solicitud; «carpeta nombre completo» para las demás.
-    const labelOf = node => String(node.name).replace(/^\d+\s+/, '');
-    const zipNameOf = node => {
-      if (node === root) return 'Expediente completo ' + fullName;
-      if (node.folio) return personFileName(node.folio) + ' ' + fullName;
-      for (let up = index.parentOf(node); up; up = index.parentOf(up)) if (up.folio) return personFileName(up.folio) + ' ' + fullName + ' - ' + labelOf(node);
-      return labelOf(node) + ' ' + fullName;
-    };
+    // Nombre de todo ZIP descargado: número de agremiado + espacio + nombre completo (decisión del propietario).
+    const downloadName = personFileName(String(p.numero_control || '').trim() + ' ' + fullName);
+    const zipNameOf = () => downloadName;
     const view = async file => {
       if (!file.available) return;
       try {
@@ -82058,7 +82054,7 @@ Object.assign(window, {
       }
     };
     const selectedNodes = Object.keys(selected).map(id => index.get(id)).filter(Boolean),
-      selectedFiles = filesOf(selectedNodes, 'Selección ' + fullName),
+      selectedFiles = filesOf(selectedNodes, downloadName, true),
       allSelected = root.kids.length > 0 && root.kids.every(node => selected[node.id]);
     const toggle = id => setSelected(current => {
       const next = Object.assign({}, current);
@@ -82213,7 +82209,7 @@ Object.assign(window, {
       type: 'button',
       className: 'is-primary',
       disabled: busy || !selectedFiles.length,
-      onClick: () => runZip(selectedNodes, 'Selección ' + fullName)
+      onClick: () => runZip(selectedNodes, downloadName, true)
     }, 'Descargar selección (.zip)')), message && h('p', {
       role: 'status',
       className: 'aff-dossier-msg'

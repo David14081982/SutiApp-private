@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## H-AFFILIATE-ZIP-NAME-001 — 2026-11-20 — PASS local (corrección pedida por el propietario)
+
+Aclaración del propietario: el «folio» del nombre del ZIP es el número del agremiado
+(`numero_control`), no el folio de cada solicitud. Todo ZIP descargado del expediente —completo,
+base, programa, solicitud, selección y «Exportar expediente» de la ficha— se llama «número + espacio
++ nombre completo» (`11355 LOPEZ DIAZ DANIEL OCTAVIO.zip`) y su carpeta principal se llama igual;
+subcarpetas y archivos sin cambio. INV-257 actualizado. Sin cambios de base de datos. Versión
+`2026112005` en los 4 puntos.
+
 ## H-AFFILIATE-DOSSIER-PROGRAMS-001 — 2026-11-20 — PASS published (autorizado por el propietario)
 
 Expediente completo de Admin › Afiliados: una carpeta por programa con sus solicitudes (Préstamos,

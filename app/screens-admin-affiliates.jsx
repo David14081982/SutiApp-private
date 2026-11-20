@@ -277,7 +277,7 @@
       .sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
     const[exporting,setExporting]=React.useState(false),[exportMsg,setExportMsg]=React.useState('');
     const exportBase=async()=>{
-      if(exporting)return;const folder='Expediente base '+personFileName(p.full_name||p.display_name),zipName=folder+'.zip';
+      if(exporting)return;const folder=personFileName(String(p.numero_control||'').trim()+' '+(p.full_name||p.display_name||'')),zipName=folder+'.zip';
       const files=baseFiles(data).current.filter((file)=>file.available).map((file)=>Object.assign({},file,{path:folder+'/'+file.fileName}));
       if(!files.length){setExportMsg('No hay archivos disponibles en el expediente base.');return;}
       setExporting(true);setExportMsg('Preparando '+zipName+' · '+files.length+' archivo(s) del expediente base. No incluye documentos de préstamos.');
@@ -468,10 +468,10 @@
       const file=node.file;if(file.available&&(!options.approved||file.approved))out.push(Object.assign({},file,{path:prefix+file.fileName}));
     };
     // Todo ZIP lleva una carpeta principal con el mismo nombre que el archivo.
-    const filesOf=(nodes,top)=>{const out=[],single=nodes.length===1&&nodes[0].folder&&nodes[0]!==root&&top!==undefined&&!top.startsWith('Selección ');nodes.forEach((node)=>{if(node.folder)node.kids.forEach((kid)=>collect(kid,top+'/'+(node===root||single?'':folderSafe(node.name)+'/'),out));else collect(node,top+'/',out);});const seen=new Set();return out.filter((file)=>{const key=file.kind+':'+file.id;if(seen.has(key))return false;seen.add(key);return true;});};
-    const runZip=async(nodes,top)=>{
+    const filesOf=(nodes,top,selection)=>{const out=[],single=nodes.length===1&&nodes[0].folder&&nodes[0]!==root&&!selection;nodes.forEach((node)=>{if(node.folder)node.kids.forEach((kid)=>collect(kid,top+'/'+(node===root||single?'':folderSafe(node.name)+'/'),out));else collect(node,top+'/',out);});const seen=new Set();return out.filter((file)=>{const key=file.kind+':'+file.id;if(seen.has(key))return false;seen.add(key);return true;});};
+    const runZip=async(nodes,top,selection)=>{
       const zipName=top+'.zip';
-      if(busy)return;const files=filesOf(nodes,top);
+      if(busy)return;const files=filesOf(nodes,top,selection);
       if(!files.length){setMessage('No hay archivos disponibles con las opciones elegidas.');return;}
       setBusy(true);setMessage('Preparando '+zipName+' · 0 de '+files.length+' archivo(s)…');
       const cover=options.cover?{name:top+'/'+control+'_INDICE.pdf',title:'Índice del expediente · '+text(p.full_name||p.display_name,'Afiliado')+' · Control '+text(p.numero_control),lines:(failed)=>{const missing=new Set(failed.map((file)=>file.path));return ['Generado el '+date(new Date())+' · '+files.length+' archivo(s) · '+zipName,''].concat(files.map((file)=>file.path+'  ·  '+file.status[0]+'  ·  '+shortDate(file.date)+(missing.has(file.path)?'  ·  NO INCLUIDO':'')));}}:null;
@@ -480,16 +480,12 @@
       finally{if(active.current)setBusy(false);}
     };
     // Nombre del ZIP: «folio nombre completo» para una solicitud; «carpeta nombre completo» para las demás.
-    const labelOf=(node)=>String(node.name).replace(/^\d+\s+/,'');
-    const zipNameOf=(node)=>{
-      if(node===root)return 'Expediente completo '+fullName;
-      if(node.folio)return personFileName(node.folio)+' '+fullName;
-      for(let up=index.parentOf(node);up;up=index.parentOf(up))if(up.folio)return personFileName(up.folio)+' '+fullName+' - '+labelOf(node);
-      return labelOf(node)+' '+fullName;
-    };
+    // Nombre de todo ZIP descargado: número de agremiado + espacio + nombre completo (decisión del propietario).
+    const downloadName=personFileName(String(p.numero_control||'').trim()+' '+fullName);
+    const zipNameOf=()=>downloadName;
     const view=async(file)=>{if(!file.available)return;try{const source=await window.AdminAffiliatesRepository.dossierFileUrl(file.kind,file.id,p.id);if(active.current)setViewer({source,mimeType:file.mime,title:file.label});}catch(_){if(active.current)setMessage('No fue posible abrir '+file.label+'.');}};
     const downloadFile=async(file)=>{if(busy)return;setBusy(true);setMessage('Descargando '+file.fileName+'…');try{await window.AdminAffiliatesRepository.downloadDossierFile(file,p.id);if(active.current)setMessage(file.fileName+' descargado.');}catch(_){if(active.current)setMessage('No fue posible descargar '+file.fileName+'.');}finally{if(active.current)setBusy(false);}};
-    const selectedNodes=Object.keys(selected).map((id)=>index.get(id)).filter(Boolean),selectedFiles=filesOf(selectedNodes,'Selección '+fullName),allSelected=root.kids.length>0&&root.kids.every((node)=>selected[node.id]);
+    const selectedNodes=Object.keys(selected).map((id)=>index.get(id)).filter(Boolean),selectedFiles=filesOf(selectedNodes,downloadName,true),allSelected=root.kids.length>0&&root.kids.every((node)=>selected[node.id]);
     const toggle=(id)=>setSelected((current)=>{const next=Object.assign({},current);if(next[id])delete next[id];else next[id]=true;return next;});
     const summary=data.document_summary||{},required=Number(summary.required_count)||0,verified=Number(summary.verified_required_count)||0;
     const row=({node,depth})=>{
@@ -512,7 +508,7 @@
         h('div',{className:'aff-dossier-top'},h('div',null,h('h2',null,'Todo el expediente'),h('p',null,root.kids.length+' elemento(s) · '+total+' archivo(s) en total')),
           canDownload&&h('button',{type:'button','data-dossier-download-all':'true',className:'aff-dossier-zip',disabled:busy||!total,onClick:()=>runZip([root],zipNameOf(root))},h(I,{name:'download',size:18}),' Descargar esta carpeta (.zip)')),
         canDownload&&h('div',{className:'aff-dossier-opts'},h('span',null,'Al descargar, incluir:'),[['cover','Índice en PDF'],['hist','Versiones anteriores'],['approved','Solo aprobados']].map(([key,label])=>h('label',{key},h('input',{type:'checkbox',checked:options[key],onChange:()=>setOptions((current)=>Object.assign({},current,{[key]:!current[key]}))}),label))),
-        canDownload&&selectedNodes.length>0&&h('div',{role:'status',className:'aff-dossier-selbar'},h('span',null,selectedNodes.length+' seleccionado(s) · '+selectedFiles.length+' archivo(s)'),h('button',{type:'button',onClick:()=>setSelected({})},'Quitar selección'),h('button',{type:'button',className:'is-primary',disabled:busy||!selectedFiles.length,onClick:()=>runZip(selectedNodes,'Selección '+fullName)},'Descargar selección (.zip)')),
+        canDownload&&selectedNodes.length>0&&h('div',{role:'status',className:'aff-dossier-selbar'},h('span',null,selectedNodes.length+' seleccionado(s) · '+selectedFiles.length+' archivo(s)'),h('button',{type:'button',onClick:()=>setSelected({})},'Quitar selección'),h('button',{type:'button',className:'is-primary',disabled:busy||!selectedFiles.length,onClick:()=>runZip(selectedNodes,downloadName,true)},'Descargar selección (.zip)')),
         message&&h('p',{role:'status',className:'aff-dossier-msg'},message),
         h('div',{className:'aff-dossier-table'},
           h('div',{className:'aff-dossier-row is-head'+(canDownload?'':' no-select')},canDownload&&h('label',{className:'aff-dossier-check'},h('input',{type:'checkbox','aria-label':'Seleccionar todo',checked:allSelected,onChange:()=>setSelected(allSelected?{}:Object.fromEntries(root.kids.map((node)=>[node.id,true])))})),h('span',null,'Nombre'),h('span',{className:'aff-dossier-status'},'Estado'),h('span',{className:'aff-dossier-date'},'Fecha'),h('span',{className:'aff-dossier-actions'},'Acciones')),

@@ -1,0 +1,39 @@
+{
+  "status": "PASS",
+  "browser": "Chrome",
+  "toolbar": {
+    "buttons": [
+      "Problemas de acceso",
+      "Exportar Excel",
+      "Abrir en Google Sheets",
+      "Nuevo afiliado"
+    ],
+    "archiveViewButtons": 0
+  },
+  "flows": {
+    "success": {
+      "openedUrl": "https://docs.google.com/spreadsheets/d/1a9Qc8Zu2OZGNsCWCwOkWClCJfYvDem4Zlio3GNK1SLA/edit#gid=123456",
+      "toast": "Hoja actualizada: 719 afiliados SUTISSSTESON"
+    },
+    "accessDenied": {
+      "popupClosed": true,
+      "toast": "La hoja no está compartida como Editor con la cuenta de servicio."
+    }
+  },
+  "layout": {
+    "390": {
+      "overflowPx": 0,
+      "actionsWidth": 340
+    },
+    "768": {
+      "overflowPx": 0,
+      "actionsWidth": 380
+    }
+  },
+  "supabaseWrites": [],
+  "functionCalls": [
+    "POST",
+    "POST"
+  ],
+  "pageErrors": []
+}

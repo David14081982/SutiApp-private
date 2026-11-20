@@ -1699,6 +1699,25 @@
         "deployment_status": "NOT_ASSERTED_BY_CODE_INDEX"
       },
       "file": "supabase/migrations/20261104000200_reports_jc_investor_sources.sql"
+    },
+    {
+      "type": "edge_function",
+      "name": "affiliates-google-sheet",
+      "file": "supabase/functions/affiliates-google-sheet/index.ts",
+      "domain": "identity",
+      "source_of_truth": "DERIVED",
+      "aliases": [
+        "Abrir en Google Sheets",
+        "Afiliados SUTISSSTESON",
+        "hoja de afiliados"
+      ],
+      "properties": {
+        "reader": "SELECT public.affiliates where financial_union_code = SUTISSSTESON (exact) + get_data_export_auth_emails; no Supabase writes, no audit row",
+        "permission": "has_admin_permission(data_exports.read), verify_jwt",
+        "google_write": "single atomic batchUpdate to tab \"Afiliados SUTISSSTESON\" of spreadsheet 1a9Qc8Zu2OZGNsCWCwOkWClCJfYvDem4Zlio3GNK1SLA",
+        "service_account": "SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON (sutifinanzas-reader@), scope spreadsheets",
+        "decision": "ADR-115"
+      }
     }
   ],
   "relationships": [
@@ -2729,6 +2748,20 @@
       "from_type": "file",
       "to": "public.get_admin_reports_jc_cash_flow",
       "to_type": "rpc",
+      "type": "USES"
+    },
+    {
+      "from": "supabase/functions/affiliates-google-sheet/index.ts",
+      "from_type": "file",
+      "to": "public.affiliates",
+      "to_type": "table",
+      "type": "READS"
+    },
+    {
+      "from": "app/admin-affiliates-repository.js",
+      "from_type": "file",
+      "to": "affiliates-google-sheet",
+      "to_type": "edge_function",
       "type": "USES"
     }
   ]

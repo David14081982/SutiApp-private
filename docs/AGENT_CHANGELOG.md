@@ -1,5 +1,24 @@
 # Bitácora de agentes
 
+## H-AFFILIATES-GOOGLE-SHEET-001 — 2026-11-19 — Edge Function DEPLOYED / VERIFIED; frontend pendiente de autorización
+
+Botón «Abrir en Google Sheets» en Admin › Afiliados (junto a «Exportar Excel», mismo permiso
+`data_exports.read`, oculto en Eliminados): la Edge Function nueva `affiliates-google-sheet` lee
+los afiliados con AD = «SUTISSSTESON» exacto (719 hoy: 509 Activo, 5 Baja, 205 sin estatus; 3
+archivados) y reemplaza en un solo `batchUpdate` la pestaña «Afiliados SUTISSSTESON» con 36
+columnas y encabezados en español aprobados; después abre la hoja en esa pestaña. Excel del
+panel sin cambios; Supabase sin escrituras ni migración. Worktree aislado desde `origin/main`
+(775773f). Pruebas: focal 13/13 PASS (`scripts/test-affiliates-google-sheet.mjs`); ensayo en seco
+con datos reales (719 filas únicas, 36 celdas por fila, 1.19 MB); navegador sobre el build de
+Pages con función y Google simulados PASS (éxito, acceso denegado, vista Eliminados, 390/768 px
+sin desborde, cero escrituras Supabase, cero errores). `test-admin-affiliates.js` ya fallaba en
+`origin/main` por una aserción vieja de `screens-admin-finanzas.jsx` (ajeno). Bundle: sólo cambia
+el código de esta H; cachebuster `affiliates-google-sheet-20261119-001`. Edge Function v1
+desplegada (ACTIVE, `verify_jwt`, 5 marcadores verificados en el bundle remoto) con token de un día
+del propietario; en vivo: anónimo 401, admin 200 / 719 filas en 4.4 s, pestaña escrita, huella de
+`public.affiliates` idéntica antes y después (1091 / 719 / e3612ee5…). Evidencia:
+`docs/qa/evidence/affiliates-google-sheet-20261119/`.
+
 ## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — 2026-11-19 — PASS published
 
 «Votaciones y consultas»: título y textos editables por tarjeta, fecha de cierre opcional,

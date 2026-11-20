@@ -1,5 +1,12 @@
 # Sistemas Google legacy
 
+## Espejo de afiliados SUTISSSTESON — 2026-11-19 (ADR-115)
+
+Hoja nueva, no legacy: copia derivada de solo lectura de `public.affiliates` que escribe la Edge
+Function `affiliates-google-sheet` en su pestaña dedicada «Afiliados SUTISSSTESON». No toca
+`SutiApp Final`, Apps Script, fórmulas, triggers ni ninguna otra hoja o pestaña, y nada se lee de
+vuelta hacia Supabase.
+
 ## Lectura por receptor existente — 2026-09-21
 
 La reparación de OAuth conserva `SutiApp Final / HISTORIAL P V2` como única fuente

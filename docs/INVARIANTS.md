@@ -589,3 +589,9 @@ Classify the obligation program before resolving a loan fund. Never blanket-igno
 - Sustitución sólo propia, observada y pendiente; verificar nuevo contenido antes de cambiar el vínculo. Eliminar bytes anteriores sólo con exclusividad demostrada; nunca romper otra referencia. Excepción focal autorizada a la inmutabilidad del adjunto pendiente, no a la evidencia de otros dominios.
 - Revisiones obsoletas se descartan. Rechazo sugerido se valida contra la huella vigente dentro de la transacción del writer existente. Ningún fallo introduce mocks, declaraciones de ingreso o valores de ejemplo en producción.
 - Cargas descartadas no pueden registrarse ni volver a cargarse en su ruta; la recuperación mantiene esa protección y los metadatos.
+
+## Afiliados SUTISSSTESON en Google Sheets — ADR-115
+
+- **INV-248:** `affiliates-google-sheet` nunca escribe Supabase: sólo `SELECT` sobre `public.affiliates`, `has_admin_permission` y `get_data_export_auth_emails`; sin insert, update, upsert, delete ni bitácora. La prueba focal lo verifica sobre la fuente y la verificación en vivo compara la huella de `public.affiliates` antes y después.
+- **INV-249:** la hoja contiene exactamente las filas con `financial_union_code = 'SUTISSSTESON'` (coincidencia exacta), completas y sin duplicados (conteo exacto + orden estable `created_at, id`), en el orden de columnas del Excel de afiliados; cualquier otra fila aborta antes de llamar a Google.
+- **INV-250:** sólo se escribe la pestaña «Afiliados SUTISSSTESON» del libro fijo `1a9Qc8Zu2OZGNsCWCwOkWClCJfYvDem4Zlio3GNK1SLA`, en un único `batchUpdate` atómico (o queda la foto anterior o la nueva, nunca una mezcla). El navegador sólo recibe el número de pestaña; la URL está fija en el repositorio.

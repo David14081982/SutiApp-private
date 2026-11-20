@@ -1,5 +1,27 @@
 # Registro de decisiones arquitectónicas
 
+## H-AFFILIATES-GOOGLE-SHEET-001 — Afiliados SUTISSSTESON en Google Sheets, 2026-11-19 (ADR-115)
+
+El propietario pide ver en una hoja de Google
+(`1a9Qc8Zu2OZGNsCWCwOkWClCJfYvDem4Zlio3GNK1SLA`) a todos los afiliados cuya columna AD
+(`financial_union_code`) dice exactamente «SUTISSSTESON», activos y de baja (incluye sin estatus
+y archivados), con las 36 columnas del Excel de afiliados y encabezados en español aprobados.
+Decisiones del propietario: un botón «Abrir en Google Sheets» en Admin › Afiliados actualiza la
+hoja con los datos al momento del clic y la abre; la hoja es de solo lectura y el propietario
+decide con quién la comparte (autoriza expresamente esta salida de PII hacia Google); sin
+bitácora; el Excel del panel queda exactamente igual; en Supabase no se borra ni modifica nada.
+
+Autoridad sin cambios: `public.affiliates` sigue siendo la única fuente. La hoja es una copia
+derivada y reemplazable; nunca se lee de vuelta. Edge Function nueva `affiliates-google-sheet`
+(`verify_jwt`, permiso `data_exports.read`) que sólo lee Supabase y escribe una pestaña dedicada
+«Afiliados SUTISSSTESON» de esa hoja fija con un único `batchUpdate` atómico. Reutiliza la
+cuenta de servicio existente `sutifinanzas-reader@…` con alcance `spreadsheets`: sólo puede
+escribir donde el propietario la haga Editor. Sin migración.
+
+Estado: Edge Function `affiliates-google-sheet` v1 desplegada (ACTIVE, `verify_jwt`) y verificada
+en vivo el 2026-11-19: anónimo 401, admin 200 con 719 filas, huella de `public.affiliates` idéntica
+antes y después. Frontend pendiente de autorización de publicación.
+
 ## H-SUTIAPP-VOTACIONES-CONSULTAS-004 — Votaciones y consultas, 2026-11-19 (ADR-114)
 
 El propietario pide que el módulo de Votaciones sirva también para consultas que no son

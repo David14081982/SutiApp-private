@@ -1138,3 +1138,10 @@ Installation preserved complete fingerprints of 16 original tables and eight wri
 ### H-FINANCE-DOCUMENT-REVIEW-002 — aclaración de autoridad temporal
 
 Por decisión posterior del propietario, los periodos impresos se reportan como evidencia; su aceptabilidad temporal la decide la encargada. El evaluador deja de consultar el calendario como condición de cumplimiento y su ausencia no genera observación. No se elimina ni rellena `payroll_periods`. La vigencia de INE conserva la precisión documental de fecha completa o rango de años; el modelo no inventa fechas. La segunda lectura es acotada al mismo documento vigente y sus contradicciones permanecen manuales. No se altera ninguna autoridad de cuotas, capacidad, saldos o resolución del trámite.
+
+## H-AFFILIATES-GOOGLE-SHEET-001 — Afiliados SUTISSSTESON en Google Sheets
+
+`public.affiliates` sigue siendo la autoridad. La pestaña «Afiliados SUTISSSTESON» del libro
+`1a9Qc8Zu2OZGNsCWCwOkWClCJfYvDem4Zlio3GNK1SLA` es una foto derivada, reemplazada completa en cada
+clic del botón «Abrir en Google Sheets»; nunca es fuente de nada. Lector: Edge Function
+`affiliates-google-sheet`. Escritor de Supabase: ninguno nuevo.

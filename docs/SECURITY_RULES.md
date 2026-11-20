@@ -1,5 +1,16 @@
 # Reglas de seguridad
 
+## Afiliados SUTISSSTESON en Google Sheets — 2026-11-19 (ADR-115)
+
+Salida de PII (CURP, RFC, domicilio, teléfono, correos) hacia Google autorizada expresamente por
+el propietario, quien controla el acceso compartiendo la hoja. La Edge Function exige JWT
+(`verify_jwt`) y `has_admin_permission('data_exports.read')` en backend; el botón sólo se muestra
+con ese permiso, pero la UI no es la seguridad. La cuenta de servicio vive sólo en el secreto
+`SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON`; se valida correo y proyecto exactos y nunca llega al
+navegador. El alcance `spreadsheets` no amplía acceso: Google sólo permite escribir donde la
+cuenta es Editor; las hojas de Reportes JC siguen siendo de solo lectura para ella. Los valores
+se escriben como texto literal (`stringValue`), nunca como fórmula.
+
 ## Afiliados: motivo opcional autorizado — 2026-09-24
 
 H-AFFILIATES-OPTIONAL-REASON-001 cambia exclusivamente la validación de motivo

@@ -23806,6 +23806,15 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
   }
   async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
   async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
+  /* H-AFFILIATES-GOOGLE-SHEET-001: the Edge Function rewrites the read-only SUTISSSTESON tab; the browser only opens it.
+     The URL is fixed here: only the numeric tab id comes from the server. */
+  const GOOGLE_SHEET_URL='https://docs.google.com/spreadsheets/d/1a9Qc8Zu2OZGNsCWCwOkWClCJfYvDem4Zlio3GNK1SLA/edit';
+  async function refreshGoogleSheet(){
+    requirePermission('data_exports.read');const result=await db().functions.invoke('affiliates-google-sheet',{body:{}});
+    if(result.error){let code='SHEET_REFRESH_FAILED';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
+    const data=result.data||{};if(data.status!=='OK'||!Number.isInteger(data.sheet_gid)||data.sheet_gid<0||!Number.isInteger(data.rows))throw new Error('SHEET_REFRESH_FAILED');
+    return Object.freeze({rows:data.rows,refreshedAt:data.refreshed_at,url:GOOGLE_SHEET_URL+'#gid='+data.sheet_gid});
+  }
   async function previewDocumentDelete(affiliateId,documentId){
     requirePermission('affiliates.read');const result=await db().rpc('preview_admin_affiliate_document_delete',{p_affiliate_id:affiliateId,p_document_id:documentId});
     if(result.error)throw result.error;if(!result.data)throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
@@ -23815,7 +23824,7 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
     if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,MAX_DOCUMENT_SIZE});
 })();
 })();
 /* @@file program-request-repository.js */
@@ -81448,6 +81457,7 @@ Object.assign(window, {
       [showArchive, setShowArchive] = React.useState(false),
       [showUpload, setShowUpload] = React.useState(null),
       [exporting, setExporting] = React.useState(false),
+      [sheetBusy, setSheetBusy] = React.useState(false),
       [nonce, setNonce] = React.useState(0),
       [showIssues, setShowIssues] = React.useState(false);
     const selectedRef = React.useRef(selectedId),
@@ -81539,6 +81549,27 @@ Object.assign(window, {
       } finally {
         setExporting(false);
       }
+    };
+    /* H-AFFILIATES-GOOGLE-SHEET-001: the tab opens inside the click (no popup block) and navigates once the snapshot is written. */
+    const sheetError = code => code === 'GOOGLE_ACCESS_DENIED' ? 'La hoja no está compartida como Editor con la cuenta de servicio.' : code === 'GOOGLE_NOT_CONFIGURED' || code === 'GOOGLE_AUTH_FAILED' ? 'La cuenta de Google del servidor no está configurada.' : code === 'EXPORT_PERMISSION_REQUIRED' || code === 'ADMIN_DENIED' ? 'No tienes permiso para actualizar la hoja (data_exports.read).' : 'No fue posible actualizar la hoja de Google. Intenta de nuevo.';
+    const openGoogleSheet = () => {
+      if (sheetBusy) return;
+      const tab = window.open('', '_blank');
+      if (tab) {
+        try {
+          tab.opener = null;
+          tab.document.title = 'Actualizando hoja…';
+          tab.document.body.textContent = 'Actualizando la hoja de afiliados SUTISSSTESON…';
+        } catch (_) {}
+      }
+      setSheetBusy(true);
+      window.AdminAffiliatesRepository.refreshGoogleSheet().then(result => {
+        if (tab && !tab.closed) tab.location.replace(result.url);else window.open(result.url, '_blank', 'noopener');
+        app.toast && app.toast('Hoja actualizada: ' + result.rows + ' afiliados SUTISSSTESON');
+      }).catch(error => {
+        if (tab && !tab.closed) tab.close();
+        app.toast && app.toast(sheetError(error && error.message));
+      }).finally(() => setSheetBusy(false));
     };
     const useSaved = result => {
       setDetail(result);
@@ -81668,7 +81699,14 @@ Object.assign(window, {
     }, h(I, {
       name: 'download',
       size: 17
-    }), exporting ? ' Generando…' : ' Exportar Excel'), !archiveView && app.admin.has('affiliates.write') && h('button', {
+    }), exporting ? ' Generando…' : ' Exportar Excel'), !archiveView && app.admin.has('data_exports.read') && h('button', {
+      className: 'aff-secondary',
+      disabled: sheetBusy,
+      onClick: openGoogleSheet
+    }, h(I, {
+      name: 'grid',
+      size: 17
+    }), sheetBusy ? ' Actualizando hoja…' : ' Abrir en Google Sheets'), !archiveView && app.admin.has('affiliates.write') && h('button', {
       className: 'aff-primary',
       onClick: () => setShowNew(true)
     }, h(I, {

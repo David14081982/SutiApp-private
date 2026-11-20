@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "anonymous": 401,
+  "admin": {
+    "httpStatus": 200,
+    "status": "OK",
+    "error": null,
+    "rows": 719,
+    "sheetGid": 1816806245,
+    "ms": 4398
+  },
+  "before": {
+    "total": 1091,
+    "sutissteson": 719,
+    "digest": "e3612ee58a11d1e94c2a15aba96c70d2"
+  },
+  "after": {
+    "total": 1091,
+    "sutissteson": 719,
+    "digest": "e3612ee58a11d1e94c2a15aba96c70d2"
+  }
+}

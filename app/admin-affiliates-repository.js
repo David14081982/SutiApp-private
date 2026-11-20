@@ -74,6 +74,15 @@
   }
   async function profilePhoto(id){if(!window.AdminRepository.has('assets.read')||!window.AffiliateRepository)return null;try{return await window.AffiliateRepository.getProfilePhoto(id);}catch(_){return null;}}
   async function exportXlsx(filters){requirePermission('data_exports.read');const f=filters||{},exportFilters={};if(f.status)exportFilters.affiliate_status_raw=f.status;return window.DataExportRepository.download('affiliates','xlsx',exportFilters,'Afiliados');}
+  /* H-AFFILIATES-GOOGLE-SHEET-001: the Edge Function rewrites the read-only SUTISSSTESON tab; the browser only opens it.
+     The URL is fixed here: only the numeric tab id comes from the server. */
+  const GOOGLE_SHEET_URL='https://docs.google.com/spreadsheets/d/1a9Qc8Zu2OZGNsCWCwOkWClCJfYvDem4Zlio3GNK1SLA/edit';
+  async function refreshGoogleSheet(){
+    requirePermission('data_exports.read');const result=await db().functions.invoke('affiliates-google-sheet',{body:{}});
+    if(result.error){let code='SHEET_REFRESH_FAILED';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
+    const data=result.data||{};if(data.status!=='OK'||!Number.isInteger(data.sheet_gid)||data.sheet_gid<0||!Number.isInteger(data.rows))throw new Error('SHEET_REFRESH_FAILED');
+    return Object.freeze({rows:data.rows,refreshedAt:data.refreshed_at,url:GOOGLE_SHEET_URL+'#gid='+data.sheet_gid});
+  }
   async function previewDocumentDelete(affiliateId,documentId){
     requirePermission('affiliates.read');const result=await db().rpc('preview_admin_affiliate_document_delete',{p_affiliate_id:affiliateId,p_document_id:documentId});
     if(result.error)throw result.error;if(!result.data)throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
@@ -83,6 +92,6 @@
     if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
     if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,MAX_DOCUMENT_SIZE});
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,MAX_DOCUMENT_SIZE});
 })();
 

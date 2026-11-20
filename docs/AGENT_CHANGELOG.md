@@ -1,5 +1,15 @@
 # Bitácora de agentes
 
+## H-AFFILIATE-ROSTER-FULLNAME-001 — 2026-11-20 — PASS published (autorizado por el propietario)
+
+Admin › Afiliados: cada fila del padrón muestra `full_name` (antes `display_name`) y sus iniciales;
+los nombres largos pueden ocupar dos renglones en lugar de cortarse. La ficha flotante no cambia.
+Versión `2026112002` en los 4 puntos (bundle y worker en `SutiApp.html`; `CACHE` y bundle precargado
+en `sw.js`). Sin cambios de base de datos. Local: `test-admin-affiliates.js` y
+`test-admin-access-impersonation-global-permissions.js` PASS; navegador 1440 y 390 px sin desborde ni
+nombres cortados, cero escrituras. Restablecimiento: etiqueta `restore/pre-padron-fullname-20261120`
+(d6db3f5) o revertir el commit.
+
 ## H-MEMBERSHIP-CONTRACT-CSS-001 — 2026-11-20 — PASS (sólo prueba; autorizado por el propietario)
 
 El flujo «Membership Google contract» fallaba desde el 18-nov: `test-membership-payment-contract.js`

@@ -1,5 +1,54 @@
 # Bitácora de agentes
 
+## H-AFFILIATE-EXPEDIENTE-MODAL-001 — 2026-11-20 — migración aplicada en producción; frontend en publicación (autorizado por el propietario)
+
+Admin › Afiliados: el padrón ocupa todo el ancho (columnas Afiliado / Estado / Acceso app /
+Expediente base con barra) y la ficha se abre en una ventana flotante de 720 px (cabecera fija con
+recargar, anterior/siguiente y cerrar; pestañas; pie con Editar información, Cambiar número de
+control, Cambiar estado / reactivar, Archivar/Restaurar, Exportar expediente y Abrir expediente).
+Se conservan todas las funciones y permisos previos (Eliminados, Problemas de acceso, Excel,
+Google Sheets, Nuevo afiliado, 7 filtros, carga/reemplazo/retiro de documentos, Document Workbench,
+atención asistida, reparación de acceso, auditoría); los diálogos existentes se abren encima de la
+ficha. Nuevo «Expediente completo» (Abrir expediente): 01 Expediente base (vigentes + Versiones
+anteriores) y 02 Préstamos con una carpeta por solicitud (estado Aprobada/Rechazada…), «01
+Documentos de la solicitud» (estado al enviar) y «02 Generados por SutiApp»; carpetas que se
+despliegan en el mismo lugar, visor a pantalla completa, selección múltiple y un ZIP por carpeta
+con Índice en PDF / Versiones anteriores / Solo aprobados. «Exportar expediente» de la ficha baja
+un ZIP sólo con el expediente base. Sin bitácora de descargas (decisión del propietario). Tabla
+única de estados en español: ninguna pestaña muestra códigos internos. Backend (ADR-116): la
+pestaña Solicitudes y la carpeta 02 Préstamos sólo para tres cuentas
+(`affiliate_loan_dossier_private.viewers`, por `auth_user_id`), migración
+`20261120000100_affiliate_loan_dossier_access` con guarda md5 y reversa exacta; validada en PGlite
+10/10 (md5 de producción reproducido, sólo dos cambios en la función, 3 cuentas, sin acceso del
+navegador, segunda ejecución rechazada, reversa exacta, cuenta sin confirmar aborta sin aplicar).
+Worktree aislado desde `origin/main` (1b02b4a). Navegador real sobre el build de Pages con la
+cuenta admin de prueba (antes de la migración): padrón, ficha, 6 pestañas sin códigos, flechas,
+diálogo encima de la ficha y Escape, ZIP base (6 archivos), expediente completo (4 préstamos),
+visor, selección + ZIP con índice PDF válido, 390 px sin desborde; cero escrituras Supabase; únicos
+errores de consola previos (firma de foto de perfil inexistente y `.image-slots.state.json`).
+Bundle: sólo cambian `admin-affiliates-repository.js` y `screens-admin-affiliates.jsx` (177 de
+179 archivos idénticos); versión `2026112001` alineada en los 4 puntos (bundle y registro del worker en
+`SutiApp.html`; `CACHE` y bundle precargado en `sw.js`), convención que las dos publicaciones
+del 19-nov rompieron: sin worker nuevo no aparece el aviso «Hay una versión nueva» y la caché
+acumula bundles. Navegador: escenario 19-nov sin aviso; esta versión con aviso y caché rotada.
+Pruebas: `test-admin-access-impersonation-global-permissions.js` PASS (fallaba por esa
+convención); `test-affiliate-control-change*.js` PASS con el PGlite local enlazado (en la copia
+limpia sólo faltaba esa dependencia local); `test-admin-affiliates.js` PASS tras quitar una
+aserción obsoleta (`belongsToAffiliate`, eliminada de Finanzas el 3-sep en c5e0647; la línea
+anterior ya verifica el filtrado vigente); `test-admin-user-modules.js` y
+`test-admin-refresh.js` PASS. Sin columna Tamaño: ninguna lectura
+documental vigente entrega el tamaño y no se amplió ese contrato.
+Producción (autorizado): punto de restablecimiento antes de tocar nada — etiqueta
+`restore/pre-affiliates-expediente-20261120` (1b02b4a) y copia exacta de la función en
+`affiliate_loan_dossier_restore_private.workbench_20261120` (md5 30aaa263…). Ensayo completo en
+producción dentro de una transacción revertida (migración → 14 cuentas admin → reversa → mismas
+cuentas): sólo las 3 autorizadas reciben solicitudes (con monto); la 4.ª Administrador principal y
+los administradores de módulo con Afiliados dejan de recibirlas; quienes no tienen Afiliados siguen
+igual; la reversa devuelve el md5 exacto. Migración aplicada (sha256 80bc2ead…, registrada en
+`schema_migrations`), verificada por cuenta; ensayo de la reversa sobre producción migrada, revertido:
+md5 original exacto. Huella de las 720 solicitudes idéntica antes y después (b6c66169…). Evidencia:
+`docs/qa/evidence/affiliates-expediente-20261120/`.
+
 ## H-AFFILIATES-GOOGLE-SHEET-001 — 2026-11-19 — Edge Function DEPLOYED / VERIFIED; frontend publicado con autorización del propietario
 
 Botón «Abrir en Google Sheets» en Admin › Afiliados (junto a «Exportar Excel», mismo permiso

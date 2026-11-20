@@ -92,6 +92,59 @@
     if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
     if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,MAX_DOCUMENT_SIZE});
+  /* H-AFFILIATE-EXPEDIENTE-MODAL-001 — expediente completo y descarga ZIP.
+     Solo lectura: cada lista y cada URL firmada las autoriza el backend con las consultas existentes
+     (list_document_evidence / list_generated_document_evidence / document-access). Nada se guarda ni se registra. */
+  function requireIntegration(){if(!window.DocumentIntegration||!window.DocumentIntegration.enabled())throw new Error('LOAN_DOSSIER_UNAVAILABLE');}
+  async function loanDossier(requests){
+    requirePermission('affiliates.read');requireIntegration();
+    const loans=(requests||[]).filter((row)=>row&&row.program_id==='prestamo'),out=[];
+    for(let index=0;index<loans.length;index+=4){
+      out.push(...await Promise.all(loans.slice(index,index+4).map(async(request)=>{
+        try{const[evidence,generated]=await Promise.all([window.DocumentIntegration.evidence(request.id,'REQUEST','ADMIN'),window.DocumentIntegration.generated(request.id,'program','ADMIN')]);return Object.freeze({request,evidence:Object.freeze(evidence||[]),generated:Object.freeze(generated||[]),error:false});}
+        catch(_){return Object.freeze({request,evidence:Object.freeze([]),generated:Object.freeze([]),error:true});}
+      })));
+    }
+    return Object.freeze(out);
+  }
+  async function dossierFileUrl(kind,id,affiliateId){
+    requirePermission('affiliates.read');
+    if(kind==='BASE'){const preview=await previewDocument(id,affiliateId);if(!preview||!preview.signedUrl)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return preview.signedUrl;}
+    requireIntegration();const access=await window.DocumentIntegration.access(kind==='GENERATED'?'GENERATED':'REQUEST',id,'ADMIN');
+    if(!access||!access.signedUrl)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return access.signedUrl;
+  }
+  async function fileBytes(file,affiliateId){const response=await fetch(await dossierFileUrl(file.kind,file.id,affiliateId),{credentials:'omit',cache:'no-store'});if(!response.ok)throw new Error('DOCUMENT_DOWNLOAD_FAILED');return response.blob();}
+  function saveBlob(blob,name){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.rel='noopener';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);}
+  async function downloadDossierFile(file,affiliateId){requirePermission('affiliates.write');saveBlob(await fileBytes(file,affiliateId),file.fileName);}
+  function pdfText(value){return String(value).replace(/[‐-―]/g,'-').replace(/[›»]/g,'>').replace(/…/g,'...').replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[^\x20-\x7E\xA0-\xFF]/g,'?').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');}
+  // Índice PDF mínimo (Helvetica, WinAnsi): texto plano, sin dependencias.
+  function indexPdf(title,lines){
+    const wrapped=[];[title,''].concat(lines).forEach((line,index)=>{let rest=String(line);const width=index===0?80:112;do{wrapped.push(rest.slice(0,width));rest=rest.slice(width);}while(rest.length);});
+    const pages=[];for(let index=0;index<wrapped.length;index+=52)pages.push(wrapped.slice(index,index+52));
+    const objects=[];objects[1]='<< /Type /Catalog /Pages 2 0 R >>';objects[3]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';objects[4]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+    const kids=[];let next=5;
+    pages.forEach((page,pageIndex)=>{const pageId=next++,contentId=next++;let y=752,stream='BT\n';kids.push(pageId+' 0 R');
+      page.forEach((line,lineIndex)=>{const heading=pageIndex===0&&lineIndex===0;stream+=(heading?'/F2 12':'/F1 9')+' Tf\n1 0 0 1 40 '+y+' Tm\n('+pdfText(line)+') Tj\n';y-=heading?20:13.5;});
+      stream+='ET';objects[pageId]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentId+' 0 R >>';objects[contentId]='<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream';});
+    objects[2]='<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+kids.length+' >>';
+    let out='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';const offsets=[];
+    for(let id=1;id<objects.length;id++){offsets[id]=out.length;out+=id+' 0 obj\n'+objects[id]+'\nendobj\n';}
+    const xref=out.length;out+='xref\n0 '+objects.length+'\n0000000000 65535 f \n';for(let id=1;id<objects.length;id++)out+=String(offsets[id]).padStart(10,'0')+' 00000 n \n';
+    out+='trailer\n<< /Size '+objects.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
+    const bytes=new Uint8Array(out.length);for(let index=0;index<out.length;index++)bytes[index]=out.charCodeAt(index)&255;return bytes;
+  }
+  // ZIP en el navegador con los archivos que la cuenta ya puede abrir. Sin compresión (imágenes/PDF ya comprimidos).
+  async function downloadDossierZip({zipName,files,affiliateId,index,onProgress}){
+    requirePermission('affiliates.write');if(!window.JSZip)throw new Error('ZIP_UNAVAILABLE');if(!files||!files.length)throw new Error('ZIP_EMPTY');
+    const zip=new window.JSZip(),queue=files.slice(),failed=[];let done=0;
+    const worker=async()=>{for(;;){const file=queue.shift();if(!file)return;try{zip.file(file.path,await fileBytes(file,affiliateId),{binary:true});}catch(_){failed.push(file);}done++;if(onProgress)onProgress(done,files.length);}};
+    await Promise.all([worker(),worker(),worker()]);
+    if(failed.length===files.length)throw new Error('ZIP_FILES_UNAVAILABLE');
+    if(index)zip.file(index.name,indexPdf(index.title,index.lines(failed)),{binary:true});
+    if(failed.length)zip.file('ARCHIVOS_NO_INCLUIDOS.txt','No se pudieron descargar estos archivos al preparar el ZIP:\r\n'+failed.map((file)=>file.path).join('\r\n')+'\r\n');
+    saveBlob(await zip.generateAsync({type:'blob',compression:'STORE'}),zipName);
+    return Object.freeze({included:files.length-failed.length,failed:failed.length});
+  }
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,loanDossier,dossierFileUrl,downloadDossierFile,downloadDossierZip,MAX_DOCUMENT_SIZE});
 })();
 

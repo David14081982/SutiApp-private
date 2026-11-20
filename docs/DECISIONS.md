@@ -1,5 +1,31 @@
 # Registro de decisiones arquitectónicas
 
+## H-AFFILIATE-EXPEDIENTE-MODAL-001 — Ficha flotante y expediente completo de Afiliados, 2026-11-20 (ADR-116)
+
+El propietario pide, con los diseños `Afiliados.dc.html` y `Main.dc.html` como referencia de
+interfaz (no de comportamiento), que la ficha del afiliado se abra flotante sobre el padrón y que
+exista un expediente completo con todas las solicitudes de préstamo, descargable en ZIP.
+Decisiones del propietario: conservar todas las funciones, botones y permisos actuales; sin
+bitácora por descarga; descargar ZIP = quien puede editar afiliados (`affiliates.write`); la
+pestaña Solicitudes de la ficha y los expedientes de préstamos sólo para
+tres cuentas indicadas por el propietario (resueltas en la migración); sin estado «Por
+vencer» (los documentos no tienen vencimiento); la versión válida es la publicada en GitHub.
+
+Las tres cuentas son «Administrador principal», igual que una cuarta persona, por lo que la regla
+no puede expresarse por rol. Se crea `affiliate_loan_dossier_private.viewers` (por
+`auth_user_id`; el correo sólo resuelve la cuenta confirmada al aplicar, INV-190), fuera del
+contrato protegido de permisos globales (INV-189 intacto: sin roles, asignaciones, catálogo,
+RLS ni Storage). `get_admin_affiliate_workbench` cambia en dos puntos: `capabilities.requests`
+exige además `affiliate_loan_dossier_private.allowed()` y cada solicitud trae
+`requested_amount`. Admin Finanzas y Solicitudes no cambian. Consecuencia aceptada: los accesos
+directos de esa pestaña (Solicitudes generales, financieras, Caja de Ahorro) sólo los ven esas tres
+personas; el resto llega a esos módulos desde el menú. Cambiar la lista es una operación de base de
+datos (no hay pantalla para ello). El expediente completo reutiliza
+`list_admin_affiliate_documents`, `list_document_evidence`, `list_generated_document_evidence`
+y `document-access`; el ZIP se arma en el navegador (JSZip ya cargado) con los archivos que la
+cuenta ya puede abrir. Rollback: `supabase/recovery/20261120000100_affiliate_loan_dossier_access.sql`
+más revertir el commit del frontend.
+
 ## H-AFFILIATES-GOOGLE-SHEET-001 — Afiliados SUTISSSTESON en Google Sheets, 2026-11-19 (ADR-115)
 
 El propietario pide ver en una hoja de Google

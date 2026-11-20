@@ -1,0 +1,141 @@
+{
+  "mode": "before",
+  "at": "2026-11-20T21:49:11.271Z",
+  "state": {
+    "workbench_md5": "30aaa263327efe2069b1350a063e8a1b",
+    "dossier_schema": 0,
+    "migration_recorded": 0,
+    "restore_point": false,
+    "program_requests": 720,
+    "affiliates": 1095,
+    "requests_fingerprint": "b6c66169ea7ad67a25ae4b3708cfd1d8"
+  },
+  "probe": [
+    {
+      "tag": "before",
+      "who": "autorizada_1",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true
+    },
+    {
+      "tag": "before",
+      "who": "autorizada_2",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true
+    },
+    {
+      "tag": "before",
+      "who": "autorizada_3",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_1",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_10",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_2",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_3",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_4",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_5",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_6",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_7",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_8",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_module_admin_9",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false
+    },
+    {
+      "tag": "before",
+      "who": "otro_principal_admin_1",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "mode": "restore-point",
+  "status": "PASS",
+  "schema": "affiliate_loan_dossier_restore_private",
+  "table": "workbench_20261120",
+  "row": {
+    "definition_md5": "30aaa263327efe2069b1350a063e8a1b",
+    "git_tag": "restore/pre-affiliates-expediente-20261120",
+    "created_at": "2026-11-20T21:49:30.590Z"
+  },
+  "state": {
+    "workbench_md5": "30aaa263327efe2069b1350a063e8a1b",
+    "dossier_schema": 0,
+    "migration_recorded": 0,
+    "restore_point": false,
+    "program_requests": 720,
+    "affiliates": 1095,
+    "requests_fingerprint": "b6c66169ea7ad67a25ae4b3708cfd1d8"
+  }
+}

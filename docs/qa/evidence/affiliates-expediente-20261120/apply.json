@@ -1,0 +1,24 @@
+{
+  "mode": "apply",
+  "status": "PASS",
+  "sha": "80bc2eaddcf1b54cb09fb0fd364b6726c89d6d1827d75cf0c713ff2dfbc377e0",
+  "at": "2026-11-20T21:50:27.044Z",
+  "before": {
+    "workbench_md5": "30aaa263327efe2069b1350a063e8a1b",
+    "dossier_schema": 0,
+    "migration_recorded": 0,
+    "restore_point": true,
+    "program_requests": 720,
+    "affiliates": 1095,
+    "requests_fingerprint": "b6c66169ea7ad67a25ae4b3708cfd1d8"
+  },
+  "after": {
+    "workbench_md5": "f96711d0a6570dd1c138438cace701dd",
+    "dossier_schema": 1,
+    "migration_recorded": 1,
+    "restore_point": true,
+    "program_requests": 720,
+    "affiliates": 1095,
+    "requests_fingerprint": "b6c66169ea7ad67a25ae4b3708cfd1d8"
+  }
+}

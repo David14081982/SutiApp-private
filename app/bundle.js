@@ -23824,7 +23824,60 @@ if (typeof window !== 'undefined') window.qrcode = qrcode;
     if(result.error){let code='DOCUMENT_DELETE_UNAVAILABLE';try{const value=await result.error.context.json();code=value.error||code;}catch(_){}throw new Error(code);}
     if(!result.data||!['COMPLETE','PENDING_STORAGE'].includes(result.data.status))throw new Error('DOCUMENT_DELETE_UNAVAILABLE');return Object.freeze(result.data);
   }
-  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,MAX_DOCUMENT_SIZE});
+  /* H-AFFILIATE-EXPEDIENTE-MODAL-001 — expediente completo y descarga ZIP.
+     Solo lectura: cada lista y cada URL firmada las autoriza el backend con las consultas existentes
+     (list_document_evidence / list_generated_document_evidence / document-access). Nada se guarda ni se registra. */
+  function requireIntegration(){if(!window.DocumentIntegration||!window.DocumentIntegration.enabled())throw new Error('LOAN_DOSSIER_UNAVAILABLE');}
+  async function loanDossier(requests){
+    requirePermission('affiliates.read');requireIntegration();
+    const loans=(requests||[]).filter((row)=>row&&row.program_id==='prestamo'),out=[];
+    for(let index=0;index<loans.length;index+=4){
+      out.push(...await Promise.all(loans.slice(index,index+4).map(async(request)=>{
+        try{const[evidence,generated]=await Promise.all([window.DocumentIntegration.evidence(request.id,'REQUEST','ADMIN'),window.DocumentIntegration.generated(request.id,'program','ADMIN')]);return Object.freeze({request,evidence:Object.freeze(evidence||[]),generated:Object.freeze(generated||[]),error:false});}
+        catch(_){return Object.freeze({request,evidence:Object.freeze([]),generated:Object.freeze([]),error:true});}
+      })));
+    }
+    return Object.freeze(out);
+  }
+  async function dossierFileUrl(kind,id,affiliateId){
+    requirePermission('affiliates.read');
+    if(kind==='BASE'){const preview=await previewDocument(id,affiliateId);if(!preview||!preview.signedUrl)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return preview.signedUrl;}
+    requireIntegration();const access=await window.DocumentIntegration.access(kind==='GENERATED'?'GENERATED':'REQUEST',id,'ADMIN');
+    if(!access||!access.signedUrl)throw new Error('DOCUMENT_PREVIEW_UNAVAILABLE');return access.signedUrl;
+  }
+  async function fileBytes(file,affiliateId){const response=await fetch(await dossierFileUrl(file.kind,file.id,affiliateId),{credentials:'omit',cache:'no-store'});if(!response.ok)throw new Error('DOCUMENT_DOWNLOAD_FAILED');return response.blob();}
+  function saveBlob(blob,name){const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;link.rel='noopener';document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);}
+  async function downloadDossierFile(file,affiliateId){requirePermission('affiliates.write');saveBlob(await fileBytes(file,affiliateId),file.fileName);}
+  function pdfText(value){return String(value).replace(/[‐-―]/g,'-').replace(/[›»]/g,'>').replace(/…/g,'...').replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[^\x20-\x7E\xA0-\xFF]/g,'?').replace(/\\/g,'\\\\').replace(/\(/g,'\\(').replace(/\)/g,'\\)');}
+  // Índice PDF mínimo (Helvetica, WinAnsi): texto plano, sin dependencias.
+  function indexPdf(title,lines){
+    const wrapped=[];[title,''].concat(lines).forEach((line,index)=>{let rest=String(line);const width=index===0?80:112;do{wrapped.push(rest.slice(0,width));rest=rest.slice(width);}while(rest.length);});
+    const pages=[];for(let index=0;index<wrapped.length;index+=52)pages.push(wrapped.slice(index,index+52));
+    const objects=[];objects[1]='<< /Type /Catalog /Pages 2 0 R >>';objects[3]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';objects[4]='<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+    const kids=[];let next=5;
+    pages.forEach((page,pageIndex)=>{const pageId=next++,contentId=next++;let y=752,stream='BT\n';kids.push(pageId+' 0 R');
+      page.forEach((line,lineIndex)=>{const heading=pageIndex===0&&lineIndex===0;stream+=(heading?'/F2 12':'/F1 9')+' Tf\n1 0 0 1 40 '+y+' Tm\n('+pdfText(line)+') Tj\n';y-=heading?20:13.5;});
+      stream+='ET';objects[pageId]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents '+contentId+' 0 R >>';objects[contentId]='<< /Length '+stream.length+' >>\nstream\n'+stream+'\nendstream';});
+    objects[2]='<< /Type /Pages /Kids ['+kids.join(' ')+'] /Count '+kids.length+' >>';
+    let out='%PDF-1.4\n%\xE2\xE3\xCF\xD3\n';const offsets=[];
+    for(let id=1;id<objects.length;id++){offsets[id]=out.length;out+=id+' 0 obj\n'+objects[id]+'\nendobj\n';}
+    const xref=out.length;out+='xref\n0 '+objects.length+'\n0000000000 65535 f \n';for(let id=1;id<objects.length;id++)out+=String(offsets[id]).padStart(10,'0')+' 00000 n \n';
+    out+='trailer\n<< /Size '+objects.length+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';
+    const bytes=new Uint8Array(out.length);for(let index=0;index<out.length;index++)bytes[index]=out.charCodeAt(index)&255;return bytes;
+  }
+  // ZIP en el navegador con los archivos que la cuenta ya puede abrir. Sin compresión (imágenes/PDF ya comprimidos).
+  async function downloadDossierZip({zipName,files,affiliateId,index,onProgress}){
+    requirePermission('affiliates.write');if(!window.JSZip)throw new Error('ZIP_UNAVAILABLE');if(!files||!files.length)throw new Error('ZIP_EMPTY');
+    const zip=new window.JSZip(),queue=files.slice(),failed=[];let done=0;
+    const worker=async()=>{for(;;){const file=queue.shift();if(!file)return;try{zip.file(file.path,await fileBytes(file,affiliateId),{binary:true});}catch(_){failed.push(file);}done++;if(onProgress)onProgress(done,files.length);}};
+    await Promise.all([worker(),worker(),worker()]);
+    if(failed.length===files.length)throw new Error('ZIP_FILES_UNAVAILABLE');
+    if(index)zip.file(index.name,indexPdf(index.title,index.lines(failed)),{binary:true});
+    if(failed.length)zip.file('ARCHIVOS_NO_INCLUIDOS.txt','No se pudieron descargar estos archivos al preparar el ZIP:\r\n'+failed.map((file)=>file.path).join('\r\n')+'\r\n');
+    saveBlob(await zip.generateAsync({type:'blob',compression:'STORE'}),zipName);
+    return Object.freeze({included:files.length-failed.length,failed:failed.length});
+  }
+  window.AdminAffiliatesRepository=Object.freeze({list,detail,duplicates,create,update,changeStatus,previewControl,changeControl,controlHistory,archive,restore,accessDiagnosis,accessIssues,accessRepair,documentTypes,documentVersion,uploadDocument,previewDocument,previewDocumentDelete,deleteDocument,profilePhoto,exportXlsx,refreshGoogleSheet,loanDossier,dossierFileUrl,downloadDossierFile,downloadDossierZip,MAX_DOCUMENT_SIZE});
 })();
 })();
 /* @@file program-request-repository.js */
@@ -79868,6 +79921,140 @@ Object.assign(window, {
       size: 32
     }), h('strong', null, title), h('span', null, sub));
   }
+
+  /* H-AFFILIATE-EXPEDIENTE-MODAL-001 — tabla única de estados en español: ningún código interno llega a la pantalla.
+     Textos tomados de los que la app ya usa (Identidad/Documentos y Finanzas). */
+  const DOC_STATUS = Object.freeze({
+    VERIFIED: ['Verificado', 'ok'],
+    PENDING_REVIEW: ['Pendiente de revisión', 'pend'],
+    UNDER_REVIEW: ['En revisión', 'pend'],
+    REJECTED: ['Rechazado', 'bad'],
+    REUPLOAD_REQUIRED: ['Requiere nueva carga', 'bad']
+  });
+  const PROVENANCE = Object.freeze({
+    HUMAN_REVIEWED: 'Revisado por el equipo',
+    HISTORICAL_IMPORT: 'Histórico importado',
+    WORKFLOW_STATUS: 'Registrado por el flujo de revisión'
+  });
+  const REQUEST_STATUS = Object.freeze({
+    submitted: ['Enviada', 'pend'],
+    requires_financial_processing: ['Pendiente de revisión', 'pend'],
+    in_review: ['En revisión', 'pend'],
+    approved: ['Aprobada', 'ok'],
+    rejected: ['Rechazada', 'bad'],
+    cancelled: ['Cancelada', 'gray']
+  });
+  const PROGRAM_LABEL = Object.freeze({
+    prestamo: 'Préstamo',
+    membership: 'Membresía',
+    tours: 'Tours'
+  });
+  const AUDIT_ACTION = Object.freeze({
+    CREATE: 'Alta en el padrón',
+    UPDATE: 'Actualización de datos',
+    STATUS_CHANGE: 'Cambio de estado',
+    ARCHIVE: 'Archivado',
+    RESTORE: 'Restaurado',
+    PROFILE_FIELD_CHANGE: 'Cambio de dato del perfil',
+    ADMIN_DOCUMENT_DELETE: 'Retiro de documento'
+  });
+  const GENERATED_LABEL = Object.freeze({
+    LOAN_APPROVAL: ['Autorización del préstamo', 'AUTORIZACION'],
+    PROGRAM_FINANCING_APPROVAL: ['Autorización de financiamiento', 'AUTORIZACION'],
+    MEMBERSHIP_APPROVAL: ['Autorización de membresía', 'AUTORIZACION']
+  });
+  const FIELD_LABEL = Object.freeze(Object.assign(Object.fromEntries(EDIT_FIELDS), {
+    financial_union_code: 'Sindicato',
+    financial_employee_category_code: 'Categoría',
+    affiliate_status_raw: 'Estado',
+    numero_control: 'Número de control',
+    documents: 'Documentos'
+  }));
+  const docStatus = code => DOC_STATUS[code] || ['Estado no catalogado', 'gray'];
+  const requestStatus = code => REQUEST_STATUS[code] || ['Estado no catalogado', 'gray'];
+  const programLabel = code => PROGRAM_LABEL[code] || 'Programa';
+  const fieldLabel = code => FIELD_LABEL[code] || String(code || '').replace(/_raw$/, '').replace(/_/g, ' ');
+  const money = value => Number.isFinite(Number(value)) && value !== null && value !== '' ? Number(value).toLocaleString('es-MX', {
+    style: 'currency',
+    currency: 'MXN',
+    maximumFractionDigits: 0
+  }) : '';
+  function shortDate(value) {
+    if (!value) return '—';
+    try {
+      return new Intl.DateTimeFormat('es-MX', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }).format(new Date(value));
+    } catch (_) {
+      return '—';
+    }
+  }
+  const catalogLabel = (code, list) => {
+    if (!code) return '';
+    const row = (list || []).find(item => item.code === code);
+    return row ? row.label : String(code).replace(/_/g, ' ').toLowerCase().replace(/^./, c => c.toUpperCase());
+  };
+  function Chip({
+    meta
+  }) {
+    return h('span', {
+      className: 'aff-chip aff-chip-' + (meta[1] || 'gray')
+    }, meta[0]);
+  }
+  const MIME_EXT = Object.freeze({
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
+    'image/gif': 'gif',
+    'application/pdf': 'pdf'
+  });
+  const extOf = mime => MIME_EXT[String(mime || '').toLowerCase()] || 'bin';
+  const fileSafe = value => String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '') || 'SIN_DATO';
+  const folderSafe = value => String(value || 'Carpeta').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'Carpeta';
+  function ymd(value) {
+    const parsed = new Date(value);
+    return Number.isFinite(parsed.getTime()) ? parsed.toISOString().slice(0, 10).replace(/-/g, '') : 'SINFECHA';
+  }
+  // Expediente base: la versión más reciente de cada tipo es la vigente; las demás son versiones anteriores.
+  function baseFiles(data) {
+    const p = data.profile || {},
+      control = fileSafe(p.numero_control),
+      seen = new Set(),
+      current = [],
+      previous = [];
+    (data.documents || []).slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)) || String(b.id).localeCompare(String(a.id))).forEach(row => {
+      const typeId = row.document_type_id || row.type_id,
+        type = row.document_type || {},
+        mime = row.mime_type || row.mimeType,
+        version = Number.isSafeInteger(row.version) && row.version > 0 ? row.version : null;
+      const file = {
+        kind: 'BASE',
+        id: row.id,
+        label: row.type_label || type.label || 'Documento',
+        fileName: control + '_' + fileSafe(String(row.type_code || type.code || 'DOCUMENTO').toUpperCase()) + '_' + ymd(row.created_at) + (version ? '_v' + version : '') + '.' + extOf(mime),
+        mime,
+        status: docStatus(row.status),
+        approved: row.status === 'VERIFIED',
+        date: row.created_at,
+        available: row.available !== false && !row.previewUnavailable
+      };
+      if (seen.has(typeId)) previous.push(Object.assign(file, {
+        status: ['Versión anterior', 'gray']
+      }));else {
+        seen.add(typeId);
+        current.push(file);
+      }
+    });
+    return {
+      current,
+      previous
+    };
+  }
   function Overlay({
     title,
     description,
@@ -80261,7 +80448,7 @@ Object.assign(window, {
       'data-delete-version-list': 'true'
     }, report.documents.map(doc => h('li', {
       key: doc.id
-    }, doc.label + ' · ' + date(doc.created_at) + ' · ' + doc.status))), h('p', null, logical ? 'Las solicitudes conservan su archivo original. Podrás cargar otra versión en el expediente.' : 'No podrán abrirse desde el historial ni Document Workbench. Se conservará la auditoría y podrás cargar el documento correcto.'), report.blocked ? h('div', {
+    }, doc.label + ' · ' + date(doc.created_at) + ' · ' + docStatus(doc.status)[0]))), h('p', null, logical ? 'Las solicitudes conservan su archivo original. Podrás cargar otra versión en el expediente.' : 'No podrán abrirse desde el historial ni Document Workbench. Se conservará la auditoría y podrás cargar el documento correcto.'), report.blocked ? h('div', {
       role: 'alert',
       className: 'aff-alert'
     }, 'Este archivo está vinculado a otros registros. La eliminación está bloqueada para protegerlos.') : h(React.Fragment, null, !logical && h('label', null, h('span', null, 'Motivo de la eliminación'), h('textarea', {
@@ -80459,7 +80646,7 @@ Object.assign(window, {
     }) : h(I, {
       name: mime === 'application/pdf' ? 'doc' : 'image',
       size: 22
-    })), h('span', null, h('strong', null, row.type_label || row.document_type && row.document_type.label || 'Documento'), h('small', null, 'Versión ' + (Number.isSafeInteger(row.version) && row.version > 0 ? row.version : '—') + ' · ' + row.status + ' · ' + date(row.updated_at)), h('small', null, (row.verificationProvenance || 'WORKFLOW_STATUS') + (message ? ' · ' + message : ''))), h(I, {
+    })), h('span', null, h('strong', null, row.type_label || row.document_type && row.document_type.label || 'Documento'), h('small', null, 'Versión ' + (Number.isSafeInteger(row.version) && row.version > 0 ? row.version : '—') + ' · ' + docStatus(row.status)[0] + ' · ' + date(row.updated_at)), h('small', null, (PROVENANCE[row.verificationProvenance] || PROVENANCE.WORKFLOW_STATUS) + (message ? ' · ' + message : ''))), h(I, {
       name: 'eye',
       size: 17
     })), viewer && viewer.context === context && viewer.key === key && h(window.DocumentViewer, {
@@ -80829,10 +81016,14 @@ Object.assign(window, {
   }
   function DetailContent({
     data,
-    tab,
+    tab: requestedTab,
     setTab,
     photo,
     app,
+    editor,
+    nav,
+    onClose,
+    onOpenDossier,
     onEdit,
     onStatus,
     onArchive,
@@ -80849,12 +81040,42 @@ Object.assign(window, {
       requests = data.requests || [],
       audit = data.audit || [],
       cap = data.capabilities || {};
+    // «Solicitudes» solo existe para las personas autorizadas: el backend entrega capabilities.requests.
+    const tab = requestedTab === 'requests' && !cap.requests ? 'general' : requestedTab;
+    const [exporting, setExporting] = React.useState(false),
+      [exportMsg, setExportMsg] = React.useState('');
+    const exportBase = async () => {
+      if (exporting) return;
+      const files = baseFiles(data).current.filter(file => file.available).map(file => Object.assign({}, file, {
+        path: file.fileName
+      }));
+      const zipName = fileSafe(p.numero_control) + '_Expediente_base.zip';
+      if (!files.length) {
+        setExportMsg('No hay archivos disponibles en el expediente base.');
+        return;
+      }
+      setExporting(true);
+      setExportMsg('Preparando ' + zipName + ' · ' + files.length + ' archivo(s) del expediente base. No incluye documentos de préstamos.');
+      try {
+        const result = await window.AdminAffiliatesRepository.downloadDossierZip({
+          zipName,
+          files,
+          affiliateId: p.id,
+          onProgress: (done, total) => setExportMsg('Preparando ' + zipName + ' · ' + done + ' de ' + total + ' archivo(s)…')
+        });
+        setExportMsg(zipName + ' descargado · ' + result.included + ' archivo(s) del expediente base' + (result.failed ? ' · ' + result.failed + ' no se pudieron incluir (ver ARCHIVOS_NO_INCLUIDOS.txt)' : '') + '. No incluye documentos de préstamos.');
+      } catch (_) {
+        setExportMsg('No fue posible preparar el ZIP. Intenta de nuevo.');
+      } finally {
+        setExporting(false);
+      }
+    };
     const required = documents.filter(row => row.required),
       summary = data.document_summary,
       requiredCount = summary ? summary.required_count : required.length,
       verified = summary ? summary.verified_required_count : required.filter(row => row.status === 'VERIFIED').length,
       pending = documents.filter(row => ['PENDING_REVIEW', 'UNDER_REVIEW', 'REUPLOAD_REQUIRED'].includes(row.status)).length;
-    const tabs = [['general', 'Datos generales'], ['affiliation', 'Afiliación'], ['documents', 'Expediente'], ['requests', 'Solicitudes'], ['access', 'Acceso'], ['audit', 'Auditoría']];
+    const tabs = [['general', 'Datos generales'], ['affiliation', 'Afiliación'], ['documents', 'Expediente'], ['requests', 'Solicitudes'], ['access', 'Acceso'], ['audit', 'Auditoría']].filter(([id]) => id !== 'requests' || cap.requests);
     let content;
     if (tab === 'general') content = h('div', null, p.is_archived && h('div', {
       className: 'aff-archive-summary'
@@ -80909,10 +81130,10 @@ Object.assign(window, {
       value: p.affiliation_raw
     }), h(Field, {
       label: 'Sindicato',
-      value: p.financial_union_code
+      value: catalogLabel(p.financial_union_code, (data.options || {}).union)
     }), h(Field, {
       label: 'Categoría',
-      value: p.financial_employee_category_code
+      value: catalogLabel(p.financial_employee_category_code, (data.options || {}).employment_category)
     }), h(Field, {
       label: 'Unidad',
       value: p.unit_raw
@@ -81000,13 +81221,16 @@ Object.assign(window, {
     }, 'Finalizar eliminación'))));else if (tab === 'requests') content = !cap.requests ? h('div', {
       className: 'aff-boundary'
     }, 'Se requiere program_requests.read para consultar solicitudes.') : h('div', null, h('div', {
-      className: 'aff-list'
-    }, requests.length ? requests.map(row => h('div', {
-      key: row.id
-    }, h(I, {
-      name: 'receipt',
-      size: 18
-    }), h('span', null, h('strong', null, row.folio + ' · ' + row.program_id), h('small', null, row.status + ' · ' + date(row.created_at))))) : h(Empty, {
+      className: 'aff-request-list'
+    }, requests.length ? requests.map(row => {
+      const amount = money(row.requested_amount);
+      return h('div', {
+        key: row.id,
+        className: 'aff-request-row'
+      }, h('span', null, h('strong', null, text(row.folio, 'Sin folio') + ' · ' + programLabel(row.program_id) + (amount ? ' · ' + amount : '')), h('small', null, 'Creada ' + date(row.created_at))), h(Chip, {
+        meta: requestStatus(row.status)
+      }));
+    }) : h(Empty, {
       title: 'Sin solicitudes',
       sub: 'No hay trámites relacionados con este afiliado.'
     })), h('div', {
@@ -81050,65 +81274,124 @@ Object.assign(window, {
       className: 'aff-timeline'
     }, audit.length ? audit.map(event => h('div', {
       key: event.id
-    }, h('span', null), h('section', null, h('strong', null, event.action), h('small', null, date(event.at)), h('p', null, text(event.reason, 'Evento registrado')), event.changed_fields && h('em', null, event.changed_fields.join(', '))))) : h(Empty, {
+    }, h('span', null), h('section', null, h('strong', null, AUDIT_ACTION[event.action] || 'Evento administrativo'), h('small', null, date(event.at)), h('p', null, text(event.reason, 'Evento registrado')), event.changed_fields && h('em', null, event.changed_fields.map(fieldLabel).join(', '))))) : h(Empty, {
       title: 'Sin eventos administrativos',
       sub: 'Los cambios nuevos aparecerán aquí con actor, motivo y fecha.'
     }));
+    const canWrite = app.admin.has('affiliates.write'),
+      catalog = data.options || {},
+      meta = ['Control ' + text(p.numero_control), catalogLabel(p.financial_employee_category_code, catalog.employment_category) || p.affiliation_raw, p.unit_raw].filter(Boolean).join(' · ');
     return h('div', {
       'data-admin-affiliate-detail': p.id,
-      className: 'aff-detail'
-    }, h('div', {
-      className: 'aff-profile-head'
+      className: 'aff-detail aff-sheet-content'
+    }, h('header', {
+      className: 'aff-sheet-head'
     }, h(Avatar, {
       row: p,
       photo,
       large: true
     }), h('div', {
-      className: 'aff-profile-identity'
-    }, h('h2', null, text(p.display_name || p.full_name, 'Afiliado')), h('p', null, 'Control ', text(p.numero_control)), h(Badge, {
+      className: 'aff-sheet-identity'
+    }, h('h2', {
+      id: 'aff-sheet-title'
+    }, text(p.display_name || p.full_name, 'Afiliado')), h('p', null, meta), h('div', {
+      className: 'aff-sheet-badges'
+    }, h(Badge, {
       tone: p.is_archived ? 'danger' : statusTone(p.affiliate_status_raw)
-    }, p.is_archived ? 'Archivado' : text(p.affiliate_status_raw, 'Sin estado')), h('small', {
-      className: 'aff-profile-updated'
-    }, 'Última actualización · ' + date(p.updated_at))), h('div', {
-      'data-affiliate-actions': 'header',
-      className: 'aff-profile-actions'
-    }, !p.is_archived && app.admin.has('affiliates.write') && h('button', {
-      className: 'aff-primary',
-      onClick: onEdit
+    }, p.is_archived ? 'Archivado' : text(p.affiliate_status_raw, 'Sin estado')), h('small', null, 'Última actualización · ' + date(p.updated_at)))), h('div', {
+      className: 'aff-sheet-nav'
+    }, h('button', {
+      type: 'button',
+      className: 'aff-sheet-icon',
+      'aria-label': 'Recargar perfil',
+      onClick: onReload
     }, h(I, {
-      name: 'edit',
-      size: 16
-    }), ' Editar información'), !p.is_archived && app.admin.has('affiliates.read') && app.admin.has('affiliates.write') && h(ControlChangeAction, {
+      name: 'refresh',
+      size: 17
+    })), h('button', {
+      type: 'button',
+      className: 'aff-sheet-icon',
+      'aria-label': 'Afiliado anterior',
+      disabled: !nav.prev,
+      onClick: nav.prev || undefined
+    }, h(I, {
+      name: 'chevL',
+      size: 18
+    })), h('button', {
+      type: 'button',
+      className: 'aff-sheet-icon',
+      'aria-label': 'Afiliado siguiente',
+      disabled: !nav.next,
+      onClick: nav.next || undefined
+    }, h(I, {
+      name: 'chevR',
+      size: 18
+    })), h('button', {
+      type: 'button',
+      className: 'aff-sheet-icon is-close',
+      'aria-label': 'Cerrar ficha',
+      onClick: onClose
+    }, h(I, {
+      name: 'close',
+      size: 18
+    })))), editor ? h('div', {
+      className: 'aff-sheet-body is-editing'
+    }, editor) : h(React.Fragment, null, h('nav', {
+      className: 'aff-sheet-tabs',
+      'aria-label': 'Secciones del afiliado'
+    }, tabs.map(([id, label]) => h('button', {
+      key: id,
+      type: 'button',
+      'aria-current': tab === id ? 'page' : undefined,
+      onClick: () => setTab(id)
+    }, label))), h('div', {
+      className: 'aff-detail-scroll aff-sheet-body'
+    }, content), h('footer', {
+      'data-affiliate-actions': 'header',
+      className: 'aff-sheet-foot'
+    }, h('div', {
+      className: 'aff-sheet-foot-admin'
+    }, !p.is_archived && canWrite && h('button', {
+      type: 'button',
+      className: 'aff-sheet-link',
+      onClick: onEdit
+    }, 'Editar información'), !p.is_archived && app.admin.has('affiliates.read') && canWrite && h(ControlChangeAction, {
       key: p.id + ':' + p.updated_at,
       profile: p,
       onReload
-    }), !p.is_archived && app.admin.has('affiliates.write') && h('button', {
+    }), !p.is_archived && canWrite && h('button', {
+      type: 'button',
       className: 'aff-secondary',
       onClick: onStatus
-    }, 'Cambiar estado / reactivar'), app.admin.has('affiliates.write') && h('button', {
+    }, 'Cambiar estado / reactivar'), canWrite && h('button', {
+      type: 'button',
       'data-affiliate-archive': p.is_archived ? 'restore' : 'archive',
       className: p.is_archived ? 'aff-primary' : 'aff-danger-button',
       onClick: onArchive
     }, h(I, {
       name: p.is_archived ? 'refresh' : 'trash',
       size: 16
-    }), p.is_archived ? ' Restaurar' : ' Archivar')), h('button', {
-      className: 'aff-icon-button',
-      'aria-label': 'Recargar perfil',
-      onClick: onReload
+    }), p.is_archived ? ' Restaurar' : ' Archivar')), h('div', {
+      className: 'aff-sheet-foot-main'
+    }, canWrite && cap.documents && h('button', {
+      type: 'button',
+      'data-affiliate-export-base': 'true',
+      className: 'aff-sheet-export',
+      disabled: exporting,
+      title: 'Solo los archivos del expediente base, sin préstamos',
+      onClick: exportBase
     }, h(I, {
-      name: 'refresh',
-      size: 18
-    }))), h('nav', {
-      className: 'aff-tabs',
-      'aria-label': 'Secciones del afiliado'
-    }, tabs.map(([id, label]) => h('button', {
-      key: id,
-      'aria-current': tab === id ? 'page' : undefined,
-      onClick: () => setTab(id)
-    }, label))), h('div', {
-      className: 'aff-detail-scroll'
-    }, content));
+      name: 'download',
+      size: 17
+    }), exporting ? ' Preparando…' : ' Exportar expediente'), cap.documents && h('button', {
+      type: 'button',
+      'data-affiliate-open-dossier': 'true',
+      className: 'aff-sheet-open',
+      onClick: onOpenDossier
+    }, 'Abrir expediente')), exportMsg && h('p', {
+      role: 'status',
+      className: 'aff-sheet-msg'
+    }, exportMsg))));
   }
   function Assistance({
     profile,
@@ -81412,6 +81695,516 @@ Object.assign(window, {
       size: 16
     }))))));
   }
+
+  /* H-AFFILIATE-EXPEDIENTE-MODAL-001 — Expediente completo: carpetas desplegables en el mismo lugar, visor y ZIP.
+     02 Préstamos solo aparece cuando el backend entrega capabilities.requests (lista de personas autorizadas). */
+  const fileNode = file => ({
+    id: 'f:' + file.kind + ':' + file.id,
+    folder: false,
+    name: file.label,
+    file
+  });
+  const folderNode = (id, name, kids, extra) => Object.assign({
+    id,
+    folder: true,
+    name,
+    kids
+  }, extra || {});
+  function countFiles(node) {
+    return node.folder ? node.kids.reduce((sum, kid) => sum + countFiles(kid), 0) : 1;
+  }
+  function loanFolder(entry, control) {
+    const request = entry.request,
+      folio = text(request.folio, 'Sin folio'),
+      prefix = control + '_' + fileSafe(folio) + '_',
+      used = new Map();
+    const unique = name => {
+      const count = (used.get(name) || 0) + 1;
+      used.set(name, count);
+      return count === 1 ? name : name.replace(/(\.[a-z0-9]+)$/, '_' + count + '$1');
+    };
+    const evidence = entry.evidence.map(row => {
+      const type = row.document_type || {},
+        status = row.status_at_submission;
+      return fileNode({
+        kind: 'REQUEST',
+        id: row.id,
+        label: type.label || 'Documento',
+        fileName: unique(prefix + fileSafe(String(type.code || 'DOCUMENTO').toUpperCase()) + '.' + extOf(row.mimeType)),
+        mime: row.mimeType,
+        status: docStatus(status),
+        approved: status === 'VERIFIED',
+        date: row.created_at,
+        available: row.available !== false
+      });
+    });
+    const newest = new Map();
+    entry.generated.forEach(row => {
+      const prior = newest.get(row.document_type);
+      if (!prior || (Number(row.business_version) || 1) > (Number(prior.business_version) || 1)) newest.set(row.document_type, row);
+    });
+    const generated = [...newest.values()].map(row => {
+      const meta = GENERATED_LABEL[row.document_type] || ['Documento generado', 'DOCUMENTO'];
+      return fileNode({
+        kind: 'GENERATED',
+        id: row.id,
+        label: meta[0],
+        fileName: unique(prefix + meta[1] + '_v' + (Number(row.business_version) || 1) + '.pdf'),
+        mime: 'application/pdf',
+        status: row.status === 'READY' ? ['Generado por SutiApp', 'sys'] : row.status === 'FAILED' ? ['No se pudo generar', 'bad'] : ['En preparación', 'pend'],
+        approved: row.status === 'READY',
+        date: row.occurred_at,
+        available: row.status === 'READY'
+      });
+    });
+    const kids = [folderNode('loan:' + request.id + ':docs', '01 Documentos de la solicitud', evidence, {
+      sub: evidence.length + ' archivo(s) · estado que tenían al enviar la solicitud'
+    }), folderNode('loan:' + request.id + ':generated', '02 Generados por SutiApp', generated)].filter(node => node.kids.length);
+    const amount = money(request.requested_amount);
+    return folderNode('loan:' + request.id, folio, kids, {
+      chip: requestStatus(request.status),
+      date: request.created_at,
+      sub: [amount, countFiles({
+        folder: true,
+        kids
+      }) + ' archivo(s)'].filter(Boolean).join(' · ') + (entry.error ? ' · No se pudieron consultar sus documentos' : '')
+    });
+  }
+  function DossierView({
+    data,
+    app
+  }) {
+    const p = data.profile || {},
+      cap = data.capabilities || {},
+      control = fileSafe(p.numero_control),
+      canDownload = app.admin.has('affiliates.write');
+    const loans = React.useMemo(() => (data.requests || []).filter(row => row.program_id === 'prestamo'), [data]);
+    const [loanState, setLoanState] = React.useState({
+      phase: cap.requests && loans.length ? 'loading' : 'ready',
+      rows: []
+    });
+    const [expanded, setExpanded] = React.useState({
+        loans: true
+      }),
+      [selected, setSelected] = React.useState({}),
+      [options, setOptions] = React.useState({
+        cover: true,
+        hist: false,
+        approved: false
+      });
+    const [busy, setBusy] = React.useState(false),
+      [message, setMessage] = React.useState(''),
+      [viewer, setViewer] = React.useState(null),
+      active = React.useRef(true);
+    React.useEffect(() => {
+      active.current = true;
+      return () => {
+        active.current = false;
+      };
+    }, []);
+    React.useEffect(() => {
+      if (!cap.requests || !loans.length) {
+        setLoanState({
+          phase: 'ready',
+          rows: []
+        });
+        return;
+      }
+      let current = true;
+      setLoanState({
+        phase: 'loading',
+        rows: []
+      });
+      window.AdminAffiliatesRepository.loanDossier(loans).then(rows => {
+        if (current) setLoanState({
+          phase: 'ready',
+          rows
+        });
+      }).catch(() => {
+        if (current) setLoanState({
+          phase: 'error',
+          rows: []
+        });
+      });
+      return () => {
+        current = false;
+      };
+    }, [p.id, cap.requests, loans]);
+    const root = React.useMemo(() => {
+      const base = baseFiles(data),
+        baseKids = base.current.map(fileNode);
+      if (base.previous.length) baseKids.push(folderNode('base:previous', 'Versiones anteriores', base.previous.map(fileNode), {
+        kind: 'hist',
+        chip: ['Solo consulta', 'gray']
+      }));
+      const kids = [folderNode('base', '01 Expediente base', baseKids)];
+      if (cap.requests) kids.push(folderNode('loans', '02 Préstamos', loanState.rows.map(entry => loanFolder(entry, control)), {
+        sub: loanState.phase === 'loading' ? 'Cargando solicitudes de préstamo…' : loanState.phase === 'error' ? 'No fue posible consultar los préstamos. Recarga la ficha.' : !loans.length ? 'Sin solicitudes de préstamo' : null
+      }));
+      return folderNode('root', 'Todo el expediente', kids);
+    }, [data, cap.requests, loanState, loans, control]);
+    const index = React.useMemo(() => {
+      const map = new Map();
+      (function walk(node) {
+        map.set(node.id, node);
+        if (node.folder) node.kids.forEach(walk);
+      })(root);
+      return map;
+    }, [root]);
+    const total = countFiles(root);
+    const rows = [];
+    (function walk(list, depth) {
+      list.forEach(node => {
+        rows.push({
+          node,
+          depth
+        });
+        if (node.folder && expanded[node.id]) walk(node.kids, depth + 1);
+      });
+    })(root.kids, 0);
+    // Archivos a incluir en un ZIP según las opciones; una carpeta elegida explícitamente siempre se incluye.
+    const collect = (node, prefix, out) => {
+      if (node.folder) {
+        if (node.kind === 'hist' && !options.hist) return;
+        node.kids.forEach(kid => collect(kid, prefix + folderSafe(node.name) + '/', out));
+        return;
+      }
+      const file = node.file;
+      if (file.available && (!options.approved || file.approved)) out.push(Object.assign({}, file, {
+        path: prefix + file.fileName
+      }));
+    };
+    const filesOf = nodes => {
+      const out = [];
+      nodes.forEach(node => {
+        if (node.folder) node.kids.forEach(kid => collect(kid, node === root ? '' : folderSafe(node.name) + '/', out));else collect(node, '', out);
+      });
+      const seen = new Set();
+      return out.filter(file => {
+        const key = file.kind + ':' + file.id;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+    const runZip = async (nodes, zipName) => {
+      if (busy) return;
+      const files = filesOf(nodes);
+      if (!files.length) {
+        setMessage('No hay archivos disponibles con las opciones elegidas.');
+        return;
+      }
+      setBusy(true);
+      setMessage('Preparando ' + zipName + ' · 0 de ' + files.length + ' archivo(s)…');
+      const cover = options.cover ? {
+        name: control + '_INDICE.pdf',
+        title: 'Índice del expediente · ' + text(p.full_name || p.display_name, 'Afiliado') + ' · Control ' + text(p.numero_control),
+        lines: failed => {
+          const missing = new Set(failed.map(file => file.path));
+          return ['Generado el ' + date(new Date()) + ' · ' + files.length + ' archivo(s) · ' + zipName, ''].concat(files.map(file => file.path + '  ·  ' + file.status[0] + '  ·  ' + shortDate(file.date) + (missing.has(file.path) ? '  ·  NO INCLUIDO' : '')));
+        }
+      } : null;
+      try {
+        const result = await window.AdminAffiliatesRepository.downloadDossierZip({
+          zipName,
+          files,
+          affiliateId: p.id,
+          index: cover,
+          onProgress: (done, count) => {
+            if (active.current) setMessage('Preparando ' + zipName + ' · ' + done + ' de ' + count + ' archivo(s)…');
+          }
+        });
+        if (active.current) setMessage(zipName + ' descargado · ' + result.included + ' archivo(s)' + (result.failed ? ' · ' + result.failed + ' no se pudieron incluir (ver ARCHIVOS_NO_INCLUIDOS.txt)' : '') + '.');
+      } catch (_) {
+        if (active.current) setMessage('No fue posible preparar el ZIP. Intenta de nuevo.');
+      } finally {
+        if (active.current) setBusy(false);
+      }
+    };
+    const zipNameOf = node => node === root ? control + '_Expediente_completo.zip' : control + '_' + fileSafe(node.name) + '.zip';
+    const view = async file => {
+      if (!file.available) return;
+      try {
+        const source = await window.AdminAffiliatesRepository.dossierFileUrl(file.kind, file.id, p.id);
+        if (active.current) setViewer({
+          source,
+          mimeType: file.mime,
+          title: file.label
+        });
+      } catch (_) {
+        if (active.current) setMessage('No fue posible abrir ' + file.label + '.');
+      }
+    };
+    const downloadFile = async file => {
+      if (busy) return;
+      setBusy(true);
+      setMessage('Descargando ' + file.fileName + '…');
+      try {
+        await window.AdminAffiliatesRepository.downloadDossierFile(file, p.id);
+        if (active.current) setMessage(file.fileName + ' descargado.');
+      } catch (_) {
+        if (active.current) setMessage('No fue posible descargar ' + file.fileName + '.');
+      } finally {
+        if (active.current) setBusy(false);
+      }
+    };
+    const selectedNodes = Object.keys(selected).map(id => index.get(id)).filter(Boolean),
+      selectedFiles = filesOf(selectedNodes),
+      allSelected = root.kids.length > 0 && root.kids.every(node => selected[node.id]);
+    const toggle = id => setSelected(current => {
+      const next = Object.assign({}, current);
+      if (next[id]) delete next[id];else next[id] = true;
+      return next;
+    });
+    const summary = data.document_summary || {},
+      required = Number(summary.required_count) || 0,
+      verified = Number(summary.verified_required_count) || 0;
+    const row = ({
+      node,
+      depth
+    }) => {
+      const file = node.file,
+        count = node.folder ? countFiles(node) : 1,
+        isSelected = !!selected[node.id];
+      return h('div', {
+        key: node.id,
+        className: 'aff-dossier-row' + (isSelected ? ' is-selected' : '') + (depth ? ' is-nested' : '') + (canDownload ? '' : ' no-select'),
+        'data-dossier-node': node.id
+      }, canDownload && h('label', {
+        className: 'aff-dossier-check'
+      }, h('input', {
+        type: 'checkbox',
+        'aria-label': 'Seleccionar ' + node.name,
+        checked: isSelected,
+        onChange: () => toggle(node.id)
+      })), h('div', {
+        className: 'aff-dossier-name',
+        style: {
+          paddingLeft: depth * 18
+        }
+      }, node.folder ? h('button', {
+        type: 'button',
+        className: 'aff-dossier-folder',
+        'aria-expanded': !!expanded[node.id],
+        onClick: () => setExpanded(current => Object.assign({}, current, {
+          [node.id]: !current[node.id]
+        }))
+      }, h('span', {
+        className: 'aff-dossier-chev',
+        'aria-hidden': 'true'
+      }, h(I, {
+        name: 'chevR',
+        size: 15
+      })), h('span', {
+        className: 'aff-dossier-ficon',
+        'aria-hidden': 'true'
+      }, h(I, {
+        name: 'folder',
+        size: 18
+      })), h('span', {
+        className: 'aff-dossier-label'
+      }, h('strong', null, node.name), h('small', null, node.sub || node.kids.length + ' elemento(s) · ' + count + ' archivo(s)'), h('span', {
+        className: 'aff-dossier-inline-status'
+      }, h(Chip, {
+        meta: node.chip || ['Carpeta', 'gray']
+      })))) : h('div', {
+        className: 'aff-dossier-file'
+      }, h('button', {
+        type: 'button',
+        className: 'aff-dossier-thumb',
+        disabled: !file.available,
+        'aria-label': 'Ver ' + file.label,
+        onClick: () => view(file)
+      }, h('i'), h('i'), h('i'), h('i'), h('b', null, extOf(file.mime).toUpperCase())), h('span', {
+        className: 'aff-dossier-label'
+      }, h('strong', {
+        title: file.label
+      }, file.label), h('small', {
+        title: file.fileName
+      }, file.available ? file.fileName : 'Archivo no disponible'), h('span', {
+        className: 'aff-dossier-inline-status'
+      }, h(Chip, {
+        meta: file.status
+      }))))), h('span', {
+        className: 'aff-dossier-status'
+      }, h(Chip, {
+        meta: node.folder ? node.chip || ['Carpeta', 'gray'] : file.status
+      })), h('span', {
+        className: 'aff-dossier-date'
+      }, node.folder ? node.date ? shortDate(node.date) : '—' : shortDate(file.date)), h('span', {
+        className: 'aff-dossier-actions'
+      }, !node.folder && file.available && h('button', {
+        type: 'button',
+        className: 'aff-dossier-act',
+        'aria-label': 'Ver ' + file.label,
+        onClick: () => view(file)
+      }, h(I, {
+        name: 'eye',
+        size: 17
+      })), canDownload && (node.folder ? count > 0 : file.available) && h('button', {
+        type: 'button',
+        className: 'aff-dossier-act is-download',
+        disabled: busy,
+        'aria-label': node.folder ? 'Descargar carpeta ' + node.name + ' en ZIP' : 'Descargar ' + file.fileName,
+        onClick: () => node.folder ? runZip([node], zipNameOf(node)) : downloadFile(file)
+      }, h(I, {
+        name: 'download',
+        size: 17
+      }))));
+    };
+    return h('div', {
+      'data-admin-affiliate-dossier': p.id,
+      className: 'aff-dossier-page',
+      'data-noreveal': 'true'
+    }, h('section', {
+      className: 'aff-dossier-person'
+    }, h(Avatar, {
+      row: p,
+      large: true
+    }), h('div', null, h('h2', null, text(p.display_name || p.full_name, 'Afiliado')), h('p', null, ['Control ' + text(p.numero_control), catalogLabel(p.financial_employee_category_code, (data.options || {}).employment_category) || p.affiliation_raw, p.unit_raw].filter(Boolean).join(' · '))), required > 0 && h('div', {
+      className: 'aff-dossier-progress'
+    }, h('div', null, h('span', null, 'Expediente base'), h('strong', null, verified + ' de ' + required + ' verificados')), h('div', {
+      className: 'aff-dossier-bar',
+      'aria-hidden': 'true'
+    }, h('i', {
+      style: {
+        width: Math.min(100, Math.round(verified / required * 100)) + '%'
+      }
+    })))), h('section', {
+      className: 'aff-dossier',
+      'aria-label': 'Contenido del expediente'
+    }, h('div', {
+      className: 'aff-dossier-top'
+    }, h('div', null, h('h2', null, 'Todo el expediente'), h('p', null, root.kids.length + ' elemento(s) · ' + total + ' archivo(s) en total')), canDownload && h('button', {
+      type: 'button',
+      'data-dossier-download-all': 'true',
+      className: 'aff-dossier-zip',
+      disabled: busy || !total,
+      onClick: () => runZip([root], zipNameOf(root))
+    }, h(I, {
+      name: 'download',
+      size: 18
+    }), ' Descargar esta carpeta (.zip)')), canDownload && h('div', {
+      className: 'aff-dossier-opts'
+    }, h('span', null, 'Al descargar, incluir:'), [['cover', 'Índice en PDF'], ['hist', 'Versiones anteriores'], ['approved', 'Solo aprobados']].map(([key, label]) => h('label', {
+      key
+    }, h('input', {
+      type: 'checkbox',
+      checked: options[key],
+      onChange: () => setOptions(current => Object.assign({}, current, {
+        [key]: !current[key]
+      }))
+    }), label))), canDownload && selectedNodes.length > 0 && h('div', {
+      role: 'status',
+      className: 'aff-dossier-selbar'
+    }, h('span', null, selectedNodes.length + ' seleccionado(s) · ' + selectedFiles.length + ' archivo(s)'), h('button', {
+      type: 'button',
+      onClick: () => setSelected({})
+    }, 'Quitar selección'), h('button', {
+      type: 'button',
+      className: 'is-primary',
+      disabled: busy || !selectedFiles.length,
+      onClick: () => runZip(selectedNodes, control + '_Seleccion.zip')
+    }, 'Descargar selección (.zip)')), message && h('p', {
+      role: 'status',
+      className: 'aff-dossier-msg'
+    }, message), h('div', {
+      className: 'aff-dossier-table'
+    }, h('div', {
+      className: 'aff-dossier-row is-head' + (canDownload ? '' : ' no-select')
+    }, canDownload && h('label', {
+      className: 'aff-dossier-check'
+    }, h('input', {
+      type: 'checkbox',
+      'aria-label': 'Seleccionar todo',
+      checked: allSelected,
+      onChange: () => setSelected(allSelected ? {} : Object.fromEntries(root.kids.map(node => [node.id, true])))
+    })), h('span', null, 'Nombre'), h('span', {
+      className: 'aff-dossier-status'
+    }, 'Estado'), h('span', {
+      className: 'aff-dossier-date'
+    }, 'Fecha'), h('span', {
+      className: 'aff-dossier-actions'
+    }, 'Acciones')), rows.map(row))), viewer && window.DocumentViewer && h(window.DocumentViewer, {
+      source: viewer.source,
+      mimeType: viewer.mimeType,
+      title: viewer.title,
+      onClose: () => setViewer(null)
+    }));
+  }
+
+  // Ficha flotante: capa por debajo del visor (10000) y de los diálogos de acción (10050), que se abren encima.
+  function AffiliateSheet({
+    onClose,
+    editing,
+    children
+  }) {
+    const ref = React.useRef(null),
+      close = React.useRef(onClose);
+    close.current = onClose;
+    React.useEffect(() => {
+      const opener = document.activeElement;
+      if (ref.current) ref.current.focus({
+        preventScroll: true
+      });
+      const key = event => {
+        if (event.key !== 'Escape') return;
+        if (document.querySelectorAll('[role="dialog"][aria-modal="true"]').length > 1) return;
+        close.current();
+      };
+      document.addEventListener('keydown', key);
+      return () => {
+        document.removeEventListener('keydown', key);
+        if (opener && typeof opener.focus === 'function' && document.contains(opener)) opener.focus({
+          preventScroll: true
+        });
+      };
+    }, []);
+    return h('div', {
+      className: 'aff-sheet-overlay',
+      'data-admin-affiliate-sheet': 'true',
+      'data-noreveal': 'true'
+    }, h('button', {
+      type: 'button',
+      className: 'aff-sheet-backdrop',
+      'data-press': 'none',
+      tabIndex: -1,
+      'aria-label': 'Cerrar ficha',
+      onClick: () => close.current()
+    }), h('section', {
+      ref,
+      role: 'dialog',
+      'aria-modal': 'true',
+      'aria-labelledby': 'aff-sheet-title',
+      tabIndex: -1,
+      className: 'aff-sheet' + (editing ? ' is-editing' : '')
+    }, children));
+  }
+  function SheetStatus({
+    onClose,
+    children
+  }) {
+    return h('div', {
+      className: 'aff-sheet-content'
+    }, h('header', {
+      className: 'aff-sheet-head is-compact'
+    }, h('h2', {
+      id: 'aff-sheet-title',
+      className: 'aff-sheet-status-title'
+    }, 'Ficha del afiliado'), h('div', {
+      className: 'aff-sheet-nav'
+    }, h('button', {
+      type: 'button',
+      className: 'aff-sheet-icon is-close',
+      'aria-label': 'Cerrar ficha',
+      onClick: onClose
+    }, h(I, {
+      name: 'close',
+      size: 18
+    })))), h('div', {
+      className: 'aff-sheet-body'
+    }, children));
+  }
   function AffiliatesModule({
     app,
     onBack,
@@ -81465,11 +82258,24 @@ Object.assign(window, {
         selectedRef.current = value;
         setSelectedIdState(value);
       };
+    // H-AFFILIATE-EXPEDIENTE-MODAL-001: la ficha se abre flotante al tocar un nombre; nunca debajo ni al lado de la lista.
+    const [open, setOpen] = React.useState(Boolean(initialAffiliateId)),
+      [dossier, setDossier] = React.useState(false);
+    const openAffiliate = id => {
+      setSelectedId(id);
+      setTab('general');
+      setOpen(true);
+    };
+    const closeSheet = () => {
+      setOpen(false);
+      setEditing(false);
+    };
     const openAccess = id => {
       setShowIssues(false);
       setEditing(false);
       setSelectedId(id);
       setTab('access');
+      setOpen(true);
     };
     const updateFilter = (key, value) => setFilters(current => Object.assign({}, current, {
       [key]: value,
@@ -81477,6 +82283,8 @@ Object.assign(window, {
     }));
     const changeView = archived => {
       setArchiveView(archived);
+      setOpen(false);
+      setDossier(false);
       setSelectedId('');
       setDetail(null);
       setPhoto(null);
@@ -81495,7 +82303,6 @@ Object.assign(window, {
         }));
         setData(result);
         setPhase('ready');
-        if (!selectedId && result.items && result.items.length) setSelectedId(result.items[0].id);
       } catch (_) {
         setPhase('error');
         setError('No fue posible consultar el padrón autoritativo.');
@@ -81617,41 +82424,134 @@ Object.assign(window, {
       }).catch(() => {});
     };
     const row = item => {
-      const auth = authMeta(item);
+      const auth = authMeta(item),
+        name = text(item.display_name || item.full_name, 'Sin nombre'),
+        on = open && selectedId === item.id;
+      const meta = (archiveView ? ['Control ' + text(item.numero_control), text(item.archive_reason, 'Sin motivo')] : ['Control ' + text(item.numero_control), catalogLabel(item.financial_employee_category_code, options.categories) || item.affiliation_raw, text(item.historical_email_raw, 'Sin correo')]).filter(Boolean).join(' · ');
+      const required = Number(item.required_count) || 0,
+        verified = Number(item.verified_required_count) || 0,
+        pending = Number(item.pending_document_count) || 0,
+        complete = required > 0 && verified >= required;
+      const note = !required ? 'Sin requisitos configurados' : pending ? pending + ' pendiente(s)' : complete ? 'Completo' : 'Faltan ' + (required - verified) + ' por verificar';
       return h('button', {
         key: item.id,
         type: 'button',
         'data-affiliate-row': item.id,
-        'aria-selected': selectedId === item.id,
-        onClick: () => {
-          setSelectedId(item.id);
-          setTab('general');
-        }
+        'aria-selected': on,
+        'aria-haspopup': 'dialog',
+        'aria-label': 'Abrir ficha de ' + name,
+        onClick: () => openAffiliate(item.id)
       }, h('span', {
         className: 'aff-cell aff-person'
       }, h(Avatar, {
         row: item
-      }), h('span', null, h('strong', null, text(item.display_name || item.full_name, 'Sin nombre')), h('small', null, archiveView ? text(item.archive_reason, 'Sin motivo') : text(item.historical_email_raw, 'Sin correo')))), h('span', {
-        className: 'aff-cell aff-control'
-      }, text(item.numero_control)), h('span', {
+      }), h('span', null, h('strong', null, name), h('small', null, meta))), h('span', {
         className: 'aff-cell'
-      }, text(archiveView ? item.archive_previous_status_raw : item.financial_employee_category_code || item.affiliation_raw)), h('span', {
-        className: 'aff-cell'
-      }, archiveView ? h('span', null, date(item.archived_at), h('small', null, text(item.archived_by_auth_user_id))) : h(Badge, {
+      }, archiveView ? text(item.archive_previous_status_raw) : h(Badge, {
         tone: statusTone(item.affiliate_status_raw)
       }, text(item.affiliate_status_raw, 'Sin estado'))), h('span', {
         className: 'aff-cell'
-      }, h(Badge, {
+      }, archiveView ? h('span', null, date(item.archived_at), h('small', null, text(item.archived_by_auth_user_id))) : h(Badge, {
         tone: auth.tone
-      }, auth.label)), h('span', {
-        className: 'aff-cell aff-docs'
-      }, archiveView ? item.document_count + ' doc(s)' : item.verified_required_count + '/' + item.required_count, h('small', null, archiveView ? item.request_count + ' solicitud(es)' : item.pending_document_count + ' pendiente(s)')), h('span', {
+      }, auth.label)), archiveView ? h('span', {
+        className: 'aff-cell aff-expcell'
+      }, h('strong', null, item.document_count + ' doc(s)'), h('small', null, item.request_count + ' solicitud(es)')) : h('span', {
+        className: 'aff-cell aff-expcell'
+      }, h('strong', null, required ? verified + ' de ' + required + ' verificados' : '—'), h('span', {
+        className: 'aff-expbar',
+        'aria-hidden': 'true'
+      }, h('i', {
+        className: complete ? 'is-complete' : '',
+        style: {
+          width: (required ? Math.min(100, Math.round(verified / required * 100)) : 0) + '%'
+        }
+      })), h('small', {
+        className: pending ? 'aff-warn' : complete ? 'aff-ok' : 'aff-neutral'
+      }, note)), h('span', {
         className: 'aff-cell aff-chevron'
       }, h(I, {
-        name: 'chevronRight',
+        name: 'chevR',
         size: 17
       })));
     };
+    const items = data.items || [],
+      position = items.findIndex(item => item.id === selectedId);
+    const nav = {
+      prev: position > 0 ? () => setSelectedId(items[position - 1].id) : null,
+      next: position >= 0 && position < items.length - 1 ? () => setSelectedId(items[position + 1].id) : null
+    };
+    const sheetReady = Boolean(detail && detail.profile && detail.profile.id === selectedId && detailPhase === 'ready');
+    const detailHandlers = sheetReady ? {
+      onEdit: () => setEditing(true),
+      onStatus: () => setShowStatus(true),
+      onArchive: () => setShowArchive(true),
+      onUpload: typeId => setShowUpload({
+        affiliateId: detail.profile.id,
+        typeId: typeId || ''
+      }),
+      onDelete: row => setShowDelete({
+        row,
+        affiliateId: detail.profile.id
+      }),
+      onResumeDelete: operation => setShowDelete({
+        operation,
+        affiliateId: detail.profile.id
+      }),
+      onReload: () => setNonce(value => value + 1),
+      onOpenModule: (id, context) => onOpenModule(id, Object.assign({
+        from: 'affiliates'
+      }, context)),
+      onSaved: useSaved,
+      onOpenAffiliate: openAccess
+    } : null;
+    if (dossier && sheetReady) return h('div', {
+      'data-admin-affiliates': phase
+    }, header({
+      title: 'Expediente',
+      sub: 'Afiliados › Expediente',
+      onBack: () => setDossier(false)
+    }), window.ActingBanner && h(window.ActingBanner, {}), h(Styles), h('div', {
+      className: 'su-app-scroll aff-page'
+    }, h(DossierView, {
+      key: detail.profile.id,
+      data: detail,
+      app
+    })));
+    const sheet = open && selectedId && h(AffiliateSheet, {
+      onClose: closeSheet,
+      editing: sheetReady && editing
+    }, detailPhase === 'error' ? h(SheetStatus, {
+      onClose: closeSheet
+    }, h('div', {
+      className: 'aff-empty'
+    }, h('strong', null, 'No fue posible abrir el perfil.'), h('button', {
+      className: 'aff-secondary',
+      onClick: () => setNonce(value => value + 1)
+    }, 'Reintentar'))) : !sheetReady ? h(SheetStatus, {
+      onClose: closeSheet
+    }, h('div', {
+      className: 'aff-loading'
+    }, 'Cargando perfil…')) : h(DetailContent, Object.assign({
+      key: detail.profile.id,
+      data: detail,
+      tab,
+      setTab,
+      photo,
+      app,
+      nav,
+      onClose: closeSheet,
+      onOpenDossier: () => {
+        setEditing(false);
+        setDossier(true);
+      },
+      editor: editing ? h(EditProfile, {
+        key: detail.profile.id + ':' + detail.profile.updated_at,
+        profile: detail.profile,
+        options: detail.options || {},
+        onSaved: useSaved,
+        onCancel: () => setEditing(false)
+      }) : null
+    }, detailHandlers)));
     return h('div', {
       'data-admin-affiliates': phase
     }, header({
@@ -81714,7 +82614,7 @@ Object.assign(window, {
       size: 17
     }), ' Nuevo afiliado'))), !archiveView && h('div', {
       className: 'aff-filters'
-    }, h('select', {
+    }, filterField('Estado', filters.status, h('select', {
       value: filters.status,
       onChange: event => updateFilter('status', event.target.value),
       'aria-label': 'Filtrar por estado'
@@ -81723,7 +82623,7 @@ Object.assign(window, {
     }, 'Todos los estados'), (options.statuses || []).map(value => h('option', {
       key: value,
       value
-    }, value))), h('select', {
+    }, value)))), filterField('Acceso app', filters.authLinked, h('select', {
       value: filters.authLinked,
       onChange: event => updateFilter('authLinked', event.target.value === '' ? '' : event.target.value === 'true'),
       'aria-label': 'Filtrar por acceso'
@@ -81733,7 +82633,7 @@ Object.assign(window, {
       value: 'true'
     }, 'Con acceso'), h('option', {
       value: 'false'
-    }, 'Sin acceso')), h('select', {
+    }, 'Sin acceso'))), filterField('Expediente', filters.documentState, h('select', {
       value: filters.documentState,
       onChange: event => updateFilter('documentState', event.target.value),
       'aria-label': 'Filtrar por expediente'
@@ -81745,7 +82645,7 @@ Object.assign(window, {
       value: 'INCOMPLETE'
     }, 'Expediente incompleto'), h('option', {
       value: 'NOT_CONFIGURED'
-    }, 'Sin requisitos configurados')), h('select', {
+    }, 'Sin requisitos configurados'))), filterField('Documentación', filters.pendingDocuments, h('select', {
       value: filters.pendingDocuments,
       onChange: event => updateFilter('pendingDocuments', event.target.value === '' ? '' : event.target.value === 'true'),
       'aria-label': 'Filtrar documentación pendiente'
@@ -81755,24 +82655,27 @@ Object.assign(window, {
       value: 'true'
     }, 'Con pendientes'), h('option', {
       value: 'false'
-    }, 'Sin pendientes')), h('select', {
+    }, 'Sin pendientes'))), filterField('Sindicato', filters.unionCode, h('select', {
       value: filters.unionCode,
+      'aria-label': 'Filtrar por sindicato',
       onChange: event => updateFilter('unionCode', event.target.value)
     }, h('option', {
       value: ''
     }, 'Todos los sindicatos'), (options.unions || []).map(row => h('option', {
       key: row.code,
       value: row.code
-    }, row.label))), h('select', {
+    }, row.label)))), filterField('Categoría', filters.categoryCode, h('select', {
       value: filters.categoryCode,
+      'aria-label': 'Filtrar por categoría',
       onChange: event => updateFilter('categoryCode', event.target.value)
     }, h('option', {
       value: ''
     }, 'Todas las categorías'), (options.categories || []).map(row => h('option', {
       key: row.code,
       value: row.code
-    }, row.label))), h('select', {
+    }, row.label)))), filterField('Orden', '', h('select', {
       value: filters.sort,
+      'aria-label': 'Ordenar padrón',
       onChange: event => updateFilter('sort', event.target.value)
     }, h('option', {
       value: 'name'
@@ -81780,7 +82683,7 @@ Object.assign(window, {
       value: 'control'
     }, 'Número de control'), h('option', {
       value: 'recent'
-    }, 'Actualizados recientemente')))), archiveView && h('div', {
+    }, 'Actualizados recientemente'))))), archiveView && h('div', {
       className: 'aff-archive-note'
     }, 'Los registros archivados conservan el mismo ID, número de control, Auth, expediente, solicitudes e historial.'), h('div', {
       className: 'aff-workbench'
@@ -81788,7 +82691,7 @@ Object.assign(window, {
       className: 'aff-roster'
     }, h('div', {
       className: 'aff-roster-head'
-    }, h('div', null, h('h2', null, archiveView ? 'Eliminados · archivo reversible' : 'Padrón de afiliados'), h('p', null, (data.total || 0).toLocaleString('es-MX') + ' resultado(s) · página ' + data.page + ' de ' + pages)), h('button', {
+    }, h('div', null, h('h2', null, archiveView ? 'Eliminados · archivo reversible' : 'Padrón de afiliados'), h('p', null, (data.total || 0).toLocaleString('es-MX') + ' resultado(s) · página ' + data.page + ' de ' + pages + ' · toca un nombre para abrir su ficha')), h('button', {
       className: 'aff-icon-button',
       'aria-label': 'Recargar padrón',
       onClick: () => setNonce(value => value + 1)
@@ -81797,7 +82700,7 @@ Object.assign(window, {
       size: 18
     }))), h('div', {
       className: 'aff-table-head'
-    }, h('span', null, 'Afiliado'), h('span', null, 'Control'), h('span', null, archiveView ? 'Estado previo' : 'Categoría'), h('span', null, archiveView ? 'Archivado' : 'Estado'), h('span', null, 'Acceso'), h('span', null, archiveView ? 'Historial' : 'Expediente'), h('span')), h('div', {
+    }, h('span', null, 'Afiliado'), h('span', null, archiveView ? 'Estado previo' : 'Estado'), h('span', null, archiveView ? 'Archivado' : 'Acceso app'), h('span', null, archiveView ? 'Historial' : 'Expediente base'), h('span')), h('div', {
       className: 'aff-table-body'
     }, phase === 'loading' && !data.items.length ? h('div', {
       className: 'aff-loading'
@@ -81817,52 +82720,7 @@ Object.assign(window, {
     }, 'Anterior'), h('span', null, data.page + ' / ' + pages), h('button', {
       disabled: data.page >= pages,
       onClick: () => updateFilter('page', data.page + 1)
-    }, 'Siguiente'))), h('section', {
-      className: 'aff-detail-host'
-    }, detailPhase === 'loading' ? h('div', {
-      className: 'aff-loading'
-    }, 'Cargando perfil…') : detailPhase === 'error' ? h('div', {
-      className: 'aff-empty'
-    }, h('strong', null, 'No fue posible abrir el perfil.'), h('button', {
-      className: 'aff-secondary',
-      onClick: () => setNonce(value => value + 1)
-    }, 'Reintentar')) : detail && editing ? h(EditProfile, {
-      key: detail.profile.id + ':' + detail.profile.updated_at,
-      profile: detail.profile,
-      options: detail.options || {},
-      onSaved: useSaved,
-      onCancel: () => setEditing(false)
-    }) : detail ? h(DetailContent, {
-      data: detail,
-      tab,
-      setTab,
-      photo,
-      app,
-      onEdit: () => setEditing(true),
-      onStatus: () => setShowStatus(true),
-      onArchive: () => setShowArchive(true),
-      onUpload: typeId => setShowUpload({
-        affiliateId: detail.profile.id,
-        typeId: typeId || ''
-      }),
-      onDelete: row => setShowDelete({
-        row,
-        affiliateId: detail.profile.id
-      }),
-      onResumeDelete: operation => setShowDelete({
-        operation,
-        affiliateId: detail.profile.id
-      }),
-      onReload: () => setNonce(value => value + 1),
-      onOpenModule: (id, context) => onOpenModule(id, Object.assign({
-        from: 'affiliates'
-      }, context)),
-      onSaved: useSaved,
-      onOpenAffiliate: openAccess
-    }) : h(Empty, {
-      title: 'Selecciona un afiliado',
-      sub: 'Abre su perfil, expediente, solicitudes y auditoría.'
-    }))), showDelete && detail && showDelete.affiliateId === detail.profile.id && h(DocumentDeleteModal, {
+    }, 'Siguiente')))), showDelete && detail && showDelete.affiliateId === detail.profile.id && h(DocumentDeleteModal, {
       profile: detail.profile,
       row: showDelete.row,
       operation: showDelete.operation,
@@ -81898,7 +82756,12 @@ Object.assign(window, {
     }), showIssues && h(AccessIssuesModal, {
       onClose: () => setShowIssues(false),
       onOpen: openAccess
-    })));
+    }), sheet));
+  }
+  function filterField(label, value, control) {
+    return h('label', {
+      className: 'aff-filter' + (value !== '' && value !== undefined && value !== null ? ' is-set' : '')
+    }, h('span', null, label), control);
   }
   function Styles() {
     return h('style', null, `
@@ -81906,15 +82769,39 @@ Object.assign(window, {
 
     .aff-danger-button{border:1px solid #F4C9D4;border-radius:11px;min-height:38px;padding:0 13px;background:#FCE9EE;color:#A00027;font:850 11.5px var(--font);cursor:pointer}
     .aff-view-switch{display:inline-flex;gap:4px;margin-bottom:10px;padding:4px;border-radius:12px;background:var(--surface-2)}.aff-view-switch button{border:0;border-radius:9px;padding:8px 14px;background:transparent;color:var(--ink-3);font:850 11px var(--font);cursor:pointer}.aff-view-switch button[aria-current=page]{background:#fff;color:var(--guinda);box-shadow:var(--neo-sm)}.aff-archive-note,.aff-archive-summary{margin-top:10px;padding:11px 12px;border-radius:11px;background:#FFF3D8;color:#704900;font-size:10.5px;line-height:1.45}.aff-archive-summary{display:grid;gap:3px;margin:0 0 10px}.aff-archive-summary strong{font-size:12px}.aff-document-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.aff-document-card{display:grid;grid-template-columns:48px minmax(0,1fr) 18px;align-items:center;gap:9px;border:1px solid var(--hairline);border-radius:12px;padding:8px;background:#fff;color:var(--ink);text-align:left;cursor:pointer}.aff-document-card>span:nth-child(2){min-width:0}.aff-document-card strong,.aff-document-card small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-document-card strong{font-size:10.5px}.aff-document-card small{margin-top:3px;color:var(--ink-3);font-size:8.5px}.aff-document-thumb{width:48px;height:48px;display:grid;place-items:center;overflow:hidden;border-radius:9px;background:var(--surface-2);color:var(--guinda)}.aff-document-thumb img{width:100%;height:100%;object-fit:cover}
-    .aff-page{padding:14px 16px 26px!important;color:var(--ink)}.aff-toolbar,.aff-roster,.aff-detail-host{background:var(--surface);border:1px solid var(--hairline);border-radius:17px;box-shadow:var(--neo-sm)}.aff-toolbar{padding:12px;margin-bottom:12px}.aff-toolbar-top,.aff-toolbar-actions,.aff-roster-head,.aff-profile-head,.aff-profile-actions,.aff-edit-actions,.aff-modal-actions,.aff-action-pair{display:flex;align-items:center;gap:9px}.aff-toolbar-top{justify-content:space-between}.aff-search{height:40px;min-width:230px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:12px;background:var(--surface-2)}.aff-search input{width:100%;border:0;outline:0;background:transparent;font:650 13px var(--font);color:var(--ink)}.aff-primary,.aff-secondary,.aff-icon-button,.aff-pagination button{border:0;border-radius:11px;min-height:38px;padding:0 13px;font:850 11.5px var(--font);cursor:pointer}.aff-primary{background:var(--grad-guinda-soft);color:#fff}.aff-secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--hairline)}.aff-icon-button{width:38px;padding:0;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}button:disabled{opacity:.48;cursor:not-allowed}.aff-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:10px}.aff-filters select,.aff-input{width:100%;box-sizing:border-box;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2);color:var(--ink);padding:9px 10px;font:650 11.5px var(--font);outline:none}.aff-workbench{display:grid;grid-template-columns:minmax(560px,1.18fr) minmax(330px,.82fr);gap:12px;min-height:610px}.aff-roster,.aff-detail-host{min-width:0;overflow:hidden}.aff-roster{display:flex;flex-direction:column}.aff-roster-head{justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--hairline)}.aff-roster h2{font-size:15px;margin:0}.aff-roster p{font-size:10.5px;color:var(--ink-3);margin:3px 0 0}.aff-table-head,.aff-table-body>button{display:grid;grid-template-columns:minmax(170px,1.35fr) 72px minmax(80px,.75fr) minmax(78px,.65fr) minmax(88px,.72fr) 78px 20px;gap:8px;align-items:center}.aff-table-head{padding:9px 12px;background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.aff-table-body{overflow:auto;max-height:calc(100vh - 315px);min-height:360px}.aff-table-body>button{width:100%;border:0;border-bottom:1px solid var(--hairline);padding:9px 12px;text-align:left;background:#fff;color:var(--ink);font-family:var(--font);cursor:pointer}.aff-table-body>button:hover,.aff-table-body>button[aria-selected=true]{background:#FFF7F9}.aff-table-body>button[aria-selected=true]{box-shadow:inset 3px 0 var(--guinda)}.aff-cell{min-width:0;font-size:10.5px;font-weight:750;overflow:hidden;text-overflow:ellipsis}.aff-person{display:flex;align-items:center;gap:8px}.aff-person>span{min-width:0}.aff-person strong,.aff-person small,.aff-docs small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-person strong{font-size:11.5px}.aff-person small,.aff-docs small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-control{font:750 10px var(--mono)}.aff-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;overflow:hidden;background:var(--guinda-50);color:var(--guinda);font-size:10px;font-weight:900}.aff-avatar.is-large{width:54px;height:54px;border-radius:17px;font-size:15px}.aff-avatar img{width:100%;height:100%;object-fit:cover}.aff-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:850;white-space:nowrap}.aff-ok{color:#087A50!important}.aff-badge.aff-ok{background:#E5F7EF}.aff-danger{color:#A00027!important}.aff-badge.aff-danger{background:#FCE9EE}.aff-warn{color:#8A5A00!important}.aff-badge.aff-warn{background:#FFF3D8}.aff-neutral{color:#60606A!important}.aff-badge.aff-neutral{background:#EFEFF2}.aff-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;border-top:1px solid var(--hairline);font:750 10px var(--mono)}.aff-pagination button{min-height:31px;background:var(--surface-2)}.aff-detail-host{display:flex;min-height:610px}.aff-detail{display:flex;flex-direction:column;min-width:0;width:100%}.aff-profile-head{padding:14px;border-bottom:1px solid var(--hairline);flex-wrap:wrap}.aff-profile-identity{flex:1 1 125px;min-width:0}.aff-profile-head h2{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-profile-head p{margin:3px 0 6px;color:var(--ink-3);font-size:10.5px}.aff-profile-updated{display:block;margin-top:5px;color:var(--ink-3);font-size:8.5px}.aff-profile-actions{flex:1 1 280px;justify-content:flex-end;flex-wrap:wrap}.aff-profile-actions button{min-height:36px;padding:0 10px;white-space:nowrap;font-size:10px}.aff-tabs{display:flex;gap:5px;overflow-x:auto;padding:9px 11px;border-bottom:1px solid var(--hairline)}.aff-tabs button{border:0;border-radius:9px;padding:7px 9px;background:transparent;color:var(--ink-3);font:800 9.5px var(--font);white-space:nowrap}.aff-tabs button[aria-current=page]{background:var(--guinda-50);color:var(--guinda)}.aff-detail-scroll{flex:1;overflow:auto;padding:12px}.aff-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-fact{min-width:0;padding:9px;border-radius:10px;background:var(--surface-2)}.aff-fact span,.aff-modal label>span,.aff-edit label>span{display:block;font-size:9px;font-weight:800;color:var(--ink-3);margin-bottom:4px}.aff-fact strong{display:block;font-size:10.8px;overflow-wrap:anywhere}.aff-list{display:flex;flex-direction:column;gap:7px}.aff-list>div{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--hairline);border-radius:11px}.aff-list span{min-width:0}.aff-list strong,.aff-list small{display:block}.aff-list strong{font-size:10.8px}.aff-list small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}.aff-metric{padding:9px;border-radius:11px;background:var(--surface-2);text-align:center}.aff-metric strong,.aff-metric span{display:block}.aff-metric strong{font-size:16px}.aff-metric span{font-size:8.5px;color:var(--ink-3);margin-top:2px}.aff-block{width:100%;margin-top:10px}.aff-action-pair{margin-top:10px}.aff-action-pair>*{flex:1}.aff-boundary,.aff-access-card,.aff-assistance{padding:12px;border-radius:12px;background:var(--surface-2);font-size:11px;line-height:1.5}.aff-access-card{display:flex;gap:10px}.aff-access-card strong,.aff-access-card p{display:block;margin:0 0 6px}.aff-assistance{margin-top:10px}.aff-assistance p{font-size:10px;color:var(--ink-3)}.aff-assistance small{display:block;margin-top:7px}.aff-timeline>div{display:grid;grid-template-columns:10px 1fr;gap:8px}.aff-timeline>div>span{width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--guinda)}.aff-timeline section{padding-bottom:14px}.aff-timeline strong,.aff-timeline small,.aff-timeline em{display:block}.aff-timeline strong{font-size:11px}.aff-timeline small,.aff-timeline em{font-size:9px;color:var(--ink-3)}.aff-timeline p{font-size:10.5px;margin:4px 0}.aff-empty,.aff-loading{display:flex;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:7px;padding:20px;text-align:center;color:var(--ink-3);font-size:11px}.aff-empty strong{color:var(--ink);font-size:13px}.aff-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:16px;background:rgba(20,18,24,.48);backdrop-filter:blur(3px)}.aff-modal{width:min(480px,100%);max-height:min(820px,calc(100vh - 32px));display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(20,18,24,.3)}.aff-modal.is-wide{width:min(760px,100%)}.aff-modal>header{display:flex;justify-content:space-between;gap:10px;padding:15px 17px;border-bottom:1px solid var(--hairline)}.aff-modal h2{margin:0;font-size:17px}.aff-modal header p{margin:3px 0 0;color:var(--ink-3);font-size:10.5px}.aff-modal header button{width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2)}.aff-modal-body{display:flex;flex-direction:column;gap:10px;overflow:auto;padding:15px 17px}.aff-form-grid,.aff-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-span-2{grid-column:1 / -1}.aff-modal-actions{justify-content:flex-end;padding:12px 17px;border-top:1px solid var(--hairline)}.aff-alert,.aff-duplicate{padding:10px;border-radius:10px;background:#FCE9EE;color:#A00027;font-size:10.5px;font-weight:750}.aff-duplicate>div{margin-top:5px}.aff-edit{width:100%;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;min-height:0;height:min(820px,calc(100dvh - 110px));padding:14px}.aff-edit-heading{flex:none;padding-bottom:10px}.aff-edit-heading strong,.aff-edit-heading small{display:block}.aff-edit-heading small{margin-top:4px;color:var(--ink-3);font-size:10px}.aff-edit>.aff-edit-grid{flex:1;min-height:0;overflow:auto;border:0;margin:0;padding:2px;align-content:start}.aff-edit-footer{flex:none;padding-top:10px;border-top:1px solid var(--hairline);background:var(--surface)}.aff-edit-footer>small{display:block;font-size:10px;color:var(--ink-3);margin:4px 0}.aff-edit-actions{justify-content:flex-end;margin-top:8px}.aff-document-entry{min-width:0}.aff-document-entry>.aff-document-card{width:100%}.aff-document-replace{width:100%;margin-top:5px}.aff-document-actions{margin:0 0 10px;flex-wrap:wrap}
-    @media(max-width:1279px){.aff-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.aff-workbench{grid-template-columns:minmax(430px,1.05fr) minmax(300px,.95fr)}.aff-table-head,.aff-table-body>button{grid-template-columns:minmax(150px,1.2fr) 68px minmax(72px,.7fr) minmax(72px,.65fr) 78px 20px}.aff-table-head>:nth-child(6),.aff-docs{display:none}}
-    @media(min-width:1024px) and (max-width:1100px){.aff-workbench{grid-template-columns:minmax(0,1fr)}.aff-detail-host{margin-top:12px}.aff-table-body{max-height:430px}.aff-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
-    @media(max-width:1023px){.aff-page{padding:12px 12px 90px!important}.aff-toolbar-top{align-items:stretch;flex-direction:column}.aff-toolbar-actions>*{flex:1}.aff-filters{display:flex;overflow-x:auto}.aff-filters select{min-width:150px}.aff-workbench{display:block}.aff-roster{min-height:520px}.aff-detail-host{margin-top:12px;min-height:500px}.aff-table-head{display:none}.aff-table-body{max-height:none}.aff-table-body>button{grid-template-columns:minmax(0,1fr) auto 20px;padding:11px}.aff-table-body .aff-control,.aff-table-body .aff-cell:nth-child(3),.aff-table-body .aff-cell:nth-child(5),.aff-table-body .aff-docs{display:none}.aff-table-body .aff-cell:nth-child(4){display:block}.aff-profile-head{position:sticky;top:0;background:#fff;z-index:2}.aff-profile-actions{order:4;flex-basis:100%;justify-content:stretch}.aff-profile-actions button{flex:1 1 auto}.aff-detail-scroll{max-height:none}.aff-modal{max-height:calc(100dvh - 20px)}.aff-form-grid,.aff-edit-grid,.aff-facts,.aff-document-grid{grid-template-columns:1fr}.aff-span-2{grid-column:auto}}
+    .aff-page{padding:14px 16px 26px!important;color:var(--ink)}.aff-toolbar,.aff-roster,.aff-detail-host{background:var(--surface);border:1px solid var(--hairline);border-radius:17px;box-shadow:var(--neo-sm)}.aff-toolbar{padding:12px;margin-bottom:12px}.aff-toolbar-top,.aff-toolbar-actions,.aff-roster-head,.aff-profile-head,.aff-profile-actions,.aff-edit-actions,.aff-modal-actions,.aff-action-pair{display:flex;align-items:center;gap:9px}.aff-toolbar-top{justify-content:space-between}.aff-search{height:40px;min-width:230px;flex:1;display:flex;align-items:center;gap:8px;padding:0 11px;border-radius:12px;background:var(--surface-2)}.aff-search input{width:100%;border:0;outline:0;background:transparent;font:650 13px var(--font);color:var(--ink)}.aff-primary,.aff-secondary,.aff-icon-button,.aff-pagination button{border:0;border-radius:11px;min-height:38px;padding:0 13px;font:850 11.5px var(--font);cursor:pointer}.aff-primary{background:var(--grad-guinda-soft);color:#fff}.aff-secondary{background:var(--surface-2);color:var(--ink);border:1px solid var(--hairline)}.aff-icon-button{width:38px;padding:0;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2)}button:disabled{opacity:.48;cursor:not-allowed}.aff-filters{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;margin-top:10px}.aff-filters select,.aff-input{width:100%;box-sizing:border-box;border:1px solid var(--hairline);border-radius:10px;background:var(--surface-2);color:var(--ink);padding:9px 10px;font:650 11.5px var(--font);outline:none}.aff-workbench{display:block}.aff-roster,.aff-detail-host{min-width:0;overflow:hidden}.aff-roster{display:flex;flex-direction:column}.aff-roster-head{justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--hairline)}.aff-roster h2{font-size:15px;margin:0}.aff-roster p{font-size:10.5px;color:var(--ink-3);margin:3px 0 0}.aff-table-head,.aff-table-body>button{display:grid;grid-template-columns:minmax(240px,1.7fr) minmax(110px,.55fr) minmax(130px,.6fr) minmax(170px,.8fr) 20px;gap:12px;align-items:center}.aff-table-head{padding:9px 12px;background:var(--surface-2);color:var(--ink-3);font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.aff-table-body{min-height:240px}.aff-table-body>button{width:100%;border:0;border-bottom:1px solid var(--hairline);padding:9px 12px;text-align:left;background:#fff;color:var(--ink);font-family:var(--font);cursor:pointer}.aff-table-body>button:hover,.aff-table-body>button[aria-selected=true]{background:#FFF7F9}.aff-table-body>button[aria-selected=true]{box-shadow:inset 3px 0 var(--guinda)}.aff-cell{min-width:0;font-size:10.5px;font-weight:750;overflow:hidden;text-overflow:ellipsis}.aff-person{display:flex;align-items:center;gap:8px}.aff-person>span{min-width:0}.aff-person strong,.aff-person small,.aff-docs small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-person strong{font-size:11.5px}.aff-person small,.aff-docs small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-control{font:750 10px var(--mono)}.aff-avatar{width:34px;height:34px;flex:0 0 auto;border-radius:11px;display:grid;place-items:center;overflow:hidden;background:var(--guinda-50);color:var(--guinda);font-size:10px;font-weight:900}.aff-avatar.is-large{width:54px;height:54px;border-radius:17px;font-size:15px}.aff-avatar img{width:100%;height:100%;object-fit:cover}.aff-badge{display:inline-flex;align-items:center;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:850;white-space:nowrap}.aff-ok{color:#087A50!important}.aff-badge.aff-ok{background:#E5F7EF}.aff-danger{color:#A00027!important}.aff-badge.aff-danger{background:#FCE9EE}.aff-warn{color:#8A5A00!important}.aff-badge.aff-warn{background:#FFF3D8}.aff-neutral{color:#60606A!important}.aff-badge.aff-neutral{background:#EFEFF2}.aff-pagination{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;border-top:1px solid var(--hairline);font:750 10px var(--mono)}.aff-pagination button{min-height:31px;background:var(--surface-2)}.aff-detail-host{display:flex;min-height:610px}.aff-detail{display:flex;flex-direction:column;min-width:0;width:100%}.aff-profile-head{padding:14px;border-bottom:1px solid var(--hairline);flex-wrap:wrap}.aff-profile-identity{flex:1 1 125px;min-width:0}.aff-profile-head h2{margin:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.aff-profile-head p{margin:3px 0 6px;color:var(--ink-3);font-size:10.5px}.aff-profile-updated{display:block;margin-top:5px;color:var(--ink-3);font-size:8.5px}.aff-profile-actions{flex:1 1 280px;justify-content:flex-end;flex-wrap:wrap}.aff-profile-actions button{min-height:36px;padding:0 10px;white-space:nowrap;font-size:10px}.aff-tabs{display:flex;gap:5px;overflow-x:auto;padding:9px 11px;border-bottom:1px solid var(--hairline)}.aff-tabs button{border:0;border-radius:9px;padding:7px 9px;background:transparent;color:var(--ink-3);font:800 9.5px var(--font);white-space:nowrap}.aff-tabs button[aria-current=page]{background:var(--guinda-50);color:var(--guinda)}.aff-detail-scroll{flex:1;overflow:auto;padding:12px}.aff-facts{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-fact{min-width:0;padding:9px;border-radius:10px;background:var(--surface-2)}.aff-fact span,.aff-modal label>span,.aff-edit label>span{display:block;font-size:9px;font-weight:800;color:var(--ink-3);margin-bottom:4px}.aff-fact strong{display:block;font-size:10.8px;overflow-wrap:anywhere}.aff-list{display:flex;flex-direction:column;gap:7px}.aff-list>div{display:flex;align-items:flex-start;gap:8px;padding:9px;border:1px solid var(--hairline);border-radius:11px}.aff-list span{min-width:0}.aff-list strong,.aff-list small{display:block}.aff-list strong{font-size:10.8px}.aff-list small{font-size:9px;color:var(--ink-3);margin-top:2px}.aff-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:10px}.aff-metric{padding:9px;border-radius:11px;background:var(--surface-2);text-align:center}.aff-metric strong,.aff-metric span{display:block}.aff-metric strong{font-size:16px}.aff-metric span{font-size:8.5px;color:var(--ink-3);margin-top:2px}.aff-block{width:100%;margin-top:10px}.aff-action-pair{margin-top:10px}.aff-action-pair>*{flex:1}.aff-boundary,.aff-access-card,.aff-assistance{padding:12px;border-radius:12px;background:var(--surface-2);font-size:11px;line-height:1.5}.aff-access-card{display:flex;gap:10px}.aff-access-card strong,.aff-access-card p{display:block;margin:0 0 6px}.aff-assistance{margin-top:10px}.aff-assistance p{font-size:10px;color:var(--ink-3)}.aff-assistance small{display:block;margin-top:7px}.aff-timeline>div{display:grid;grid-template-columns:10px 1fr;gap:8px}.aff-timeline>div>span{width:8px;height:8px;margin-top:4px;border-radius:50%;background:var(--guinda)}.aff-timeline section{padding-bottom:14px}.aff-timeline strong,.aff-timeline small,.aff-timeline em{display:block}.aff-timeline strong{font-size:11px}.aff-timeline small,.aff-timeline em{font-size:9px;color:var(--ink-3)}.aff-timeline p{font-size:10.5px;margin:4px 0}.aff-empty,.aff-loading{display:flex;min-height:180px;align-items:center;justify-content:center;flex-direction:column;gap:7px;padding:20px;text-align:center;color:var(--ink-3);font-size:11px}.aff-empty strong{color:var(--ink);font-size:13px}.aff-overlay{position:fixed;inset:0;z-index:10050;display:grid;place-items:center;padding:16px;background:rgba(20,18,24,.48);backdrop-filter:blur(3px)}.aff-modal{width:min(480px,100%);max-height:min(820px,calc(100vh - 32px));display:flex;flex-direction:column;overflow:hidden;border-radius:20px;background:#fff;box-shadow:0 24px 70px rgba(20,18,24,.3)}.aff-modal.is-wide{width:min(760px,100%)}.aff-modal>header{display:flex;justify-content:space-between;gap:10px;padding:15px 17px;border-bottom:1px solid var(--hairline)}.aff-modal h2{margin:0;font-size:17px}.aff-modal header p{margin:3px 0 0;color:var(--ink-3);font-size:10.5px}.aff-modal header button{width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2)}.aff-modal-body{display:flex;flex-direction:column;gap:10px;overflow:auto;padding:15px 17px}.aff-form-grid,.aff-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.aff-span-2{grid-column:1 / -1}.aff-modal-actions{justify-content:flex-end;padding:12px 17px;border-top:1px solid var(--hairline)}.aff-alert,.aff-duplicate{padding:10px;border-radius:10px;background:#FCE9EE;color:#A00027;font-size:10.5px;font-weight:750}.aff-duplicate>div{margin-top:5px}.aff-edit{width:100%;min-width:0;box-sizing:border-box;display:flex;flex-direction:column;min-height:0;height:min(820px,calc(100dvh - 110px));padding:14px}.aff-edit-heading{flex:none;padding-bottom:10px}.aff-edit-heading strong,.aff-edit-heading small{display:block}.aff-edit-heading small{margin-top:4px;color:var(--ink-3);font-size:10px}.aff-edit>.aff-edit-grid{flex:1;min-height:0;overflow:auto;border:0;margin:0;padding:2px;align-content:start}.aff-edit-footer{flex:none;padding-top:10px;border-top:1px solid var(--hairline);background:var(--surface)}.aff-edit-footer>small{display:block;font-size:10px;color:var(--ink-3);margin:4px 0}.aff-edit-actions{justify-content:flex-end;margin-top:8px}.aff-document-entry{min-width:0}.aff-document-entry>.aff-document-card{width:100%}.aff-document-replace{width:100%;margin-top:5px}.aff-document-actions{margin:0 0 10px;flex-wrap:wrap}
+    @media(max-width:1279px){.aff-filters{grid-template-columns:repeat(4,minmax(0,1fr))}.aff-table-head,.aff-table-body>button{grid-template-columns:minmax(200px,1.5fr) minmax(96px,.55fr) minmax(112px,.6fr) minmax(140px,.75fr) 20px}}
+    @media(min-width:1024px) and (max-width:1100px){.aff-filters{grid-template-columns:repeat(3,minmax(0,1fr))}}
+    @media(max-width:1023px){.aff-page{padding:12px 12px 90px!important}.aff-toolbar-top{align-items:stretch;flex-direction:column}.aff-toolbar-actions>*{flex:1}.aff-filters{display:flex;overflow-x:auto}.aff-filters select,.aff-filter{min-width:150px}.aff-workbench{display:block}.aff-roster{min-height:520px}.aff-detail-host{margin-top:12px;min-height:500px}.aff-table-head{display:none}.aff-table-body{max-height:none}.aff-table-body>button{grid-template-columns:minmax(0,1fr) auto 20px;padding:11px}.aff-table-body .aff-cell:nth-child(3),.aff-table-body .aff-cell:nth-child(4){display:none}.aff-profile-head{position:sticky;top:0;background:#fff;z-index:2}.aff-profile-actions{order:4;flex-basis:100%;justify-content:stretch}.aff-profile-actions button{flex:1 1 auto}.aff-detail-scroll{max-height:none}.aff-modal{max-height:calc(100dvh - 20px)}.aff-form-grid,.aff-edit-grid,.aff-facts,.aff-document-grid{grid-template-columns:1fr}.aff-span-2{grid-column:auto}}
     .aff-control-impact{font-size:11px;line-height:1.5;overflow-wrap:anywhere}.aff-control-impact details{padding:8px 0;border-bottom:1px solid var(--hairline)}.aff-control-impact summary{cursor:pointer;font-weight:750}.aff-control-impact ul{padding-left:20px}.aff-control-impact li{margin:5px 0}.aff-control-impact code{font-size:10px}.aff-control-ack{font-size:11px;line-height:1.5}.aff-control-ack input{margin-right:7px}
     .aff-access-repair{display:grid;gap:9px;margin-top:10px;padding:12px;border:1px solid var(--hairline);border-radius:12px;background:var(--surface);font-size:11px;line-height:1.5}.aff-access-repair-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.aff-access-repair-head strong{font-size:12px}.aff-access-sees,.aff-access-meta,.aff-access-confirm{margin:0}.aff-access-sees span{font-weight:850}.aff-access-meta{color:var(--ink-3);font-size:10.5px;overflow-wrap:anywhere}.aff-access-confirm{font-size:11.5px;line-height:1.5}
     .aff-access-issues{display:grid;gap:6px;margin:0;padding:0;list-style:none}.aff-access-issues li{display:flex;align-items:flex-start;gap:7px;padding:8px 9px;border-radius:10px;background:#FFF3D8;color:#704900;font-size:10.5px;font-weight:650;overflow-wrap:anywhere}.aff-access-issues li>svg{flex:0 0 auto;margin-top:1px}.aff-access-issues li>span{flex:1;min-width:0}.aff-access-links{display:grid;gap:5px}.aff-access-links small{color:var(--ink-3);font-size:9.5px;font-weight:850;letter-spacing:.04em;text-transform:uppercase}.aff-access-links button{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;text-align:left}.aff-access-actions{display:flex;flex-wrap:wrap;gap:8px}
     .aff-access-warning{margin:10px 0;padding:10px;border-radius:10px;background:#FFF3D8;color:#704900;font-size:10.5px;font-weight:750;line-height:1.45}.aff-access-list{display:grid;gap:6px}.aff-access-list>small{color:var(--ink-3);font-size:10.5px}.aff-access-list button{display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--hairline);border-radius:11px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}.aff-access-list strong,.aff-access-list small{display:block}.aff-access-list strong{font-size:11.5px}.aff-access-list button small{color:var(--ink-3);font-size:10px;overflow-wrap:anywhere}.aff-access-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
     @media(max-width:600px){.aff-access-list button{grid-template-columns:minmax(0,1fr) 16px}.aff-access-chips{grid-column:1/-1;grid-row:2;justify-content:flex-start}}
+    /* H-AFFILIATE-EXPEDIENTE-MODAL-001 — padrón a todo el ancho, ficha flotante y expediente completo. */
+    .aff-table-head{padding:11px 18px;font-size:10px;letter-spacing:.08em}.aff-table-body>button{padding:11px 18px}.aff-table-body>button[aria-selected=true]{background:#FBEEF1;box-shadow:inset 4px 0 var(--guinda)}.aff-table-body .aff-avatar{width:38px;height:38px;border-radius:12px;font-size:11px}.aff-person{gap:12px}.aff-person strong{font-size:13px}.aff-person small{font-size:10.5px}.aff-table-body .aff-badge{font-size:10px;padding:3px 9px}.aff-expcell strong{display:block;font-size:11.5px}.aff-expcell small{display:block;font-size:10px;font-weight:800}.aff-expbar{display:block;max-width:190px;height:5px;margin:5px 0 4px;border-radius:99px;background:#EEF1F6;overflow:hidden}.aff-expbar i{display:block;height:100%;border-radius:inherit;background:#3F8F6C}.aff-expbar i.is-complete{background:#12704B}.aff-chevron{color:var(--ink-3)}
+    .aff-filter{display:flex;flex-direction:column;gap:3px;min-width:0}.aff-filter>span{padding-left:2px;font-size:9.5px;font-weight:850;color:var(--ink-3)}.aff-filter.is-set>span{color:var(--guinda)}.aff-filter.is-set select{border-color:var(--guinda);background:var(--guinda-50);color:var(--guinda);font-weight:850}
+    .aff-chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:10.5px;font-weight:800;white-space:nowrap}.aff-chip-ok{background:#E6F5EE;color:#12704B}.aff-chip-pend{background:#FDF4E3;color:#8A5A0B}.aff-chip-bad{background:#FBEEF1;color:#910022}.aff-chip-sys{background:#E8EEFB;color:#24448F}.aff-chip-gray{background:#EEF1F6;color:#3D4A66}
+    .aff-request-list{display:flex;flex-direction:column;border:1px solid var(--hairline);border-radius:16px;overflow:hidden}.aff-request-row{display:flex;align-items:center;gap:12px;padding:12px 14px}.aff-request-row+.aff-request-row{border-top:1px solid var(--hairline)}.aff-request-row>span:first-child{flex:1;min-width:0}.aff-request-row strong{display:block;font-size:12.5px}.aff-request-row small{display:block;margin-top:2px;font-size:11px;color:var(--ink-3)}
+    .aff-sheet-overlay{position:fixed;inset:0;z-index:9000;display:grid;place-items:center;padding:24px;box-sizing:border-box}.aff-sheet-backdrop{position:absolute;inset:0;margin:0;padding:0;border:0;background:rgba(20,33,61,.48);cursor:default}.aff-sheet{position:relative;width:720px;max-width:100%;max-height:calc(100vh - 48px);max-height:calc(100dvh - 48px);display:flex;flex-direction:column;overflow:hidden;border-radius:24px;background:#fff;box-shadow:0 40px 90px -20px rgba(20,33,61,.5);outline:none;color:var(--ink)}.aff-sheet.is-editing{height:calc(100dvh - 48px)}.aff-sheet-content{flex:1;min-height:0;display:flex;flex-direction:column;width:100%}
+    .aff-sheet-head{flex:none;display:flex;align-items:center;gap:14px;padding:16px 16px 14px 20px;border-bottom:1px solid var(--hairline)}.aff-sheet-head .aff-avatar.is-large{width:48px;height:48px;border-radius:15px;font-size:15px}.aff-sheet-identity{flex:1;min-width:0}.aff-sheet-identity h2{margin:0;font-size:17px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-sheet-identity p{margin:2px 0 6px;font-size:11.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-sheet-badges{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.aff-sheet-badges small{font-size:10px;color:var(--ink-3)}.aff-sheet-nav{flex:none;align-self:flex-start;display:flex;gap:6px}.aff-sheet-head.is-compact{min-height:72px}.aff-sheet-status-title{flex:1;margin:0;font-size:16px}
+    .aff-sheet-icon{width:40px;height:40px;padding:0;border:1px solid #E1E5EE;border-radius:12px;background:#fff;color:var(--ink);display:grid;place-items:center;cursor:pointer}.aff-sheet-icon.is-close{border-color:transparent;background:#EEF1F6}
+    .aff-sheet-tabs{flex:none;display:flex;gap:2px;overflow-x:auto;padding:0 12px;border-bottom:1px solid var(--hairline)}.aff-sheet-tabs button{flex:none;border:0;background:transparent;padding:13px 10px;color:var(--ink-3);font:650 12px var(--font);white-space:nowrap;cursor:pointer}.aff-sheet-tabs button[aria-current=page]{color:var(--guinda);font-weight:850;box-shadow:inset 0 -3px 0 var(--guinda)}
+    .aff-sheet-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:18px 20px!important}.aff-sheet-body.is-editing{display:flex;flex-direction:column;padding:0!important}.aff-sheet .aff-edit{height:100%;padding:16px 20px}
+    .aff-sheet-foot{flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;padding:12px 20px 14px;border-top:1px solid var(--hairline)}.aff-sheet-foot-admin{flex:1 1 auto;display:flex;flex-wrap:wrap;align-items:center;gap:8px}.aff-sheet-foot-main{display:flex;flex-wrap:wrap;gap:10px;margin-left:auto}.aff-sheet-link{min-height:40px;padding:0 6px;border:0;background:transparent;color:var(--guinda);font:850 12.5px var(--font);cursor:pointer}.aff-sheet-export{min-height:44px;padding:0 16px;border:1px solid #E1E5EE;border-radius:14px;background:#fff;color:var(--ink);display:inline-flex;align-items:center;gap:6px;font:800 12.5px var(--font);cursor:pointer}.aff-sheet-open{min-height:44px;padding:0 20px;border:0;border-radius:14px;background:var(--guinda);color:#fff;font:850 12.5px var(--font);cursor:pointer}.aff-sheet-msg{flex:1 1 100%;margin:0;padding:10px 12px;border-radius:12px;background:#E6F5EE;color:#12704B;font-size:11.5px;font-weight:700}
+    @media(max-width:1023px){.aff-filter{flex:0 0 150px;min-width:150px}}
+    @media(max-width:640px){.aff-sheet-overlay{padding:0}.aff-sheet{width:100%;height:100dvh;max-height:100dvh;border-radius:0}.aff-sheet-head{flex-wrap:wrap}.aff-sheet-nav{order:-1;width:100%;justify-content:flex-end}.aff-sheet-foot-main{margin-left:0;width:100%}.aff-sheet-foot-main>*{flex:1}.aff-sheet-body{padding:14px!important}}
+    .aff-dossier-page{display:flex;flex-direction:column;gap:14px}.aff-dossier-person,.aff-dossier{background:var(--surface);border:1px solid var(--hairline);box-shadow:var(--neo-sm)}.aff-dossier-person{display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;padding:16px 18px;border-radius:17px}.aff-dossier-person>div:nth-child(2){flex:1 1 240px;min-width:0}.aff-dossier-person h2{margin:0;font-size:18px}.aff-dossier-person p{margin:2px 0 0;font-size:11.5px;color:var(--ink-3)}.aff-dossier-progress{flex:0 1 260px;min-width:200px}.aff-dossier-progress>div:first-child{display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:750;color:var(--ink-3)}.aff-dossier-progress strong{color:var(--ink)}.aff-dossier-bar{height:8px;margin-top:7px;border-radius:99px;background:#EEF1F6;overflow:hidden}.aff-dossier-bar i{display:block;height:100%;background:#12704B}
+    .aff-dossier{padding:18px 20px;border-radius:22px}.aff-dossier-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}.aff-dossier-top h2{margin:0;font-size:20px}.aff-dossier-top p{margin:2px 0 0;font-size:11.5px;color:var(--ink-3)}.aff-dossier-zip{min-height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--guinda);color:#fff;display:inline-flex;align-items:center;gap:8px;font:850 12.5px var(--font);cursor:pointer}
+    .aff-dossier-opts{display:flex;flex-wrap:wrap;align-items:center;gap:4px 18px;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:12px}.aff-dossier-opts>span{font-weight:850;color:var(--ink-2)}.aff-dossier-opts label{display:flex;align-items:center;gap:6px;min-height:32px;cursor:pointer}.aff-dossier-opts input,.aff-dossier-check input{width:18px;height:18px;margin:0;accent-color:var(--guinda)}
+    .aff-dossier-selbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding:10px 12px 10px 16px;border-radius:14px;background:#14213D;color:#fff}.aff-dossier-selbar span{flex:1;font-size:12.5px;font-weight:750}.aff-dossier-selbar button{min-height:38px;padding:0 12px;border:0;border-radius:10px;background:rgba(255,255,255,.14);color:#fff;font:750 12px var(--font);cursor:pointer}.aff-dossier-selbar button.is-primary{background:#fff;color:var(--guinda);font-weight:850}.aff-dossier-msg{margin:12px 0 0;padding:10px 12px;border-radius:12px;background:#E6F5EE;color:#12704B;font-size:11.5px;font-weight:700}
+    .aff-dossier-table{margin-top:14px;border:1px solid var(--hairline);border-radius:16px;overflow:hidden}.aff-dossier-row{display:grid;grid-template-columns:44px minmax(0,1fr) 170px 104px 96px;align-items:center;gap:8px;min-height:62px;padding:0 10px 0 6px;border-top:1px solid var(--hairline);background:#fff}.aff-dossier-row.no-select{grid-template-columns:minmax(0,1fr) 170px 104px 96px;padding-left:14px}.aff-dossier-row.is-head{min-height:44px;border-top:0;background:#F2F3F5;color:#5A6378;font-size:10.5px;font-weight:850;letter-spacing:.06em;text-transform:uppercase}.aff-dossier-row.is-nested{background:#FBFCFD}.aff-dossier-row.is-selected{background:#FBEEF1}
+    .aff-dossier-check{display:grid;place-items:center;height:44px;cursor:pointer}.aff-dossier-name{min-width:0}.aff-dossier-folder{display:flex;align-items:center;gap:10px;width:100%;min-height:60px;padding:0;border:0;background:none;color:var(--ink);font-family:var(--font);text-align:left;cursor:pointer}.aff-dossier-chev{flex:none;display:grid;place-items:center;color:var(--ink-3)}.aff-dossier-folder[aria-expanded=true] .aff-dossier-chev{transform:rotate(90deg)}.aff-dossier-ficon{flex:none;width:36px;height:36px;border-radius:10px;background:#FBEEF1;color:var(--guinda);display:grid;place-items:center}
+    .aff-dossier-label{display:block;min-width:0}.aff-dossier-label strong{display:block;font-size:13px;line-height:1.3;overflow-wrap:anywhere}.aff-dossier-label small{display:block;margin-top:2px;font-size:11px;font-weight:650;color:#5A6378;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.aff-dossier-file{display:flex;align-items:center;gap:12px;min-width:0;padding:6px 0 6px 25px}.aff-dossier-file .aff-dossier-label strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .aff-dossier-thumb{position:relative;flex:none;width:38px;height:48px;padding:5px;border:1px solid #D6DBE6;border-radius:8px;background:#fff;box-shadow:0 2px 6px -2px rgba(20,33,61,.18);display:flex;flex-direction:column;gap:4px;cursor:zoom-in}.aff-dossier-thumb i{display:block;height:3px;border-radius:2px;background:#C7CFDC}.aff-dossier-thumb i:first-child{height:10px;background:#DFE4EE}.aff-dossier-thumb i:nth-child(3){width:70%}.aff-dossier-thumb b{position:absolute;right:-6px;bottom:-6px;padding:1px 4px;border-radius:5px;background:#3D4A66;color:#fff;font-size:8.5px;font-weight:800}.aff-dossier-thumb:disabled{cursor:not-allowed}
+    .aff-dossier-date{font-size:11.5px;font-weight:750;color:#3D4A66}.aff-dossier-actions{display:flex;justify-content:flex-end;gap:6px}.aff-dossier-act{width:38px;height:38px;padding:0;border:0;border-radius:11px;background:#EEF1F6;color:var(--ink);display:grid;place-items:center;cursor:pointer}.aff-dossier-act.is-download{background:#FBEEF1;color:var(--guinda)}.aff-dossier-inline-status{display:none;margin-top:5px}
+    @media(max-width:860px){.aff-dossier-row{grid-template-columns:40px minmax(0,1fr) 150px 92px}.aff-dossier-row.no-select{grid-template-columns:minmax(0,1fr) 150px 92px}.aff-dossier-date{display:none}}
+    @media(max-width:600px){.aff-dossier{padding:14px 12px}.aff-dossier-row{grid-template-columns:36px minmax(0,1fr) auto;padding-right:8px}.aff-dossier-row.no-select{grid-template-columns:minmax(0,1fr) auto}.aff-dossier-status{display:none}.aff-dossier-inline-status{display:block}.aff-dossier-file{padding-left:16px}.aff-dossier-zip{width:100%;justify-content:center}}
   `);
   }
   window.AffiliatesAdminModule = AffiliatesModule;

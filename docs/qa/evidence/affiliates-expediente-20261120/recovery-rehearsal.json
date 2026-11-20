@@ -1,0 +1,183 @@
+{
+  "mode": "recovery-rehearsal",
+  "at": "2026-11-20T21:50:40.911Z",
+  "rows": [
+    {
+      "tag": "recovery-check",
+      "who": "autorizada_1",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "autorizada_2",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "autorizada_3",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_1",
+      "requests": false,
+      "request_count": 0,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_10",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false,
+      "err": "AFFILIATE_READ_DENIED",
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_2",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false,
+      "err": "AFFILIATE_READ_DENIED",
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_3",
+      "requests": false,
+      "request_count": 0,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_4",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false,
+      "err": "AFFILIATE_READ_DENIED",
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_5",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_6",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false,
+      "err": "AFFILIATE_READ_DENIED",
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_7",
+      "requests": false,
+      "request_count": 0,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_8",
+      "requests": false,
+      "request_count": 0,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_module_admin_9",
+      "requests": null,
+      "request_count": null,
+      "has_amount": null,
+      "documents": null,
+      "ok": false,
+      "err": "AFFILIATE_READ_DENIED",
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    },
+    {
+      "tag": "recovery-check",
+      "who": "otro_principal_admin_1",
+      "requests": true,
+      "request_count": 4,
+      "has_amount": false,
+      "documents": true,
+      "ok": true,
+      "err": null,
+      "md5_after_recovery": "30aaa263327efe2069b1350a063e8a1b",
+      "schema_after_recovery": 0
+    }
+  ],
+  "stateAfterRollback": {
+    "workbench_md5": "f96711d0a6570dd1c138438cace701dd",
+    "dossier_schema": 1,
+    "migration_recorded": 1,
+    "restore_point": true,
+    "program_requests": 720,
+    "affiliates": 1095,
+    "requests_fingerprint": "b6c66169ea7ad67a25ae4b3708cfd1d8"
+  }
+}

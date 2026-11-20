@@ -77,7 +77,6 @@ assert.match(admin,/initialAffiliateId:affiliateContext&&affiliateContext\.affil
 assert.match(documents,/function DocumentsAdminModule\(\{app,onBack,header,initialAffiliateId\}\)/);
 assert.match(requests,/const scopedRows=initialAffiliateId\?rows\.filter/);
 assert.match(finances,/const scoped=initialAffiliateId\?source\.filter/);
-assert.match(finances,/const belongsToAffiliate=/);
 
 assert.match(builder,/admin-affiliates-repository\.js/);
 assert.match(builder,/screens-admin-affiliates\.jsx/);

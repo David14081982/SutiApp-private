@@ -44320,8 +44320,6 @@ Object.assign(window, {
       });
       if (best >= 0 && best !== safeIdx) select(best);
     };
-    // Con más de 5 pop-ups los puntos se sustituyen por un contador «3 de 7».
-    const counter = list.length > 5;
     const close = () => {
       setShow(false);
       setTimeout(() => onClose && onClose(), 240);
@@ -44353,7 +44351,10 @@ Object.assign(window, {
         WebkitBackdropFilter: 'blur(' + (show ? 3 : 0) + 'px)',
         transition: 'background .26s ease, backdrop-filter .26s ease, -webkit-backdrop-filter .26s ease'
       }
-    }, React.createElement('div', {
+    },
+    // Réplica 1:1 del diseño «PopUp Inicio»: estilos en `.su-popup` (app/text-size.css).
+    React.createElement('div', {
+      className: 'su-popup',
       onClick: e => e.stopPropagation(),
       onMouseEnter: () => setPaused(true),
       onMouseLeave: () => setPaused(false),
@@ -44371,49 +44372,20 @@ Object.assign(window, {
         opacity: show ? 1 : 0,
         transition: 'transform .3s cubic-bezier(.34,1.56,.64,1), opacity .26s ease'
       }
-    },
-    // Área táctil de 48 px; el círculo visible conserva los 34 px del diseño.
-    React.createElement('button', {
+    }, React.createElement('button', {
+      className: 'su-pp-close',
       onClick: close,
-      'aria-label': 'Cerrar',
-      style: {
-        position: 'absolute',
-        top: 5,
-        right: 5,
-        zIndex: 4,
-        width: 48,
-        height: 48,
-        padding: 0,
-        border: 'none',
-        background: 'none',
-        display: 'grid',
-        placeItems: 'center',
-        cursor: 'pointer',
-        color: 'var(--ink)'
-      }
-    }, React.createElement('span', {
-      style: {
-        width: 34,
-        height: 34,
-        borderRadius: '50%',
-        background: 'rgba(255,255,255,.9)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-        display: 'grid',
-        placeItems: 'center',
-        boxShadow: '0 4px 12px -4px rgba(0,0,0,.3)'
-      }
+      'aria-label': 'Cerrar'
     }, React.createElement(I, {
       name: 'close',
       size: 19,
       stroke: 2.4
-    }))), React.createElement('div', {
+    })), React.createElement('div', {
       key: promo.id + safeIdx,
       className: dir > 0 ? 'su-promo-next' : 'su-promo-prev'
     }, React.createElement('div', {
+      className: 'su-pp-hero',
       style: {
-        position: 'relative',
-        height: 184,
         background: `linear-gradient(150deg, hsl(${promo.hue || 345},70%,42%), hsl(${promo.hue || 345},65%,26%))`
       }
     }, promo.image_url ? React.createElement('img', {
@@ -44439,87 +44411,35 @@ Object.assign(window, {
         height: '100%'
       }
     }), promo.etiqueta && React.createElement('div', {
-      style: {
-        position: 'absolute',
-        left: 16,
-        top: 16,
-        zIndex: 2,
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 6,
-        background: 'rgba(255,255,255,.92)',
-        color: 'var(--guinda)',
-        fontSize: 'var(--text-10-5, 10.5px)',
-        fontWeight: 800,
-        letterSpacing: '.06em',
-        padding: '6px 11px',
-        borderRadius: 999,
-        boxShadow: '0 4px 12px -4px rgba(0,0,0,.3)'
-      }
+      className: 'su-pp-tag'
     }, React.createElement(I, {
       name: 'flame',
       size: 13,
       stroke: 2.4
     }), promo.etiqueta)), React.createElement('div', {
-      style: {
-        padding: '20px 22px 8px'
-      }
+      className: 'su-pp-body'
     }, promo.subtitulo && React.createElement('div', {
-      style: {
-        fontSize: 'var(--text-12-5, 12.5px)',
-        fontWeight: 800,
-        color: 'var(--guinda)',
-        letterSpacing: '.02em'
-      }
+      className: 'su-pp-sub'
     }, promo.subtitulo), React.createElement('h3', {
-      className: 'su-popup-title',
-      style: {
-        fontSize: 'var(--text-21, 21px)',
-        fontWeight: 800,
-        color: 'var(--ink)',
-        margin: '4px 0 0',
-        lineHeight: 1.2,
-        letterSpacing: '-.01em'
-      }
+      className: 'su-pp-title'
     }, promo.titulo || 'Título del pop-up'), promo.contenido && React.createElement('p', {
-      style: {
-        fontSize: 'var(--text-13-5, 13.5px)',
-        color: 'var(--ink-2)',
-        fontWeight: 500,
-        lineHeight: 1.5,
-        margin: '10px 0 0'
-      }
-    }, promo.contenido))),
-    // Pie compacto: sin pop-ups que recorrer, el botón principal se separa 20 px del texto.
+      className: 'su-pp-text'
+    }, promo.contenido))), React.createElement('div', {
+      className: 'su-pp-foot'
+    }, list.length > 1 && React.createElement('div', {
+      className: 'su-pp-nav'
+    }, navBtn('arrowL', () => go(-1)),
+    // Puntos del diseño; un selector accesible invisible encima (teclado, lector y toque).
     React.createElement('div', {
-      style: {
-        padding: (list.length > 1 ? '0' : '12px') + ' 22px 10px'
-      }
-    },
-    // -5px laterales: las flechas tienen área táctil de 48 y caja visible de 38, alineada al texto.
-    list.length > 1 && React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        margin: '0 -5px 11px'
-      }
-    }, navBtn('arrowL', () => go(-1)), React.createElement('div', {
-      className: 'su-popup-pagination',
-      'data-mode': counter ? 'count' : 'dots'
-    }, React.createElement('div', {
-      className: 'su-popup-track'
-    }, counter ? React.createElement('span', {
-      className: 'su-popup-count',
-      'aria-hidden': true
-    }, React.createElement('b', null, safeIdx + 1), ' de ' + list.length) : React.createElement('div', {
-      className: 'su-popup-markers',
-      'aria-hidden': true
+      className: 'su-pp-dots'
     }, list.map((_, i) => React.createElement('span', {
       key: i,
+      className: 'su-pp-dot',
+      'aria-hidden': true,
       'data-popup-dot': i + 1,
       'data-active': i === safeIdx ? 'true' : 'false'
-    }))), React.createElement('input', {
+    })), React.createElement('input', {
+      className: 'su-pp-range',
       type: 'range',
       min: 1,
       max: list.length,
@@ -44542,31 +44462,16 @@ Object.assign(window, {
       },
       onFocus: () => setSelectorFocused(true),
       onBlur: () => setSelectorFocused(false)
-    }))), navBtn('arrowR', () => go(1))), React.createElement(window.Btn, {
-      full: true,
-      size: 'md',
-      iconRight: promo.actionType === 'none' ? undefined : 'arrowR',
+    })), navBtn('arrowR', () => go(1))), React.createElement('button', {
+      className: 'su-pp-cta',
       onClick: act
-    }, promo.ctaText || 'Continuar'),
-    // 48 px de alto pegado al botón principal: el aire visible queda en ~13 px, como el diseño.
-    React.createElement('button', {
-      onClick: close,
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        minHeight: 48,
-        margin: 0,
-        padding: 0,
-        background: 'none',
-        border: 'none',
-        color: 'var(--ink-3)',
-        fontSize: 'var(--text-13, 13px)',
-        fontWeight: 700,
-        cursor: 'pointer',
-        fontFamily: 'inherit'
-      }
+    }, React.createElement('span', null, promo.ctaText || 'Continuar'), promo.actionType === 'none' ? null : React.createElement(I, {
+      name: 'arrowR',
+      size: 18.5,
+      stroke: 2
+    })), React.createElement('button', {
+      className: 'su-pp-later',
+      onClick: close
     }, 'Ahora no'))), customOf && window.CustomScreenView && React.createElement(window.CustomScreenView, {
       screen: customOf.custom,
       app,
@@ -44580,35 +44485,14 @@ Object.assign(window, {
   }
   function navBtn(icon, onClick) {
     return React.createElement('button', {
+      className: 'su-pp-arrow',
       onClick,
-      'aria-label': icon === 'arrowL' ? 'Anterior' : 'Siguiente',
-      style: {
-        width: 48,
-        height: 48,
-        padding: 0,
-        border: 'none',
-        background: 'none',
-        display: 'grid',
-        placeItems: 'center',
-        cursor: 'pointer',
-        color: 'var(--guinda)',
-        flexShrink: 0
-      }
-    }, React.createElement('span', {
-      style: {
-        width: 38,
-        height: 38,
-        borderRadius: 12,
-        background: 'var(--surface)',
-        boxShadow: 'var(--neo-sm)',
-        display: 'grid',
-        placeItems: 'center'
-      }
+      'aria-label': icon === 'arrowL' ? 'Anterior' : 'Siguiente'
     }, React.createElement(I, {
       name: icon,
       size: 19,
       stroke: 2.2
-    })));
+    }));
   }
   window.AdminPopup = AdminPopup;
 })();

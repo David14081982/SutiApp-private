@@ -1,5 +1,27 @@
 # Bitácora de agentes
 
+## H-HOME-POPUP-DESIGN-001 — 2026-11-20 — PASS local (corrección pedida por el propietario)
+
+El propietario rechazó H-HOME-POPUP-COMPACT-001: «no se parece en nada» al diseño (contador «1 de 7»
+que el diseño no tiene, «Ahora no» del mismo tamaño que el botón, botón casi sin degradado). Causa
+raíz: la capa `text-size.css` impone 16 px / botones 48 px / interlineado 1.45, y `app.jsx` recalcula
+`--grad-guinda-soft` (guinda + 20 % blanco → casi plano), así que el pop-up no podía verse como el diseño
+aunque copiara sus medidas; la QA anterior no reproducía esas variables. Ahora `AdminPopup` es una
+réplica 1:1 del diseño «PopUp Inicio»: marcado por clases (`.su-popup .su-pp-*`) con el CSS del diseño
+y blindaje contra la capa de letra; degradado y brillo literales del diseño (`#d11f3a → #910022`);
+puntos siempre (sin contador); «Ahora no» a 13 px; descripción 13.5 px con su `min-height: 44`. Los
+textos sólo escalan con la preferencia del afiliado (× `--text-scale`; con «Normal» es idéntico). Las
+áreas táctiles de 48 px se conservan con `::before` invisibles (✕, flechas, «Ahora no»; selector
+accesible de 48 px sobre los puntos) sin mover el diseño. Acciones sin cambios.
+`scripts/test-home-popup-design.js` abre el diseño de referencia (copiado a la evidencia) y la app con
+las condiciones en vivo (estilos de SutiApp.html, `data-text-size="normal"`, variables de marca de
+app.jsx) y compara 11 elementos × 2 slides en posición, tamaño, letra, color y fondo: **0 diferencias**.
+7 pop-ups: 7 puntos centrados; letra grande y vista previa de admin sin desborde; puntos, teclado,
+flechas, ✕, «Ahora no» y botón principal PASS; áreas táctiles 48/48/48. Se retira
+`test-home-popup-compact.js` (probaba el contador). Paquete: sólo cambia el bloque de
+`admin-store.jsx`. Versión `2026112007` en los 4 puntos; `text-size.css?v=247` en html y sw.
+Evidencia: `docs/qa/evidence/home-popup-design-20261120/` (incluye `comparacion.png`).
+
 ## H-HOME-POPUP-COMPACT-001 — 2026-11-20 — PASS published (propuesta aprobada por el propietario)
 
 Pop-up administrable de Inicio (`AdminPopup`, `app/admin-store.jsx`) alineado a su diseño Claude:

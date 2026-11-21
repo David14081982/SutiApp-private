@@ -17,6 +17,8 @@ y vista previa de admin): puntos, teclado, flechas, contador, ✕, «Ahora no» 
 sin errores ni desborde. `scripts/test-home-popup-compact.js`; evidencia en
 `docs/qa/evidence/home-popup-compact-20261120/`. `test-popup-dots-*.js` (ranuras iguales) quedan
 superados por este diseño. Versión `2026112006` en los 4 puntos; `text-size.css?v=246` en html y sw.
+Publicado: commit 541ca53, Pages y Membership contract PASS; sutiapp.com sirve `2026112006` y
+`text-size.css?v=246` (bundle SHA-256 idéntico al commit, 5b9b3614…).
 
 ## H-AFFILIATE-ZIP-NAME-001 — 2026-11-20 — PASS local (corrección pedida por el propietario)
 

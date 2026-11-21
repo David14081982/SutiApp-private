@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## H-HOME-POPUP-DESIGN-001 — 2026-11-20 — PASS local (corrección pedida por el propietario)
+## H-HOME-POPUP-DESIGN-001 — 2026-11-20 — PASS published (corrección pedida por el propietario)
 
 El propietario rechazó H-HOME-POPUP-COMPACT-001: «no se parece en nada» al diseño (contador «1 de 7»
 que el diseño no tiene, «Ahora no» del mismo tamaño que el botón, botón casi sin degradado). Causa
@@ -21,6 +21,10 @@ flechas, ✕, «Ahora no» y botón principal PASS; áreas táctiles 48/48/48. S
 `test-home-popup-compact.js` (probaba el contador). Paquete: sólo cambia el bloque de
 `admin-store.jsx`. Versión `2026112007` en los 4 puntos; `text-size.css?v=247` en html y sw.
 Evidencia: `docs/qa/evidence/home-popup-design-20261120/` (incluye `comparacion.png`).
+Publicado: commit fde9e03, Pages y Membership contract PASS; sutiapp.com sirve `2026112007` y
+`text-size.css?v=247` (SHA-256 de bundle y css idénticos al commit). En vivo con la cuenta de prueba
+(letra «normal», 7 pop-ups, cero escrituras bloqueadas, sin errores): 7 puntos sin contador, botón
+15.5 px con degradado #d11f3a→#910022, «Ahora no» 13 px, descripción 13.5 px, ✕ 34 px, flechas 38 px.
 
 ## H-HOME-POPUP-COMPACT-001 — 2026-11-20 — PASS published (propuesta aprobada por el propietario)
 

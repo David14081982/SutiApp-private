@@ -532,11 +532,19 @@
     if (!promo) return null;
     const go = (d) => { setDir(d); setIdx((i) => (i + d + list.length) % list.length); };
     const select = (i) => { setDir(i > safeIdx ? 1 : -1); setIdx(i); };
-    // Match pointer selection to the equal marker slots, independent of native thumb geometry.
+    // Los puntos van agrupados al centro (no en ranuras iguales): el toque elige el punto más cercano.
     const selectAtPointer = (event) => {
-      const rect = event.currentTarget.getBoundingClientRect();
-      select(Math.max(0, Math.min(list.length - 1, Math.floor((event.clientX - rect.left) / rect.width * list.length))));
+      const dots = event.currentTarget.parentElement.querySelectorAll('[data-popup-dot]');
+      let best = -1, bestDist = Infinity;
+      dots.forEach((dot, i) => {
+        const r = dot.getBoundingClientRect();
+        const d = Math.abs(event.clientX - (r.left + r.width / 2));
+        if (d < bestDist) { bestDist = d; best = i; }
+      });
+      if (best >= 0 && best !== safeIdx) select(best);
     };
+    // Con más de 5 pop-ups los puntos se sustituyen por un contador «3 de 7».
+    const counter = list.length > 5;
     const close = () => { setShow(false); setTimeout(() => onClose && onClose(), 240); };
     const act = () => {
       if (promo.actionType === 'custom' && promo.custom) { setCustomOf(promo); return; }
@@ -565,10 +573,12 @@
           opacity: show ? 1 : 0, transition: 'transform .3s cubic-bezier(.34,1.56,.64,1), opacity .26s ease',
         },
       },
+        // Área táctil de 48 px; el círculo visible conserva los 34 px del diseño.
         React.createElement('button', {
           onClick: close, 'aria-label': 'Cerrar',
-          style: { position: 'absolute', top: 12, right: 12, zIndex: 4, width: 34, height: 34, borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,.9)', backdropFilter: 'blur(4px)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)', boxShadow: '0 4px 12px -4px rgba(0,0,0,.3)' },
-        }, React.createElement(I, { name: 'close', size: 19, stroke: 2.4 })),
+          style: { position: 'absolute', top: 5, right: 5, zIndex: 4, width: 48, height: 48, padding: 0, border: 'none', background: 'none', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--ink)' },
+        }, React.createElement('span', { style: { width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,.9)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)', display: 'grid', placeItems: 'center', boxShadow: '0 4px 12px -4px rgba(0,0,0,.3)' } },
+          React.createElement(I, { name: 'close', size: 19, stroke: 2.4 }))),
 
         React.createElement('div', { key: promo.id + safeIdx, className: dir > 0 ? 'su-promo-next' : 'su-promo-prev' },
           React.createElement('div', { style: { position: 'relative', height: 184, background: `linear-gradient(150deg, hsl(${promo.hue || 345},70%,42%), hsl(${promo.hue || 345},65%,26%))` } },
@@ -583,15 +593,20 @@
               React.createElement(I, { name: 'flame', size: 13, stroke: 2.4 }), promo.etiqueta)),
           React.createElement('div', { style: { padding: '20px 22px 8px' } },
             promo.subtitulo && React.createElement('div', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 800, color: 'var(--guinda)', letterSpacing: '.02em' } }, promo.subtitulo),
-            React.createElement('h3', { style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, color: 'var(--ink)', margin: '4px 0 0', lineHeight: 1.15, letterSpacing: '-.01em' } }, promo.titulo || 'Título del pop-up'),
-            promo.contenido && React.createElement('p', { style: { fontSize: 'var(--text-13-5, 13.5px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.5, margin: '10px 0 0', minHeight: 44 } }, promo.contenido))),
+            React.createElement('h3', { className: 'su-popup-title', style: { fontSize: 'var(--text-21, 21px)', fontWeight: 800, color: 'var(--ink)', margin: '4px 0 0', lineHeight: 1.2, letterSpacing: '-.01em' } }, promo.titulo || 'Título del pop-up'),
+            promo.contenido && React.createElement('p', { style: { fontSize: 'var(--text-13-5, 13.5px)', color: 'var(--ink-2)', fontWeight: 500, lineHeight: 1.5, margin: '10px 0 0' } }, promo.contenido))),
 
-        React.createElement('div', { style: { padding: '0 22px 22px' } },
-          list.length > 1 && React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '4px 0 16px' } },
+        // Pie compacto: sin pop-ups que recorrer, el botón principal se separa 20 px del texto.
+        React.createElement('div', { style: { padding: (list.length > 1 ? '0' : '12px') + ' 22px 10px' } },
+          // -5px laterales: las flechas tienen área táctil de 48 y caja visible de 38, alineada al texto.
+          list.length > 1 && React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: '0 -5px 11px' } },
             navBtn('arrowL', () => go(-1)),
-            React.createElement('div', { className: 'su-popup-pagination' },
-              React.createElement('div', { className: 'su-popup-markers', 'aria-hidden': true },
-                list.map((_, i) => React.createElement('span', { key: i, 'data-popup-dot': i + 1, 'data-active': i === safeIdx ? 'true' : 'false' }))),
+            React.createElement('div', { className: 'su-popup-pagination', 'data-mode': counter ? 'count' : 'dots' },
+              React.createElement('div', { className: 'su-popup-track' },
+              counter
+                ? React.createElement('span', { className: 'su-popup-count', 'aria-hidden': true }, React.createElement('b', null, safeIdx + 1), ' de ' + list.length)
+                : React.createElement('div', { className: 'su-popup-markers', 'aria-hidden': true },
+                    list.map((_, i) => React.createElement('span', { key: i, 'data-popup-dot': i + 1, 'data-active': i === safeIdx ? 'true' : 'false' }))),
               React.createElement('input', {
                 type: 'range', min: 1, max: list.length, step: 1, value: safeIdx + 1,
                 'aria-label': 'Elegir imagen del carrusel',
@@ -606,10 +621,11 @@
                 },
                 onPointerMove: (event) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) selectAtPointer(event); },
                 onFocus: () => setSelectorFocused(true), onBlur: () => setSelectorFocused(false),
-              })),
+              }))),
             navBtn('arrowR', () => go(1))),
           React.createElement(window.Btn, { full: true, size: 'md', iconRight: promo.actionType === 'none' ? undefined : 'arrowR', onClick: act }, promo.ctaText || 'Continuar'),
-          React.createElement('button', { onClick: close, style: { display: 'block', width: '100%', marginTop: 12, background: 'none', border: 'none', color: 'var(--ink-3)', fontSize: 'var(--text-13, 13px)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' } }, 'Ahora no')),
+          // 48 px de alto pegado al botón principal: el aire visible queda en ~13 px, como el diseño.
+          React.createElement('button', { onClick: close, style: { display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', minHeight: 48, margin: 0, padding: 0, background: 'none', border: 'none', color: 'var(--ink-3)', fontSize: 'var(--text-13, 13px)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' } }, 'Ahora no')),
       ),
       customOf && window.CustomScreenView && React.createElement(window.CustomScreenView, { screen: customOf.custom, app, hue: customOf.hue, preview, onClose: () => { setCustomOf(null); if (!preview) close(); } }),
     );
@@ -617,8 +633,9 @@
   function navBtn(icon, onClick) {
     return React.createElement('button', {
       onClick, 'aria-label': icon === 'arrowL' ? 'Anterior' : 'Siguiente',
-      style: { width: 38, height: 38, borderRadius: 12, border: 'none', background: 'var(--surface)', boxShadow: 'var(--neo-sm)', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--guinda)', flexShrink: 0 },
-    }, React.createElement(I, { name: icon, size: 19, stroke: 2.2 }));
+      style: { width: 48, height: 48, padding: 0, border: 'none', background: 'none', display: 'grid', placeItems: 'center', cursor: 'pointer', color: 'var(--guinda)', flexShrink: 0 },
+    }, React.createElement('span', { style: { width: 38, height: 38, borderRadius: 12, background: 'var(--surface)', boxShadow: 'var(--neo-sm)', display: 'grid', placeItems: 'center' } },
+      React.createElement(I, { name: icon, size: 19, stroke: 2.2 })));
   }
   window.AdminPopup = AdminPopup;
 })();

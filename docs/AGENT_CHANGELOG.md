@@ -1,5 +1,23 @@
 # Bitácora de agentes
 
+## H-HOME-POPUP-COMPACT-001 — 2026-11-20 — PASS local (propuesta aprobada por el propietario)
+
+Pop-up administrable de Inicio (`AdminPopup`, `app/admin-store.jsx`) alineado a su diseño Claude:
+la capa de accesibilidad `text-size.css` lo inflaba (todo botón a 48 px, título a interlineado 1.45,
+puntos repartidos a todo el ancho). Cinco cambios sólo visuales, aprobados en lenguaje llano:
+(1) puntos juntos al centro (8 px, activo 22 px, separación 7) y, con más de 5 pop-ups, contador
+«N de M» en su lugar; (2) pie compacto: «Ahora no» de 48 px pegado al botón principal y relleno
+inferior 22→10; (3) ✕ y flechas con caja visible de 34/38 px dentro de un área táctil de 48 px;
+(4) título con interlineado 1.2 (`.su-popup-title`); (5) sin `minHeight: 44` en la descripción.
+Sin cambios de acciones ni flujos: el selector accesible (range) sigue igual por teclado y lector de
+pantalla; al tocar elige el punto más cercano; en modo contador sólo responde por teclado (las flechas
+siguen). Tarjeta de 7 pop-ups con letra normal: 498 → 439 px. Paquete reconstruido: sólo cambia el
+bloque de `admin-store.jsx`. Navegador (Chrome, 390 px, 1/2/3/7 pop-ups, letra normal, «Más grande»
+y vista previa de admin): puntos, teclado, flechas, contador, ✕, «Ahora no» y botón principal PASS,
+sin errores ni desborde. `scripts/test-home-popup-compact.js`; evidencia en
+`docs/qa/evidence/home-popup-compact-20261120/`. `test-popup-dots-*.js` (ranuras iguales) quedan
+superados por este diseño. Versión `2026112006` en los 4 puntos; `text-size.css?v=246` en html y sw.
+
 ## H-AFFILIATE-ZIP-NAME-001 — 2026-11-20 — PASS local (corrección pedida por el propietario)
 
 Aclaración del propietario: el «folio» del nombre del ZIP es el número del agremiado

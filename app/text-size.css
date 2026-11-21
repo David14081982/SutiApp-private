@@ -152,11 +152,17 @@
 [data-text-size] [data-loan-flow-step] > div:last-child { display: grid !important; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; }
 [data-text-size] [data-loan-flow-step] > div:last-child > span { text-align: center; }
 
-/* A single accessible selector keeps every carousel marker on one row. */
-.su-popup-pagination { position: relative; flex: 1; min-width: 48px; height: 48px; margin: 0 6px; }
-.su-popup-markers { position: absolute; inset: 0; display: flex; align-items: center; pointer-events: none; }
-.su-popup-markers > span { flex: 1; min-width: 0; display: grid; place-items: center; }
-.su-popup-markers > span::after { content: ''; width: min(8px, 80%); height: 8px; border-radius: 999px; background: var(--hairline-strong); transition: width .25s ease; }
-.su-popup-markers > span[data-active="true"]::after { width: min(22px, 80%); background: var(--grad-guinda-soft); }
-.su-popup-pagination > input[type="range"] { position: absolute; inset: 0; width: 100%; height: 48px; min-height: 48px; min-width: 48px; margin: 0; padding: 0; opacity: 0; cursor: pointer; touch-action: pan-y; }
-.su-popup-pagination:has(> input:focus-visible) { outline: 2px solid var(--guinda); outline-offset: 2px; border-radius: 8px; }
+/* Pop-up administrable: puntos juntos al centro (como el diseño) con un solo selector accesible
+   encima. Con más de 5 pop-ups se muestra el contador «3 de 7»; el selector sigue por teclado. */
+.su-popup-pagination { flex: 1; min-width: 48px; height: 48px; margin: 0 6px; display: flex; align-items: center; justify-content: center; }
+.su-popup-track { position: relative; height: 48px; min-width: 48px; padding: 0 10px; display: flex; align-items: center; justify-content: center; }
+.su-popup-markers { display: flex; align-items: center; gap: 7px; pointer-events: none; }
+.su-popup-markers > span { flex-shrink: 0; width: 8px; height: 8px; border-radius: 999px; background: var(--hairline-strong); transition: width .25s ease; }
+.su-popup-markers > span[data-active="true"] { width: 22px; background: var(--grad-guinda-soft); }
+.su-popup-count { pointer-events: none; white-space: nowrap; padding: 5px 12px; border-radius: 999px; background: var(--guinda-50); color: var(--ink-2); font-size: var(--text-13, 13px); font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.su-popup-count b { color: var(--guinda); font-weight: 900; }
+.su-popup-track > input[type="range"] { position: absolute; inset: 0; width: 100%; height: 48px; min-height: 48px; min-width: 48px; margin: 0; padding: 0; opacity: 0; cursor: pointer; touch-action: pan-y; }
+.su-popup-pagination[data-mode="count"] .su-popup-track > input[type="range"] { pointer-events: none; }
+.su-popup-track:has(> input:focus-visible) { outline: 2px solid var(--guinda); outline-offset: 2px; border-radius: 8px; }
+/* El título del pop-up conserva interlineado de encabezado (esta capa fuerza 1.45 al texto corrido). */
+[data-text-size] .su-popup-title { line-height: 1.2 !important; }

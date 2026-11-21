@@ -44305,11 +44305,23 @@ Object.assign(window, {
       setDir(i > safeIdx ? 1 : -1);
       setIdx(i);
     };
-    // Match pointer selection to the equal marker slots, independent of native thumb geometry.
+    // Los puntos van agrupados al centro (no en ranuras iguales): el toque elige el punto más cercano.
     const selectAtPointer = event => {
-      const rect = event.currentTarget.getBoundingClientRect();
-      select(Math.max(0, Math.min(list.length - 1, Math.floor((event.clientX - rect.left) / rect.width * list.length))));
+      const dots = event.currentTarget.parentElement.querySelectorAll('[data-popup-dot]');
+      let best = -1,
+        bestDist = Infinity;
+      dots.forEach((dot, i) => {
+        const r = dot.getBoundingClientRect();
+        const d = Math.abs(event.clientX - (r.left + r.width / 2));
+        if (d < bestDist) {
+          bestDist = d;
+          best = i;
+        }
+      });
+      if (best >= 0 && best !== safeIdx) select(best);
     };
+    // Con más de 5 pop-ups los puntos se sustituyen por un contador «3 de 7».
+    const counter = list.length > 5;
     const close = () => {
       setShow(false);
       setTimeout(() => onClose && onClose(), 240);
@@ -44359,31 +44371,43 @@ Object.assign(window, {
         opacity: show ? 1 : 0,
         transition: 'transform .3s cubic-bezier(.34,1.56,.64,1), opacity .26s ease'
       }
-    }, React.createElement('button', {
+    },
+    // Área táctil de 48 px; el círculo visible conserva los 34 px del diseño.
+    React.createElement('button', {
       onClick: close,
       'aria-label': 'Cerrar',
       style: {
         position: 'absolute',
-        top: 12,
-        right: 12,
+        top: 5,
+        right: 5,
         zIndex: 4,
-        width: 34,
-        height: 34,
-        borderRadius: '50%',
+        width: 48,
+        height: 48,
+        padding: 0,
         border: 'none',
-        background: 'rgba(255,255,255,.9)',
-        backdropFilter: 'blur(4px)',
+        background: 'none',
         display: 'grid',
         placeItems: 'center',
         cursor: 'pointer',
-        color: 'var(--ink)',
+        color: 'var(--ink)'
+      }
+    }, React.createElement('span', {
+      style: {
+        width: 34,
+        height: 34,
+        borderRadius: '50%',
+        background: 'rgba(255,255,255,.9)',
+        backdropFilter: 'blur(4px)',
+        WebkitBackdropFilter: 'blur(4px)',
+        display: 'grid',
+        placeItems: 'center',
         boxShadow: '0 4px 12px -4px rgba(0,0,0,.3)'
       }
     }, React.createElement(I, {
       name: 'close',
       size: 19,
       stroke: 2.4
-    })), React.createElement('div', {
+    }))), React.createElement('div', {
       key: promo.id + safeIdx,
       className: dir > 0 ? 'su-promo-next' : 'su-promo-prev'
     }, React.createElement('div', {
@@ -44448,12 +44472,13 @@ Object.assign(window, {
         letterSpacing: '.02em'
       }
     }, promo.subtitulo), React.createElement('h3', {
+      className: 'su-popup-title',
       style: {
         fontSize: 'var(--text-21, 21px)',
         fontWeight: 800,
         color: 'var(--ink)',
         margin: '4px 0 0',
-        lineHeight: 1.15,
+        lineHeight: 1.2,
         letterSpacing: '-.01em'
       }
     }, promo.titulo || 'Título del pop-up'), promo.contenido && React.createElement('p', {
@@ -44462,23 +44487,32 @@ Object.assign(window, {
         color: 'var(--ink-2)',
         fontWeight: 500,
         lineHeight: 1.5,
-        margin: '10px 0 0',
-        minHeight: 44
+        margin: '10px 0 0'
       }
-    }, promo.contenido))), React.createElement('div', {
+    }, promo.contenido))),
+    // Pie compacto: sin pop-ups que recorrer, el botón principal se separa 20 px del texto.
+    React.createElement('div', {
       style: {
-        padding: '0 22px 22px'
+        padding: (list.length > 1 ? '0' : '12px') + ' 22px 10px'
       }
-    }, list.length > 1 && React.createElement('div', {
+    },
+    // -5px laterales: las flechas tienen área táctil de 48 y caja visible de 38, alineada al texto.
+    list.length > 1 && React.createElement('div', {
       style: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        margin: '4px 0 16px'
+        margin: '0 -5px 11px'
       }
     }, navBtn('arrowL', () => go(-1)), React.createElement('div', {
-      className: 'su-popup-pagination'
+      className: 'su-popup-pagination',
+      'data-mode': counter ? 'count' : 'dots'
     }, React.createElement('div', {
+      className: 'su-popup-track'
+    }, counter ? React.createElement('span', {
+      className: 'su-popup-count',
+      'aria-hidden': true
+    }, React.createElement('b', null, safeIdx + 1), ' de ' + list.length) : React.createElement('div', {
       className: 'su-popup-markers',
       'aria-hidden': true
     }, list.map((_, i) => React.createElement('span', {
@@ -44508,17 +44542,23 @@ Object.assign(window, {
       },
       onFocus: () => setSelectorFocused(true),
       onBlur: () => setSelectorFocused(false)
-    })), navBtn('arrowR', () => go(1))), React.createElement(window.Btn, {
+    }))), navBtn('arrowR', () => go(1))), React.createElement(window.Btn, {
       full: true,
       size: 'md',
       iconRight: promo.actionType === 'none' ? undefined : 'arrowR',
       onClick: act
-    }, promo.ctaText || 'Continuar'), React.createElement('button', {
+    }, promo.ctaText || 'Continuar'),
+    // 48 px de alto pegado al botón principal: el aire visible queda en ~13 px, como el diseño.
+    React.createElement('button', {
       onClick: close,
       style: {
-        display: 'block',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         width: '100%',
-        marginTop: 12,
+        minHeight: 48,
+        margin: 0,
+        padding: 0,
         background: 'none',
         border: 'none',
         color: 'var(--ink-3)',
@@ -44543,23 +44583,32 @@ Object.assign(window, {
       onClick,
       'aria-label': icon === 'arrowL' ? 'Anterior' : 'Siguiente',
       style: {
-        width: 38,
-        height: 38,
-        borderRadius: 12,
+        width: 48,
+        height: 48,
+        padding: 0,
         border: 'none',
-        background: 'var(--surface)',
-        boxShadow: 'var(--neo-sm)',
+        background: 'none',
         display: 'grid',
         placeItems: 'center',
         cursor: 'pointer',
         color: 'var(--guinda)',
         flexShrink: 0
       }
+    }, React.createElement('span', {
+      style: {
+        width: 38,
+        height: 38,
+        borderRadius: 12,
+        background: 'var(--surface)',
+        boxShadow: 'var(--neo-sm)',
+        display: 'grid',
+        placeItems: 'center'
+      }
     }, React.createElement(I, {
       name: icon,
       size: 19,
       stroke: 2.2
-    }));
+    })));
   }
   window.AdminPopup = AdminPopup;
 })();

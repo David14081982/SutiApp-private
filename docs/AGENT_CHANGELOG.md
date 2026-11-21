@@ -1,6 +1,6 @@
 # Bitácora de agentes
 
-## H-HOME-POPUP-COMPACT-001 — 2026-11-20 — PASS local (propuesta aprobada por el propietario)
+## H-HOME-POPUP-COMPACT-001 — 2026-11-20 — PASS published (propuesta aprobada por el propietario)
 
 Pop-up administrable de Inicio (`AdminPopup`, `app/admin-store.jsx`) alineado a su diseño Claude:
 la capa de accesibilidad `text-size.css` lo inflaba (todo botón a 48 px, título a interlineado 1.45,

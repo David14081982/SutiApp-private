@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "baseVersion": 30,
+  "baseCodeSha256": "9fad5d1a1a94237b9ac53d771a7c224a2f8d5c5837d18e916eac24f8070c5707",
+  "candidateCodeSha256": "8163ed2eeb9b4651b3564645c52c93586c341cd1ca80e9ccc7ed968d2540a62d",
+  "files": [
+    "appsscript",
+    "Code",
+    "LoanTransfer"
+  ]
+}

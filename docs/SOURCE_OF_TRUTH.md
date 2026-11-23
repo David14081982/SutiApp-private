@@ -1145,3 +1145,6 @@ Por decisión posterior del propietario, los periodos impresos se reportan como 
 `1a9Qc8Zu2OZGNsCWCwOkWClCJfYvDem4Zlio3GNK1SLA` es una foto derivada, reemplazada completa en cada
 clic del botón «Abrir en Google Sheets»; nunca es fuente de nada. Lector: Edge Function
 `affiliates-google-sheet`. Escritor de Supabase: ninguno nuevo.
+
+H-REQUEST-DATE-SONORA-001 (2026-11-23): el día de J se toma del timestamp original en `America/Hermosillo`
+(antes, el día literal UTC). Ver ADR-118 / INV-258.

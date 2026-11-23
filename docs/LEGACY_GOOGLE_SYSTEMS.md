@@ -217,3 +217,12 @@ La migración `20261027000100`, backend `financial-legacy` v65 y frontend Pages
 confirmó que publicación, lector y cron de Historial siguen intactos. No hubo
 escrituras Google. Las verificaciones finales focal y global en producción
 terminaron con PASS.
+
+## H-REQUEST-DATE-SONORA-001 — J en hora de Sonora, 2026-11-23
+
+Apps Script `financial-handoff` v31 (mismo despliegue web; base v30 respaldada en
+`C:/tmp/sutiapp-request-date-sonora-backup-20261123`) calcula J con `Utilities.formatDate` en
+`America/Hermosillo`. Sólo cambian `requestRegisterDate_` y las tres comprobaciones de J (sincronización,
+préstamo traspasado y eliminación), que ahora aceptan el día de Sonora o el día UTC anterior. LoanTransfer,
+manifest, permisos, Supabase y fórmulas no cambian. Marcha atrás: `node scripts/deploy-request-date-sonora.js rollback`
+(vuelve el despliegue a v30). Evidencia: `docs/qa/evidence/request-date-sonora-20261123/`.

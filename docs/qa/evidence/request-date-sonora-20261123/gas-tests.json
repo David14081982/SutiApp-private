@@ -1,0 +1,35 @@
+{
+  "status": "PASS",
+  "tests": [
+    {
+      "test": "evening requests keep the Sonora day; the raw ISO transport and hash stay unchanged",
+      "status": "PASS"
+    },
+    {
+      "test": "a row written with the old UTC day is recognized and corrected to Sonora on its next sync",
+      "status": "PASS"
+    },
+    {
+      "test": "a row already corrected by hand to the Sonora day syncs without touching J",
+      "status": "PASS"
+    },
+    {
+      "test": "any other date in J still fails closed before writes",
+      "status": "PASS"
+    },
+    {
+      "test": "transferred loans (numeric ID + receipt) accept the legacy or Sonora J and never rewrite it",
+      "status": "PASS"
+    },
+    {
+      "test": "request removal recognizes legacy and Sonora J and rejects any other day",
+      "status": "PASS"
+    },
+    {
+      "test": "timestamps without an explicit offset are rejected (never guessed)",
+      "status": "PASS"
+    }
+  ],
+  "timeZone": "America/Hermosillo",
+  "externalWrites": 0
+}

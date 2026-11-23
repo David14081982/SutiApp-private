@@ -216,12 +216,26 @@ function receiveHandoff_(payload) {
 }
 
 // Keep UUID/ISO in the immutable transport; render folio and a native date in A/J.
-function requestRegisterDate_(value) {
-  const match=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})T/);
-  if(!match)throw new Error('REQUEST_SYNC_DATE_INVALID');
-  const day=match[1]+'-'+match[2]+'-'+match[3],ms=Date.parse(day+'T00:00:00Z');
+// J is the request's calendar day in Sonora (America/Hermosillo, UTC-7 all year),
+// the same zone as the authorization date. Rows written before this rule carry
+// the ISO literal (UTC) day; `legacy` only recognizes them, it is never written.
+const REQUEST_REGISTER_TIME_ZONE='America/Hermosillo';
+function requestRegisterDay_(day) {
+  const ms=Date.parse(day+'T00:00:00Z');
   if(!Number.isFinite(ms)||new Date(ms).toISOString().slice(0,10)!==day)throw new Error('REQUEST_SYNC_DATE_INVALID');
-  return {serial:ms/86400000+25569,display:match[3]+'/'+match[2]+'/'+match[1]};
+  const p=day.split('-');return {serial:ms/86400000+25569,display:p[2]+'/'+p[1]+'/'+p[0]};
+}
+function requestRegisterDate_(value) {
+  const text=String(value||''),match=text.match(/^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,9})?)?(?:Z|[+-]\d{2}:\d{2})$/);
+  if(!match)throw new Error('REQUEST_SYNC_DATE_INVALID');
+  const legacy=requestRegisterDay_(match[1]+'-'+match[2]+'-'+match[3]),instant=Date.parse(text);
+  if(!Number.isFinite(instant))throw new Error('REQUEST_SYNC_DATE_INVALID');
+  const date=requestRegisterDay_(Utilities.formatDate(new Date(instant),REQUEST_REGISTER_TIME_ZONE,'yyyy-MM-dd'));
+  return {serial:date.serial,display:date.display,legacy:legacy};
+}
+// An existing J cell is accepted when it holds the raw ISO (V1), the Sonora day or the legacy UTC day.
+function requestRegisterDateMatches_(value,display,raw,date) {
+  return String(value)===String(raw)||[date.serial,date.legacy.serial].includes(value)||[date.display,date.legacy.display].includes(display);
 }
 function requestRegisterStatus_(status) { return status==='APROBADO'?'Aprobado':status; }
 
@@ -296,7 +310,7 @@ function receiveRequestSync_(payload) {
       if(formulas[24])throw new Error('REQUEST_SYNC_STATUS_FORMULA_PROTECTED');
       if(['','PENDIENTE','Rechazado'].includes(String(values[24])))throw new Error('REQUEST_SYNC_TRANSFER_STATE_CONFLICT');
       const transferredDate=date||requestRegisterDate_(row[9]),display=target.getRange(targetRow,10).getDisplayValue();
-      if(String(values[9])!==String(row[9])&&values[9]!==transferredDate.serial&&display!==transferredDate.display)throw new Error('REQUEST_SYNC_DATE_INVALID');
+      if(!requestRegisterDateMatches_(values[9],display,row[9],transferredDate))throw new Error('REQUEST_SYNC_DATE_INVALID');
     }
     if(saved){
       const reference=String(saved[11]).match(/^Historial de solicitudes!A(\d+)$/);
@@ -333,7 +347,7 @@ function receiveRequestSync_(payload) {
     if(folio){
       if(identityCell.getFormula()||dateCell.getFormula())throw new Error('REQUEST_SYNC_PRESENTATION_FORMULA_PROTECTED');
       const currentDate=dateCell.getValue(),dateDisplay=dateCell.getDisplayValue();
-      if(String(currentDate)!==String(row[9])&&currentDate!==date.serial&&dateDisplay!==date.display)throw new Error('REQUEST_SYNC_DATE_INVALID');
+      if(!requestRegisterDateMatches_(currentDate,dateDisplay,row[9],date))throw new Error('REQUEST_SYNC_DATE_INVALID');
       // Save the folio before changing A so an interrupted retry (including V1) can find it.
       if(!meta.folio){meta.folio=folio;registry.getRange(registryRow,13).setValue('REQUEST_SYNC_V1:'+JSON.stringify(meta));SpreadsheetApp.flush();}
       if(!loanId&&currentId!==folio)identityCell.setValue(folio);
@@ -399,7 +413,7 @@ function deleteRequest_(payload) {
     if(values&&!(recovering&&empty)){
       if(![id,payload.request_folio].includes(String(values[0]))||String(values[1])!==String(payload.numero_control))throw new Error('REQUEST_DELETE_IDENTITY_MISMATCH');
       const date=requestRegisterDate_(payload.request_created_at),display=target.getRange(row,10).getDisplayValue();
-      if(String(values[9])!==String(payload.request_created_at)&&values[9]!==date.serial&&display!==date.display)throw new Error('REQUEST_SYNC_DATE_INVALID');
+      if(!requestRegisterDateMatches_(values[9],display,payload.request_created_at,date))throw new Error('REQUEST_SYNC_DATE_INVALID');
       if(formulas.some(Boolean))throw new Error('REQUEST_DELETE_FORMULA_PROTECTED');
     }
     const encode=function(v){return v instanceof Date?{date:v.toISOString()}:v;};

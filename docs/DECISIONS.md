@@ -1735,3 +1735,15 @@ Las fechas aplicables provienen de un calendario explícito por categoría y fec
 ## H-FINANCE-DOCUMENT-REVIEW-002 — periodos informativos, decisión posterior del propietario
 
 El propietario indica: «mejor solo menciona de que fechas subieron los talones de nomina sin obligar a fechas fijas eso lo debe revisar la encargada». Esta instrucción sustituye la condición de calendario de H-001: se muestran ambos periodos leídos; no se dictamina antigüedad contra fechas fijas, calendario vacío ni fecha de pago. Se conservan observaciones de fechas ilegibles/inconsistentes y recibos del mismo periodo. La vigencia de INE sigue comprobándose con la precisión realmente impresa (fecha o años), sin inventar mes o día. Se autoriza perfeccionar la lectura y comprobar SR-2026-000934; no cambia la decisión humana de otorgamiento. La integración H-001 ya fue publicada y activada por instrucción posterior documentada en su auditoría.
+
+### ADR-118 — Fecha solicitud (J) en hora de Sonora — H-REQUEST-DATE-SONORA-001 (2026-11-23)
+
+El propietario instruye: «escriba la fecha de solicitud y autorización sea con hora de Sonora» y
+«Corrige las 45 fechas registradas incluyendo el 2029 del préstamo 2981». J de `Historial de solicitudes`
+es el día calendario en `America/Hermosillo` del instante `program_requests.created_at`, la misma zona de la
+fecha de autorización (AI de HISTORIAL P V2, escrita por LoanTransfer). Supersede «la fecha nativa conserva el
+día original» de la aclaración de ADR-106: ese día era el literal UTC del ISO y adelantaba un día toda solicitud
+creada de 17:00 a 23:59 en Sonora. El transporte ISO/hash/revisión no cambia. Las filas escritas con el día UTC
+se reconocen (no fallan); en filas no traspasadas la siguiente sincronización reescribe J al día de Sonora; las
+filas traspasadas (ID numérico + recibo) nunca son reescritas por el writer. Corrección de datos autorizada:
+J de las 45 filas traspasadas afectadas y J del préstamo 2981 (29/10/2029 → 29/10/2026).

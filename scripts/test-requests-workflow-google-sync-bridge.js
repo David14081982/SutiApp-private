@@ -16,6 +16,7 @@ function fixture(){
     getFormula(){return this.sheet.formulas[this.row+':'+this.col]||'';}
     getFormulas(){return Array.from({length:this.height},(_,r)=>Array.from({length:this.width},(_,c)=>this.sheet.formulas[(this.row+r)+':'+(this.col+c)]||''));}
     getNumberFormats(){return Array.from({length:this.height},(_,r)=>Array.from({length:this.width},(_,c)=>this.sheet.formats[(this.row+r)+':'+(this.col+c)]||'General'));}
+    getNotes(){return Array.from({length:this.height},(_,r)=>Array.from({length:this.width},(_,c)=>this.sheet.notes[(this.row+r)+':'+(this.col+c)]||''));}
     setNumberFormat(format){for(let r=0;r<this.height;r++)for(let c=0;c<this.width;c++)this.sheet.formats[(this.row+r)+':'+(this.col+c)]=format;return this;}
     setValue(value){return this.setValues([[value]]);}
     setValues(rows){
@@ -28,7 +29,7 @@ function fixture(){
     createTextFinder(text){return {matchEntireCell:()=>({findAll:()=>{const found=[];for(let r=this.row;r<this.row+this.height;r++)if(String(this.sheet.rows[r-1]?.[this.col-1]??'')===text)found.push(new Range(this.sheet,r,this.col));return found;}})};}
   }
   class Sheet{
-    constructor(name,id,header){Object.assign(this,{name,id,rows:[header],maxRows:2,formulas:{},formats:{}});}
+    constructor(name,id,header){Object.assign(this,{name,id,rows:[header],maxRows:2,formulas:{},formats:{},notes:{}});}
     getSheetId(){return this.id;}getLastRow(){let last=this.rows.length;while(last>0&&!(this.rows[last-1]||[]).some(v=>v!==''&&v!=null))last--;return last;}
     getMaxRows(){return this.maxRows;}insertRowsAfter(_row,count){this.maxRows+=count;}
     getRange(...args){return new Range(this,...args);}
@@ -39,7 +40,10 @@ function fixture(){
   const context={console,ContentService:{MimeType:{JSON:'JSON'},createTextOutput:text=>({text,setMimeType(){return this;}})},
     PropertiesService:{getScriptProperties:()=>({getProperty:()=> 'isolated-server-secret'})},
     LockService:{getScriptLock:()=>({tryLock:()=>{if(held)return false;held=true;return true;},waitLock:()=>{if(held)throw Error('LOCK_BUSY');held=true;},releaseLock:()=>{held=false;}})},
-    Utilities:{DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},computeDigest:(_a,s)=>Array.from(crypto.createHash('sha256').update(s).digest())},
+    Utilities:{DigestAlgorithm:{SHA_256:'sha256'},Charset:{UTF_8:'utf8'},computeDigest:(_a,s)=>Array.from(crypto.createHash('sha256').update(s).digest()),
+      // Apps Script semantics for the patterns used by the receiver: calendar fields in the named IANA zone.
+      formatDate:(date,zone,pattern)=>{const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date).map(x=>[x.type,x.value]));
+        assert(['yyyy-MM-dd','dd/MM/yyyy'].includes(pattern),'UNSUPPORTED_TEST_DATE_PATTERN');return pattern.replace('yyyy',p.year).replace('MM',p.month).replace('dd',p.day);}},
     SpreadsheetApp:{openById:()=>({getId:()=> '1Vxy84N7mzbuioTmWhjRD2QFboDx--rG3iUwmLuyeY80',getSheetByName:name=>name===target.name?target:registry}),flush:()=>{}}
   };
   vm.createContext(context);vm.runInContext(fs.readFileSync(path.join(root,'google-apps-script/financial-handoff/Code.gs'),'utf8'),context);

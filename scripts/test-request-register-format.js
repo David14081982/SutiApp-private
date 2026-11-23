@@ -8,7 +8,7 @@ function run(name,fn){fn();receipts.push({test:name,status:'PASS'});}
 function v2(){return {...payload('prestamo'),contract_version:'REQUEST_REGISTER_V2',request_folio:'SR-2026-000121'};}
 run('V2 renders folio/native date/Aprobado; UUID/hash and raw ISO remain immutable',()=>{
   const f=fixture(),p=v2(),raw=JSON.stringify(p.row);p.row[9]='2026-09-07T04:35:41.511697+00:00';p.payload_sha256=sha(p.row);
-  const res=f.send(p);assert(res.ok,JSON.stringify(res));assert.equal(f.target.rows[1][0],p.request_folio);assert.equal(f.target.getRange(2,10).getDisplayValue(),'07/09/2026');assert.equal(typeof f.target.rows[1][9],'number');
+  const res=f.send(p);assert(res.ok,JSON.stringify(res));assert.equal(f.target.rows[1][0],p.request_folio);assert.equal(f.target.getRange(2,10).getDisplayValue(),'06/09/2026'); // 04:35 UTC = 21:35 del 6 en Sonoraassert.equal(typeof f.target.rows[1][9],'number');
   assert.equal(f.registry.rows[1][0],p.program_request_id);assert.equal(JSON.parse(f.registry.rows[1][12].slice(16)).initial_sha256,p.payload_sha256);
   const approved={...p,revision:2,request_status:'approved',desired_status:'APROBADO'};assert(f.send(approved).ok);assert.equal(f.target.rows[1][24],'Aprobado');
   f.writes.length=0;assert(f.send(approved).ok);assert(f.send({...p,contract_version:'REQUEST_REGISTER_V1',request_folio:undefined}).ok);assert.equal(f.writes.length,0);assert.equal(f.target.rows[1][24],'Aprobado');assert.equal(f.target.getLastRow(),2);
@@ -22,9 +22,9 @@ run('V1 row upgrades in place; interrupted folio write recovers without duplicat
     assert(f.writes.filter(w=>w.sheet===f.target.name&&w.width!==33).every(w=>[1,10,25].includes(w.col)));
   }
 });
-run('valid leap date and ISO calendar day preserved; malformed dates/folios fail before writes',()=>{
-  for(const [iso,display] of [['2024-02-29T01:00:00Z','29/02/2024'],['2026-01-01T00:01:00+14:00','01/01/2026']]){const f=fixture(),p=v2();p.row[9]=iso;p.payload_sha256=sha(p.row);assert(f.send(p).ok);assert.equal(f.target.getRange(2,10).getDisplayValue(),display);}
-  for(const bad of ['2026-02-29T00:00:00Z','2026-13-01T00:00:00Z','not-date']){const f=fixture(),p=v2();p.row[9]=bad;p.payload_sha256=sha(p.row);assert.equal(f.send(p).error,'REQUEST_SYNC_DATE_INVALID');assert.equal(f.writes.length,0);}
+run('valid leap date and Sonora calendar day rendered; malformed dates/folios fail before writes',()=>{
+  for(const [iso,display] of [['2024-02-29T19:00:00Z','29/02/2024'],['2024-03-01T05:00:00Z','29/02/2024'],['2026-01-01T00:01:00+14:00','31/12/2025']]){const f=fixture(),p=v2();p.row[9]=iso;p.payload_sha256=sha(p.row);assert(f.send(p).ok);assert.equal(f.target.getRange(2,10).getDisplayValue(),display);}
+  for(const bad of ['2026-02-29T00:00:00Z','2026-13-01T00:00:00Z','not-date','2026-11-13T17:55:00','2026-11-13']){const f=fixture(),p=v2();p.row[9]=bad;p.payload_sha256=sha(p.row);assert.equal(f.send(p).error,'REQUEST_SYNC_DATE_INVALID');assert.equal(f.writes.length,0);}
   for(const bad of ['',undefined,'=formula','SR-2026-1']){const f=fixture(),p=v2();p.request_folio=bad;assert.equal(f.send(p).error,'REQUEST_SYNC_FOLIO_INVALID');assert.equal(f.writes.length,0);}
 });
 run('folio collision, changed folio and identity/date formula fail closed',()=>{

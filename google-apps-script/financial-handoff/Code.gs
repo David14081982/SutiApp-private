@@ -225,6 +225,31 @@ function requestRegisterDate_(value) {
 }
 function requestRegisterStatus_(status) { return status==='APROBADO'?'Aprobado':status; }
 
+// A transfer receipt links the original request to its numeric legacy identity.
+// Row positions and business controls alone never establish that link.
+function requestRegisterIdentity_(target,id,folio) {
+  const range=target.getRange(2,1,Math.max(1,target.getLastRow()-1),1),values=range.getValues(),notes=range.getNotes();
+  const identities=[id,folio].filter(Boolean),matches=[];
+  values.forEach(function(value,index){
+    const current=String(value[0]),direct=identities.includes(current);
+    const markers=String(notes[index][0]||'').split('\n').filter(function(line){return line.indexOf('SUTI_LOAN_TRANSFER_V1:')===0;});
+    const receipts=markers.map(function(line){try{return JSON.parse(line.slice('SUTI_LOAN_TRANSFER_V1:'.length));}catch(_){return null;}});
+    const linked=receipts.filter(function(receipt){return receipt&&identities.includes(receipt.identity);});
+    if(linked.length){
+      const receipt=linked[0];
+      if(markers.length!==1||!Number.isSafeInteger(receipt.id)||receipt.id<1||current!==String(receipt.id))throw new Error('REQUEST_SYNC_TRANSFER_IDENTITY_INVALID');
+      matches.push({row:index+2,loanId:receipt.id});
+    }else if(direct){
+      if(markers.length)throw new Error('REQUEST_SYNC_TRANSFER_IDENTITY_INVALID');
+      matches.push({row:index+2,loanId:null});
+    }
+  });
+  if(matches.length>1)throw new Error('REQUEST_SYNC_DUPLICATE_ID');
+  const match=matches[0]||null;
+  if(match&&match.loanId&&values.filter(function(value){return String(value[0])===String(match.loanId);}).length!==1)throw new Error('REQUEST_SYNC_DUPLICATE_ID');
+  return match;
+}
+
 // Same workbook, registry, authentication and lock. No workflow or financial decisions.
 function receiveRequestSync_(payload) {
   const registerHeaders=TARGET_HEADERS.slice(0,33); // A:AG only; owner excludes AH onward.
@@ -261,10 +286,18 @@ function receiveRequestSync_(payload) {
     }
     if(meta&&meta.folio&&suppliedFolio&&meta.folio!==suppliedFolio)throw new Error('REQUEST_SYNC_FOLIO_INVALID');
     const folio=suppliedFolio||(meta&&meta.folio)||null,date=folio?requestRegisterDate_(row[9]):null;
-    const identityRange=target.getRange(2,1,Math.max(1,target.getLastRow()-1),1);
-    const matches=identityRange.createTextFinder(id).matchEntireCell(true).findAll().concat(folio?identityRange.createTextFinder(folio).matchEntireCell(true).findAll():[]);
-    if(matches.length>1)throw new Error('REQUEST_SYNC_DUPLICATE_ID');
-    let targetRow=matches.length?matches[0].getRow():null;
+    const identity=requestRegisterIdentity_(target,id,folio),loanId=identity&&identity.loanId;
+    let targetRow=identity?identity.row:null;
+    if(loanId){
+      if(desired!=='APROBADO')throw new Error('REQUEST_SYNC_TRANSFER_STATE_CONFLICT');
+      const transferred=target.getRange(targetRow,1,1,33),values=transferred.getValues()[0],formulas=transferred.getFormulas()[0];
+      if(String(values[1])!==String(payload.numero_control))throw new Error('TARGET_VERIFICATION_FAILED');
+      if(formulas[0]||formulas[9])throw new Error('REQUEST_SYNC_PRESENTATION_FORMULA_PROTECTED');
+      if(formulas[24])throw new Error('REQUEST_SYNC_STATUS_FORMULA_PROTECTED');
+      if(['','PENDIENTE','Rechazado'].includes(String(values[24])))throw new Error('REQUEST_SYNC_TRANSFER_STATE_CONFLICT');
+      const transferredDate=date||requestRegisterDate_(row[9]),display=target.getRange(targetRow,10).getDisplayValue();
+      if(String(values[9])!==String(row[9])&&values[9]!==transferredDate.serial&&display!==transferredDate.display)throw new Error('REQUEST_SYNC_DATE_INVALID');
+    }
     if(saved){
       const reference=String(saved[11]).match(/^Historial de solicitudes!A(\d+)$/);
       if(!reference||Number(reference[1])<2)throw new Error('REGISTRY_REFERENCE_INVALID');
@@ -296,16 +329,16 @@ function receiveRequestSync_(payload) {
       if(folio)target.getRange(targetRow,10).setNumberFormat('dd/MM/yyyy');
     }
     const identityCell=target.getRange(targetRow,1),dateCell=target.getRange(targetRow,10),currentId=identityCell.getDisplayValue();
-    if(![id,folio].includes(currentId)||String(target.getRange(targetRow,2).getValue())!==String(payload.numero_control))throw new Error('TARGET_VERIFICATION_FAILED');
+    if(!(loanId?currentId===String(loanId):[id,folio].includes(currentId))||String(target.getRange(targetRow,2).getValue())!==String(payload.numero_control))throw new Error('TARGET_VERIFICATION_FAILED');
     if(folio){
       if(identityCell.getFormula()||dateCell.getFormula())throw new Error('REQUEST_SYNC_PRESENTATION_FORMULA_PROTECTED');
       const currentDate=dateCell.getValue(),dateDisplay=dateCell.getDisplayValue();
       if(String(currentDate)!==String(row[9])&&currentDate!==date.serial&&dateDisplay!==date.display)throw new Error('REQUEST_SYNC_DATE_INVALID');
       // Save the folio before changing A so an interrupted retry (including V1) can find it.
       if(!meta.folio){meta.folio=folio;registry.getRange(registryRow,13).setValue('REQUEST_SYNC_V1:'+JSON.stringify(meta));SpreadsheetApp.flush();}
-      if(currentId!==folio)identityCell.setValue(folio);
-      if(dateDisplay!==date.display){dateCell.setValue(date.serial);dateCell.setNumberFormat('dd/MM/yyyy');SpreadsheetApp.flush();}
-      if(identityCell.getDisplayValue()!==folio||dateCell.getDisplayValue()!==date.display)throw new Error('TARGET_VERIFICATION_FAILED');
+      if(!loanId&&currentId!==folio)identityCell.setValue(folio);
+      if(!loanId&&dateDisplay!==date.display){dateCell.setValue(date.serial);dateCell.setNumberFormat('dd/MM/yyyy');SpreadsheetApp.flush();}
+      if(identityCell.getDisplayValue()!==(loanId?String(loanId):folio)||(!loanId&&dateCell.getDisplayValue()!==date.display))throw new Error('TARGET_VERIFICATION_FAILED');
     }
     // Only after unique identity, control, date and hash verification may the locator move.
     if(saved&&(String(saved[11])!==reference||['error','failed'].includes(saved[10]))){
@@ -317,14 +350,19 @@ function receiveRequestSync_(payload) {
     if(payload.revision>Number(meta.revision||0)){
       const stateCell=target.getRange(targetRow,25);
       if(stateCell.getFormula())throw new Error('REQUEST_SYNC_STATUS_FORMULA_PROTECTED');
-      const visibleStatus=requestRegisterStatus_(desired);
-      stateCell.setValue(visibleStatus);SpreadsheetApp.flush();
-      if(stateCell.getDisplayValue()!==visibleStatus)throw new Error('TARGET_VERIFICATION_FAILED');
+      if(!loanId){
+        const visibleStatus=requestRegisterStatus_(desired);
+        stateCell.setValue(visibleStatus);SpreadsheetApp.flush();
+        if(stateCell.getDisplayValue()!==visibleStatus)throw new Error('TARGET_VERIFICATION_FAILED');
+      }
       meta.revision=payload.revision;meta.status=desired;
       registry.getRange(registryRow,7).setValue(payload.request_status);
       registry.getRange(registryRow,11,1,6).setValues([['processed',reference,'REQUEST_SYNC_V1:'+JSON.stringify(meta),now,'','']]);SpreadsheetApp.flush();
     }
-    return jsonResponse_({ok:true,action:'sync_request',accepted:true,program_request_id:id,google_row:targetRow,revision:meta.revision,desired_status:meta.status,idempotent:matches.length>0});
+    return jsonResponse_({ok:true,action:'sync_request',accepted:true,program_request_id:id,google_row:targetRow,revision:meta.revision,desired_status:meta.status,idempotent:Boolean(identity)});
+  }catch(error){
+    if(error&&['REQUEST_SYNC_TRANSFER_IDENTITY_INVALID','REQUEST_SYNC_TRANSFER_STATE_CONFLICT'].includes(error.message))return failure_(error.message);
+    throw error;
   }finally{lock.releaseLock();}
 }
 
@@ -617,6 +655,10 @@ function doPost(event) {
     if(payload.action==='read_self_history')return readSelfHistory_(payload);
     if(payload.action==='read_sicof_financial')return readSicofFinancial_(payload);
     if(payload.action==='read_loan_status')return readLoanStatus_(payload);
+    if (payload.action === 'native_loan_transfer_read') return nativeLoanTransferRead_(payload);
+    if (payload.action === 'native_loan_transfer_apply') return nativeLoanTransferApply_(payload);
+    if (payload.action === 'native_loan_transfer_resume') return nativeLoanTransferResume_(payload);
+    if (payload.action === 'native_loan_transfer_status') return nativeLoanTransferStatus_(payload);
     if(payload.action==='sync_request')return receiveRequestSync_(payload);
     if(payload.action==='delete_request')return deleteRequest_(payload);
     if(payload.action==='visibility_initialize')return initializeVisibility_(payload);

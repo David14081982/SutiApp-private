@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Responsive 390px without horizontal overflow",
+    "Responsive 820px without horizontal overflow",
+    "Responsive 1440px without horizontal overflow",
+    "Scroll loads only the next page; one unit spanning pages remains one group with exact totals",
+    "Download uses the same paginated repository",
+    "Back, empty state, visible source error and retry work"
+  ],
+  "consoleErrors": 0,
+  "mode": "ISOLATED_UI_FIXTURES",
+  "productionDataAccess": false
+}

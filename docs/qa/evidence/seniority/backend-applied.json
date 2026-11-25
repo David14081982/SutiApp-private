@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "migration": "20261125000100",
+  "sha256": "43a229b7aa039d73f2df8c3444a9864af96bc1bbb05bd91b7df39a7b84c95f79",
+  "affiliateRows": 1107,
+  "affiliateRowsUnchanged": true,
+  "existingRlsAndPermissionsUnchanged": true,
+  "newTables": 0,
+  "businessWrites": 0,
+  "at": "2026-11-25T17:54:28.382Z"
+}

@@ -1148,3 +1148,10 @@ clic del botón «Abrir en Google Sheets»; nunca es fuente de nada. Lector: Edg
 
 H-REQUEST-DATE-SONORA-001 (2026-11-23): el día de J se toma del timestamp original en `America/Hermosillo`
 (antes, el día literal UTC). Ver ADR-118 / INV-258.
+
+
+## H-AFFILIATE-SENIORITY-001 — directorio por antigüedad
+
+El propietario confirmó el código SUTISSSTESON. La única autoridad es public.affiliates: financial_union_code, affiliate_status_raw, financial_employee_category_code, unit_raw y employment_entry_date_raw, con id UUID y numero_control TEXT intactos. El lector get_affiliate_seniority aplica los filtros antes de agregación/paginación y expone sólo identidad pertinente, unidad, ciudad, ingreso y antigüedad derivada. Sin tablas nuevas, escrituras de afiliados, finanzas, Google, caché persistente ni fallback. Se normalizan mayúsculas y espacios exteriores; unit_raw también contiene tabuladores exteriores reales. Fechas incompletas/ausentes/futuras no reciben antigüedad y van al final del módulo. Fecha de cálculo America/Hermosillo.
+
+RPC de lectura autenticada con contexto efectivo o permiso affiliates.read; RLS y permisos existentes preservados. Migraciones aditivas 20261125000100 y 20261125000200 instaladas, con recuperación sin pérdida de datos. Evidencia, estado de publicación y limitaciones: [auditoría](audits/H-AFFILIATE-SENIORITY-001.md).

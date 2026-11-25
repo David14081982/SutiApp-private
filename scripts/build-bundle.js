@@ -31,7 +31,7 @@ const files = [
   'union-screen-registry.js', 'data.jsx', 'visual-repositories.js', 'visual-content.js', 'content-repositories.js', 'content-state.js', 'admin-repository.js', 'admin-cutover-repository.js', 'data-export-repository.js', 'admin-affiliates-repository.js', 'program-request-repository.js', 'admin-finance-queue-repository.js', 'private-resource-demand.js', 'document-workflow-repository.js', 'bank-account-repository.js', 'program-terms-repository.js', 'credential-qr-repository.js', 'marketplace-repository.js', 'program-catalog-repository.js', 'popup-proposal-repository.js', 'payroll-declaration-repository.js', 'savings-repository.js', 'investment-copy-repository.js',
   'admin-request-deletion-repository.js', 'institutional-repositories.js', 'institutional-content.js', 'tweaks-panel.jsx', 'signature.jsx',
   'screens-home-r2.jsx', 'screens-financiera.jsx', 'savings-request-form.jsx', 'screens-savings.jsx', 'investment-copy-store.jsx', 'screens-inversion.jsx', 'screens-loan.jsx',
-  'screens-marketplace.jsx', 'screens-terreno.jsx', 'convenios-repository.js', 'screens-convenios.jsx',
+  'seniority-repository.js', 'screens-seniority.jsx', 'screens-marketplace.jsx', 'screens-terreno.jsx', 'convenios-repository.js', 'screens-convenios.jsx',
   'request-notifications.js', 'history-loans-repository.js',
   'history-statement.js', 'history-loans.jsx',
   'screens-historial.jsx', 'screens-credencial.jsx', 'image-slot.js',

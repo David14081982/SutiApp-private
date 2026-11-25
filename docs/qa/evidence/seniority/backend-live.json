@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "total": 308,
+  "groups": 41,
+  "validDates": 271,
+  "missingDates": 33,
+  "invalidDates": 4,
+  "futureDates": 0,
+  "asOf": "2026-11-25",
+  "anonymousStatus": 401,
+  "invalidPageStatus": 400,
+  "ordinaryAffiliateStatus": "NOT_CONFIGURED",
+  "uniqueIds": 308,
+  "exactFilteredSet": true,
+  "oldestFirstWithinEveryUnit": true,
+  "completedMonthsVerified": true,
+  "minimalFields": true,
+  "businessWrites": 0,
+  "at": "2026-11-25T18:09:24.972Z"
+}

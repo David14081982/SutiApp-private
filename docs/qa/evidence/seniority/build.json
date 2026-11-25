@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "base": "8e5040ca3d0f5f562dfc917d5c0b5be49e497830",
+  "version": "2026112503",
+  "bundleSha256": "978ae077ef9bb470919db17e58bf354d512483d9f9d1f7d80843e073b31254d3",
+  "preservedModules": 177,
+  "changedModules": [
+    "screens-marketplace.jsx",
+    "union-screen-registry.js"
+  ],
+  "newModules": [
+    "app/seniority-repository.js",
+    "app/screens-seniority.jsx"
+  ],
+  "workerLogicUnchanged": true,
+  "files": [
+    "app/seniority-repository.js",
+    "app/screens-seniority.jsx",
+    "app/screens-marketplace.jsx",
+    "app/union-screen-registry.js",
+    "scripts/build-bundle.js",
+    "app/bundle.js",
+    "SutiApp.html",
+    "sw.js",
+    "supabase/migrations/20261125000100_affiliate_seniority.sql",
+    "supabase/recovery/20261125000100_affiliate_seniority.sql",
+    "scripts/test-seniority.js"
+  ],
+  "published": false
+}

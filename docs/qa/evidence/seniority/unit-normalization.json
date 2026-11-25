@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "version": "20261125000200",
+  "sha256": "35fbcd962cd7a3adc13d547ad5b62d81c633d5d265e258d01e512545fa963170",
+  "affiliateRowsUnchanged": true,
+  "functionSecurityUnchanged": true,
+  "normalization": "surrounding spaces, tabs, CR and LF only",
+  "businessWrites": 0
+}

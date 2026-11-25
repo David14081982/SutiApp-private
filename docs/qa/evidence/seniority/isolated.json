@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Server filters precede totals/pages; BASE, retirees, null category, other union and inactive excluded; text control and UUID preserved; per-unit chronological order; invalid/missing/future last; pagination unique",
+    "Anonymous, archived, unlinked and mismatched denied; existing admin permission allowed; private helper denied; direct affiliate RLS preserved; bounded page arguments",
+    "Strict real D/M/YYYY clock formats; leap days and invalid dates; no two-digit-year inference; completed month boundaries and Hermosillo date",
+    "Migration and recovery preserve all affiliate bytes",
+    "UI model deduplicates UUID, displays months, protects CSV formulas; repository surfaces failures without fallback"
+  ],
+  "syntheticData": "isolated in-memory PostgreSQL only",
+  "productionMutations": 0
+}

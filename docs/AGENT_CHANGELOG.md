@@ -4839,3 +4839,10 @@ H-FINANCE-HISTORY-ACCORDION-001 publication update: feature 772c2a7 pushed and f
 
 
 H-FINANCE-HISTORY-ACCORDION-001 CLOSED PASS: owner-requested publication retry succeeded, Actions 45651565486 attempt 2. Live https://sutiapp.com/ serves bundle 2026112502 with exact expected SHA. Real admin accordion verified at 390/1280 with/without service worker: 12 cases, closed by default, keyboard, nested state retention, refresh and zero page errors. No financial writes. Prior publication block resolved; architect review APPROVED. Evidence: docs/qa/evidence/finance-history-accordion/deployment.json and production.json.
+
+
+## H-AFFILIATE-SENIORITY-001 — directorio por antigüedad
+
+El propietario confirmó el código SUTISSSTESON. La única autoridad es public.affiliates: financial_union_code, affiliate_status_raw, financial_employee_category_code, unit_raw y employment_entry_date_raw, con id UUID y numero_control TEXT intactos. El lector get_affiliate_seniority aplica los filtros antes de agregación/paginación y expone sólo identidad pertinente, unidad, ciudad, ingreso y antigüedad derivada. Sin tablas nuevas, escrituras de afiliados, finanzas, Google, caché persistente ni fallback. Se normalizan mayúsculas y espacios exteriores; unit_raw también contiene tabuladores exteriores reales. Fechas incompletas/ausentes/futuras no reciben antigüedad y van al final del módulo. Fecha de cálculo America/Hermosillo.
+
+RPC de lectura autenticada con contexto efectivo o permiso affiliates.read; RLS y permisos existentes preservados. Migraciones aditivas 20261125000100 y 20261125000200 instaladas, con recuperación sin pérdida de datos. Evidencia, estado de publicación y limitaciones: [auditoría](audits/H-AFFILIATE-SENIORITY-001.md).

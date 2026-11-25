@@ -225,6 +225,7 @@
   // ---------- MODULO (institutional) — contenido administrable ----------
   function ModuloScreen({ app, params }) {
     const m = params.m;
+    if (m.id === 'antiguedad') return React.createElement(window.SeniorityScreen, { app });
     if (m.frontend_route && m.frontend_route.type === 'tab') {
       app.setTab(m.frontend_route.target);
       return null;

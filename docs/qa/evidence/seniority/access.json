@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "method": "read-only PostgreSQL authenticated-role probe using an existing non-admin identity; not an HTTP login",
+  "directoryTotal": 308,
+  "directAffiliateRows": 1,
+  "existingRlsRestrictsDirectReads": true,
+  "createdAuthAccounts": 0,
+  "createdImpersonationSessions": 0,
+  "businessWrites": 0
+}

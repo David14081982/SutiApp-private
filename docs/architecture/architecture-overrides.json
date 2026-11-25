@@ -21,7 +21,11 @@
         "auth",
         "expediente",
         "profile photo",
-        "private assets"
+        "private assets",
+        "antigüedad",
+        "antiguedad",
+        "agremiados por antigüedad",
+        "seniority"
       ]
     },
     {
@@ -1718,6 +1722,17 @@
         "service_account": "SUTIFINANZAS_GOOGLE_SERVICE_ACCOUNT_JSON (sutifinanzas-reader@), scope spreadsheets",
         "decision": "ADR-115"
       }
+    },
+    {
+      "type": "screen",
+      "name": "SeniorityScreen",
+      "file": "app/screens-seniority.jsx",
+      "domain": "identity",
+      "aliases": [
+        "Agremiados por antigüedad",
+        "Antigüedad",
+        "Seniority"
+      ]
     }
   ],
   "relationships": [

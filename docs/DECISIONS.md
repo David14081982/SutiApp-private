@@ -1747,3 +1747,7 @@ creada de 17:00 a 23:59 en Sonora. El transporte ISO/hash/revisión no cambia. L
 se reconocen (no fallan); en filas no traspasadas la siguiente sincronización reescribe J al día de Sonora; las
 filas traspasadas (ID numérico + recibo) nunca son reescritas por el writer. Corrección de datos autorizada:
 J de las 45 filas traspasadas afectadas y J del préstamo 2981 (29/10/2029 → 29/10/2026).
+
+### ADR-119 — Préstamos otorgados y capital colocado desde HISTORIAL DE PRESTAMOS — H-CASH-FLOW-APPROVALS-20261125 (2026-11-25)
+
+El propietario instruye que «Número de préstamos otorgados» y «Capital colocado» del Reporte Flujo de efectivo coincidan con `HISTORIAL DE PRESTAMOS`. La autoridad pasa de `Historial de solicitudes` J (fecha de solicitud) a `HISTORIAL DE PRESTAMOS`: cada fila de Caja de Ahorro, Caja Chica, Sutiexpress y Adelantos de Nómina cuenta 1 y suma H en el mes de J (fecha de aprobación). La etiqueta cambia a «por fecha de aprobación». Sin la hoja, ambos conceptos quedan sin determinar; no hay sustitución por la regla anterior. La fecha de solicitud sólo califica el saldo pendiente, que no cambia aquí. Lectura de sólo A, B, C, E, H y J; sin escrituras. Evidencia: [auditoría](audits/H-CASH-FLOW-APPROVALS-20261125.md).

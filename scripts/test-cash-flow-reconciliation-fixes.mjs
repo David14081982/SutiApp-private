@@ -7,29 +7,31 @@ const require=createRequire(import.meta.url),exporter=require('../app/cash-flow-
 const months=year=>Array.from({length:12},(_,i)=>({key:`${year}-${String(i+1).padStart(2,'0')}`}));
 const quota=(id,capital,extra={})=>Object.assign(Array(33).fill(''),{0:'2026-11-15',1:100,2:id,3:'CONTROL',6:'Caja de Ahorro',9:capital,20:'2026-11-01',25:0,27:0,28:100,29:100},extra);
 const request=(id,capital,extra={})=>Object.assign(Array(25).fill(''),{0:id,1:'CONTROL',4:'Caja de Ahorro',7:capital,9:'2026-11-01',24:'Iniciado'},extra);
-function snapshot(loans,requests=[],year=2026){return {version:'cash-flow-inputs-v1',modelVersion:'20261104-original-components-v1',from:year+'-01',consultedAt:'2026-11-13T17:15:15Z',source:{loans:[[],...loans],requests:[[],...requests]},sourceErrors:{},savings:{events:[],balances:months(year).map(m=>({month:m.key,amount:0,known_amount:0})),source_bases:{accounts:[],account_identities:[],account_balances:[],current_balances:[],balance_entries:[],history:[],transactions:[],historical_withdrawals:[],pending:[],scheduled:[],opening_account_balances:[],history_metadata:[]}},investors:{contracts:[],movements:[],obligations:[],reviews:[],balances:[]}};}
-const derive=(loans,requests=[],year=2026)=>deriveCashFlowLoans({loans:[[],...loans],requests:[[],...requests],asOf:'2026-11-13',months:months(year)});
+// HISTORIAL DE PRESTAMOS row: A ID, B folio, C nombre, E fondo, H cantidad, J fecha de aprobación.
+const approval=(id,capital,extra={})=>Object.assign(Array(10).fill(''),{0:id,1:'CONTROL',2:'Persona',4:'Caja de Ahorro',7:capital,9:'2026-11-02'},extra);
+function snapshot(loans,requests=[],year=2026,approvals=[]){return {version:'cash-flow-inputs-v1',modelVersion:'20261104-original-components-v1',from:year+'-01',consultedAt:'2026-11-13T17:15:15Z',source:{loans:[[],...loans],requests:[[],...requests],approvals:[[],...approvals]},sourceErrors:{},savings:{events:[],balances:months(year).map(m=>({month:m.key,amount:0,known_amount:0})),source_bases:{accounts:[],account_identities:[],account_balances:[],current_balances:[],balance_entries:[],history:[],transactions:[],historical_withdrawals:[],pending:[],scheduled:[],opening_account_balances:[],history_metadata:[]}},investors:{contracts:[],movements:[],obligations:[],reviews:[],balances:[]}};}
+const derive=(loans,requests=[],year=2026,approvals=[])=>deriveCashFlowLoans({loans:[[],...loans],requests:[[],...requests],approvals:[[],...approvals],asOf:'2026-11-13',months:months(year)});
 const entries=(r,metric)=>r.entries.filter(e=>e.metric===metric).map(e=>e.record);
 const row=(r,id)=>r.rows.find(x=>x.id===id);
 
 test('Fable 3073 / 3078: recover exactly 154675.30 from strict numeric text',()=>{
- const r=derive([quota('3073','36540'),quota('3078','118135.3')],[request('3073','36540'),request('3078','118135.3')]);
+ const r=derive([quota('3073','36540'),quota('3078','118135.3')],[request('3073','36540'),request('3078','118135.3')],2026,[approval('3073','36540'),approval('3078','118135.3')]);
  assert.equal(entries(r,'placed').reduce((s,r)=>s+Math.round(r.amount*100),0),15467530);
  assert(r.loanContracts.every(c=>c.issues.includes('IMPORTE_NUMERICO_ORIGINAL_EN_TEXTO')));
- for(const bad of ['REVISAR','',null,'1e3','1,000','12 pesos','1.234',true,Infinity])assert.equal(entries(derive([quota('x',bad)],[request('x',bad)]),'placed')[0].amount,null);
+ for(const bad of ['REVISAR','',null,'1e3','1,000','12 pesos','1.234',true,Infinity])assert.equal(entries(derive([quota('x',bad)],[request('x',bad)],2026,[approval('x',bad)]),'placed')[0].amount,null);
 });
 test('Fable 289 / 389: original granted capital differs from requested H, without erasure',()=>{
  for(const [id,h,j,date] of [['289',1069.6,6000,'2025-04-01'],['389',6000,10000,'2025-05-01']]){
-  const r=derive([quota(id,j,{0:date})],[request(id,h,{9:date})],2025);
+  const r=derive([quota(id,j,{0:date})],[request(id,h,{9:date})],2025,[approval(id,j,{9:date})]);
   assert.equal(entries(r,'placed')[0].amount,j);assert.equal(entries(r,'placed').length,1);
   assert(r.loanContracts[0].issues.includes('CAPITAL_SOLICITADO_DIFIERE_OTORGADO_PV2'));
  }
 });
-test('Fable 2696 / 2697: conflicting duplicate remains traceable, no inferred renumbering',()=>{
- const r=derive([quota('2696',6000),quota('2697',10000)],[request('2696',6000,{9:'2026-09-23'}),request('2696',10000,{9:'2026-09-24'})]);
- assert.equal(r.loanContracts.length,2);assert.equal(entries(r,'count').length,1);
- assert(r.unassigned.some(r=>r.loanId==='2697'&&r.metric==='placed'&&r.amount===10000));
- assert.equal(r.loanContracts.find(r=>r.loanId==='2696').principal,null);
+test('Fable 2696 / 2697: HISTORIAL DE PRESTAMOS places both granted loans; duplicated request stays traceable',()=>{
+ const r=derive([quota('2696',6000),quota('2697',10000)],[request('2696',6000,{9:'2026-09-23'}),request('2696',10000,{9:'2026-09-24'})],2026,[approval('2696',6000,{9:'2026-09-24'}),approval('2697',10000,{9:'2026-09-24'})]);
+ assert.equal(r.loanContracts.length,2);assert.equal(entries(r,'count').length,2);
+ assert.deepEqual(entries(r,'placed').map(e=>[e.loanId,e.amount]),[['2696',6000],['2697',10000]]);
+ assert.equal(r.loanContracts.find(r=>r.loanId==='2696').principal,null);assert(r.loanContracts.find(r=>r.loanId==='2696').issues.includes('ID_SOLICITUD_DUPLICADO_CONFLICTIVO'));
 });
 test('Fable 202 / 2981: missing or future request dates visible, no fictitious placement',()=>{
  const r=derive([quota('202',10000,{0:'2026-10-15'}),quota('2981',100000,{0:'2026-11-01'})],[request('202',10000,{9:''}),request('2981',100000,{9:'2029-10-29'})]);
@@ -64,7 +66,7 @@ test('all original B survives every month in 2025–2028, including past loans a
  }
 });
 test('Excel uses exact same monthly cells; source dates typed, IDs preserved as text',async()=>{
- const input=snapshot([quota('0003073','36540')],[request('0003073','36540')]),r=projectCashFlowSnapshot(input),file=await exporter.build(r),zip=await Zip.loadAsync(file.bytes);
+ const input=snapshot([quota('0003073','36540')],[request('0003073','36540')],2026,[approval('0003073','36540')]),r=projectCashFlowSnapshot(input),file=await exporter.build(r),zip=await Zip.loadAsync(file.bytes);
  const xml=await zip.file('xl/worksheets/sheet1.xml').async('string');
  // Read every row by its unique concept label in the rendered monthly sheet.
  let checked=0;

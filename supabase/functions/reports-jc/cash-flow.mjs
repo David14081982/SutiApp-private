@@ -20,7 +20,7 @@ const DEFINITIONS=[
  ['savings_balance','Saldo acumulado al cierre / corte','Ahorro Voluntario','balance'],
  ['contribution_scheduled','Aportaciones futuras programadas','Ahorro Voluntario','scheduled'],
  ['withdrawal_pending','Retiros autorizados pendientes','Ahorro Voluntario','obligation'],
- ['loan_placed','Capital colocado por fecha de solicitud','Caja de Ahorro','recorded'],
+ ['loan_placed','Capital colocado por fecha de aprobación','Caja de Ahorro','recorded'],
  ['loan_recovered','Recuperación total corroborada','Caja de Ahorro','recorded'],
  ['loan_principal','Capital recuperado','Caja de Ahorro','recorded'],
  ['loan_interest','Intereses recuperados','Caja de Ahorro','recorded'],
@@ -83,9 +83,9 @@ export function cashFlowSourceBases(source,savings,investors,approvals,resolved,
 export function projectCashFlowSnapshot(snapshot){
  if(snapshot?.version!=='cash-flow-inputs-v1'||snapshot?.modelVersion!=='20261104-original-components-v1'||!validFrom(snapshot.from)||!Number.isFinite(Date.parse(snapshot.consultedAt)))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
  const {source,savings,investors,from,consultedAt,sourceErrors}=snapshot;
- if(!source||!Array.isArray(source.loans)||!Array.isArray(source.requests))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
+ if(!source||!Array.isArray(source.loans)||!Array.isArray(source.requests)||source.approvals!==undefined&&!Array.isArray(source.approvals))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
  const base=reconcileSavingsCashFlow({base:buildCashFlow({from,loans:[source.loans[0]],savings,consultedAt}),savings});
- const data=consolidateCashFlow({base,loans:source.loans,requests:source.requests,investorsSource:investors,sourceErrors});
+ const data=consolidateCashFlow({base,loans:source.loans,requests:source.requests,approvals:source.approvals??null,investorsSource:investors,sourceErrors});
  data.sourceBases=cashFlowSourceBases(source,savings,investors,null,null,consultedAt,data);
  delete data.savingsSourceTable;delete data.savingsBridge;delete data.loanContracts;
  return data;
@@ -98,7 +98,7 @@ export async function loadCashFlow(body,client,readSource,now=()=>new Date().toI
   client.rpc('get_admin_reports_jc_cash_flow_investors',{p_from:body.from+'-01'})
  ]);
  if(r.error)throw new ReportError('SAVINGS_SOURCE_UNAVAILABLE');
- if(!source||!Array.isArray(source.loans)||!Array.isArray(source.requests))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
+ if(!source||!Array.isArray(source.loans)||!Array.isArray(source.requests)||!Array.isArray(source.approvals))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
  const snapshot=cashFlowInputSnapshot({from:body.from,source,savings:r.data,investors:investors.error?null:investors.data,consultedAt,sourceErrors:{investors:investors.error?'INVESTOR_SOURCE_UNAVAILABLE':null}});
  const after=await context(client);
  if(JSON.stringify(before)!==JSON.stringify(after))throw new ReportError('CONTEXT_CHANGED');

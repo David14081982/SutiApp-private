@@ -3,7 +3,7 @@ import {WORKBOOK,ReportError} from './report.mjs';
 
 export const CASH_FLOW_RANGES=Object.freeze(["'HISTORIAL P V2'!A:U","'HISTORIAL P V2'!Z:AD","'HISTORIAL P V2'!AG:AG"]);
 export const CONSOLIDATED_CASH_FLOW_RANGES=Object.freeze([
- ...CASH_FLOW_RANGES,"'Historial de solicitudes'!A:K","'Historial de solicitudes'!Y:Y"
+ ...CASH_FLOW_RANGES,"'Historial de solicitudes'!A:K","'Historial de solicitudes'!Y:Y","'HISTORIAL DE PRESTAMOS'!A:J"
 ]);
 // Same service account and read-only scope; no Apps Script or financial writer.
 export async function readCashFlowGoogle(env,fetcher=fetch){
@@ -33,8 +33,8 @@ export async function readConsolidatedCashFlowGoogle(env,fetcher=fetch){
   const response=await fetcher('https://sheets.googleapis.com/v4/spreadsheets/'+WORKBOOK+'/values:batchGet?'+query,{method:'GET',headers,signal:AbortSignal.timeout(45000)});
   if(!response.ok)throw new ReportError(response.status===403?'GOOGLE_ACCESS_DENIED':'GOOGLE_UNAVAILABLE');
   const data=await response.json();if(data.spreadsheetId!==WORKBOOK||data.valueRanges?.length!==CONSOLIDATED_CASH_FLOW_RANGES.length)throw new ReportError('GOOGLE_RESPONSE_INVALID');
-  const loans=[],requests=[],offsets=[0,25,32,0,24];
-  data.valueRanges.forEach((r,k)=>{if(!Array.isArray(r.values))throw new ReportError('GOOGLE_RESPONSE_INVALID');const rows=k<3?loans:requests;r.values.forEach((v,i)=>{if(!Array.isArray(v))throw new ReportError('GOOGLE_RESPONSE_INVALID');rows[i]??=[];v.forEach((x,j)=>rows[i][offsets[k]+j]=x);});});
-  return {loans:Array.from(loans,r=>r||[]),requests:Array.from(requests,r=>r||[])};
+  const loans=[],requests=[],approvals=[],offsets=[0,25,32,0,24,0];
+  data.valueRanges.forEach((r,k)=>{if(!Array.isArray(r.values))throw new ReportError('GOOGLE_RESPONSE_INVALID');const rows=k<3?loans:k<5?requests:approvals;r.values.forEach((v,i)=>{if(!Array.isArray(v))throw new ReportError('GOOGLE_RESPONSE_INVALID');rows[i]??=[];v.forEach((x,j)=>rows[i][offsets[k]+j]=x);});});
+  return {loans:Array.from(loans,r=>r||[]),requests:Array.from(requests,r=>r||[]),approvals:Array.from(approvals,r=>r||[])};
  }catch(error){if(error instanceof ReportError)throw error;throw new ReportError('GOOGLE_UNAVAILABLE');}
 }

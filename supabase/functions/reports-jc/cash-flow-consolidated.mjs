@@ -8,13 +8,13 @@ const percent=(part,total)=>Number.isSafeInteger(part)&&Number.isSafeInteger(tot
 const COMPONENTS={principal:'AD',interest:'AB',admin:'Z'};
 const LABELS=CASH_FLOW_LOAN_FUNDS;
 const LOAN_ROWS=[
- ['placed','Capital colocado por fecha de solicitud','recorded'],['count','Número de préstamos otorgados','recorded'],
+ ['placed','Capital colocado por fecha de aprobación','recorded'],['count','Número de préstamos otorgados','recorded'],
  ['recovered','Recuperación realizada','recorded'],['principal','Capital recuperado','recorded'],['interest','Intereses recuperados','recorded'],['admin','Gasto administrativo recuperado','recorded'],
  ['unallocated','Recuperación sin desglose','recorded'],['rounding','Diferencia de redondeo del desglose','recorded'],
  ['pending','Capital pendiente de recuperar · total','balance'],['pending_determined','Saldo calculable · subtotal de préstamos con desglose','balance'],['pending_unresolved_original','Capital original de préstamos con saldo por conciliar','balance'],['interest_pending','Intereses pendientes según calendario','balance'],['admin_pending','Administración pendiente según calendario','balance'],
  ['scheduled','Recuperación futura programada','scheduled'],['principal_scheduled','Capital programado','scheduled'],['interest_scheduled','Intereses programados','scheduled'],['admin_scheduled','Administración programada','scheduled'],['unallocated_scheduled','Recuperación programada sin desglose','scheduled'],['rounding_scheduled','Diferencia de redondeo programada','scheduled']
 ];
-export function consolidateCashFlow({base,loans,requests=[],investorsSource=null,sourceErrors={}}){
+export function consolidateCashFlow({base,loans,requests=[],approvals=null,investorsSource=null,sourceErrors={}}){
  if(!base?.months||!Array.isArray(loans))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
  // Records and source payloads are immutable. Clone the mutable containers instead of
  // duplicating every original savings/history value before assembling loan rows.
@@ -53,7 +53,7 @@ export function consolidateCashFlow({base,loans,requests=[],investorsSource=null
   add('savings_yield_paid',{...r,id:r.id+':yield-disclosure',amount:component==='YIELD'?r.amount:component==='CAPITAL'?0:null,basis:'REGISTERED_MOVEMENT',note:'El retiro registrado no separa capital y rendimiento.'});
  }
  for(const c of rows.get('savings_yield_paid').cells)c.notes.push('El rendimiento pagado está incluido en los retiros y no se suma nuevamente como salida.');
- const loanDerivation=deriveCashFlowLoans({loans,requests,asOf,months});
+ const loanDerivation=deriveCashFlowLoans({loans,requests,approvals,asOf,months});
  for(const fund of loanDerivation.funds)ensureFund(fund);
  for(const {fund,metric,record}of loanDerivation.entries){const f=ensureFund({id:fund,label:LABELS[fund]});add(f.ids[metric],record);}
  for(const issue of loanDerivation.issues){const f=ensureFund({id:issue.fund,label:LABELS[issue.fund]});mark(issue.metrics.map(k=>f.ids[k]),issue.code,issue.message,issue.sourceIds,issue.dates);}

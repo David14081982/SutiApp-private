@@ -12,8 +12,8 @@ const amount=value=>value===null?null:value/100;
 
 /** entries: {fund,metric,record}; issues: {fund,metrics,dates,...}.
  * loanContracts contains one summary per C. Source values and calendars are never rewritten. */
-export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
- if(!Array.isArray(loans)||!loans.every(Array.isArray)||!Array.isArray(requests)||!requests.every(Array.isArray)||!Array.isArray(months)||!months.every(m=>typeof m?.key==='string'&&sourceDate(m.key+'-01'))||!sourceDate(asOf))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
+export function deriveCashFlowLoans({loans,requests=[],approvals=null,asOf,months}){
+ if(!Array.isArray(loans)||!loans.every(Array.isArray)||!Array.isArray(requests)||!requests.every(Array.isArray)||approvals!==null&&(!Array.isArray(approvals)||!approvals.every(Array.isArray))||!Array.isArray(months)||!months.every(m=>typeof m?.key==='string'&&sourceDate(m.key+'-01'))||!sourceDate(asOf))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
  const groups=new Map(),requestGroups=new Map(),zeroBalances=new Map(),zeroDisclosures=new Map(),entries=[],issues=[],unassigned=[],loanContracts=[],funds=new Set(),current=asOf.slice(0,7);
  const monthKeys=new Set(months.map(m=>m.key)),cuts=new Map(months.map(m=>[m.key,m.key===current?asOf:monthEnd(m.key)]));
  const dates=new Map(),families=new Map(),statuses=new Map();
@@ -36,6 +36,24 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
   zeroBalances.get(key).loanIds.push(C);
  };
  const problem=(fund,metrics,code,message,sourceIds,dates=[])=>issues.push({fund,metrics,code,message,sourceIds,dates:unique(dates.filter(Boolean))});
+ // Placement authority (owner decision 2026-11-25): HISTORIAL DE PRESTAMOS holds one row per
+ // granted loan. Count and placed capital come only from it: E program, H amount, J approval date.
+ const approvalsByLoan=new Map();
+ if(approvals)approvals.slice(1).forEach((v,i)=>{
+  const fund=familyOf(v[4]);if(!fund)return;funds.add(fund);
+  const row=i+2,id='approval:'+row,loanId=text(v[0])||null,date=dateOf(v[9]),principal=money(v[7]);
+  if(loanId)get(approvalsByLoan,loanId).push({row,date,principal});
+  const common={source:'HISTORIAL DE PRESTAMOS',sourceId:'Fila '+row,sourceRow:row,sourceIds:[id],loanId,folio:text(v[1])||null,name:text(v[2])||null,fund:CASH_FLOW_LOAN_FUNDS[fund],date,status:'RECORDED',dateBasis:'HISTORIAL DE PRESTAMOS · J (Fecha de aprobación)'};
+  const count={...common,id:'count:'+id,amount:1,basis:'APPROVED_LOAN_ROW'},placed={...common,id:'capital:'+id,amount:amount(principal),basis:'APPROVAL_DATE_PLACEMENT',note:principal===null?'La cantidad del préstamo (columna H) no es un importe interpretable.':undefined};
+  if(!date||date>asOf){
+   unassigned.push({...count,metric:'count',status:'UNASSIGNED'},{...placed,metric:'placed',status:'UNASSIGNED'});
+   problem(fund,[],'LOAN_APPROVAL_DATE_UNRESOLVED','HISTORIAL DE PRESTAMOS fila '+row+(loanId?' (préstamo '+loanId+')':'')+': fecha de aprobación ausente, no interpretable o posterior al corte; no se asigna a un mes.',[id]);
+   return;
+  }
+  emit(fund,'count',count);emit(fund,'placed',placed);
+  if(principal===null)problem(fund,['placed'],'LOAN_APPROVAL_AMOUNT_INVALID','HISTORIAL DE PRESTAMOS fila '+row+': la cantidad del préstamo no es un importe interpretable; el préstamo se cuenta y su capital queda sin determinar.',[id],[date]);
+ });
+ if(approvals)for(const [loanId,rows]of approvalsByLoan)if(rows.length>1)problem(familyOf(approvals[rows[0].row-1][4]),[],'LOAN_APPROVAL_ID_REPEATED','El préstamo '+loanId+' aparece en '+rows.length+' filas de HISTORIAL DE PRESTAMOS; cada fila se cuenta como en la hoja.',rows.map(r=>'approval:'+r.row),rows.map(r=>r.date));
  const identities=unique([...groups.keys(),...requestGroups.keys()]);
  let determined=0,partial=0;
  for(const C of identities){
@@ -69,18 +87,16 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
   const requestTotals=approved.map(r=>money(r.v[8])),rowTotals=group.map(r=>money(r.v[10])).filter(v=>v!==null);
   const total=one([...requestTotals.filter(v=>v!==null),...rowTotals]);
   if(total===null&&requestTotals.length+rowTotals.length)reasons.push('TOTAL_CONTRATO_AMBIGUO');
-  const countDate=placementDate||(rawRequestDates.every(Boolean)&&requestDates.length&&unique(requestDates.map(d=>d.slice(0,7))).length===1?requestDates.slice().sort()[0]:null);
   const origin={loanId:C,folio,name,fund:fund?CASH_FLOW_LOAN_FUNDS[fund]:null,source:approved.length?'Historial de solicitudes':'HISTORIAL P V2',sourceId:approved.length?'Solicitud '+C:'Préstamo '+C,sourceIds,date:placementDate,basis:'ORIGINAL_PLACEMENT_DATE',dateBasis,originalPrincipal:amount(principal),originalTotal:amount(total),requestDates};
+  // Count and placed capital are emitted from HISTORIAL DE PRESTAMOS above. The request date
+  // below only qualifies the balance calculation; it never places or counts a loan.
   if(authorized&&fund){
-   if(countDate&&countDate<=asOf)emit(fund,'count',{...origin,id:'count:'+C,date:countDate,amount:1,status:'RECORDED',basis:placementDate?'UNIQUE_AUTHORIZED_LOAN':'UNIQUE_AUTHORIZED_LOAN_MONTH'});
-   else unassigned.push({...origin,id:'count:'+C,metric:'count',amount:1,status:'UNASSIGNED'});
-   if(placementDate&&placementDate<=asOf)emit(fund,'placed',{...origin,id:'capital:'+C,amount:amount(principal),status:'RECORDED',note:principal===null?'El capital difiere entre registros del mismo préstamo.':undefined});
-   else unassigned.push({...origin,id:'capital:'+C,metric:'placed',amount:amount(principal),status:'UNASSIGNED'});
-   if(!placementDate)reasons.push('FECHA_COLOCACION_AMBIGUA');
-   if(placementDate&&placementDate>asOf)reasons.push('FECHA_COLOCACION_FUTURA');
-   if(!placementDate||placementDate>asOf)problem(fund,[],'LOAN_DATE_UNRESOLVED','Préstamo '+C+': fecha de solicitud ausente, ambigua o posterior al corte; no se sustituye por autorización PV2.',sourceIds);
-   if(!placementDate||principal===null)problem(fund,requestDates.length?['placed']:[],'LOAN_PLACEMENT_UNRESOLVED','La colocación conserva una fecha o capital sin resolver; el préstamo se cuenta una sola vez cuando su mes está identificado.',sourceIds,requestDates);
+   if(!placementDate)reasons.push('FECHA_SOLICITUD_AMBIGUA');
+   if(placementDate&&placementDate>asOf)reasons.push('FECHA_SOLICITUD_FUTURA');
+   if(!placementDate||placementDate>asOf)problem(fund,[],'LOAN_DATE_UNRESOLVED','Préstamo '+C+': fecha de solicitud ausente, ambigua o posterior al corte; su saldo pendiente no puede calcularse.',sourceIds);
   }
+  const approvalRows=approvalsByLoan.get(C)||[],approvalDates=unique(approvalRows.map(r=>r.date).filter(Boolean));
+  if(approvals&&authorized&&fund&&!approvalRows.length)reasons.push('SIN_REGISTRO_EN_HISTORIAL_DE_PRESTAMOS');
   if(!authorized&&group.length)reasons.push(matches.length?'SIN_SOLICITUD_AUTORIZADA':'SIN_FECHA_AUTORIZACION_VINCULADA');
   if(authorized&&!fund)reasons.push('PROGRAMA_COLOCACION_AMBIGUO');
   const payments=[];
@@ -161,10 +177,19 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
    }
    reasons.push('CALENDARIO_AUN_NO_REGISTRADO');
   }
-  const summary={loanId:C,folio,name,fund:fund?CASH_FLOW_LOAN_FUNDS[fund]:null,authorized,status:authorized?'AUTORIZADO':'SIN_AUTORIZACION_VINCULADA',placementDate,dateBasis,principal:amount(principal),total:amount(total),requestRows:matches.map(r=>r.row),pv2Rows:group.map(r=>r.row),requestDates,requestStates:unique(matches.map(r=>text(r.v[24]))),issues:unique(reasons),source:'Google · SutiApp Final',componentRows:payments.length,componentRowsPending:payments.filter(p=>[p.principal,p.interest,p.admin].some(v=>v===null)||p.unallocated!==0).length};
+  const summary={loanId:C,folio,name,fund:fund?CASH_FLOW_LOAN_FUNDS[fund]:null,authorized,status:authorized?'AUTORIZADO':'SIN_AUTORIZACION_VINCULADA',placementDate:approvalDates.length===1?approvalDates[0]:null,dateBasis:'HISTORIAL DE PRESTAMOS · J (Fecha de aprobación)',requestPlacementDate:placementDate,requestDateBasis:dateBasis,approvalRows:approvalRows.map(r=>r.row),principal:amount(principal),total:amount(total),requestRows:matches.map(r=>r.row),pv2Rows:group.map(r=>r.row),requestDates,requestStates:unique(matches.map(r=>text(r.v[24]))),issues:unique(reasons),source:'Google · SutiApp Final',componentRows:payments.length,componentRowsPending:payments.filter(p=>[p.principal,p.interest,p.admin].some(v=>v===null)||p.unallocated!==0).length};
   loanContracts.push(summary);if(summary.componentRowsPending||reasons.length)partial++;else determined++;
   if(reasons.length&&fund)problem(fund,[],'LOAN_SOURCE_RELATION_REVIEW','Revisar las referencias originales del préstamo: '+unique(reasons).join(', ')+'.',sourceIds,requestDates);
  }
+ // Granted loans without request or calendar rows remain traceable in Base Contratos.
+ const known=new Set(identities);
+ for(const [loanId,rows]of approvalsByLoan)if(!known.has(loanId)){
+  const v=approvals[rows[0].row-1],fund=familyOf(v[4]),dates=unique(rows.map(r=>r.date).filter(Boolean));
+  loanContracts.push({loanId,folio:text(v[1])||null,name:text(v[2])||null,fund:CASH_FLOW_LOAN_FUNDS[fund],authorized:true,status:'AUTORIZADO',placementDate:dates.length===1?dates[0]:null,dateBasis:'HISTORIAL DE PRESTAMOS · J (Fecha de aprobación)',requestPlacementDate:null,requestDateBasis:null,approvalRows:rows.map(r=>r.row),principal:rows.length===1?amount(rows[0].principal):null,total:null,requestRows:[],pv2Rows:[],requestDates:[],requestStates:[],issues:['SIN_SOLICITUD_NI_CALENDARIO_VINCULADO'],source:'Google · SutiApp Final',componentRows:0,componentRowsPending:0});
+  partial++;
+ }
+ // No silent substitute: without the authoritative sheet, count and placed capital stay unavailable.
+ if(!approvals)for(const fund of funds)problem(fund,['count','placed'],'LOAN_APPROVALS_UNAVAILABLE','No se recibió HISTORIAL DE PRESTAMOS; el número de préstamos y el capital colocado quedan sin determinar.',[]);
  // Only determined zeros are coalesced. Base Contratos keeps every loan and its
  // source references; nonzero and unknown balances remain individually detailed.
  for(const {fund,metric,column,month,common,loanIds}of zeroBalances.values()){
@@ -185,5 +210,5 @@ export function deriveCashFlowLoans({loans,requests=[],asOf,months}){
    sourceIds:quotaIds,quotaIds,basis:'ZERO_SOURCE_DISCLOSURES',countQuotas:quotaIds.length
   });
  }
- return {entries,issues,unassigned,loanContracts,funds:[...funds].map(id=>({id,label:CASH_FLOW_LOAN_FUNDS[id]})),coverage:{loanCount:identities.length,determinedLoans:determined,protectedLoans:partial,derivedForecastRows:0,componentAuthority:'HISTORIAL P V2 · Z, AB, AC, AD',placementAuthority:'ID PV2 C; capital otorgado PV2 J; fecha Solicitudes J / origen AG; aprobación Y; H sólo sin calendario',financialWrites:0}};
+ return {entries,issues,unassigned,loanContracts,funds:[...funds].map(id=>({id,label:CASH_FLOW_LOAN_FUNDS[id]})),coverage:{loanCount:identities.length,determinedLoans:determined,protectedLoans:partial,derivedForecastRows:0,componentAuthority:'HISTORIAL P V2 · Z, AB, AC, AD',placementAuthority:'HISTORIAL DE PRESTAMOS: una fila por préstamo otorgado; programa E, cantidad H, fecha de aprobación J',financialWrites:0}};
 }

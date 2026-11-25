@@ -2,11 +2,11 @@
 report.mjs sha256 39fd5c141705ec76d8bfab813ad01470e0f981b77d647cb0e2ad85a9dea3194c
 cash-flow-investor-continuity.mjs sha256 776f7493328780bf71a39780260a83822d0c6a96c93e8d34b7416a375608e74a
 cash-flow-investors.mjs sha256 e6349197c181ce56748032e8715c4fa1ff7c91e2a6de02d8adbe8e08606d6fb2
-cash-flow-loans.mjs sha256 e30d50a1def4c2495307b93e5a855c7c2aa5a586deb019c5145e2fa5288cb3a9
-cash-flow-consolidated.mjs sha256 de74e8735d9e32c479920f0b17858db02e0ad0abe39d84b0b90a39e8cf56cfbe
+cash-flow-loans.mjs sha256 d7536858bb33f40c3032b1134fccae531e3f8e838e78e83c7158ccb83c577c75
+cash-flow-consolidated.mjs sha256 a13b3508e5a00020aa8d31b34451f61c6f046db95d2824dd548272fe9e276792
 cash-flow-savings.mjs sha256 61fcf370216d5a2934e1cbb982e9667477ea6ae509ea82d8f2415f2f2ad120e6
 cash-flow-source-bases.mjs sha256 5687e38d36ad9fdbc21cff9396773b87cddf98480125026de77a3a98d92e098f
-cash-flow.mjs sha256 6dc9b307910e93e620d993c1cb3648ef4647d85148f66e502a0b71331c63efb1
+cash-flow.mjs sha256 0c090ec122a3ea8b273777ef0010ff72ca060d4929f8bc834957ddadcbc2eb86
 Pure projection of an authorized in-memory snapshot; no credentials, network or persistence. */
 'use strict';
 for(const name of ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","Worker","SharedWorker","BroadcastChannel","indexedDB","localStorage","sessionStorage","caches","navigator"]){Object.defineProperty(self,name,{value:undefined,writable:false,configurable:false});}
@@ -876,10 +876,11 @@ const amount = value => value === null ? null : value / 100;
 function deriveCashFlowLoans({
   loans,
   requests = [],
+  approvals = null,
   asOf,
   months
 }) {
-  if (!Array.isArray(loans) || !loans.every(Array.isArray) || !Array.isArray(requests) || !requests.every(Array.isArray) || !Array.isArray(months) || !months.every(m => typeof m?.key === 'string' && sourceDate(m.key + '-01')) || !sourceDate(asOf)) throw new ReportError('CASH_FLOW_SOURCE_INVALID');
+  if (!Array.isArray(loans) || !loans.every(Array.isArray) || !Array.isArray(requests) || !requests.every(Array.isArray) || approvals !== null && (!Array.isArray(approvals) || !approvals.every(Array.isArray)) || !Array.isArray(months) || !months.every(m => typeof m?.key === 'string' && sourceDate(m.key + '-01')) || !sourceDate(asOf)) throw new ReportError('CASH_FLOW_SOURCE_INVALID');
   const groups = new Map(),
     requestGroups = new Map(),
     zeroBalances = new Map(),
@@ -974,6 +975,65 @@ function deriveCashFlowLoans({
     sourceIds,
     dates: unique(dates.filter(Boolean))
   });
+  const approvalsByLoan = new Map();
+  if (approvals) approvals.slice(1).forEach((v, i) => {
+    const fund = familyOf(v[4]);
+    if (!fund) return;
+    funds.add(fund);
+    const row = i + 2,
+      id = 'approval:' + row,
+      loanId = text(v[0]) || null,
+      date = dateOf(v[9]),
+      principal = money(v[7]);
+    if (loanId) get(approvalsByLoan, loanId).push({
+      row,
+      date,
+      principal
+    });
+    const common = {
+      source: 'HISTORIAL DE PRESTAMOS',
+      sourceId: 'Fila ' + row,
+      sourceRow: row,
+      sourceIds: [id],
+      loanId,
+      folio: text(v[1]) || null,
+      name: text(v[2]) || null,
+      fund: CASH_FLOW_LOAN_FUNDS[fund],
+      date,
+      status: 'RECORDED',
+      dateBasis: 'HISTORIAL DE PRESTAMOS · J (Fecha de aprobación)'
+    };
+    const count = {
+        ...common,
+        id: 'count:' + id,
+        amount: 1,
+        basis: 'APPROVED_LOAN_ROW'
+      },
+      placed = {
+        ...common,
+        id: 'capital:' + id,
+        amount: amount(principal),
+        basis: 'APPROVAL_DATE_PLACEMENT',
+        note: principal === null ? 'La cantidad del préstamo (columna H) no es un importe interpretable.' : undefined
+      };
+    if (!date || date > asOf) {
+      unassigned.push({
+        ...count,
+        metric: 'count',
+        status: 'UNASSIGNED'
+      }, {
+        ...placed,
+        metric: 'placed',
+        status: 'UNASSIGNED'
+      });
+      problem(fund, [], 'LOAN_APPROVAL_DATE_UNRESOLVED', 'HISTORIAL DE PRESTAMOS fila ' + row + (loanId ? ' (préstamo ' + loanId + ')' : '') + ': fecha de aprobación ausente, no interpretable o posterior al corte; no se asigna a un mes.', [id]);
+      return;
+    }
+    emit(fund, 'count', count);
+    emit(fund, 'placed', placed);
+    if (principal === null) problem(fund, ['placed'], 'LOAN_APPROVAL_AMOUNT_INVALID', 'HISTORIAL DE PRESTAMOS fila ' + row + ': la cantidad del préstamo no es un importe interpretable; el préstamo se cuenta y su capital queda sin determinar.', [id], [date]);
+  });
+  if (approvals) for (const [loanId, rows] of approvalsByLoan) if (rows.length > 1) problem(familyOf(approvals[rows[0].row - 1][4]), [], 'LOAN_APPROVAL_ID_REPEATED', 'El préstamo ' + loanId + ' aparece en ' + rows.length + ' filas de HISTORIAL DE PRESTAMOS; cada fila se cuenta como en la hoja.', rows.map(r => 'approval:' + r.row), rows.map(r => r.date));
   const identities = unique([...groups.keys(), ...requestGroups.keys()]);
   let determined = 0,
     partial = 0;
@@ -1019,7 +1079,6 @@ function deriveCashFlowLoans({
       rowTotals = group.map(r => money(r.v[10])).filter(v => v !== null);
     const total = one([...requestTotals.filter(v => v !== null), ...rowTotals]);
     if (total === null && requestTotals.length + rowTotals.length) reasons.push('TOTAL_CONTRATO_AMBIGUO');
-    const countDate = placementDate || (rawRequestDates.every(Boolean) && requestDates.length && unique(requestDates.map(d => d.slice(0, 7))).length === 1 ? requestDates.slice().sort()[0] : null);
     const origin = {
       loanId: C,
       folio,
@@ -1036,38 +1095,13 @@ function deriveCashFlowLoans({
       requestDates
     };
     if (authorized && fund) {
-      if (countDate && countDate <= asOf) emit(fund, 'count', {
-        ...origin,
-        id: 'count:' + C,
-        date: countDate,
-        amount: 1,
-        status: 'RECORDED',
-        basis: placementDate ? 'UNIQUE_AUTHORIZED_LOAN' : 'UNIQUE_AUTHORIZED_LOAN_MONTH'
-      });else unassigned.push({
-        ...origin,
-        id: 'count:' + C,
-        metric: 'count',
-        amount: 1,
-        status: 'UNASSIGNED'
-      });
-      if (placementDate && placementDate <= asOf) emit(fund, 'placed', {
-        ...origin,
-        id: 'capital:' + C,
-        amount: amount(principal),
-        status: 'RECORDED',
-        note: principal === null ? 'El capital difiere entre registros del mismo préstamo.' : undefined
-      });else unassigned.push({
-        ...origin,
-        id: 'capital:' + C,
-        metric: 'placed',
-        amount: amount(principal),
-        status: 'UNASSIGNED'
-      });
-      if (!placementDate) reasons.push('FECHA_COLOCACION_AMBIGUA');
-      if (placementDate && placementDate > asOf) reasons.push('FECHA_COLOCACION_FUTURA');
-      if (!placementDate || placementDate > asOf) problem(fund, [], 'LOAN_DATE_UNRESOLVED', 'Préstamo ' + C + ': fecha de solicitud ausente, ambigua o posterior al corte; no se sustituye por autorización PV2.', sourceIds);
-      if (!placementDate || principal === null) problem(fund, requestDates.length ? ['placed'] : [], 'LOAN_PLACEMENT_UNRESOLVED', 'La colocación conserva una fecha o capital sin resolver; el préstamo se cuenta una sola vez cuando su mes está identificado.', sourceIds, requestDates);
+      if (!placementDate) reasons.push('FECHA_SOLICITUD_AMBIGUA');
+      if (placementDate && placementDate > asOf) reasons.push('FECHA_SOLICITUD_FUTURA');
+      if (!placementDate || placementDate > asOf) problem(fund, [], 'LOAN_DATE_UNRESOLVED', 'Préstamo ' + C + ': fecha de solicitud ausente, ambigua o posterior al corte; su saldo pendiente no puede calcularse.', sourceIds);
     }
+    const approvalRows = approvalsByLoan.get(C) || [],
+      approvalDates = unique(approvalRows.map(r => r.date).filter(Boolean));
+    if (approvals && authorized && fund && !approvalRows.length) reasons.push('SIN_REGISTRO_EN_HISTORIAL_DE_PRESTAMOS');
     if (!authorized && group.length) reasons.push(matches.length ? 'SIN_SOLICITUD_AUTORIZADA' : 'SIN_FECHA_AUTORIZACION_VINCULADA');
     if (authorized && !fund) reasons.push('PROGRAMA_COLOCACION_AMBIGUO');
     const payments = [];
@@ -1346,8 +1380,11 @@ function deriveCashFlowLoans({
       fund: fund ? CASH_FLOW_LOAN_FUNDS[fund] : null,
       authorized,
       status: authorized ? 'AUTORIZADO' : 'SIN_AUTORIZACION_VINCULADA',
-      placementDate,
-      dateBasis,
+      placementDate: approvalDates.length === 1 ? approvalDates[0] : null,
+      dateBasis: 'HISTORIAL DE PRESTAMOS · J (Fecha de aprobación)',
+      requestPlacementDate: placementDate,
+      requestDateBasis: dateBasis,
+      approvalRows: approvalRows.map(r => r.row),
       principal: amount(principal),
       total: amount(total),
       requestRows: matches.map(r => r.row),
@@ -1363,6 +1400,37 @@ function deriveCashFlowLoans({
     if (summary.componentRowsPending || reasons.length) partial++;else determined++;
     if (reasons.length && fund) problem(fund, [], 'LOAN_SOURCE_RELATION_REVIEW', 'Revisar las referencias originales del préstamo: ' + unique(reasons).join(', ') + '.', sourceIds, requestDates);
   }
+  const known = new Set(identities);
+  for (const [loanId, rows] of approvalsByLoan) if (!known.has(loanId)) {
+    const v = approvals[rows[0].row - 1],
+      fund = familyOf(v[4]),
+      dates = unique(rows.map(r => r.date).filter(Boolean));
+    loanContracts.push({
+      loanId,
+      folio: text(v[1]) || null,
+      name: text(v[2]) || null,
+      fund: CASH_FLOW_LOAN_FUNDS[fund],
+      authorized: true,
+      status: 'AUTORIZADO',
+      placementDate: dates.length === 1 ? dates[0] : null,
+      dateBasis: 'HISTORIAL DE PRESTAMOS · J (Fecha de aprobación)',
+      requestPlacementDate: null,
+      requestDateBasis: null,
+      approvalRows: rows.map(r => r.row),
+      principal: rows.length === 1 ? amount(rows[0].principal) : null,
+      total: null,
+      requestRows: [],
+      pv2Rows: [],
+      requestDates: [],
+      requestStates: [],
+      issues: ['SIN_SOLICITUD_NI_CALENDARIO_VINCULADO'],
+      source: 'Google · SutiApp Final',
+      componentRows: 0,
+      componentRowsPending: 0
+    });
+    partial++;
+  }
+  if (!approvals) for (const fund of funds) problem(fund, ['count', 'placed'], 'LOAN_APPROVALS_UNAVAILABLE', 'No se recibió HISTORIAL DE PRESTAMOS; el número de préstamos y el capital colocado quedan sin determinar.', []);
   for (const {
     fund,
     metric,
@@ -1427,7 +1495,7 @@ function deriveCashFlowLoans({
       protectedLoans: partial,
       derivedForecastRows: 0,
       componentAuthority: 'HISTORIAL P V2 · Z, AB, AC, AD',
-      placementAuthority: 'ID PV2 C; capital otorgado PV2 J; fecha Solicitudes J / origen AG; aprobación Y; H sólo sin calendario',
+      placementAuthority: 'HISTORIAL DE PRESTAMOS: una fila por préstamo otorgado; programa E, cantidad H, fecha de aprobación J',
       financialWrites: 0
     }
   };
@@ -1453,11 +1521,12 @@ const COMPONENTS = {
   admin: 'Z'
 };
 const LABELS = CASH_FLOW_LOAN_FUNDS;
-const LOAN_ROWS = [['placed', 'Capital colocado por fecha de solicitud', 'recorded'], ['count', 'Número de préstamos otorgados', 'recorded'], ['recovered', 'Recuperación realizada', 'recorded'], ['principal', 'Capital recuperado', 'recorded'], ['interest', 'Intereses recuperados', 'recorded'], ['admin', 'Gasto administrativo recuperado', 'recorded'], ['unallocated', 'Recuperación sin desglose', 'recorded'], ['rounding', 'Diferencia de redondeo del desglose', 'recorded'], ['pending', 'Capital pendiente de recuperar · total', 'balance'], ['pending_determined', 'Saldo calculable · subtotal de préstamos con desglose', 'balance'], ['pending_unresolved_original', 'Capital original de préstamos con saldo por conciliar', 'balance'], ['interest_pending', 'Intereses pendientes según calendario', 'balance'], ['admin_pending', 'Administración pendiente según calendario', 'balance'], ['scheduled', 'Recuperación futura programada', 'scheduled'], ['principal_scheduled', 'Capital programado', 'scheduled'], ['interest_scheduled', 'Intereses programados', 'scheduled'], ['admin_scheduled', 'Administración programada', 'scheduled'], ['unallocated_scheduled', 'Recuperación programada sin desglose', 'scheduled'], ['rounding_scheduled', 'Diferencia de redondeo programada', 'scheduled']];
+const LOAN_ROWS = [['placed', 'Capital colocado por fecha de aprobación', 'recorded'], ['count', 'Número de préstamos otorgados', 'recorded'], ['recovered', 'Recuperación realizada', 'recorded'], ['principal', 'Capital recuperado', 'recorded'], ['interest', 'Intereses recuperados', 'recorded'], ['admin', 'Gasto administrativo recuperado', 'recorded'], ['unallocated', 'Recuperación sin desglose', 'recorded'], ['rounding', 'Diferencia de redondeo del desglose', 'recorded'], ['pending', 'Capital pendiente de recuperar · total', 'balance'], ['pending_determined', 'Saldo calculable · subtotal de préstamos con desglose', 'balance'], ['pending_unresolved_original', 'Capital original de préstamos con saldo por conciliar', 'balance'], ['interest_pending', 'Intereses pendientes según calendario', 'balance'], ['admin_pending', 'Administración pendiente según calendario', 'balance'], ['scheduled', 'Recuperación futura programada', 'scheduled'], ['principal_scheduled', 'Capital programado', 'scheduled'], ['interest_scheduled', 'Intereses programados', 'scheduled'], ['admin_scheduled', 'Administración programada', 'scheduled'], ['unallocated_scheduled', 'Recuperación programada sin desglose', 'scheduled'], ['rounding_scheduled', 'Diferencia de redondeo programada', 'scheduled']];
 function consolidateCashFlow({
   base,
   loans,
   requests = [],
+  approvals = null,
   investorsSource = null,
   sourceErrors = {}
 }) {
@@ -1591,6 +1660,7 @@ function consolidateCashFlow({
   const loanDerivation = deriveCashFlowLoans({
     loans,
     requests,
+    approvals,
     asOf,
     months
   });
@@ -2600,7 +2670,7 @@ function day(now) {
 function validFrom(from) {
   return typeof from === 'string' && /^(20\d{2}|2100)-(0[1-9]|1[0-2])$/.test(from);
 }
-const DEFINITIONS = [['contribution', 'Aportaciones recibidas', 'Ahorro Voluntario', 'recorded'], ['contribution_mixed', 'Importes históricos de aportación y rendimiento sin desglose', 'Ahorro Voluntario', 'recorded'], ['withdrawal_partial', 'Retiros parciales pagados', 'Ahorro Voluntario', 'recorded'], ['withdrawal_total', 'Retiros totales pagados', 'Ahorro Voluntario', 'recorded'], ['withdrawal_unspecified', 'Retiros pagados sin clasificación parcial / total', 'Ahorro Voluntario', 'recorded'], ['yield_credited', 'Rendimientos acreditados', 'Ahorro Voluntario', 'recorded'], ['adjustment', 'Ajustes registrados (importe neto)', 'Ahorro Voluntario', 'recorded'], ['savings_balance', 'Saldo acumulado al cierre / corte', 'Ahorro Voluntario', 'balance'], ['contribution_scheduled', 'Aportaciones futuras programadas', 'Ahorro Voluntario', 'scheduled'], ['withdrawal_pending', 'Retiros autorizados pendientes', 'Ahorro Voluntario', 'obligation'], ['loan_placed', 'Capital colocado por fecha de solicitud', 'Caja de Ahorro', 'recorded'], ['loan_recovered', 'Recuperación total corroborada', 'Caja de Ahorro', 'recorded'], ['loan_principal', 'Capital recuperado', 'Caja de Ahorro', 'recorded'], ['loan_interest', 'Intereses recuperados', 'Caja de Ahorro', 'recorded'], ['loan_admin', 'Gasto administrativo recuperado', 'Caja de Ahorro', 'recorded'], ['loan_pending', 'Capital pendiente de recuperar', 'Caja de Ahorro', 'balance'], ['loan_scheduled', 'Recuperación futura programada', 'Caja de Ahorro', 'scheduled']];
+const DEFINITIONS = [['contribution', 'Aportaciones recibidas', 'Ahorro Voluntario', 'recorded'], ['contribution_mixed', 'Importes históricos de aportación y rendimiento sin desglose', 'Ahorro Voluntario', 'recorded'], ['withdrawal_partial', 'Retiros parciales pagados', 'Ahorro Voluntario', 'recorded'], ['withdrawal_total', 'Retiros totales pagados', 'Ahorro Voluntario', 'recorded'], ['withdrawal_unspecified', 'Retiros pagados sin clasificación parcial / total', 'Ahorro Voluntario', 'recorded'], ['yield_credited', 'Rendimientos acreditados', 'Ahorro Voluntario', 'recorded'], ['adjustment', 'Ajustes registrados (importe neto)', 'Ahorro Voluntario', 'recorded'], ['savings_balance', 'Saldo acumulado al cierre / corte', 'Ahorro Voluntario', 'balance'], ['contribution_scheduled', 'Aportaciones futuras programadas', 'Ahorro Voluntario', 'scheduled'], ['withdrawal_pending', 'Retiros autorizados pendientes', 'Ahorro Voluntario', 'obligation'], ['loan_placed', 'Capital colocado por fecha de aprobación', 'Caja de Ahorro', 'recorded'], ['loan_recovered', 'Recuperación total corroborada', 'Caja de Ahorro', 'recorded'], ['loan_principal', 'Capital recuperado', 'Caja de Ahorro', 'recorded'], ['loan_interest', 'Intereses recuperados', 'Caja de Ahorro', 'recorded'], ['loan_admin', 'Gasto administrativo recuperado', 'Caja de Ahorro', 'recorded'], ['loan_pending', 'Capital pendiente de recuperar', 'Caja de Ahorro', 'balance'], ['loan_scheduled', 'Recuperación futura programada', 'Caja de Ahorro', 'scheduled']];
 function buildCashFlow({
   from,
   loans,
@@ -2798,7 +2868,7 @@ function projectCashFlowSnapshot(snapshot) {
     consultedAt,
     sourceErrors
   } = snapshot;
-  if (!source || !Array.isArray(source.loans) || !Array.isArray(source.requests)) throw new ReportError('CASH_FLOW_SOURCE_INVALID');
+  if (!source || !Array.isArray(source.loans) || !Array.isArray(source.requests) || source.approvals !== undefined && !Array.isArray(source.approvals)) throw new ReportError('CASH_FLOW_SOURCE_INVALID');
   const base = reconcileSavingsCashFlow({
     base: buildCashFlow({
       from,
@@ -2812,6 +2882,7 @@ function projectCashFlowSnapshot(snapshot) {
     base,
     loans: source.loans,
     requests: source.requests,
+    approvals: source.approvals ?? null,
     investorsSource: investors,
     sourceErrors
   });

@@ -18,14 +18,18 @@ function loan({id='1',folio='100',fund='Caja de Ahorro',date='2026-10-15',paid=1
 function request({id='1',folio='100',fund='Caja de Ahorro',date='2026-01-05',principal=1000,total=1200,status='Aprobado'}={}){
  const r=Array(25).fill('');Object.assign(r,{0:id,1:folio,4:fund,7:principal,8:total,9:date?serial(date):'',24:status});return r;
 }
+// HISTORIAL DE PRESTAMOS row: A ID, B folio, C nombre, E fondo, H cantidad, J fecha de aprobación.
+function approval({id='1',folio='100',name='Persona',fund='Caja de Ahorro',principal=1000,date='2026-01-05'}={}){
+ const r=Array(10).fill('');Object.assign(r,{0:id,1:folio,2:name,4:fund,7:principal,9:date?serial(date):''});return r;
+}
 function savings(events=[],extra={}){return {events,balances:Array.from({length:12},(_,i)=>({month:`2026-${String(i+1).padStart(2,'0')}`,amount:0})),...extra};}
 function report(loans=[],events=[],extra={}){return buildCashFlow({from:'2026-01',loans:[HEADERS,...loans],savings:savings(events),consultedAt:NOW,...extra});}
 function cell(r,kind,month='2026-10'){const i=r.months.findIndex(m=>m.key===month);assert(i>=0);return r.rows.find(row=>row.id===kind).cells[i];}
 const codes=r=>r.issues.map(i=>i.code);
 const event=(id,kind,amount,date='2026-10-15',extra={})=>({id,kind,amount,date,source:'synthetic_fixture',sourceId:id,...extra});
 
-function projected(loans=[],requests=[],extra={}){
- return consolidateCashFlow({base:report([],[],extra),loans:[HEADERS,...loans],requests:[[],...requests]});
+function projected(loans=[],requests=[],extra={},approvals=[]){
+ return consolidateCashFlow({base:report([],[],extra),loans:[HEADERS,...loans],requests:[[],...requests],approvals:[[],...approvals]});
 }
 test('Savings builder leaves loan calculations to the original-source projection',()=>{
  const r=report([loan(),loan({id:'2',fund:'Caja Chica'})]);
@@ -34,34 +38,67 @@ test('Savings builder leaves loan calculations to the original-source projection
  assert.equal(cell(combined,'loan_recovered').amount,100);assert.equal(cell(combined,'fund_pettyCash_recovered').amount,900);
  assert.equal(combined.coverage.financialWrites,0);assert.equal(combined.coverage.amortizationEngineActive,false);
 });
-test('Repeated capital is counted once per C, while each quota B remains in its month',()=>{
- const r=projected([loan(),loan({date:'2026-11-15',installment:2})],[request({date:'2026-04-05'})]);
+test('One HISTORIAL DE PRESTAMOS row places capital once, while each quota B remains in its month',()=>{
+ const r=projected([loan(),loan({date:'2026-11-15',installment:2})],[request({date:'2026-03-30'})],{},[approval({date:'2026-04-05'})]);
  assert.equal(cell(r,'loan_placed','2026-04').amount,1000);assert.equal(cell(r,'loan_count','2026-04').amount,1);
  assert.equal(cell(r,'loan_recovered').amount,100);assert.equal(cell(r,'loan_scheduled','2026-11').amount,100);
  assert.equal(cell(r,'loan_placed','2026-01').amount,0);
 });
-test('C remains unique across folios; a contradictory capital is not chosen silently',()=>{
+test('Approved requests never count or place a loan absent from HISTORIAL DE PRESTAMOS',()=>{
  const r=projected([loan(),loan({folio:'101',principal:2000,total:2400,paid:200})],[request(),request({folio:'101',principal:2000,total:2400})]);
- assert.equal(r.loanContracts.length,1);assert.equal(cell(r,'loan_count','2026-01').amount,1);
- assert.equal(cell(r,'loan_placed','2026-01').amount,null);assert.equal(cell(r,'loan_recovered').amount,300);
+ assert.equal(r.loanContracts.length,1);assert.equal(cell(r,'loan_count','2026-01').amount,0);assert.equal(r.loanContracts[0].principal,null);
+ assert.equal(cell(r,'loan_placed','2026-01').amount,0);assert.equal(cell(r,'loan_recovered').amount,300);
+ assert(r.loanContracts[0].issues.includes('SIN_REGISTRO_EN_HISTORIAL_DE_PRESTAMOS'));
 });
 test('Repeated installment labels do not erase legitimate original quota rows',()=>{
  const r=projected([loan(),loan({date:'2026-10-20'})]);
- assert.equal(cell(r,'loan_recovered').amount,200);assert.equal(cell(r,'loan_placed','2026-01').amount,1000);
+ assert.equal(cell(r,'loan_recovered').amount,200);assert.equal(cell(r,'loan_placed','2026-01').amount,0);
 });
 test('Conflicting program identity preserves B in its recorded G and flags the relation',()=>{
  const r=projected([loan(),loan({fund:'Caja Chica',installment:2})]);
  assert.equal(cell(r,'loan_recovered').amount,100);assert.equal(cell(r,'fund_pettyCash_recovered').amount,100);
  assert(r.loanContracts[0].issues.includes('PROGRAMA_AMBIGUO'));
 });
-test('Authorized request date is placement authority even when calendar origin is absent',()=>{
- const r=projected([loan({origin:null})],[request({date:'2026-04-05'})]);
- assert.equal(cell(r,'loan_placed','2026-04').amount,1000);assert.equal(cell(r,'loan_count','2026-04').amount,1);
+test('Approval date J of HISTORIAL DE PRESTAMOS is placement authority, not the request date',()=>{
+ const r=projected([loan({origin:null})],[request({date:'2026-04-30'})],{},[approval({date:'2026-05-02',principal:1500})]);
+ assert.equal(cell(r,'loan_placed','2026-05').amount,1500);assert.equal(cell(r,'loan_count','2026-05').amount,1);
+ assert.equal(cell(r,'loan_placed','2026-04').amount,0);assert.equal(cell(r,'loan_count','2026-04').amount,0);
+ assert.equal(r.loanContracts[0].placementDate,'2026-05-02');assert.equal(r.loanContracts[0].requestPlacementDate,'2026-04-30');
 });
-test('Conflicting request dates never choose a convenient placement month',()=>{
+test('Conflicting request dates only qualify the balance and never place a loan',()=>{
  const r=projected([loan()],[request(),request({date:'2026-02-01'})]);
- assert.equal(r.records.filter(x=>x.kind==='loan_placed').length,0);assert.equal(r.loanContracts[0].placementDate,null);
- assert(r.loanContracts[0].issues.includes('FECHA_COLOCACION_AMBIGUA'));
+ assert.equal(r.records.filter(x=>x.kind==='loan_placed').length,0);assert.equal(r.loanContracts[0].requestPlacementDate,null);
+ assert(r.loanContracts[0].issues.includes('FECHA_SOLICITUD_AMBIGUA'));
+});
+test('Every loan-program row of HISTORIAL DE PRESTAMOS counts in its approval month, as in the sheet',()=>{
+ const r=projected([],[],{},[approval(),approval({id:'2',fund:'Caja Chica',principal:500,date:'2026-01-31'}),approval({id:'3',fund:'15/01/2027 — Incentivos trimestrales',principal:700,date:'2026-02-01'}),approval({id:'4',fund:'Sutiexpress',principal:900,date:'2026-02-10'}),approval({id:'',fund:'Seguro Colectivo Suti',principal:660,date:'2026-01-10'}),approval({id:'5',fund:'Vales y membresias',principal:50,date:'2026-01-10'})]);
+ assert.equal(cell(r,'loan_count','2026-01').amount,1);assert.equal(cell(r,'loan_placed','2026-01').amount,1000);
+ assert.equal(cell(r,'fund_pettyCash_count','2026-01').amount,1);assert.equal(cell(r,'fund_pettyCash_placed','2026-01').amount,500);
+ assert.equal(cell(r,'fund_advance_count','2026-02').amount,1);assert.equal(cell(r,'fund_advance_placed','2026-02').amount,700);
+ assert.equal(cell(r,'fund_sutiexpress_count','2026-02').amount,1);assert.equal(cell(r,'fund_sutiexpress_placed','2026-02').amount,900);
+ assert.equal(r.records.filter(x=>/_count$/.test(x.kind)).length,4);
+ const record=r.records.find(x=>x.id==='capital:approval:3');assert.equal(record.source,'HISTORIAL DE PRESTAMOS');assert.equal(record.sourceId,'Fila 3');assert.equal(record.basis,'APPROVAL_DATE_PLACEMENT');
+});
+test('Repeated loan ID in HISTORIAL DE PRESTAMOS counts each row and is reported',()=>{
+ const r=projected([],[],{},[approval(),approval({folio:'101',principal:2000,date:'2026-01-20'})]);
+ assert.equal(cell(r,'loan_count','2026-01').amount,2);assert.equal(cell(r,'loan_placed','2026-01').amount,3000);
+ assert(codes(r).includes('LOAN_APPROVAL_ID_REPEATED'));
+});
+test('Uninterpretable amount counts the loan but leaves its capital undetermined',()=>{
+ const r=projected([],[],{},[approval({principal:'REVISAR'}),approval({id:'2',principal:'2500.50'})]);
+ assert.equal(cell(r,'loan_count','2026-01').amount,2);assert.equal(cell(r,'loan_placed','2026-01').amount,null);
+ assert.equal(cell(r,'loan_placed','2026-01').knownAmount,2500.5);assert(codes(r).includes('LOAN_APPROVAL_AMOUNT_INVALID'));
+});
+test('Missing or future approval date is kept out of the months, never guessed',()=>{
+ const r=projected([],[],{},[approval({date:null}),approval({id:'2',date:'2026-11-03'})]);
+ assert.equal(r.months.reduce((n,m)=>n+(cell(r,'loan_count',m.key).amount||0),0),0);
+ assert.equal(r.unassigned.filter(x=>x.id.startsWith('count:approval:')).length,2);assert(codes(r).includes('LOAN_APPROVAL_DATE_UNRESOLVED'));
+});
+test('Without HISTORIAL DE PRESTAMOS the count and placed capital are unavailable, not substituted',()=>{
+ const r=consolidateCashFlow({base:report(),loans:[HEADERS,loan()],requests:[[],request()]});
+ assert.equal(cell(r,'loan_count','2026-01').amount,null);assert.equal(cell(r,'loan_count','2026-01').status,'UNAVAILABLE');
+ assert.equal(cell(r,'loan_placed','2026-01').amount,null);assert.equal(cell(r,'loan_recovered').amount,100);
+ assert(codes(r).includes('LOAN_APPROVALS_UNAVAILABLE'));
 });
 test('A/B uses Hermosillo boundary, including same-day payment',()=>{
  const r=projected([loan({date:'2026-10-31',paid:200}),loan({date:'2026-11-01',paid:300,installment:2})],[],{consultedAt:'2026-11-01T06:59:59.000Z'});
@@ -142,7 +179,7 @@ function client({authenticated=true,authorized=true,changed=false,savingsError=f
   return {data:{contracts:[],movements:[],obligations:[],reviews:[],balances:[]},error:investorsError?{message:'Unavailable'}:null};
  }};
 }
-const source=rows=>({loans:[HEADERS,...rows],requests:[[]]});
+const source=(rows,approvals=[])=>({loans:[HEADERS,...rows],requests:[[]],approvals:[[],...approvals]});
 test('Unauthenticated or unauthorized requests fail before Google is queried',async()=>{
  for(const [options,error]of [[{authenticated:false},'AUTH_REQUIRED'],[{authorized:false},'ADMIN_DENIED']]){
   let google=0;await assert.rejects(loadCashFlow({action:'CASH_FLOW',from:'2026-01'},client(options),async()=>{google++;return source([]);},()=>NOW),new RegExp(error));assert.equal(google,0);
@@ -158,7 +195,7 @@ test('Valid request returns the actor context and read-only projection from the 
  assert.equal(r.data.coverage.financialWrites,0);assert(r.data.sourceBases);
 });
 test('Malformed source payload or unavailable savings fail explicitly',async()=>{
- for(const invalid of [null,[],{loans:[]},{loans:[],requests:null}]){
+ for(const invalid of [null,[],{loans:[]},{loans:[],requests:null},{loans:[],requests:[]},{loans:[],requests:[],approvals:null}]){
   await assert.rejects(loadCashFlow({action:'CASH_FLOW',from:'2026-01'},client(),async()=>invalid,()=>NOW),/CASH_FLOW_SOURCE_INVALID/);
  }
  await assert.rejects(loadCashFlow({action:'CASH_FLOW',from:'2026-01'},client({savingsError:true}),async()=>source([]),()=>NOW),/SAVINGS_SOURCE_UNAVAILABLE/);
@@ -203,7 +240,7 @@ test('Google reader uses fixed ranges, unformatted serials and the existing read
   assert.deepEqual(u.searchParams.getAll('ranges'),CASH_FLOW_RANGES);assert.equal(u.searchParams.get('valueRenderOption'),'UNFORMATTED_VALUE');assert.equal(u.searchParams.get('dateTimeRenderOption'),'SERIAL_NUMBER');return response(googlePayload());
  });
  assert.equal(calls.length,2);assert.equal(rows[1][18],1);assert.equal(rows[1][25],5);assert.equal(rows[1][27],15);assert.equal(rows[1][29],80);assert.equal(rows[1][32],serial('2026-01-05'));assert.equal(rows[1][30],undefined);
- const r=consolidateCashFlow({base:report(),loans:rows});assert.equal(cell(r,'loan_placed','2026-01').amount,1000);
+ const r=consolidateCashFlow({base:report(),loans:rows});assert.equal(cell(r,'loan_recovered').amount,100);assert.equal(cell(r,'loan_placed','2026-01').status,'UNAVAILABLE');
 });
 test('Google denied access stops without a fallback or a write',async()=>{
  let calls=0;await assert.rejects(readCashFlowGoogle(env,async(url,options)=>{calls++;if(url===TOKEN_ENDPOINT)return response({access_token:'synthetic-test-token'});assert.equal(options.method,'GET');return response({},403);}),/GOOGLE_ACCESS_DENIED/);assert.equal(calls,2);
@@ -217,7 +254,7 @@ test('Missing reader configuration cannot query any endpoint',async()=>{
 });
 
 test('Consolidated Google reader merges only approved ranges and never fetches transfer data',async()=>{
- const requestRow=request({date:'2026-04-05'}),payload=googlePayload();payload.valueRanges.push({values:[[],requestRow.slice(0,11)]},{values:[['Estatus'],requestRow.slice(24,25)]});
+ const requestRow=request({date:'2026-04-05'}),payload=googlePayload();payload.valueRanges.push({values:[[],requestRow.slice(0,11)]},{values:[['Estatus'],requestRow.slice(24,25)]},{values:[['f'],approval({date:'2026-04-07'})]});
  const read=await readConsolidatedCashFlowGoogle(env,async(url,options)=>{
   if(url===TOKEN_ENDPOINT)return response({access_token:'synthetic-test-token'});
   assert.equal(options.method,'GET');const query=new URL(url).searchParams;
@@ -227,5 +264,6 @@ test('Consolidated Google reader merges only approved ranges and never fetches t
  });
  assert.equal(read.requests[1][24],'Aprobado');assert.equal(read.requests[1][9],serial('2026-04-05'));
  assert.equal(read.loans[1][29],80);assert.equal(read.loans[1][30],undefined);
- const r=consolidateCashFlow({base:report(),...read});assert.equal(cell(r,'loan_placed','2026-04').amount,1000);
+ assert(CONSOLIDATED_CASH_FLOW_RANGES.includes("'HISTORIAL DE PRESTAMOS'!A:J"));assert.equal(read.approvals[1][9],serial('2026-04-07'));
+ const r=consolidateCashFlow({base:report(),...read});assert.equal(cell(r,'loan_placed','2026-04').amount,1000);assert.equal(cell(r,'loan_count','2026-04').amount,1);
 });

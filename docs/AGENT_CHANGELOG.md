@@ -4849,3 +4849,5 @@ RPC de lectura autenticada con contexto efectivo o permiso affiliates.read; RLS 
 
 
 H-AFFILIATE-SENIORITY-001 cierre: PASS, v2026112503, deploy d535e60baeb0f3d5491bb94bce02ff346720479f. Local y Pages, datos reales y regresion global PASS. 308 afiliados / 41 grupos. Fuente affiliates, SUTISSSTESON. Evidencia: docs/qa/evidence/seniority/deployment.json y review.json. Sin cambios de datos ni legacy.
+
+H-CASH-FLOW-APPROVALS-20261125: conteo y capital colocado del flujo de efectivo desde HISTORIAL DE PRESTAMOS (E, H, J). 0 diferencias contra la hoja 2025-2026 con datos reales; pruebas focales PASS. Publicación pendiente: Edge reports-jc (token de gestión 401) y luego frontend v2026112504. Evidencia: docs/audits/H-CASH-FLOW-APPROVALS-20261125.md.

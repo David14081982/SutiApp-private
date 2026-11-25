@@ -48,6 +48,8 @@ function investorInputs(value){
 }
 const LOAN_COLUMNS=[...Array.from({length:21},(_,i)=>i).filter(i=>i!==17&&i!==19),25,26,27,28,29,32];
 const REQUEST_COLUMNS=[...Array.from({length:11},(_,i)=>i),24];
+// HISTORIAL DE PRESTAMOS: A ID, B folio, C nombre, E fondo, H cantidad, J fecha de aprobación.
+const APPROVAL_COLUMNS=[0,1,2,4,7,9];
 function sheet(rows,columns,width){
  return array(rows,row=>{if(!Array.isArray(row))return invalid();const out=Array(width).fill(null);for(const index of columns)if(index<row.length&&row[index]!==undefined)out[index]=scalar(row[index]);return out;});
 }
@@ -56,7 +58,7 @@ export function cashFlowInputSnapshot({source,savings,investors,from,consultedAt
  if(sourceErrors.investors!==undefined&&sourceErrors.investors!==null&&sourceErrors.investors!=='INVESTOR_SOURCE_UNAVAILABLE')return invalid();
  return {
   version:'cash-flow-inputs-v1',modelVersion:'20261104-original-components-v1',from,consultedAt,
-  source:{loans:sheet(source.loans,LOAN_COLUMNS,33),requests:sheet(source.requests,REQUEST_COLUMNS,25)},
+  source:{loans:sheet(source.loans,LOAN_COLUMNS,33),requests:sheet(source.requests,REQUEST_COLUMNS,25),...(source.approvals===undefined?{}:{approvals:sheet(source.approvals,APPROVAL_COLUMNS,10)})},
   savings:savingsInputs(savings),investors:investorInputs(investors),
   sourceErrors:{investors:sourceErrors.investors??null}
  };

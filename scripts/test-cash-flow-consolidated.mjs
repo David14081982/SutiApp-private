@@ -10,9 +10,11 @@ function investors(extra={}){return {as_of:'2026-10-30',contracts:[],movements:[
 function fixture({C='1',D='100',fund='Caja de Ahorro',n=2,tariff=1500,adminUnits=1,principal=200000,interest=40000,dates=['2026-10-15','2026-11-15'],B=null}={}){
  const administration=n*tariff*adminUnits,total=principal+interest+administration,amount=total/n;
  const contract={C,D,principal,interest,administration,total,tariff,schedule:Array.from({length:n},(_,i)=>({S:i+1,amount,adminUnits})),sourceVerified:true,evidence:{kind:'explicit_approved_snapshot',reference:'TEST:'+C}};
- const rows=dates.slice(0,n).map((date,i)=>{const r=Array(33).fill('');Object.assign(r,{0:date,1:B?.[i]??amount/100,2:C,3:D,6:fund,8:n,9:principal/100,10:total/100,14:amount/100,18:i+1,20:'2026-10-01',25:administration/n/100,27:interest/n/100,28:(principal+interest)/n/100,29:principal/n/100});return r;});const request=Array(25).fill('');Object.assign(request,{0:C,1:D,4:fund,7:principal/100,8:total/100,9:'2026-10-01',24:'Iniciado'});return {contract,rows,request};
+ const rows=dates.slice(0,n).map((date,i)=>{const r=Array(33).fill('');Object.assign(r,{0:date,1:B?.[i]??amount/100,2:C,3:D,6:fund,8:n,9:principal/100,10:total/100,14:amount/100,18:i+1,20:'2026-10-01',25:administration/n/100,27:interest/n/100,28:(principal+interest)/n/100,29:principal/n/100});return r;});const request=Array(25).fill('');Object.assign(request,{0:C,1:D,4:fund,7:principal/100,8:total/100,9:'2026-10-01',24:'Iniciado'});
+ // HISTORIAL DE PRESTAMOS: A ID, B folio, C nombre, E fondo, H cantidad, J fecha de aprobación.
+ const approval=Array(10).fill('');Object.assign(approval,{0:C,1:D,2:'Persona',4:fund,7:principal/100,9:'2026-10-02'});return {contract,rows,request,approval};
 }
-function report(fixtures=[],options={}){const base=buildCashFlow({from:FROM,loans:[headers],savings:options.savings||savings(),consultedAt:NOW});return consolidateCashFlow({base,loans:[headers,...fixtures.flatMap(f=>f.rows)],requests:[[],...fixtures.map(f=>f.request)],investorsSource:options.investors||investors(),...options});}
+function report(fixtures=[],options={}){const base=buildCashFlow({from:FROM,loans:[headers],savings:options.savings||savings(),consultedAt:NOW});return consolidateCashFlow({base,loans:[headers,...fixtures.flatMap(f=>f.rows)],requests:[[],...fixtures.map(f=>f.request)],approvals:[[],...fixtures.map(f=>f.approval)],investorsSource:options.investors||investors(),...options});}
 const cell=(r,id,m=0)=>r.rows.find(row=>row.id===id)?.cells[m];
 const originals=['contribution','contribution_mixed','withdrawal_partial','withdrawal_total','withdrawal_unspecified','yield_credited','adjustment','savings_balance','contribution_scheduled','withdrawal_pending','loan_placed','loan_recovered','loan_principal','loan_interest','loan_admin','loan_pending','loan_scheduled'];
 test('17 existing concepts and savings authority are preserved; capital counted once per C',()=>{
@@ -86,7 +88,7 @@ test('summary signed details match known sums instead of adding positive exits t
  const r=report([fixture()]),map=new Map(r.records.map(x=>[x.id,x]));for(const id of ['cash_in','cash_out','cash_net','portfolio_pending'])for(const c of r.rows.find(x=>x.id===id).cells){if(c.status==='NOT_APPLICABLE')continue;const sum=c.sourceIds.reduce((s,id)=>s+(map.get(id)?.amount||0)*(c.sourceSigns?.[id]??1),0);assert(Math.abs(sum-(c.knownAmount||0))<.00001,id);}
 });
 test('new endpoint retains authorization and context checks around all source reads',async()=>{
- let contextCalls=0,reads=0;const source={loans:[headers],requests:[[]]};
+ let contextCalls=0,reads=0;const source={loans:[headers],requests:[[]],approvals:[[]]};
  const client={auth:{getUser:async()=>({data:{user:{id:'admin'}}})},rpc:async(name)=>{if(name==='get_admin_reports_jc_context'){contextCalls++;return {data:{actor:'admin',session:null}};}return {data:name.endsWith('_investors')?investors():savings()};}};
  const r=await loadCashFlow({action:'CASH_FLOW',from:FROM},client,async()=>{reads++;return source;},()=>NOW);assert.equal(r.data.months.length,12);assert.equal(contextCalls,2);assert.equal(reads,1);
  client.auth.getUser=async()=>({error:true});await assert.rejects(()=>loadCashFlow({action:'CASH_FLOW',from:FROM},client,async()=>{reads++;return source;}),/AUTH_REQUIRED/);assert.equal(reads,1);

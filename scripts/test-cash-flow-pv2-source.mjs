@@ -10,6 +10,11 @@ function quota({C='L1',D='001',date='2026-10-15',B=120,J=100,K=120,AD=100,AB=10,
 function request({C='L1',D='001',date='2026-09-01',principal=100,total=120,status='Iniciado',fund='Caja Chica'}={}){
  const v=Array(25).fill('');Object.assign(v,{0:C,1:D,2:'Persona prueba',4:fund,7:principal,8:total,9:date,24:status});return v;
 }
+// HISTORIAL DE PRESTAMOS row: A ID, B folio, C nombre, E fondo, H cantidad, J fecha de aprobación.
+function approval({C='L1',D='001',principal=100,date='2026-09-05',fund='Caja Chica'}={}){
+ const v=Array(10).fill('');Object.assign(v,{0:C,1:D,2:'Persona prueba',4:fund,7:principal,9:date});return v;
+}
+const approvals=(...rows)=>({approvals:[[],...rows]});
 const run=(qs,rs=[request()],extra={})=>deriveCashFlowLoans({loans:[[],...qs],requests:[[],...rs],asOf:'2026-11-04',months:months(2026),...extra});
 const entries=(r,metric,month)=>r.entries.filter(e=>e.metric===metric&&(!month||e.record.date?.startsWith(month))).map(e=>e.record);
 test('source Z AB AD are used without rate, original schedule or numbering',()=>{
@@ -20,26 +25,26 @@ test('today is paid and tomorrow scheduled in the same month',()=>{
  const r=run([quota({date:'2026-11-04',AD:50,B:60,AB:5,Z:5,AC:55}),quota({date:'2026-11-05',AD:50,B:60,AB:5,Z:5,AC:55})]);
  assert.equal(entries(r,'recovered')[0].amount,60);assert.equal(entries(r,'scheduled')[0].amount,60);
 });
-test('capital counted once for repeated quotas and request date wins over U',()=>{
- const r=run([quota({date:'2026-10-15',U:'2026-10-01'}),quota({date:'2027-01-15',U:'2026-10-01',AD:0,AB:0,Z:0,AC:0,B:0})]);
- assert.equal(entries(r,'placed').length,1);assert.equal(entries(r,'placed')[0].date,'2026-09-01');assert.equal(entries(r,'count')[0].amount,1);
+test('capital counted once for repeated quotas and approval date wins over request date and U',()=>{
+ const r=run([quota({date:'2026-10-15',U:'2026-10-01'}),quota({date:'2027-01-15',U:'2026-10-01',AD:0,AB:0,Z:0,AC:0,B:0})],[request()],approvals(approval()));
+ assert.equal(entries(r,'placed').length,1);assert.equal(entries(r,'placed')[0].date,'2026-09-05');assert.equal(entries(r,'placed')[0].amount,100);assert.equal(entries(r,'count')[0].amount,1);
 });
 test('same C with two folios cannot duplicate capital or count',()=>{
- const r=run([quota(),quota({D:'002'})]);assert.equal(entries(r,'count').length,1);assert.equal(entries(r,'placed').length,1);assert(r.loanContracts[0].issues.includes('FOLIO_AMBIGUO'));
+ const r=run([quota(),quota({D:'002'})],[request()],approvals(approval()));assert.equal(entries(r,'count').length,1);assert.equal(entries(r,'placed').length,1);assert(r.loanContracts[0].issues.includes('FOLIO_AMBIGUO'));
 });
 test('approved loan without calendar still places original principal and counts once',()=>{
- const r=run([]);assert.equal(entries(r,'placed')[0].amount,100);assert.equal(entries(r,'count')[0].amount,1);assert.equal(entries(r,'pending','2026-10')[0].amount,null);assert(r.loanContracts[0].issues.includes('CALENDARIO_AUN_NO_REGISTRADO'));
+ const r=run([],[request()],approvals(approval()));assert.equal(entries(r,'placed')[0].amount,100);assert.equal(entries(r,'count')[0].amount,1);assert.equal(entries(r,'pending','2026-10')[0].amount,null);assert(r.loanContracts[0].issues.includes('CALENDARIO_AUN_NO_REGISTRADO'));
 });
 test('cancelled or rejected request does not place capital, B remains operational',()=>{
  for(const status of ['Cancelado','Rechazado']){const r=run([quota()],[request({status})]);assert.equal(entries(r,'placed').length,0);assert.equal(entries(r,'count').length,0);assert.equal(entries(r,'recovered')[0].amount,120);}
 });
-test('duplicate authorized C with conflicting amounts counts once and never chooses amount',()=>{
- const r=run([quota({J:6000,K:7000})],[request({C:'L1',principal:6000}),request({C:'L1',principal:10000})]);
- assert.equal(entries(r,'count').length,1);assert.equal(entries(r,'placed')[0].amount,null);assert.equal(r.loanContracts[0].principal,null);assert.deepEqual(r.loanContracts[0].requestRows,[2,3]);
+test('duplicate authorized C with conflicting amounts: the granted row places, the balance never chooses an amount',()=>{
+ const r=run([quota({J:6000,K:7000})],[request({C:'L1',principal:6000}),request({C:'L1',principal:10000})],approvals(approval({principal:6000})));
+ assert.equal(entries(r,'count').length,1);assert.equal(entries(r,'placed')[0].amount,6000);assert.equal(r.loanContracts[0].principal,null);assert.deepEqual(r.loanContracts[0].requestRows,[2,3]);
 });
-test('ambiguous request dates in same month keep count but not exact placement',()=>{
- const r=run([quota()],[request({date:'2026-09-01'}),request({date:'2026-09-02'})]);
- assert.equal(entries(r,'count').length,1);assert.equal(entries(r,'placed').length,0);assert(r.unassigned.some(r=>r.metric==='placed'));
+test('ambiguous request dates do not alter the approval placement and are reported',()=>{
+ const r=run([quota()],[request({date:'2026-09-01'}),request({date:'2026-09-02'})],approvals(approval()));
+ assert.equal(entries(r,'count').length,1);assert.equal(entries(r,'placed').length,1);assert.equal(entries(r,'placed')[0].date,'2026-09-05');assert(r.loanContracts[0].issues.includes('FECHA_SOLICITUD_AMBIGUA'));
 });
 test('no transfer column is requested or used',()=>{
  assert(CASH_FLOW_RANGES.every(r=>!r.includes('AE')));assert(CONSOLIDATED_CASH_FLOW_RANGES.every(r=>!r.includes('AE')));
@@ -78,8 +83,8 @@ test('negative principal balance is unavailable, never a negative credit',()=>{
  assert.equal(entries(r,'pending','2026-10')[0].amount,null);
  assert.equal(entries(r,'principal')[0].amount,null);assert.equal(entries(r,'unallocated')[0].amount,110);assert.equal(entries(r,'interest')[0].amount,10);assert.equal(entries(r,'admin')[0].amount,10);assert.equal(entries(r,'recovered')[0].amount,130);
 });
-test('source inputs are immutable and authorization does not invent request date',()=>{
- const qs=[quota({U:'2026-09-03'})],before=JSON.stringify(qs),r=run(qs,[]);assert.equal(JSON.stringify(qs),before);assert.equal(entries(r,'placed').length,0);assert(r.unassigned.some(r=>r.metric==='placed'&&r.amount===100));assert.equal(r.loanContracts[0].placementDate,null);
+test('source inputs are immutable and authorization does not invent a placement',()=>{
+ const qs=[quota({U:'2026-09-03'})],as=[[],approval({C:'OTRO'})],before=JSON.stringify([qs,as]),r=run(qs,[],{approvals:as});assert.equal(JSON.stringify([qs,as]),before);assert.equal(entries(r,'placed').length,1);assert.equal(entries(r,'placed')[0].loanId,'OTRO');assert.equal(r.loanContracts.find(c=>c.loanId==='L1').placementDate,null);assert.equal(r.loanContracts.find(c=>c.loanId==='OTRO').placementDate,'2026-09-05');
 });
 test('empty original U is not a date and does not invent placement',()=>{
  const r=run([quota({U:0})],[]);assert.equal(entries(r,'placed').length,0);assert.equal(entries(r,'recovered')[0].amount,120);

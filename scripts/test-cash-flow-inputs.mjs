@@ -24,3 +24,10 @@ test('objects hidden inside permitted scalar fields fail rather than leak opaque
 test('source issue arrays and contractual obligation originals retain exact authorized fields',()=>{
  const f=fixture();f.savings.issues=[{code:'X',message:'Pendiente',affectedKinds:['contribution'],months:['2026-01'],sourceIds:['h'],payload:{private:'secret'}}];f.investors.obligations=[{id:'o',contract_id:'c',amount:125,principal_basis:2500,rate_snapshot:0.025,origin:'calculated',paid:0,source_payload:'secret'}];const r=cashFlowInputSnapshot(f);assert.deepEqual(r.savings.issues[0],{code:'X',message:'Pendiente',affectedKinds:['contribution'],months:['2026-01'],sourceIds:['h']});assert.equal(r.investors.obligations[0].amount,125);assert.equal(r.investors.obligations[0].paid,0);assert(!JSON.stringify(r).includes('secret'));
 });
+test('HISTORIAL DE PRESTAMOS keeps only ID, folio, nombre, fondo, cantidad and fecha de aprobación',()=>{
+ const f=fixture();f.source.approvals=[Array.from({length:38},(_,i)=>i),['P1','F1','Nombre','1','Caja Chica','3%',12,1000,1200,46027,'','','','','','',2,'6620000000']];
+ const r=cashFlowInputSnapshot(f);assert.equal(r.source.approvals[0].length,10);
+ for(const [i,v]of r.source.approvals[1].entries())assert.equal(v,[0,1,2,4,7,9].includes(i)?f.source.approvals[1][i]:null,String(i));
+ assert(!JSON.stringify(r).includes('6620000000'));
+ const legacy=fixture();assert.equal(Object.hasOwn(cashFlowInputSnapshot(legacy).source,'approvals'),false);
+});

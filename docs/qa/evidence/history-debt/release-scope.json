@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "base": "70e7f2ac51d4b62c9a5499906cf7c48dad9cf334",
+  "changedBundleChunks": [
+    "history-loans-repository.js",
+    "history-loans.jsx",
+    "screens-historial.jsx"
+  ],
+  "totalChunks": 179,
+  "protectedFilesUnchanged": [
+    "sw.js",
+    "app/private-resource-demand.js",
+    "app/affiliate-auth.js",
+    "app/history-statement.js",
+    "app/operations-store.jsx",
+    "supabase/functions/loan-history/history.mjs",
+    "supabase/functions/loan-history/index.ts",
+    "supabase/functions/loan-history/snapshot.mjs",
+    "google-apps-script/financial-handoff/Code.gs"
+  ],
+  "standardPagesBuild": "PASS",
+  "screenPermissionGate": "PASS",
+  "runtimeTests": {
+    "debt": 11,
+    "snapshot": "PASS",
+    "approvals": "PASS",
+    "nativePending": 12,
+    "totalPaid": 15
+  },
+  "businessWrites": 0
+}

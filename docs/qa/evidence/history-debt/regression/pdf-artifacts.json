@@ -1,0 +1,42 @@
+{
+  "status": "PASS",
+  "scope": "Isolated synthetic PDF test outputs; retained locally and reproducible by browser tests",
+  "files": [
+    {
+      "name": "statement-1440.pdf",
+      "sha256": "2ae666c3ac06ad4b08f7fc642da0ea2964fde65f3b80a28eb664daf767e3839a"
+    },
+    {
+      "name": "statement-320.pdf",
+      "sha256": "2ae666c3ac06ad4b08f7fc642da0ea2964fde65f3b80a28eb664daf767e3839a"
+    },
+    {
+      "name": "statement-390.pdf",
+      "sha256": "2ae666c3ac06ad4b08f7fc642da0ea2964fde65f3b80a28eb664daf767e3839a"
+    },
+    {
+      "name": "total-paid-1440.pdf",
+      "sha256": "1c81eff8ab40ea45740e5283e1943966efc88560e21215c3cc6530ad7a2322ac"
+    },
+    {
+      "name": "total-paid-320.pdf",
+      "sha256": "1c81eff8ab40ea45740e5283e1943966efc88560e21215c3cc6530ad7a2322ac"
+    },
+    {
+      "name": "total-paid-390.pdf",
+      "sha256": "1c81eff8ab40ea45740e5283e1943966efc88560e21215c3cc6530ad7a2322ac"
+    },
+    {
+      "name": "unchanged-statement-1440.pdf",
+      "sha256": "2ae666c3ac06ad4b08f7fc642da0ea2964fde65f3b80a28eb664daf767e3839a"
+    },
+    {
+      "name": "unchanged-statement-320.pdf",
+      "sha256": "2ae666c3ac06ad4b08f7fc642da0ea2964fde65f3b80a28eb664daf767e3839a"
+    },
+    {
+      "name": "unchanged-statement-390.pdf",
+      "sha256": "2ae666c3ac06ad4b08f7fc642da0ea2964fde65f3b80a28eb664daf767e3839a"
+    }
+  ]
+}

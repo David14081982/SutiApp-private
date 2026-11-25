@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "checks": [
+    {
+      "width": 390,
+      "total": 26400,
+      "nextPayment": 2480,
+      "threeDistinctIds": true,
+      "proportionalBar": true,
+      "accordionPointerAndKeyboard": true,
+      "filtersIndependent": true,
+      "noAdditionalReads": true,
+      "detailPreserved": true,
+      "loadingErrorEmptyUnknown": true,
+      "identityRace": true,
+      "logoutClears": true,
+      "noOverflow": true
+    },
+    {
+      "width": 320,
+      "total": 26400,
+      "nextPayment": 2480,
+      "threeDistinctIds": true,
+      "proportionalBar": true,
+      "accordionPointerAndKeyboard": true,
+      "filtersIndependent": true,
+      "noAdditionalReads": true,
+      "detailPreserved": true,
+      "loadingErrorEmptyUnknown": true,
+      "identityRace": true,
+      "logoutClears": true,
+      "noOverflow": true
+    },
+    {
+      "width": 1440,
+      "total": 26400,
+      "nextPayment": 2480,
+      "threeDistinctIds": true,
+      "proportionalBar": true,
+      "accordionPointerAndKeyboard": true,
+      "filtersIndependent": true,
+      "noAdditionalReads": true,
+      "detailPreserved": true,
+      "loadingErrorEmptyUnknown": true,
+      "identityRace": true,
+      "logoutClears": true,
+      "noOverflow": true
+    }
+  ],
+  "network": "BLOCKED",
+  "productionWrites": 0,
+  "scope": "Real focal modules, isolated source/Auth/header harness"
+}

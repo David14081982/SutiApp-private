@@ -26,39 +26,13 @@
     if (filter === 'Liquidadas') list = list.filter((s) => s.estado === 'liquidada');
     if (filter === 'No aprobadas') list = list.filter((s) => s.estado === 'rechazado');
 
-    const activa = mine.find((s) => s.estado === 'revision' && s.sourceId && s.steps.length);
     const openEntry=s=>app.push('tracking',s.history&&(s.history.kind==='loan'||!s.sourceId)?{loanKey:s.historyKey}:{s});
-    // El progreso se LLENA al aparecer (una sola vez): la barra deja de leerse
-    // como gráfico y pasa a leerse como avance.
-    const progRef = React.useRef(null);
-    React.useEffect(() => {
-      const el = progRef.current, M = window.MOTION;
-      if (!el || !M || M.reduced() || M.frozen() || el.hasAttribute('data-m-filled')) return;
-      el.setAttribute('data-m-filled', '');
-      Array.prototype.forEach.call(el.children, (seg, i) => {
-        M.animate(seg, [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 400, easing: M.ease.enter, delay: i * 70, fill: 'backwards' });
-      });
-    }, [activa && activa.id]);
 
     return React.createElement('div', { className: 'su-route', style: { paddingBottom: 18 } },
       React.createElement(window.TopBar, { app, variant: 'historial' }),
       React.createElement(window.RequestAuthorizationNotice, { app, requests: operations.all() }),
       React.createElement(window.FarmaHistory,{app}),
-      // active tracker hero
-      activa && React.createElement('div', { style: { padding: '4px 16px 0' } },
-        React.createElement('div', { onClick: () => app.push('tracking', { s: activa }), className: 'su-press su-history-hero', style: { cursor: 'pointer', background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))', borderRadius: 22, padding: 18, color: '#fff', boxShadow: 'var(--neo-md)', position: 'relative', overflow: 'hidden' } },
-          React.createElement('div', { style: { position: 'absolute', right: -20, top: -20, opacity: .12 } }, React.createElement(I, { name: 'clock', size: 130, stroke: 1.2, style: { color: '#fff' } })),
-          React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
-            React.createElement('span', { style: { fontSize: 'var(--text-12-5, 12.5px)', fontWeight: 700, opacity: .85, letterSpacing: '.04em' } }, 'SOLICITUD EN CURSO'),
-            React.createElement('span', { style: { fontSize: 'var(--text-12, 12px)', fontWeight: 700, fontFamily: 'var(--mono)', opacity: .85 } }, activa.id)),
-          React.createElement('div', { style: { fontSize: 'var(--text-20, 20px)', fontWeight: 800, marginTop: 8 } }, activa.tipo),
-          React.createElement('div', { style: { fontSize: 'var(--text-26, 26px)', fontWeight: 800, marginTop: 2, letterSpacing: '-.02em' } }, activa.monto==null?'Por cotizar':window.money(activa.monto)),
-          // mini progress
-          React.createElement('div', { ref: progRef, style: { display: 'flex', gap: 5, marginTop: 14 } },
-            activa.steps.map((st, i) => React.createElement('div', { key: i, style: { flex: 1, height: 5, borderRadius: 999, transformOrigin: 'left center', background: st.done ? '#fff' : st.active ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.22)' } }))),
-          React.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 } },
-            React.createElement('span', { style: { fontSize: 'var(--text-13, 13px)', fontWeight: 700 } }, (activa.steps.find(step => step.active) || {}).label || REQUEST_LABELS[activa.requestStatus] || 'En revisión'),
-            React.createElement('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--text-13, 13px)', fontWeight: 700 } }, 'Ver seguimiento', React.createElement(I, { name: 'arrowR', size: 15, stroke: 2.2 }))))),
+      React.createElement(window.HistoryDebtCard,{history}),
       // filters (C5.2 · indicador deslizante compartido)
       React.createElement(window.ChipBar, { items: filters, value: filter, onChange: setFilter, style: { padding: '16px 16px 2px' } }),
       React.createElement('div',{style:{margin:'12px 16px 0',background:'#EEF3FF',border:'1px solid #D6E2FB',borderRadius:14,padding:'11px 13px',fontSize: 'var(--text-11-5, 11.5px)',fontWeight:650,color:'var(--ink-2)',lineHeight:1.45}},'Aquí puedes consultar tus solicitudes, cotizaciones y su avance.'),

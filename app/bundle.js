@@ -38427,6 +38427,74 @@ Object.assign(window, {
  'use strict';
  const normalize=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toUpperCase();
  const formatDate=v=>v?new Date(v.length===10?v+'T12:00:00-07:00':v).toLocaleDateString('es-MX',{timeZone:'America/Hermosillo'}):'Fecha no registrada';
+ // Display-only projection of the already authorized PV2 observation. Never a
+ // writer, a synthetic amortization schedule or a second financial authority.
+ function debtSummary(value){
+  const valid=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0;
+  const parts=v=>{const [m,e='0']=String(v).split('e');return {digits:m.replace('.',''),places:(m.split('.')[1]||'').length-Number(e)};};
+  // Keep the literal source decimals until the final currency display. Rounding
+  // each receipt first would turn 0.105 + 0.205 into 0.32 instead of 0.31.
+  let scale=2;
+  for(const entry of value.entries)if(entry.kind==='loan')for(const v of [entry.total,...(entry.schedule||[]).map(r=>r?.amount)])if(valid(v))scale=Math.max(scale,parts(v).places);
+  const unit=v=>{if(!valid(v))return null;const p=parts(v);return BigInt(p.digits)*10n**BigInt(scale-p.places);};
+  const divisor=10n**BigInt(scale-2);
+  const cents=v=>{if(v===null)return null;const n=Number((v+divisor/2n)/divisor);if(!Number.isSafeInteger(n))throw Error('AMOUNT_OVERFLOW');return n;};
+  const day=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+'T12:00:00Z'))&&new Date(v+'T12:00:00Z').toISOString().slice(0,10)===v;
+  const sum=values=>values.reduce((a,b)=>a+b,0n);
+  const ids=new Set(),sourceRows=new Set(),loans=[];
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value.server_now));
+  function cadence(dates){
+   const days=[...new Set(dates)].sort();if(days.length<3)return null;
+   const gaps=days.slice(1).map((d,i)=>(Date.parse(d)-Date.parse(days[i]))/86400000);
+   if(gaps.every(n=>n===7))return 'semana';
+   const dom=d=>Number(d.slice(8)),end=d=>dom(d)===new Date(Date.UTC(Number(d.slice(0,4)),Number(d.slice(5,7)),0)).getUTCDate();
+   if(gaps.every(n=>n>=13&&n<=16)&&days.every(d=>dom(d)===15||dom(d)===30||end(d)))return 'qna';
+   if(gaps.every(n=>n===14))return '14 días';
+   if(gaps.every(n=>n>=28&&n<=31)&&days.every(d=>dom(d)===dom(days[0])||end(d)))return 'mes';
+   return null;
+  }
+  try{
+   for(const entry of value.entries){
+    if(entry.kind!=='loan')continue;
+    const loan={id:entry.id,fund:entry.fund,balance:null,remaining:null,term:null,quota:null,period:null,next:null};
+    loans.push(loan);
+    if(typeof entry.id!=='string'||!entry.id||ids.has(entry.id))throw Error('LOAN_IDENTITY_AMBIGUOUS');
+    ids.add(entry.id);
+    if(entry.preparing||entry.key!=='loan:'+entry.id){loan.issue='CALENDAR_PENDING';continue;}
+    const original=unit(entry.total),rows=entry.schedule;
+    if(original===null||!Array.isArray(rows)||!rows.length){loan.issue='TOTAL_OR_CALENDAR_INVALID';continue;}
+    let invalid=false;
+    for(const row of rows){
+     if(!Number.isInteger(row.source_row)||row.source_row<2||sourceRows.has(row.source_row))throw Error('SOURCE_ROW_AMBIGUOUS');
+     sourceRows.add(row.source_row);
+     if(!day(row.date)||unit(row.amount)===null)invalid=true;
+    }
+    if(invalid){loan.issue='INSTALLMENT_INVALID';continue;}
+    const paid=sum(rows.filter(r=>r.date<=today).map(r=>unit(r.amount)));
+    loan.balance=original>paid?original-paid:0n;loan.excess=paid>original?paid-original:0n;
+    loan.term=Number.isInteger(entry.term)&&entry.term>0?entry.term:null;
+    // Several receipts on one date remain separate payments for the balance,
+    // but one scheduled discount date for the upcoming collection display.
+    const calendar=new Map();
+    rows.filter(r=>r.date>today).forEach(r=>calendar.set(r.date,sum([calendar.get(r.date)||0n,unit(r.amount)])));
+    let remainder=loan.balance;const future=[];
+    for(const [date,amount] of [...calendar].sort(([a],[b])=>a.localeCompare(b))){
+     const applied=remainder<amount?remainder:amount;if(applied)future.push({date,amount:applied});remainder-=applied;
+    }
+    loan.next=future[0]||null;
+    loan.remaining=remainder===0n?future.length:null;
+    loan.period=cadence(rows.map(r=>r.date));
+    if(future.length&&future.every((p,i)=>p.amount===future[0].amount||(i===future.length-1&&p.amount<future[0].amount)))loan.quota=future[0].amount;
+   }
+   const unresolved=loans.some(l=>l.balance===null),pending=loans.filter(l=>l.balance===null||l.balance>0);
+   const nextUnknown=unresolved||pending.some(l=>!l.next);
+   const date=nextUnknown?null:pending.map(l=>l.next.date).sort()[0]||null;
+   const displayNext=n=>n?{date:n.date,amount:cents(n.amount)}:null;
+   return {status:unresolved?'review':'ready',asOf:today,total:unresolved?null:cents(sum(pending.map(l=>l.balance))),
+    loans:pending.map(l=>({...l,balance:cents(l.balance),excess:l.excess===undefined?null:cents(l.excess),quota:cents(l.quota),next:displayNext(l.next)})),
+    next:date?{date,amount:cents(sum(pending.filter(l=>l.next.date===date).map(l=>l.next.amount)))}:null};
+  }catch(_){return {status:'review',asOf:today,total:null,loans:[],next:null};}
+ }
  function paidThrough(schedule,today){
   const validDay=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value+'T12:00:00Z'))&&new Date(value+'T12:00:00Z').toISOString().slice(0,10)===value;
   if(!validDay(today)||!Array.isArray(schedule)||!schedule.length)return null;
@@ -38527,7 +38595,7 @@ Object.assign(window, {
    imp.id||imp.session_id||null,admin.subjectKey||null,admin.assignment||null]);
  }
  function emit(){listeners.forEach(fn=>fn());}
- function summarize(){summary=data&&{...data,entries:data.entries.map(({schedule,total,paid_to_date,expected_to_date,...entry})=>entry)};}
+ function summarize(){summary=data&&{...data,debt:debtSummary({...data,entries:compose(data,Date.parse(data.server_now))}),entries:data.entries.map(({schedule,total,paid_to_date,expected_to_date,...entry})=>entry)};}
  function rememberKeys(){
   if(data)for(const entry of compose(data,Date.parse(data.server_now)+Math.max(0,performance.now()-anchor)))if(entry.sourceId)aliases.set(entry.key,entry.sourceId);
  }
@@ -38727,7 +38795,7 @@ Object.assign(window, {
   const current=result&&result.context===currentIdentity&&result.key===key?result:null;
   return {data:current?.data||null,elapsed:current?.anchor==null?0:Math.max(0,performance.now()-current.anchor),phase:current?.phase||'loading',retry:()=>{if(approvalPhase==='error'&&phase!=='error')refreshApprovals();else refresh();}};
  }
- window.LoanHistory=Object.freeze({load,project,merge,formatDate,normalize,metrics,useHistory});
+ window.LoanHistory=Object.freeze({load,project,merge,formatDate,normalize,metrics,debtSummary,useHistory});
 })();
 })();
 /* @@file history-statement.js */
@@ -38909,6 +38977,222 @@ Object.assign(window, {
   const h = React.createElement,
     brand = '#9E0A2A',
     muted = '#64748B';
+  function HistoryDebtCard({
+    history
+  }) {
+    const [open, setOpen] = React.useState(false),
+      debt = history.data?.debt;
+    const ready = history.phase === 'loaded' && debt,
+      known = ready && debt.total !== null;
+    const loans = ready ? debt.loans : [],
+      money = cents => window.money(cents / 100, {
+        dec: cents % 100 ? 2 : 0
+      });
+    React.useEffect(() => setOpen(false), [history.data]);
+    const next = known && debt.next;
+    const nextDate = next ? new Date(next.date + 'T12:00:00-07:00').toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'short',
+      timeZone: 'America/Hermosillo'
+    }) : null;
+    const tone = i => ['#fff', 'rgba(255,255,255,.62)', 'rgba(255,255,255,.34)'][i % 3];
+    function metadata(loan) {
+      if (loan.balance === null) return 'Información por revisar';
+      const count = loan.remaining === null ? 'Calendario pendiente de actualizar' : loan.remaining + (loan.term && loan.remaining <= loan.term ? ' de ' + loan.term : '') + ' pagos restantes';
+      const quota = !loan.next ? 'Próximo pago por confirmar' : loan.quota === null ? 'Cuotas variables' : money(loan.quota) + (loan.period ? '/' + loan.period : ' por pago');
+      return count + (loan.remaining === 0 ? '' : ' · ' + quota);
+    }
+    return h('div', {
+      style: {
+        padding: '4px 16px 0'
+      }
+    }, h('style', null, '.su-debt-card summary{list-style:none;cursor:pointer}.su-debt-card summary::-webkit-details-marker{display:none}.su-debt-card summary:focus-visible{outline:2px solid white;outline-offset:4px;border-radius:6px}.su-debt-chevron{transition:transform .25s ease}.su-debt-card details[open] .su-debt-chevron{transform:rotate(180deg)}@media(prefers-reduced-motion:reduce){.su-debt-chevron{transition:none}}'), h('section', {
+      className: 'su-history-hero su-debt-card',
+      'aria-label': 'Total que debes de tus préstamos',
+      'data-debt-state': !ready ? history.phase : debt.status,
+      style: {
+        background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))',
+        borderRadius: 22,
+        padding: 18,
+        color: '#fff',
+        boxShadow: 'var(--neo-md)',
+        position: 'relative',
+        overflow: 'hidden'
+      }
+    }, h('svg', {
+      viewBox: '0 0 24 24',
+      fill: 'none',
+      stroke: '#fff',
+      strokeWidth: 1.2,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      'aria-hidden': true,
+      style: {
+        position: 'absolute',
+        top: -20,
+        right: -20,
+        width: 130,
+        height: 130,
+        opacity: .12,
+        pointerEvents: 'none'
+      }
+    }, h('rect', {
+      x: 2.5,
+      y: 6,
+      width: 19,
+      height: 12,
+      rx: 2
+    }), h('circle', {
+      cx: 12,
+      cy: 12,
+      r: 2.6
+    }), h('path', {
+      d: 'M6 9.5v5M18 9.5v5'
+    })), h('div', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8,
+        position: 'relative'
+      }
+    }, h('span', {
+      style: {
+        fontSize: 'var(--text-12-5,12.5px)',
+        fontWeight: 700,
+        letterSpacing: '.04em'
+      }
+    }, 'TOTAL QUE DEBES'), known && h('span', {
+      'data-debt-count': '',
+      style: {
+        fontSize: 'var(--text-12,12px)',
+        fontWeight: 700
+      }
+    }, loans.length + ' préstamo' + (loans.length === 1 ? '' : 's'))), h('div', {
+      'data-debt-total': '',
+      role: !known ? 'status' : undefined,
+      style: {
+        marginTop: 6,
+        fontSize: known ? 'var(--text-32,32px)' : 'var(--text-20,20px)',
+        fontWeight: 800,
+        letterSpacing: '-.02em',
+        lineHeight: 1.15,
+        overflowWrap: 'anywhere',
+        position: 'relative'
+      }
+    }, known ? money(debt.total) : history.phase === 'error' ? 'No disponible' : ready ? 'Saldo por revisar' : 'Consultando…'), h('p', {
+      'data-debt-next': '',
+      style: {
+        margin: '4px 0 0',
+        fontSize: 'var(--text-13,13px)',
+        fontWeight: 600,
+        position: 'relative'
+      }
+    }, next ? 'Descuento próximo pago ' + money(next.amount) + ' - ' + nextDate : known ? debt.total === 0 ? 'Sin pagos pendientes' : 'Próximo descuento por confirmar' : history.phase === 'error' ? 'No pudimos consultar tu saldo.' : ready ? 'Hay datos de tus préstamos que requieren revisión.' : 'Cargando el saldo de tus préstamos.'), known && debt.total > 0 && h('div', {
+      'data-debt-bar': '',
+      'aria-hidden': true,
+      style: {
+        display: 'flex',
+        gap: 4,
+        marginTop: 14
+      }
+    }, loans.map((loan, i) => h('div', {
+      key: loan.id,
+      style: {
+        flex: loan.balance + ' 1 0%',
+        minWidth: 0,
+        height: 6,
+        borderRadius: 999,
+        background: tone(i)
+      }
+    }))), loans.length > 0 && h('details', {
+      open,
+      onToggle: e => setOpen(e.currentTarget.open),
+      style: {
+        marginTop: 12,
+        borderTop: '1px solid rgba(255,255,255,.25)'
+      }
+    }, h('summary', {
+      style: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8,
+        paddingTop: 8,
+        fontSize: 'var(--text-13,13px)',
+        fontWeight: 700
+      }
+    }, h('span', null, open ? 'Ocultar desglose' : 'Ver desglose por préstamo'), h('svg', {
+      className: 'su-debt-chevron',
+      viewBox: '0 0 24 24',
+      width: 20,
+      height: 20,
+      fill: 'none',
+      stroke: 'currentColor',
+      strokeWidth: 2.2,
+      strokeLinecap: 'round',
+      strokeLinejoin: 'round',
+      'aria-hidden': true,
+      style: {
+        flexShrink: 0
+      }
+    }, h('path', {
+      d: 'm5 9 7 7 7-7'
+    }))), open && h('ul', {
+      style: {
+        listStyle: 'none',
+        margin: '10px 0 0',
+        padding: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8
+      }
+    }, loans.map((loan, i) => h('li', {
+      key: loan.id,
+      'data-debt-loan': loan.id,
+      'aria-label': loan.fund + ', préstamo ' + loan.id,
+      style: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        fontSize: 'var(--text-13,13px)'
+      }
+    }, h('span', {
+      'aria-hidden': true,
+      style: {
+        flex: 'none',
+        width: 8,
+        height: 8,
+        borderRadius: 999,
+        background: tone(i)
+      }
+    }), h('span', {
+      style: {
+        flex: 1,
+        minWidth: 0,
+        overflowWrap: 'anywhere'
+      }
+    }, h('span', {
+      style: {
+        fontWeight: 700
+      }
+    }, loan.fund), h('span', {
+      style: {
+        display: 'block',
+        fontSize: 'var(--text-11-5,11.5px)',
+        fontWeight: 600
+      }
+    }, metadata(loan))), h('span', {
+      'data-debt-balance': '',
+      style: {
+        fontWeight: 800,
+        fontVariantNumeric: 'tabular-nums',
+        maxWidth: '44%',
+        overflowWrap: 'anywhere',
+        textAlign: 'right'
+      }
+    }, loan.balance === null ? 'Por revisar' : money(loan.balance))))))));
+  }
   function HistoryPill({
     entry
   }) {
@@ -39464,6 +39748,7 @@ Object.assign(window, {
     }, 'Soporte'))));
   }
   Object.assign(window, {
+    HistoryDebtCard,
     HistoryPill,
     ApprovalClock,
     HistorySourceState,
@@ -39536,33 +39821,11 @@ Object.assign(window, {
     if (filter === 'En pago') list = list.filter(s => s.estado === 'en_pago');
     if (filter === 'Liquidadas') list = list.filter(s => s.estado === 'liquidada');
     if (filter === 'No aprobadas') list = list.filter(s => s.estado === 'rechazado');
-    const activa = mine.find(s => s.estado === 'revision' && s.sourceId && s.steps.length);
     const openEntry = s => app.push('tracking', s.history && (s.history.kind === 'loan' || !s.sourceId) ? {
       loanKey: s.historyKey
     } : {
       s
     });
-    // El progreso se LLENA al aparecer (una sola vez): la barra deja de leerse
-    // como gráfico y pasa a leerse como avance.
-    const progRef = React.useRef(null);
-    React.useEffect(() => {
-      const el = progRef.current,
-        M = window.MOTION;
-      if (!el || !M || M.reduced() || M.frozen() || el.hasAttribute('data-m-filled')) return;
-      el.setAttribute('data-m-filled', '');
-      Array.prototype.forEach.call(el.children, (seg, i) => {
-        M.animate(seg, [{
-          transform: 'scaleX(0)'
-        }, {
-          transform: 'scaleX(1)'
-        }], {
-          duration: 400,
-          easing: M.ease.enter,
-          delay: i * 70,
-          fill: 'backwards'
-        });
-      });
-    }, [activa && activa.id]);
     return React.createElement('div', {
       className: 'su-route',
       style: {
@@ -39576,117 +39839,9 @@ Object.assign(window, {
       requests: operations.all()
     }), React.createElement(window.FarmaHistory, {
       app
+    }), React.createElement(window.HistoryDebtCard, {
+      history
     }),
-    // active tracker hero
-    activa && React.createElement('div', {
-      style: {
-        padding: '4px 16px 0'
-      }
-    }, React.createElement('div', {
-      onClick: () => app.push('tracking', {
-        s: activa
-      }),
-      className: 'su-press su-history-hero',
-      style: {
-        cursor: 'pointer',
-        background: 'linear-gradient(135deg,var(--guinda),var(--guinda-700))',
-        borderRadius: 22,
-        padding: 18,
-        color: '#fff',
-        boxShadow: 'var(--neo-md)',
-        position: 'relative',
-        overflow: 'hidden'
-      }
-    }, React.createElement('div', {
-      style: {
-        position: 'absolute',
-        right: -20,
-        top: -20,
-        opacity: .12
-      }
-    }, React.createElement(I, {
-      name: 'clock',
-      size: 130,
-      stroke: 1.2,
-      style: {
-        color: '#fff'
-      }
-    })), React.createElement('div', {
-      style: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }
-    }, React.createElement('span', {
-      style: {
-        fontSize: 'var(--text-12-5, 12.5px)',
-        fontWeight: 700,
-        opacity: .85,
-        letterSpacing: '.04em'
-      }
-    }, 'SOLICITUD EN CURSO'), React.createElement('span', {
-      style: {
-        fontSize: 'var(--text-12, 12px)',
-        fontWeight: 700,
-        fontFamily: 'var(--mono)',
-        opacity: .85
-      }
-    }, activa.id)), React.createElement('div', {
-      style: {
-        fontSize: 'var(--text-20, 20px)',
-        fontWeight: 800,
-        marginTop: 8
-      }
-    }, activa.tipo), React.createElement('div', {
-      style: {
-        fontSize: 'var(--text-26, 26px)',
-        fontWeight: 800,
-        marginTop: 2,
-        letterSpacing: '-.02em'
-      }
-    }, activa.monto == null ? 'Por cotizar' : window.money(activa.monto)),
-    // mini progress
-    React.createElement('div', {
-      ref: progRef,
-      style: {
-        display: 'flex',
-        gap: 5,
-        marginTop: 14
-      }
-    }, activa.steps.map((st, i) => React.createElement('div', {
-      key: i,
-      style: {
-        flex: 1,
-        height: 5,
-        borderRadius: 999,
-        transformOrigin: 'left center',
-        background: st.done ? '#fff' : st.active ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.22)'
-      }
-    }))), React.createElement('div', {
-      style: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 12
-      }
-    }, React.createElement('span', {
-      style: {
-        fontSize: 'var(--text-13, 13px)',
-        fontWeight: 700
-      }
-    }, (activa.steps.find(step => step.active) || {}).label || REQUEST_LABELS[activa.requestStatus] || 'En revisión'), React.createElement('span', {
-      style: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 4,
-        fontSize: 'var(--text-13, 13px)',
-        fontWeight: 700
-      }
-    }, 'Ver seguimiento', React.createElement(I, {
-      name: 'arrowR',
-      size: 15,
-      stroke: 2.2
-    }))))),
     // filters (C5.2 · indicador deslizante compartido)
     React.createElement(window.ChipBar, {
       items: filters,

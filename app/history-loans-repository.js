@@ -3,6 +3,74 @@
  'use strict';
  const normalize=v=>String(v||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').toUpperCase();
  const formatDate=v=>v?new Date(v.length===10?v+'T12:00:00-07:00':v).toLocaleDateString('es-MX',{timeZone:'America/Hermosillo'}):'Fecha no registrada';
+ // Display-only projection of the already authorized PV2 observation. Never a
+ // writer, a synthetic amortization schedule or a second financial authority.
+ function debtSummary(value){
+  const valid=v=>typeof v==='number'&&Number.isFinite(v)&&v>=0;
+  const parts=v=>{const [m,e='0']=String(v).split('e');return {digits:m.replace('.',''),places:(m.split('.')[1]||'').length-Number(e)};};
+  // Keep the literal source decimals until the final currency display. Rounding
+  // each receipt first would turn 0.105 + 0.205 into 0.32 instead of 0.31.
+  let scale=2;
+  for(const entry of value.entries)if(entry.kind==='loan')for(const v of [entry.total,...(entry.schedule||[]).map(r=>r?.amount)])if(valid(v))scale=Math.max(scale,parts(v).places);
+  const unit=v=>{if(!valid(v))return null;const p=parts(v);return BigInt(p.digits)*10n**BigInt(scale-p.places);};
+  const divisor=10n**BigInt(scale-2);
+  const cents=v=>{if(v===null)return null;const n=Number((v+divisor/2n)/divisor);if(!Number.isSafeInteger(n))throw Error('AMOUNT_OVERFLOW');return n;};
+  const day=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&Number.isFinite(Date.parse(v+'T12:00:00Z'))&&new Date(v+'T12:00:00Z').toISOString().slice(0,10)===v;
+  const sum=values=>values.reduce((a,b)=>a+b,0n);
+  const ids=new Set(),sourceRows=new Set(),loans=[];
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Hermosillo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(value.server_now));
+  function cadence(dates){
+   const days=[...new Set(dates)].sort();if(days.length<3)return null;
+   const gaps=days.slice(1).map((d,i)=>(Date.parse(d)-Date.parse(days[i]))/86400000);
+   if(gaps.every(n=>n===7))return 'semana';
+   const dom=d=>Number(d.slice(8)),end=d=>dom(d)===new Date(Date.UTC(Number(d.slice(0,4)),Number(d.slice(5,7)),0)).getUTCDate();
+   if(gaps.every(n=>n>=13&&n<=16)&&days.every(d=>dom(d)===15||dom(d)===30||end(d)))return 'qna';
+   if(gaps.every(n=>n===14))return '14 días';
+   if(gaps.every(n=>n>=28&&n<=31)&&days.every(d=>dom(d)===dom(days[0])||end(d)))return 'mes';
+   return null;
+  }
+  try{
+   for(const entry of value.entries){
+    if(entry.kind!=='loan')continue;
+    const loan={id:entry.id,fund:entry.fund,balance:null,remaining:null,term:null,quota:null,period:null,next:null};
+    loans.push(loan);
+    if(typeof entry.id!=='string'||!entry.id||ids.has(entry.id))throw Error('LOAN_IDENTITY_AMBIGUOUS');
+    ids.add(entry.id);
+    if(entry.preparing||entry.key!=='loan:'+entry.id){loan.issue='CALENDAR_PENDING';continue;}
+    const original=unit(entry.total),rows=entry.schedule;
+    if(original===null||!Array.isArray(rows)||!rows.length){loan.issue='TOTAL_OR_CALENDAR_INVALID';continue;}
+    let invalid=false;
+    for(const row of rows){
+     if(!Number.isInteger(row.source_row)||row.source_row<2||sourceRows.has(row.source_row))throw Error('SOURCE_ROW_AMBIGUOUS');
+     sourceRows.add(row.source_row);
+     if(!day(row.date)||unit(row.amount)===null)invalid=true;
+    }
+    if(invalid){loan.issue='INSTALLMENT_INVALID';continue;}
+    const paid=sum(rows.filter(r=>r.date<=today).map(r=>unit(r.amount)));
+    loan.balance=original>paid?original-paid:0n;loan.excess=paid>original?paid-original:0n;
+    loan.term=Number.isInteger(entry.term)&&entry.term>0?entry.term:null;
+    // Several receipts on one date remain separate payments for the balance,
+    // but one scheduled discount date for the upcoming collection display.
+    const calendar=new Map();
+    rows.filter(r=>r.date>today).forEach(r=>calendar.set(r.date,sum([calendar.get(r.date)||0n,unit(r.amount)])));
+    let remainder=loan.balance;const future=[];
+    for(const [date,amount] of [...calendar].sort(([a],[b])=>a.localeCompare(b))){
+     const applied=remainder<amount?remainder:amount;if(applied)future.push({date,amount:applied});remainder-=applied;
+    }
+    loan.next=future[0]||null;
+    loan.remaining=remainder===0n?future.length:null;
+    loan.period=cadence(rows.map(r=>r.date));
+    if(future.length&&future.every((p,i)=>p.amount===future[0].amount||(i===future.length-1&&p.amount<future[0].amount)))loan.quota=future[0].amount;
+   }
+   const unresolved=loans.some(l=>l.balance===null),pending=loans.filter(l=>l.balance===null||l.balance>0);
+   const nextUnknown=unresolved||pending.some(l=>!l.next);
+   const date=nextUnknown?null:pending.map(l=>l.next.date).sort()[0]||null;
+   const displayNext=n=>n?{date:n.date,amount:cents(n.amount)}:null;
+   return {status:unresolved?'review':'ready',asOf:today,total:unresolved?null:cents(sum(pending.map(l=>l.balance))),
+    loans:pending.map(l=>({...l,balance:cents(l.balance),excess:l.excess===undefined?null:cents(l.excess),quota:cents(l.quota),next:displayNext(l.next)})),
+    next:date?{date,amount:cents(sum(pending.filter(l=>l.next.date===date).map(l=>l.next.amount)))}:null};
+  }catch(_){return {status:'review',asOf:today,total:null,loans:[],next:null};}
+ }
  function paidThrough(schedule,today){
   const validDay=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value+'T12:00:00Z'))&&new Date(value+'T12:00:00Z').toISOString().slice(0,10)===value;
   if(!validDay(today)||!Array.isArray(schedule)||!schedule.length)return null;
@@ -103,7 +171,7 @@
    imp.id||imp.session_id||null,admin.subjectKey||null,admin.assignment||null]);
  }
  function emit(){listeners.forEach(fn=>fn());}
- function summarize(){summary=data&&{...data,entries:data.entries.map(({schedule,total,paid_to_date,expected_to_date,...entry})=>entry)};}
+ function summarize(){summary=data&&{...data,debt:debtSummary({...data,entries:compose(data,Date.parse(data.server_now))}),entries:data.entries.map(({schedule,total,paid_to_date,expected_to_date,...entry})=>entry)};}
  function rememberKeys(){
   if(data)for(const entry of compose(data,Date.parse(data.server_now)+Math.max(0,performance.now()-anchor)))if(entry.sourceId)aliases.set(entry.key,entry.sourceId);
  }
@@ -303,5 +371,5 @@
   const current=result&&result.context===currentIdentity&&result.key===key?result:null;
   return {data:current?.data||null,elapsed:current?.anchor==null?0:Math.max(0,performance.now()-current.anchor),phase:current?.phase||'loading',retry:()=>{if(approvalPhase==='error'&&phase!=='error')refreshApprovals();else refresh();}};
  }
- window.LoanHistory=Object.freeze({load,project,merge,formatDate,normalize,metrics,useHistory});
+ window.LoanHistory=Object.freeze({load,project,merge,formatDate,normalize,metrics,debtSummary,useHistory});
 })();

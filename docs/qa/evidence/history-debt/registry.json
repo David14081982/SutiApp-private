@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "mode": "scoped facts refresh; unrelated stale fingerprints retained honestly",
+  "preexistingFullIndex": "STALE changed=50 added=50 before task",
+  "currentScopedFiles": [
+    "app/history-loans-repository.js",
+    "app/history-loans.jsx",
+    "app/screens-historial.jsx",
+    "docs/audits/H-HISTORY-DEBT-CARD-001.md",
+    "docs/AGENT_CHANGELOG.md"
+  ],
+  "validGraph": true,
+  "historyDebtMapped": true
+}

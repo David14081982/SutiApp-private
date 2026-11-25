@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "changedBundleChunks": [
+    "history-loans-repository.js",
+    "history-loans.jsx",
+    "screens-historial.jsx"
+  ],
+  "allOtherChunksPreserved": true,
+  "bundleSha256": "e99ff960e96c8389a11ff736e54cdf2c09ccd43efe2752887c932b71902b1fae",
+  "sourceHashes": {
+    "history-loans-repository.js": "bb564b161fd698692ff1aa167cd8b0c8d62387b5d1ee2281560d8e34cedbcfc6",
+    "history-loans.jsx": "8f4f611c53335628e00f62d22dc6ad749904badeb6eae86f67f24a4e1db73a99",
+    "screens-historial.jsx": "018b7625a400efcfb26b10dc5bbfe382e05f80abc824f13f8f4dca57dd01b0bd"
+  },
+  "globalImageRegression": "NOT APPLICABLE: focal History only",
+  "businessWrites": 0
+}

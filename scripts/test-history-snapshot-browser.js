@@ -53,7 +53,7 @@ async function setup(browser,width){
   window.money=value=>new Intl.NumberFormat('es-MX',{style:'currency',currency:'MXN'}).format(value);
   window.TopBar=()=>h('header',null,h('h1',null,'Mi Historial'));window.RequestAuthorizationNotice=()=>null;window.FarmaHistory=()=>null;
   window.metadataCalls=0;window.channels=[];window.publication='v1';window.failureStatus=0;window.imp=null;window.opened=[];window.open=(...args)=>opened.push(args);window.identity='A';window.control='0007';window.token=1;window.authListeners=[];window.historyCalls=[];window.nativeCalls=[];window.delayed=[];window.delayHistory=true;window.failHistory=false;
-  window.AffiliateAuth={getState:()=>identity?{phase:'authenticated',impersonation:imp,session:{session_id:'session-'+identity,user:{id:identity},access_token:'synthetic-'+identity+'-'+token},affiliate:{id:identity,numero_control:control}}:{phase:'unauthenticated'},subscribe:fn=>{authListeners.push(fn);fn();return()=>{authListeners=authListeners.filter(item=>item!==fn);};}};
+  window.AffiliateAuth={getState:()=>identity?{phase:'authenticated',impersonation:imp,session:{session_id:'session-'+identity,user:{id:identity},access_token:'h.'+btoa(JSON.stringify({sub:identity,session_id:'session-'+identity,role:'authenticated',aal:'aal1',nonce:token}))+'.s'},affiliate:{id:identity,numero_control:control}}:{phase:'unauthenticated'},subscribe:fn=>{authListeners.push(fn);fn();return()=>{authListeners=authListeners.filter(item=>item!==fn);};}};
   const now=new Date().toISOString(),date=now.slice(0,10);
   window.loan=(id,category,status)=>({key:'loan:'+id,id,sourceId:null,kind:'loan',category,status,fund:'Préstamo '+id,principal:700,total:1000,term:12,date,
    approved_at:category==='Aprobadas'?now:null,expires_at:category==='Aprobadas'?new Date(Date.parse(now)+86400000).toISOString():null,paid_to_date:250,expected_to_date:500,
@@ -163,10 +163,11 @@ async function main(){
   // Same identity refresh/token rotation keeps the same scroll element and rows.
   await scroll.evaluate(el=>{el.scrollTop=450;window.savedScroll=el;});const scrollBefore=await scroll.evaluate(el=>el.scrollTop);
   const beforeToken=await count(page);await page.evaluate(()=>{delayHistory=true;token++;authChanged();});await flush(page);
-  assert.equal((await count(page)).history,beforeToken.history+1);assert.equal(await detail.locator('[data-installment]').count(),12);
+  assert.equal((await count(page)).history,beforeToken.history);assert.equal(await detail.locator('[data-installment]').count(),12);
   assert(await scroll.evaluate(el=>el===savedScroll&&Math.abs(el.scrollTop-450)<2),'token renewal preserves the scroll DOM and position');
-  await page.evaluate(()=>{token++;authChanged();});await flush(page);assert.equal((await count(page)).history,beforeToken.history+2,'token renewal invalidates an already pending transport');
-  await page.evaluate(()=>{const old=delayed.shift();old.resolve(old.response);});await flush(page);assert.equal(await detail.locator('[data-history-source=refreshing]').count(),1);assert.equal(await detail.locator('[data-installment]').count(),12);
+  await page.evaluate(()=>publishVersion('token-transport'));await flush(page);assert.equal((await count(page)).history,beforeToken.history+1);
+  await page.evaluate(()=>{token++;authChanged();});await flush(page);assert.equal((await count(page)).history,beforeToken.history+1,'same-session token renewal preserves an already pending transport');
+  assert.equal(await detail.locator('[data-history-source=refreshing]').count(),1);assert.equal(await detail.locator('[data-installment]').count(),12);
   await page.evaluate(()=>{delayHistory=false;resolveHistory();});await flush(page);assert.equal(await scroll.evaluate(el=>el.scrollTop),scrollBefore);
   const beforeTime=await count(page);await page.clock.fastForward(30*60*1000);await flush(page);assert.deepEqual(await count(page),beforeTime,'no five-minute polling or expiry');
   await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));await flush(page);const visible=await count(page);

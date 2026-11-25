@@ -1,5 +1,47 @@
 (function(){
  const h=React.createElement,brand='#9E0A2A',muted='#64748B';
+ function HistoryDebtCard({history}){
+  const [open,setOpen]=React.useState(false),debt=history.data?.debt;
+  const ready=history.phase==='loaded'&&debt,known=ready&&debt.total!==null;
+  const loans=ready?debt.loans:[],money=cents=>window.money(cents/100,{dec:cents%100?2:0});
+  React.useEffect(()=>setOpen(false),[history.data]);
+  const next=known&&debt.next;
+  const nextDate=next?new Date(next.date+'T12:00:00-07:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',timeZone:'America/Hermosillo'}):null;
+  const tone=i=>['#fff','rgba(255,255,255,.62)','rgba(255,255,255,.34)'][i%3];
+  function metadata(loan){
+   if(loan.balance===null)return 'Información por revisar';
+   const count=loan.remaining===null?'Calendario pendiente de actualizar':
+    loan.remaining+(loan.term&&loan.remaining<=loan.term?' de '+loan.term:'')+' pagos restantes';
+   const quota=!loan.next?'Próximo pago por confirmar':loan.quota===null?'Cuotas variables':money(loan.quota)+(loan.period?'/'+loan.period:' por pago');
+   return count+(loan.remaining===0?'':' · '+quota);
+  }
+  return h('div',{style:{padding:'4px 16px 0'}},
+   h('style',null,'.su-debt-card summary{list-style:none;cursor:pointer}.su-debt-card summary::-webkit-details-marker{display:none}.su-debt-card summary:focus-visible{outline:2px solid white;outline-offset:4px;border-radius:6px}.su-debt-chevron{transition:transform .25s ease}.su-debt-card details[open] .su-debt-chevron{transform:rotate(180deg)}@media(prefers-reduced-motion:reduce){.su-debt-chevron{transition:none}}'),
+   h('section',{className:'su-history-hero su-debt-card','aria-label':'Total que debes de tus préstamos','data-debt-state':!ready?history.phase:debt.status,
+    style:{background:'linear-gradient(135deg,var(--guinda),var(--guinda-700))',borderRadius:22,padding:18,color:'#fff',boxShadow:'var(--neo-md)',position:'relative',overflow:'hidden'}},
+    h('svg',{viewBox:'0 0 24 24',fill:'none',stroke:'#fff',strokeWidth:1.2,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{position:'absolute',top:-20,right:-20,width:130,height:130,opacity:.12,pointerEvents:'none'}},
+     h('rect',{x:2.5,y:6,width:19,height:12,rx:2}),h('circle',{cx:12,cy:12,r:2.6}),h('path',{d:'M6 9.5v5M18 9.5v5'})),
+    h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,position:'relative'}},
+     h('span',{style:{fontSize:'var(--text-12-5,12.5px)',fontWeight:700,letterSpacing:'.04em'}},'TOTAL QUE DEBES'),
+     known&&h('span',{'data-debt-count':'',style:{fontSize:'var(--text-12,12px)',fontWeight:700}},loans.length+' préstamo'+(loans.length===1?'':'s'))),
+    h('div',{'data-debt-total':'',role:!known?'status':undefined,style:{marginTop:6,fontSize:known?'var(--text-32,32px)':'var(--text-20,20px)',fontWeight:800,letterSpacing:'-.02em',lineHeight:1.15,overflowWrap:'anywhere',position:'relative'}},
+     known?money(debt.total):history.phase==='error'?'No disponible':ready?'Saldo por revisar':'Consultando…'),
+    h('p',{'data-debt-next':'',style:{margin:'4px 0 0',fontSize:'var(--text-13,13px)',fontWeight:600,position:'relative'}},
+     next?'Descuento próximo pago '+money(next.amount)+' - '+nextDate:
+      known?(debt.total===0?'Sin pagos pendientes':'Próximo descuento por confirmar'):
+      history.phase==='error'?'No pudimos consultar tu saldo.':ready?'Hay datos de tus préstamos que requieren revisión.':'Cargando el saldo de tus préstamos.'),
+    known&&debt.total>0&&h('div',{'data-debt-bar':'','aria-hidden':true,style:{display:'flex',gap:4,marginTop:14}},
+     loans.map((loan,i)=>h('div',{key:loan.id,style:{flex:loan.balance+' 1 0%',minWidth:0,height:6,borderRadius:999,background:tone(i)}}))),
+    loans.length>0&&h('details',{open,onToggle:e=>setOpen(e.currentTarget.open),style:{marginTop:12,borderTop:'1px solid rgba(255,255,255,.25)'}},
+     h('summary',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,paddingTop:8,fontSize:'var(--text-13,13px)',fontWeight:700}},
+      h('span',null,open?'Ocultar desglose':'Ver desglose por préstamo'),
+      h('svg',{className:'su-debt-chevron',viewBox:'0 0 24 24',width:20,height:20,fill:'none',stroke:'currentColor',strokeWidth:2.2,strokeLinecap:'round',strokeLinejoin:'round','aria-hidden':true,style:{flexShrink:0}},h('path',{d:'m5 9 7 7 7-7'}))),
+     open&&h('ul',{style:{listStyle:'none',margin:'10px 0 0',padding:0,display:'flex',flexDirection:'column',gap:8}},
+      loans.map((loan,i)=>h('li',{key:loan.id,'data-debt-loan':loan.id,'aria-label':loan.fund+', préstamo '+loan.id,style:{display:'flex',alignItems:'center',gap:10,fontSize:'var(--text-13,13px)'}},
+       h('span',{'aria-hidden':true,style:{flex:'none',width:8,height:8,borderRadius:999,background:tone(i)}}),
+       h('span',{style:{flex:1,minWidth:0,overflowWrap:'anywhere'}},h('span',{style:{fontWeight:700}},loan.fund),h('span',{style:{display:'block',fontSize:'var(--text-11-5,11.5px)',fontWeight:600}},metadata(loan))),
+       h('span',{'data-debt-balance':'',style:{fontWeight:800,fontVariantNumeric:'tabular-nums',maxWidth:'44%',overflowWrap:'anywhere',textAlign:'right'}},loan.balance===null?'Por revisar':money(loan.balance))))))));
+ }
  function HistoryPill({entry}){
   const overdue=window.LoanHistory.normalize(entry.status)==='SALDO ATRASADO';
   const meta={'En proceso':['amber','clock','En revisión'],'Aprobadas':['green','checkCircle','Aprobada'],
@@ -79,5 +121,5 @@
      h('div',{style:{flex:1,minWidth:0}},h('div',{style:{fontSize:'var(--text-16, 16px)',fontWeight:800}},entry.kind==='loan'?'Pagos asegurados por nómina':'Soporte de solicitudes'),h('div',{style:{fontSize:'var(--text-12, 14px)',color:muted,marginTop:3}},entry.kind==='loan'?'No requiere transferencias manuales adicionales.':'Consulta el avance de tu solicitud.')),
      h('button',{type:'button',style:{fontWeight:800,fontSize:'var(--text-16, 16px)',color:brand,flexShrink:0},onClick:()=>window.open('https://api.whatsapp.com/send/?phone=526626727130&text&type=phone_number&app_absent=0','_blank','noopener,noreferrer')},'Soporte'))));
  }
- Object.assign(window,{HistoryPill,ApprovalClock,HistorySourceState,LoanHistoryDetail});
+ Object.assign(window,{HistoryDebtCard,HistoryPill,ApprovalClock,HistorySourceState,LoanHistoryDetail});
 })();

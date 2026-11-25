@@ -1,5 +1,9 @@
 # Bitácora de agentes
 
+## H-HISTORY-DEBT-CARD-001 - 2026-11-25
+
+Replace only History hero with total pending debt, next deduction and per-ID accordion. Retain published snapshot/approval/PDF behavior; exact decimal derivation, explicit incomplete balances, no new reads/writes. Focal and current regression suites plus standard Pages build PASS. Release isolated from unrelated local work; [audit](audits/H-HISTORY-DEBT-CARD-001.md). Production verification recorded after deployment.
+
 ## H-HOME-POPUP-DESIGN-001 — 2026-11-20 — PASS published (corrección pedida por el propietario)
 
 El propietario rechazó H-HOME-POPUP-COMPACT-001: «no se parece en nada» al diseño (contador «1 de 7»

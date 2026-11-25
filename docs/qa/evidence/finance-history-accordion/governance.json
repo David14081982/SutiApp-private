@@ -1,0 +1,48 @@
+{
+  "documents": [
+    {
+      "file": "docs/SOURCE_OF_TRUTH.md",
+      "sha256": "04e968630b458ad4a96c4e0581c76109db453cde26b9e9a2dad45b943b9c53ff",
+      "scopeSections": 1
+    },
+    {
+      "file": "docs/INVARIANTS.md",
+      "sha256": "119c2803d292381b66211bb8fc918dc56a12bce03dc42e5a69146396bc679123",
+      "scopeSections": 1
+    },
+    {
+      "file": "docs/DECISIONS.md",
+      "sha256": "3975104d8ca9d3f0b7ce9aec7ddf564877aea65b9d4326714c4c25bd72ade6c3",
+      "scopeSections": 0
+    },
+    {
+      "file": "docs/DATA_GOVERNANCE.md",
+      "sha256": "4d4fc4f134a36529b1d8703486f7b2b77c2e52b3091ebb731b4e1757de037c7a",
+      "scopeSections": 0
+    },
+    {
+      "file": "docs/MIGRATION_RULES.md",
+      "sha256": "bf4e66a04198ddd03ede37b5c03ccc0aae5d37ac79c5bb7a31f8d96bf050359a",
+      "scopeSections": 0
+    },
+    {
+      "file": "docs/LEGACY_GOOGLE_SYSTEMS.md",
+      "sha256": "64d70128536028f5f3bf9318c82df1216bc6efd644f858c97436684062f0baf7",
+      "scopeSections": 0
+    },
+    {
+      "file": "docs/SECURITY_RULES.md",
+      "sha256": "dbaf810e64cb4ab5eef1f5a4c569e17ed84d5b44cd95e189c2f2664aa81007a5",
+      "scopeSections": 0
+    },
+    {
+      "file": "docs/DATA_MAPPING.md",
+      "sha256": "ba33478d899824f47b8b7866aa4c8773ad74ae5ca97ae4fc4128caea6dbb976d",
+      "scopeSections": 0
+    }
+  ],
+  "missing": [
+    "docs/WORK_QUEUE_HISTORY.md"
+  ],
+  "reviewMethod": "Full files hashed; task-specific historical review sections extracted; direct source/diff and runtime evidence govern focal UI verification."
+}

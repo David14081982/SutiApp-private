@@ -1,6 +1,6 @@
 {
-  "status": "BLOCKED",
-  "reason": "GitHub Pages artifact discovery fails and direct Pages deployment POST returns HTTP 500; rerun and dispatch endpoints also return HTTP 500.",
+  "status": "PASS",
+  "reason": "Resolved: owner-requested retry succeeded using the original Pages workflow; live hash and browser checks passed.",
   "runs": [
     45649560350,
     45650121542,
@@ -21,7 +21,21 @@
     "failedStep": "Deploy Pages",
     "url": "https://github.com/David14081982/SutiApp-private/actions/runs/45651565486"
   },
-  "observedPublicBundle": "2026112501",
+  "observedPublicBundle": "2026112502",
   "expectedPublicBundle": "2026112502",
-  "finalApplicationCommit": "48b9753f81648b800ed50abdb2eb0154d0c3bc61"
+  "finalApplicationCommit": "48b9753f81648b800ed50abdb2eb0154d0c3bc61",
+  "successfulAttempt": {
+    "status": "PASS",
+    "runId": 45651565486,
+    "attempt": 2,
+    "conclusion": "success",
+    "deployedCommit": "48b9753f81648b800ed50abdb2eb0154d0c3bc61",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/45651565486",
+    "workflowRestored": true,
+    "authCompatibility": "PASS",
+    "requestCompatibility": "PASS",
+    "pagesBuild": "PASS",
+    "pagesDeployment": "PASS",
+    "productionRequestContract": "PASS"
+  }
 }

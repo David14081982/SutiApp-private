@@ -97,3 +97,41 @@ Do not mark the complete task PASS while production serves 2026112501. Preserve 
 
 
 Final standard attempt: https://github.com/David14081982/SutiApp-private/actions/runs/45651565486 (48b9753f81648b800ed50abdb2eb0154d0c3bc61) failed at Deploy Pages with the same missing-artifact result; all earlier compatibility/build/upload steps passed. Membership Google contract passed. Final workflow diff against bf4308a is empty. Isolated release worktree clean before this final evidence-only update. Final status remains BLOCKED for publication, not a completed production delivery. Final evidence commit uses [skip ci] to avoid repeating the same unsuccessful publication automatically.
+
+
+## Successful publication - supersedes earlier BLOCKED result
+
+Owner explicitly renewed the publication instruction. Retried only failed jobs of the original workflow. Run 45651565486 attempt 2 succeeded for deployed commit 48b9753f81648b800ed50abdb2eb0154d0c3bc61: backend contracts, build, upload, Pages deployment and production contract verification all PASS. No application, workflow or permission changes in this resumed publication step.
+
+Live command: node .tmp/finance-history-accordion/live.cjs from the original workspace. The initial live harness assumed state survived the app's mobile/desktop layout remount; that assertion failed. Corrected only the temporary harness to establish the open case independently at each viewport, then verify collapse/reopen retention within that layout. Production source remained unchanged. Final live checks PASS with service workers blocked and allowed: exact 2026112502 bundle SHA, 12 cases, initially closed, Enter/Space, retained nested detail, widths 390/1280, refresh closed, zero page errors, zero business writes and no impersonation. No live personal data or screenshot recorded.
+
+Navigator: lookup identifies the Finance screen; Registry is stale from preexisting repository changes. Direct inspection and unchanged hashes verify this focal presentation-only scope; no architecture regeneration required.
+
+H-FINANCE-HISTORY-ACCORDION-001 RESULT
+Status: PASS.
+Files changed in resumed step: audit, changelog and sanitized publication/production evidence only.
+Source-of-truth verdict: PASS; existing read-only repository/authority unchanged.
+Invariant verdict: PASS; original body, states, context/read effect and surrounding code preserved.
+Build: PASS locally and on GitHub; deployed hash equals build.json.
+Tests: PASS focal isolated tests and actual production browser checks; production request contract PASS. Broader unrelated borrower fixture limitation remains documented above and is not represented as PASS.
+Security: no permission/Auth/RLS changes, secrets or impersonation; no sensitive live content stored.
+Legacy impact: none; zero business writes.
+Unexpected files changed: none; unrelated root workspace excluded.
+Known limitations: no outstanding limitation for this accordion/publication scope.
+Evidence: build.json, ui.json, static.json, deployment.json, production.json and Actions attempt 2.
+
+SUTIAPP ARCHITECT REVIEW
+Task: H-FINANCE-HISTORY-ACCORDION-001.
+Verdict: APPROVED.
+Critical findings: requested compact accordion is published and verified against the exact build hash; previous external publication block resolved.
+Source of truth: unchanged.
+Architecture: focal local view state; no shared source or hosting configuration changes in the final diff.
+Security: unchanged backend boundary; no secrets or business writes.
+Data: all 12 pending cases retained and read from the original authority.
+Legacy: unchanged.
+Owner decision: NO.
+Next action: report successful publication; no unrelated continuation.
+Response generated for Codex: YES.
+
+RESPONSE TO CODEX
+Approve and close H-FINANCE-HISTORY-ACCORDION-001 with the successful deployment and live evidence. Inform the owner that the accordion is available in Finanzas / Solicitudes. Do not advance unrelated work.

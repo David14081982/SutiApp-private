@@ -4836,3 +4836,6 @@ Owner authorized compact, initially collapsed historical review panel, commit/pu
 
 
 H-FINANCE-HISTORY-ACCORDION-001 publication update: feature 772c2a7 pushed and focal UI/build PASS. GitHub Pages attempts failed; a scoped diagnostic REST deployment reached the official Pages endpoint but received HTTP 500. Original deployment workflow restored exactly. Production hash check still sees previous bundle 2026112501. Overall task BLOCKED on publication; no financial writes or unrelated workspace publication. See audit for recovery attempt and reviewer verdict.
+
+
+H-FINANCE-HISTORY-ACCORDION-001 CLOSED PASS: owner-requested publication retry succeeded, Actions 45651565486 attempt 2. Live https://sutiapp.com/ serves bundle 2026112502 with exact expected SHA. Real admin accordion verified at 390/1280 with/without service worker: 12 cases, closed by default, keyboard, nested state retention, refresh and zero page errors. No financial writes. Prior publication block resolved; architect review APPROVED. Evidence: docs/qa/evidence/finance-history-accordion/deployment.json and production.json.

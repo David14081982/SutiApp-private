@@ -1,0 +1,37 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "bundleSha256": "39d94759758915a78baf72d83b61280df68fcc4ce9eac767b361d887e4beefaa",
+  "cachebuster": "2026112502",
+  "checks": [
+    {
+      "serviceWorkers": "block",
+      "defaultClosed": true,
+      "pendingCases": 12,
+      "keyboard": true,
+      "retainedNestedDetails": true,
+      "widths": [
+        390,
+        1280
+      ],
+      "refreshClosed": true,
+      "pageErrors": 0
+    },
+    {
+      "serviceWorkers": "allow",
+      "defaultClosed": true,
+      "pendingCases": 12,
+      "keyboard": true,
+      "retainedNestedDetails": true,
+      "widths": [
+        390,
+        1280
+      ],
+      "refreshClosed": true,
+      "pageErrors": 0
+    }
+  ],
+  "businessWrites": 0,
+  "impersonation": false,
+  "privateContentLogged": false
+}

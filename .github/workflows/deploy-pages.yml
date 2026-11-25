@@ -50,6 +50,22 @@ jobs:
         with:
           path: _site
 
+      - name: Wait for Pages artifact metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for attempt in {1..12}; do
+            count="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=github-pages" --jq '[.artifacts[] | select(.name == "github-pages" and .expired == false)] | length')"
+            if [ "$count" = "1" ]; then
+              echo "Pages artifact metadata is ready"
+              exit 0
+            fi
+            echo "Waiting for Pages artifact metadata ($attempt/12)"
+            sleep 5
+          done
+          echo "::error::Pages artifact metadata did not become available"
+          exit 1
+
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4

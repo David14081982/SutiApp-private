@@ -53,3 +53,13 @@ Architecture: focal presentation projection with no new backend authority, persi
 Security/data/legacy: unchanged boundaries and protected files; no business writes.
 Owner decision required: NO; commit/push/publication explicitly authorized.
 Response to Codex: Publish only this reviewed candidate through the existing workflow, then verify deployed bytes and the authenticated own card with and without service worker plus reload. Do not advance unrelated work.
+
+## Published result
+
+Status: PASS. Feature commit 1dd2de37e9d4902eecc3dcdc1f880db3634eeec0 pushed to main; [GitHub Pages run](https://github.com/David14081982/SutiApp-private/actions/runs/45585994435) completed successfully, including Auth/request compatibility and production request checks.
+
+[sutiapp.com](https://sutiapp.com/) serves the exact tested bundle SHA-256 e99ff960e96c8389a11ff736e54cdf2c09ccd43efe2752887c932b71902b1fae. Own-account browser verification passed with service workers blocked and allowed, including reload, correct backend-derived zero, visible layout bounds and zero page errors. The controlled account has no debt: populated accordion behavior is certified by isolated fixtures, not represented as populated live-user certification. No business writes or private rows logged.
+
+The first live layout check counted the intentionally clipped decorative SVG as scrollable width. The verifier now checks the visible card/content bounds; no runtime/UI changes were required. Evidence is in production.json and deployment.json. Follow-up commit contains only verification script/evidence/docs, so the deployed product artifact stays identical. Registry architecture is unchanged by this evidence-only follow-up; its preexisting global staleness is not hidden or claimed FRESH.
+
+Final architect verdict: APPROVED. Requested implementation, commit, push and publication completed with scoped evidence. No next feature is authorized by this review.

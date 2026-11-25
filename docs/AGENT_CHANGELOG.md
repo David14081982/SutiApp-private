@@ -2,7 +2,7 @@
 
 ## H-HISTORY-DEBT-CARD-001 - 2026-11-25
 
-Replace only History hero with total pending debt, next deduction and per-ID accordion. Retain published snapshot/approval/PDF behavior; exact decimal derivation, explicit incomplete balances, no new reads/writes. Focal and current regression suites plus standard Pages build PASS. Release isolated from unrelated local work; [audit](audits/H-HISTORY-DEBT-CARD-001.md). Production verification recorded after deployment.
+Replace only History hero with total pending debt, next deduction and per-ID accordion. Retain published snapshot/approval/PDF behavior; exact decimal derivation, explicit incomplete balances, no new reads/writes. Focal and current regression suites plus standard Pages build PASS. Release isolated from unrelated local work; [audit](audits/H-HISTORY-DEBT-CARD-001.md). Published in commit 1dd2de3; Pages run 45585994435 and own-account verification with/without service worker plus reload PASS. Controlled live account has zero debt; populated accordion verified with isolated fixtures.
 
 ## H-HOME-POPUP-DESIGN-001 — 2026-11-20 — PASS published (corrección pedida por el propietario)
 

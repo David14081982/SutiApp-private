@@ -1,0 +1,30 @@
+{
+  "status": "PASS",
+  "target": "https://sutiapp.com/",
+  "bundleSha256": "e99ff960e96c8389a11ff736e54cdf2c09ccd43efe2752887c932b71902b1fae",
+  "checks": [
+    {
+      "serviceWorkers": "block",
+      "ownRead": true,
+      "derivedAmountMatchesBackend": true,
+      "explicitReview": false,
+      "loansWithBalance": 0,
+      "reload": true,
+      "noOverflow": true,
+      "pageErrors": 0
+    },
+    {
+      "serviceWorkers": "allow",
+      "ownRead": true,
+      "derivedAmountMatchesBackend": true,
+      "explicitReview": false,
+      "loansWithBalance": 0,
+      "reload": true,
+      "noOverflow": true,
+      "pageErrors": 0
+    }
+  ],
+  "businessWrites": 0,
+  "privateContentLogged": false,
+  "populatedAccordion": "See isolated responsive fixtures when controlled live account has no debt"
+}

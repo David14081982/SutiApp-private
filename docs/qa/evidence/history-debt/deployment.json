@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "featureCommit": "1dd2de37e9d4902eecc3dcdc1f880db3634eeec0",
+  "workflowRun": 45585994435,
+  "workflowUrl": "https://github.com/David14081982/SutiApp-private/actions/runs/45585994435",
+  "workflowConclusion": "success",
+  "site": "https://sutiapp.com/",
+  "bundleSha256": "e99ff960e96c8389a11ff736e54cdf2c09ccd43efe2752887c932b71902b1fae",
+  "authenticatedReadWithAndWithoutServiceWorker": true,
+  "reload": true,
+  "businessWrites": 0,
+  "controlledAccountHasDebt": false,
+  "populatedAccordion": "isolated fixtures only",
+  "finalEvidenceOnlyCommit": "No product artifact changes; CI may be skipped for evidence commit"
+}

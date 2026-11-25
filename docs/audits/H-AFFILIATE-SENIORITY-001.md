@@ -64,3 +64,11 @@ Owner decision: NO. Codigo confirmado y publicacion expresamente autorizada.
 Next action: completar regresion requerida, revisar diff, publicar este candidato aislado y comprobar Pages; actualizar resultado final. No avances a otra H.
 
 Revision visual live: captura movil de 390 px inspeccionada directamente; encabezado, regreso/descarga, total, unidades, conteos, tarjetas y antiguedad corresponden a la referencia. Sin overflow; evidencia visual privada. El primer PDF de regresion estaba retirado; el fixture definitivo proviene de active_documents, asset READY y objeto Storage existente, con acceso HTTP 200 validado. No se modificaron documentos ni reglas de acceso.
+
+## Verificacion global local definitiva
+
+PASS en docs/qa/evidence/seniority/global-local.json. Build local HTTPS con backend real y hash exacto del candidato. 240 app_assets, 28 archivos imagen historicos, 226 assets de catalogo, 13 recursos estaticos, 7 de branding, 8 thumbnails Admin; todas las superficies requeridas PASS. PDF vigente HTTP 200, application/pdf y visor abierto. Refresh y comparacion con/sin service worker PASS; cero errores de consola. El NOT_APPLICABLE_CURRENT_ACCOUNT del PDF self-service se complementa con legitimatePdf PASS usando documento real autorizado. Ninguna mutacion de datos de negocio. Publicacion y comprobacion Pages aun pendientes; no se declara cierre productivo.
+
+## Ampliacion focal: publicacion Pages
+
+Autorizacion de desplegar vigente. Run 45680744612: build y upload PASS; deploy intento 1 no encontro metadata recien subida, intento 2 encontro dos artifacts homonimos. Cambio necesario y reversible exclusivamente .github/workflows/deploy-pages.yml: nombre unico por run/intento y espera acotada de metadata; permiso actions:read para la consulta. Sin cambio de bundle, datos, modulos ni contratos. Verificar sintaxis, diff, workflow y mismo hash publicado. Registry de la nueva pantalla verificado FRESH antes del commit c2d2379; los anexos posteriores son evidencia documental, sin nueva arquitectura de aplicacion.

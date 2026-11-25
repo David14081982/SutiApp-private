@@ -56,3 +56,41 @@ Second run 45650121542 repeated the same metadata race after successful upload. 
 ## Deployment diagnosis corrected / scope extension
 
 Run 45650633809 disproved the initial REST metadata-delay hypothesis: the readiness check found exactly one artifact, then actions/deploy-pages@v4 reported zero. Official source confirms deploy-pages lists through the separate Twirp artifact service, whereas REST sees the current artifact. Replace the ineffective wait and deploy action with actions/github-script using the official REST Pages deployment endpoint, the same current-run artifact, SHA, existing GITHUB_TOKEN and core.getIDToken(). Keep permissions, environment, build/upload and post-deployment contract unchanged. Enforce exactly one unexpired current-run/current-SHA artifact; bound discovery and deployment polling; reject final failure and cancel on timeout. Never print tokens. This is a publishing compatibility repair under the explicit publication authorization, not a data-authority fallback. Sources: https://github.com/actions/deploy-pages/blob/v4/src/internal/api-client.js and https://github.com/actions/deploy-pages/blob/v4/src/internal/deployment.js . Verify script with isolated stubbed API responses and actual CI, followed by live artifact/UI checks.
+
+
+## External publication failure and configuration recovery
+
+Run 45651157361 successfully selected the current-run artifact through REST but POST /pages/deployments returned HTTP 500 (Unexpected end of JSON input). Token remained masked. Thus the REST workaround does not resolve the external GitHub failure. Restore .github/workflows/deploy-pages.yml byte-for-byte from bf4308a7ccf816091d4956bd46e1edca892fa85b: leave no speculative deployment customization. Original UI source/build and tests remain unchanged. The recovery commit retries standard publication one final time; do not claim a successful deployment without actual evidence.
+
+
+## H-FINANCE-HISTORY-ACCORDION-001 RESULT
+
+Status: BLOCKED (publication only; implementation and focal verification PASS).
+Files changed: focal screen; generated bundle/cachebuster; two existing test adapters; audit/changelog; sanitized evidence. Workflow restored exactly to original baseline, with no final workflow diff.
+Source-of-truth verdict: PASS, original AdminFinanceQueueRepository reader and Supabase authority unchanged.
+Invariant verdict: PASS, static.json verifies unchanged code outside component, read/context effect and original body/states.
+Build: PASS, standard public artifact; exact bundle SHA in build.json; 178 unrelated chunks unchanged.
+Tests: PASS, focal Chromium queue test at 390/1280 with keyboard and retained nested details. Broad preexisting borrower fixture timed out and is not PASS. Diagnostic REST deployment script's six isolated tests passed, but that workaround was reverted after external failure.
+Security: existing permission/backend boundary unchanged; no secret added, private content logged or impersonation performed.
+Legacy impact: none; zero financial/business writes.
+Unexpected files changed: none in isolated release. Unrelated original workspace changes were excluded.
+Known limitations: live site still serves bundle 2026112501; expected 2026112502. Live accordion checks cannot run until GitHub publishes. GitHub Pages and action-control POST endpoints return errors. Original configuration recovery commit will trigger a final standard attempt.
+Evidence: docs/qa/evidence/finance-history-accordion/{build,ui,static,governance,publication-attempts}.json, synthetic screenshots and linked Actions run logs.
+
+## SUTIAPP ARCHITECT REVIEW
+
+Task: H-FINANCE-HISTORY-ACCORDION-001.
+Verdict: BLOCKED (external publication).
+Critical findings: requested accordion implemented and tested; public site has old bundle. No claim of complete user outcome.
+Source of truth: unchanged authority/read effect, confirmed by source comparison.
+Architecture: focal view state only; no shared source, routing, assets or storage changes; final workflow restored. No Registry structural update required.
+Security: unchanged backend enforcement; credentials confined to test process; masked CI token.
+Data: no writes/migration/deletion; fixtures isolated and synthetic.
+Legacy: unchanged.
+Owner decision: NO. Explicit owner authorization already covers commit/push/publication.
+Next action: observe recovery deployment; if GitHub remains unavailable, report publication blocked and preserve verified commit. Once service recovers, rerun original Pages workflow and execute scoped live hash/DOM checks before marking PASS. Do not advance unrelated work queue.
+Response generated for Codex: YES.
+
+### RESPONSE TO CODEX
+
+Do not mark the complete task PASS while production serves 2026112501. Preserve the verified accordion and original hosting configuration. Complete only the already-authorized publication and read-only live checks when GitHub accepts the deployment. No financial, historical or unrelated changes.

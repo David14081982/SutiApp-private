@@ -9,5 +9,6 @@
     "timeout"
   ],
   "networkCalls": 0,
-  "tokenOutput": false
+  "tokenOutput": false,
+  "scope": "Historical diagnostic workaround, subsequently reverted; not the current workflow"
 }

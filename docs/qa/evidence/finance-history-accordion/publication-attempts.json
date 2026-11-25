@@ -1,0 +1,17 @@
+{
+  "status": "BLOCKED",
+  "reason": "GitHub Pages artifact discovery fails and direct Pages deployment POST returns HTTP 500; rerun and dispatch endpoints also return HTTP 500.",
+  "runs": [
+    45649560350,
+    45650121542,
+    45650633809,
+    45651157361
+  ],
+  "lastFailedJob": 139335695756,
+  "featureCommit": "772c2a7a05e4c8d3c672d22c6a6a630eb741d2d1",
+  "build": "PASS",
+  "focalUI": "PASS",
+  "originalWorkflowRestored": true,
+  "businessWrites": 0,
+  "tokensLogged": false
+}

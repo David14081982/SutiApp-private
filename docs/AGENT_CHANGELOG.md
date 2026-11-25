@@ -4833,3 +4833,6 @@ formato, puente y eliminación). Sin cambios en Supabase, frontend, LoanTransfer
 ## 2026-11-25 - H-FINANCE-HISTORY-ACCORDION-001
 
 Owner authorized compact, initially collapsed historical review panel, commit/push/publication. Changed only HistoricalReviewQueue presentation and generated bundle/cachebuster. Existing child details, data authority, evidence, states and adjacent modules preserved. Chromium focal test PASS (390/1280, keyboard, retained child state, no extra reads); Pages build PASS; 178 unrelated bundle chunks unchanged. No backend/business writes. Audit and sanitized evidence: docs/audits/H-FINANCE-HISTORY-ACCORDION-001.md and docs/qa/evidence/finance-history-accordion/. Live publication verification to follow.
+
+
+H-FINANCE-HISTORY-ACCORDION-001 publication update: feature 772c2a7 pushed and focal UI/build PASS. GitHub Pages attempts failed; a scoped diagnostic REST deployment reached the official Pages endpoint but received HTTP 500. Original deployment workflow restored exactly. Production hash check still sees previous bundle 2026112501. Overall task BLOCKED on publication; no financial writes or unrelated workspace publication. See audit for recovery attempt and reviewer verdict.

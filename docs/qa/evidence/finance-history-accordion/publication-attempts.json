@@ -5,7 +5,8 @@
     45649560350,
     45650121542,
     45650633809,
-    45651157361
+    45651157361,
+    45651565486
   ],
   "lastFailedJob": 139335695756,
   "featureCommit": "772c2a7a05e4c8d3c672d22c6a6a630eb741d2d1",
@@ -13,5 +14,14 @@
   "focalUI": "PASS",
   "originalWorkflowRestored": true,
   "businessWrites": 0,
-  "tokensLogged": false
+  "tokensLogged": false,
+  "finalStandardRun": {
+    "id": 45651565486,
+    "conclusion": "failure",
+    "failedStep": "Deploy Pages",
+    "url": "https://github.com/David14081982/SutiApp-private/actions/runs/45651565486"
+  },
+  "observedPublicBundle": "2026112501",
+  "expectedPublicBundle": "2026112502",
+  "finalApplicationCommit": "48b9753f81648b800ed50abdb2eb0154d0c3bc61"
 }

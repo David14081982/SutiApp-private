@@ -60939,6 +60939,8 @@ Object.assign(window, {
   function HistoricalReviewQueue({
     initialAffiliateId
   }) {
+    const [open, setOpen] = useState(false);
+    const contentId = React.useId();
     const [rows, setRows] = useState([]),
       [phase, setPhase] = useState('loading'),
       [nonce, setNonce] = useState(0);
@@ -60975,12 +60977,36 @@ Object.assign(window, {
       };
     }, [initialAffiliateId, nonce]);
     return h('section', {
-      className: 'finwb-card',
       'data-historical-review-queue': phase,
       style: {
-        marginBottom: 16
+        background: 'var(--surface)',
+        borderRadius: 14,
+        padding: 14,
+        marginBottom: 14,
+        boxShadow: 'var(--neo-sm)'
       }
-    }, h('h3', null, 'REVISIÓN DE HISTORIAL REQUERIDA'), h('p', {
+    }, h('button', {
+      type: 'button',
+      'data-historical-review-toggle': true,
+      'aria-expanded': open,
+      'aria-controls': contentId,
+      onClick: () => setOpen(value => !value),
+      style: {
+        display: 'block',
+        width: '100%',
+        textAlign: 'left',
+        border: 0,
+        padding: 0,
+        background: 'transparent',
+        color: 'var(--ink)',
+        font: 'inherit',
+        fontWeight: 850,
+        cursor: 'pointer'
+      }
+    }, 'Revisión de historial requerida ', open ? '▴' : '▾'), h('div', {
+      id: contentId,
+      hidden: !open
+    }, h('p', {
       style: {
         fontSize: 13,
         lineHeight: 1.5
@@ -61019,7 +61045,7 @@ Object.assign(window, {
         fontSize: 12,
         fontWeight: 700
       }
-    }, 'La resolución manual requiere soporte documental, actor, fecha, motivo, valor anterior y decisión auditada. Este panel conserva el pendiente; no permite asignar un fondo ni liberar crédito.')))));
+    }, 'La resolución manual requiere soporte documental, actor, fecha, motivo, valor anterior y decisión auditada. Este panel conserva el pendiente; no permite asignar un fondo ni liberar crédito.'))))));
   }
   function FinanzasModule({
     app,

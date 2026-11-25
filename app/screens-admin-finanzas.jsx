@@ -727,6 +727,8 @@
   }
 
   function HistoricalReviewQueue({ initialAffiliateId }) {
+    const [open, setOpen] = useState(false);
+    const contentId = React.useId();
     const [rows, setRows] = useState([]), [phase, setPhase] = useState('loading'), [nonce, setNonce] = useState(0);
     useEffect(() => {
       let active = true;
@@ -745,8 +747,9 @@
       const unsubscribe = window.AdminRepository?.subscribe?.(invalidate);
       return () => { active = false; unsubscribe?.(); };
     }, [initialAffiliateId, nonce]);
-    return h('section', { className: 'finwb-card', 'data-historical-review-queue': phase, style: { marginBottom: 16 } },
-      h('h3', null, 'REVISIÓN DE HISTORIAL REQUERIDA'),
+    return h('section', { 'data-historical-review-queue': phase, style: { background: 'var(--surface)', borderRadius: 14, padding: 14, marginBottom: 14, boxShadow: 'var(--neo-sm)' } },
+      h('button', { type: 'button', 'data-historical-review-toggle': true, 'aria-expanded': open, 'aria-controls': contentId, onClick: () => setOpen(value => !value), style: { display: 'block', width: '100%', textAlign: 'left', border: 0, padding: 0, background: 'transparent', color: 'var(--ink)', font: 'inherit', fontWeight: 850, cursor: 'pointer' } }, 'Revisión de historial requerida ', open ? '▴' : '▾'),
+      h('div', { id: contentId, hidden: !open },
       h('p', { style: { fontSize: 13, lineHeight: 1.5 } }, 'Estos pendientes conservan sus obligaciones. El crédito permanece sin calcular hasta contar con soporte documental.'),
       phase === 'loading' ? h('p', { role: 'status' }, 'Consultando revisiones…') :
       phase === 'error' ? h('p', { role: 'alert' }, 'No fue posible consultar los pendientes. ', h('button', { type: 'button', onClick: () => setNonce(n => n + 1) }, 'Reintentar')) :
@@ -758,7 +761,7 @@
           h('strong', null, 'Evidencia disponible'), h('ul', null, row.evidence.map((item, i) => h('li', { key: i }, item))),
           h('p', null, 'Valor anterior registrado: ', h('code', null, JSON.stringify(row.previous_value))),
           row.events.map(event => h('p', { key: event.id, style: { fontSize: 12 } }, 'Registro de revisión · ', dateValue(event.created_at), ' · Actor: ', event.actor_auth_user_id, ' · ', event.reason)),
-          h('p', { style: { fontSize: 12, fontWeight: 700 } }, 'La resolución manual requiere soporte documental, actor, fecha, motivo, valor anterior y decisión auditada. Este panel conserva el pendiente; no permite asignar un fondo ni liberar crédito.')))));
+          h('p', { style: { fontSize: 12, fontWeight: 700 } }, 'La resolución manual requiere soporte documental, actor, fecha, motivo, valor anterior y decisión auditada. Este panel conserva el pendiente; no permite asignar un fondo ni liberar crédito.'))))));
   }
 
   function FinanzasModule({ app, onBack, header, initialAffiliateId }) {

@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "scope": "Historical review accordion and adjacent cards",
+  "pendingHumanMessage": null,
+  "technicalCodesVisible": null,
+  "continueDisabled": null,
+  "normalStructureUnchanged": false,
+  "adminPendingCases": 12,
+  "accordionDefaultClosed": true,
+  "accordionKeyboard": true,
+  "nestedExpansionPreserved": true,
+  "toggleExtraReads": 0,
+  "responsiveWidths": [
+    390,
+    1280
+  ],
+  "adminEvidenceAndActorVisible": true,
+  "arbitraryFundSelector": false,
+  "originalAdminSectionsPreserved": null,
+  "browserErrors": 0,
+  "externalRequests": 0
+}

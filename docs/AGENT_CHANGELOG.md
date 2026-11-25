@@ -4828,3 +4828,8 @@ Auditoría: J («Fecha solicitud») tomaba el día UTC de `created_at`; 45 prés
 el día siguiente (creados ≥17:00 en Sonora) y el 2981 tenía año 2029. Apps Script `financial-handoff` publicado
 como v31 sobre la v30 respaldada; pruebas GAS focales PASS (nuevo `test-request-register-sonora-date.js`,
 formato, puente y eliminación). Sin cambios en Supabase, frontend, LoanTransfer ni fórmulas. ADR-118, INV-258.
+
+
+## 2026-11-25 - H-FINANCE-HISTORY-ACCORDION-001
+
+Owner authorized compact, initially collapsed historical review panel, commit/push/publication. Changed only HistoricalReviewQueue presentation and generated bundle/cachebuster. Existing child details, data authority, evidence, states and adjacent modules preserved. Chromium focal test PASS (390/1280, keyboard, retained child state, no extra reads); Pages build PASS; 178 unrelated bundle chunks unchanged. No backend/business writes. Audit and sanitized evidence: docs/audits/H-FINANCE-HISTORY-ACCORDION-001.md and docs/qa/evidence/finance-history-accordion/. Live publication verification to follow.

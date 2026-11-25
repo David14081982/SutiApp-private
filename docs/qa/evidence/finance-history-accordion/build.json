@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "changedBundleChunks": [
+    "screens-admin-finanzas.jsx"
+  ],
+  "unchangedBundleChunks": 178,
+  "bundleSha256": "39d94759758915a78baf72d83b61280df68fcc4ce9eac767b361d887e4beefaa",
+  "sourceSha256": "58ff3c3bda7e1b7752a4e3557a4322b815c833c2f15e1c84b35a1d32a6f8e4c3",
+  "cachebuster": "2026112502",
+  "pagesBuild": true,
+  "swLogicChanged": false,
+  "globalImageRegression": "NOT APPLICABLE: focal presentation and generated artifacts only",
+  "businessWrites": 0
+}

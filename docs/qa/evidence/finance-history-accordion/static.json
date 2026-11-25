@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "outsideComponentByteEquivalent": true,
+  "dataEffectByteEquivalent": true,
+  "originalBodyAndStatesPreserved": true,
+  "appFilesChanged": [
+    "app/screens-admin-finanzas.jsx",
+    "app/bundle.js"
+  ],
+  "newFinancialWriter": false,
+  "newDataFallback": false
+}

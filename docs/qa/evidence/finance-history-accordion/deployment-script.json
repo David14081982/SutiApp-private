@@ -1,0 +1,13 @@
+{
+  "status": "PASS",
+  "scenarios": [
+    "success",
+    "missing",
+    "foreign",
+    "ambiguous",
+    "failure",
+    "timeout"
+  ],
+  "networkCalls": 0,
+  "tokenOutput": false
+}

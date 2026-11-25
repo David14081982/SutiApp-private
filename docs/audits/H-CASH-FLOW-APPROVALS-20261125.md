@@ -78,3 +78,27 @@ para el frontend, revertir el commit.
 
 Casos para la encargada (no se modifican): 2728, SR-2026-000128 y SR-2026-000194 están «Iniciado» en
 Solicitudes sin fila en HISTORIAL DE PRESTAMOS; IDs 616/617 con fecha 1970.
+
+## Cierre de publicación (25-nov-2026)
+
+Autorizado por el propietario («si», «publicalo»).
+
+- Edge `reports-jc`: v19 → **v20** (verify_jwt true). Respaldo de v19 (ESZIP y metadatos) en `.tmp/cash-flow-approvals-20261125/` del workspace principal; v19 coincidía con origin/main más `template.mjs` local (ignorado por git, idéntico al desplegado). Lectura en vivo con H005_TEST: HTTP 200, `approvals` con sólo columnas 0, 1, 2, 4, 7, 9; 0 diferencias contra una lectura nueva de la hoja (2026, cuatro programas, conteo y capital). La proyección anterior siguió funcionando con v20 durante la transición.
+- Frontend: commit `c100e91` en main; Pages run `45709379111` SUCCESS. sutiapp.com sirve `2026112504`; `bundle.js` y `cash-flow-projection-worker.js` idénticos al candidato (sha256 normalizado `838a16fc5920926a…` / `d832e973fc517a6f…`).
+- Navegador real contra producción (H005_TEST): el reporte muestra «Capital colocado por fecha de aprobación»; conteos y capitales 2026 iguales a la hoja, incluida la aprobación 3168 ($2,000) registrada ese mismo día. 0 alertas, 0 errores JS, 0 escrituras.
+- Recuperación: redeploy del ESZIP/fuentes v19 y revert de `c100e91`.
+
+```text
+H-CASH-FLOW-APPROVALS-20261125 RESULT
+Status: PASS
+Files changed: 19 (commit c100e91)
+Source-of-truth verdict: SAFE; HISTORIAL DE PRESTAMOS autoridad de conteo/colocación por ADR-119; sin escrituras.
+Invariant verdict: PASS; sin fallback, desconocido distinto de cero, recuperación y saldos sin cambio.
+Build: PASS; bundle 181 módulos (2 cambiados), worker reproducible.
+Tests: PASS focales (core 38, pv2 28, reconciliation 9, consolidated 16, inputs 7, criteria-integration 6, parity 3, worker 8, worker-ui, versión); criteria-contracts 2 fallos previos ajenos.
+Security: PASS; JWT/admin context sin cambio; allowlist de 6 columnas.
+Legacy impact: sólo lectura de Google.
+Unexpected files changed: ninguno.
+Known limitations: 2728, SR-2026-000128, SR-2026-000194 sin fila en HISTORIAL DE PRESTAMOS; IDs 616/617 con fecha 1970. Recuperación realizada pendiente de la siguiente etapa.
+Evidence: esta auditoría.
+```

@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "verdict": "APPROVED",
+  "task": "H-AFFILIATE-SENIORITY-001",
+  "version": "2026112503",
+  "commit": "d535e60baeb0f3d5491bb94bce02ff346720479f",
+  "proofs": [
+    "isolated",
+    "browser-isolated",
+    "build",
+    "backend-applied",
+    "unit-normalization",
+    "backend-live",
+    "access",
+    "browser-local",
+    "global-local",
+    "browser-published",
+    "global-published"
+  ],
+  "source": "public.affiliates",
+  "unrelatedModulesPreserved": 177,
+  "ownerDecisionRequired": false,
+  "businessWrites": 0,
+  "at": "2026-11-25T19:10:50.875Z"
+}

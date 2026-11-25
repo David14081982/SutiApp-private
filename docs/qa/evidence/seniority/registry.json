@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "freshness": "FRESH",
+  "feature": "Agremiados por antiguedad",
+  "primaryFiles": [
+    "app/screens-seniority.jsx",
+    "app/screens-admin-finanzas.jsx",
+    "app/screens-admin-identity.jsx",
+    "app/screens-admin-requests.jsx",
+    "app/screens-admin-affiliates.jsx",
+    "app/screens-credencial.jsx",
+    "app/seniority-repository.js",
+    "scripts/test-profile-photo-edit-browser.js",
+    "scripts/test-seniority-browser.js",
+    "docs/qa/evidence/disk-io-remediation/H06/before/workspace/screens-documentos.jsx"
+  ],
+  "updated": [
+    "docs/architecture/architecture-overrides.json",
+    "docs/audits/H-AFFILIATE-SENIORITY-001.md",
+    "scripts/seniority/global.cjs",
+    "scripts/seniority/package.cjs",
+    "docs/qa/evidence/seniority/browser-local.json"
+  ],
+  "scope": "Feature index verified FRESH before publication; final documentation/evidence additions do not change application architecture"
+}

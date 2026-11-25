@@ -8,7 +8,7 @@ Alcance: lector focal paginado de public.affiliates; pantalla, integración excl
 Archivos previstos: app/seniority-repository.js, app/screens-seniority.jsx, app/screens-marketplace.jsx (dispatch exclusivo antiguedad), app/union-screen-registry.js (autoridad de esa entrada), scripts/build-bundle.js, app/bundle.js, SutiApp.html, sw.js (sólo versiones), scripts/seniority/*, scripts/test-seniority*.js, supabase/migrations/20261125000100_affiliate_seniority.sql y supabase/recovery/20261125000100_affiliate_seniority.sql si la inspección confirma que falta lector seguro; docs/audits/H-AFFILIATE-SENIORITY-001.md, docs/AGENT_CHANGELOG.md, docs/SOURCE_OF_TRUTH.md, docs/architecture/* derivados. Artefactos privados temporales bajo .tmp/seniority y evidencia sin PII bajo docs/qa/evidence/seniority.
 Fuera de alcance: otras pantallas, auth global, AssetRepository, expedientes, finanzas, Google, tablas nuevas, modificación de filas de afiliados, rediseño de Inicio.
 Autoridad: public.affiliates; PK id UUID; numero_control conserva TEXT exacto. Columnas: financial_union_code, affiliate_status_raw, financial_employee_category_code, unit_raw, employment_entry_date_raw; identificación mínima full_name/display_name, numero_control, city_raw.
-Filtros: SUTISSSSTESON / ACTIVO / NOT IN BASE,JUBILADOS_PENSIONADOS, aplicados en backend antes de agregación/paginación. NULL de categoría no satisface NOT IN. Sin equivalencias semánticas inventadas.
+Filtros: SUTISSSTESON (confirmado por el propietario) / ACTIVO / NOT IN BASE,JUBILADOS_PENSIONADOS, aplicados en backend antes de agregación/paginación. NULL de categoría no satisface NOT IN. Sin equivalencias semánticas inventadas.
 Invariantes: sin escrituras de negocio ni fallback; sin email/documentos privados en respuesta; usuarios sin Auth pueden aparecer, acceso del lector autenticado validado en backend.
 Riesgo: RLS actual limita self-service a identidad propia; confirmar lector existente o añadir RPC mínima autenticada sin alterar políticas existentes. Fechas raw requieren validación estricta y zona America/Hermosillo. No publicar cambios previos ajenos: comparar candidato con HEAD remoto.
 Tests: formatos reales, predicados, UUID/duplicados, fechas inválidas/futuras/nulas, años/meses cumplidos, orden y paginación, totales, denegación anónima/sin identidad, UI responsive/regreso/refresh, build y equivalencia de módulos ajenos.
@@ -20,7 +20,7 @@ Status: PASS para inspección e implementación focal. Despliegue condicionado a
 
 Ampliación focal de alcance: `20261125000200_seniority_unit_whitespace.sql` (migración/recovery) corrige únicamente el trim del lector de unit_raw tras demostrar tabuladores reales al final de algunas unidades. Sin escritura de datos. Se incorporan scripts/seniority/common.cjs, backend.cjs, live-browser.cjs y global.cjs para reproducción/verificación. La regresión global inicial llegó a refresh sin errores de consola y agotó 30 s; se amplía sólo el timeout de navegación del harness, manteniendo todos sus asserts.
 
-El propietario respondió: **«SI, ES `SUTISSSTESON`»**. Se autoriza usar ese código exacto sin modificar registros. Continúa la autorización original de implementar, publicar en GitHub y desplegar. La anotación de decisión pendiente y el resultado del candidato que siguen son históricos; el cierre final se incorpora después de verificar producción.
+El propietario respondió: **«SI, ES `SUTISSSTESON`»**. Se autoriza usar ese código exacto sin modificar registros. Continúa la autorización original de implementar, publicar en GitHub y desplegar. El cierre productivo verificado aparece al final de este documento.
 
 ## Resultado vigente de implementacion y verificacion local
 
@@ -42,33 +42,38 @@ Build focal v2026112503 sobre remoto 8e5040ca3d0f5f562dfc917d5c0b5be49e497830, S
 
 El cambio de dispatch compartido activa scripts/test-global-image-regression-production-live.js local y Pages. Intentos iniciales del harness con route intercept agotaron refresh; servidor localhost encontro CORS de documentos. El harness HTTPS local usa el origen permitido y backend real, sin modificar politicas ni asserts. Estos intentos NO son PASS global. Registrar a continuacion los resultados definitivos antes del cierre.
 
-## H-AFFILIATE-SENIORITY-001 RESULT
-
-Status: implementacion focal PASS; cierre/publicacion pendientes de verificaciones obligatorias.
-Files changed: app/seniority-repository.js, app/screens-seniority.jsx, app/screens-marketplace.jsx (dispatch exclusivo), app/union-screen-registry.js (metadata exclusiva), scripts/build-bundle.js, app/bundle.js, SutiApp.html, sw.js (solo versiones), dos SQL migration/recovery, scripts/test-seniority*.js, scripts/seniority/*.cjs, docs de autoridad/changelog/auditoria/evidencia y Registry derivado.
-Source-of-truth verdict: PASS, public.affiliates unica autoridad.
-Invariant verdict: PASS, identificadores/datos/otras pantallas preservados; sin fallback productivo.
-Build: PASS, evidencia build.json.
-Tests: PASS focal aislado y live; regresion global pendiente.
-Security: PASS backend/roles/RLS y denegacion anonima; limite segunda cuenta HTTP indicado arriba.
-Legacy impact: ninguno.
-Unexpected files changed: ninguno en checkout de publicacion.
-Known limitations: no declarar publicacion ni PASS global hasta sus evidencias definitivas.
-Evidence: docs/qa/evidence/seniority/{isolated,browser-isolated,build,backend-applied,unit-normalization,backend-live,access,browser-local}.json.
-
-## SUTIAPP ARCHITECT REVIEW - previo a publicacion
-
-Verdict: NEEDS_FIX exclusivamente para completar evidencia global/publicacion, sin decision de negocio pendiente.
-Source of truth / Architecture / Security / Data / Legacy: implementacion focal cumple las restricciones demostradas arriba. No se aceptan resumenes como sustituto de los JSON/diffs/huellas.
-Owner decision: NO. Codigo confirmado y publicacion expresamente autorizada.
-Next action: completar regresion requerida, revisar diff, publicar este candidato aislado y comprobar Pages; actualizar resultado final. No avances a otra H.
-
-Revision visual live: captura movil de 390 px inspeccionada directamente; encabezado, regreso/descarga, total, unidades, conteos, tarjetas y antiguedad corresponden a la referencia. Sin overflow; evidencia visual privada. El primer PDF de regresion estaba retirado; el fixture definitivo proviene de active_documents, asset READY y objeto Storage existente, con acceso HTTP 200 validado. No se modificaron documentos ni reglas de acceso.
-
 ## Verificacion global local definitiva
 
-PASS en docs/qa/evidence/seniority/global-local.json. Build local HTTPS con backend real y hash exacto del candidato. 240 app_assets, 28 archivos imagen historicos, 226 assets de catalogo, 13 recursos estaticos, 7 de branding, 8 thumbnails Admin; todas las superficies requeridas PASS. PDF vigente HTTP 200, application/pdf y visor abierto. Refresh y comparacion con/sin service worker PASS; cero errores de consola. El NOT_APPLICABLE_CURRENT_ACCOUNT del PDF self-service se complementa con legitimatePdf PASS usando documento real autorizado. Ninguna mutacion de datos de negocio. Publicacion y comprobacion Pages aun pendientes; no se declara cierre productivo.
+PASS en docs/qa/evidence/seniority/global-local.json. Build local HTTPS con backend real y hash exacto del candidato. 240 app_assets, 28 archivos imagen historicos, 226 assets de catalogo, 13 recursos estaticos, 7 de branding, 8 thumbnails Admin; todas las superficies requeridas PASS. PDF vigente HTTP 200, application/pdf y visor abierto. Refresh y comparacion con/sin service worker PASS; cero errores de consola. El NOT_APPLICABLE_CURRENT_ACCOUNT del PDF self-service se complementa con legitimatePdf PASS usando documento real autorizado. Ninguna mutacion de datos de negocio. Publicacion y comprobacion Pages completadas en el cierre siguiente.
 
 ## Ampliacion focal: publicacion Pages
 
 Autorizacion de desplegar vigente. Run 45680744612: build y upload PASS; deploy intento 1 no encontro metadata recien subida, intento 2 encontro dos artifacts homonimos. Cambio necesario y reversible exclusivamente .github/workflows/deploy-pages.yml: nombre unico por run/intento y espera acotada de metadata; permiso actions:read para la consulta. Sin cambio de bundle, datos, modulos ni contratos. Verificar sintaxis, diff, workflow y mismo hash publicado. Registry de la nueva pantalla verificado FRESH antes del commit c2d2379; los anexos posteriores son evidencia documental, sin nueva arquitectura de aplicacion.
+
+## H-AFFILIATE-SENIORITY-001 RESULT - cierre definitivo
+
+Status: PASS. Publicado en https://sutiapp.com/, v2026112503, commit de despliegue d535e60baeb0f3d5491bb94bce02ff346720479f.
+Files changed: nueva pantalla/repositorio de antiguedad; dispatch y metadata focales; build/bundle/cachebusters; dos migraciones de lectura y recovery; tests/harness; workflow Pages; documentacion/evidencia y Registry derivado. Detalle exacto: diff desde 8e5040ca3d0f5f562dfc917d5c0b5be49e497830.
+Source-of-truth verdict: PASS, public.affiliates; codigo confirmado SUTISSSTESON, estado ACTIVO y categorias excluidas estrictas.
+Invariant verdict: PASS, PK UUID/control textual, datos existentes y 177 modulos ajenos preservados.
+Build: PASS local y GitHub; SHA256 978ae077ef9bb470919db17e58bf354d512483d9f9d1f7d80843e073b31254d3.
+Tests: PASS focal aislado, backend real, navegador local/Pages y regresion global local/Pages. 308 afiliados unicos, 41 grupos; 390/820/1440, regreso, paginacion y refresh. PDF real abierto, todas las superficies globales requeridas PASS.
+Security: PASS RPC autenticada, anonymous denegado, RLS directo intacto; pruebas de rol SQL no se presentan como segundo login HTTP. Sin secretos publicables.
+Legacy impact: ninguno; sin cambios de datos de negocio, finanzas, Google Sheets ni Apps Script.
+Unexpected files changed: ninguno; checkout aislado y staging por lista permitida.
+Known limitations: 33 fechas ausentes y 4 invalidas se muestran sin antiguedad; no se inventan. No hay credenciales para segundo usuario HTTP; evidencia de identidad ordinaria mediante rol SQL read-only. Registry focal verificado FRESH antes de publicacion; anexos finales exclusivamente documentales no cambian arquitectura.
+Evidence: docs/qa/evidence/seniority/*.json. Workflow https://github.com/David14081982/SutiApp-private/actions/runs/45681264135. Capturas reales privadas; movil inspeccionado visualmente.
+
+## SUTIAPP ARCHITECT REVIEW
+
+Task: H-AFFILIATE-SENIORITY-001.
+Verdict: APPROVED.
+Critical findings: ninguno pendiente. Decision del sindicato resuelta por propietario. Fallos de harness/artefactos documentados y superados con evidencia definitiva, sin relajar aserciones ni permisos.
+Source of truth: affiliates unica autoridad; consulta minima derivada, sin cache/fallback productivo.
+Architecture: pantalla focal sobre navegacion existente; resto del bundle preservado.
+Security: contexto autenticado backend, grants/RLS existentes y proyeccion minima verificados.
+Data: 308 IDs unicos, 41 grupos, orden/fechas/meses contrastados con consulta independiente.
+Legacy: intacto.
+Owner decision: NO.
+Next action: entregar el cierre de esta H; no iniciar otra H ni modificar datos.
+Response to Codex: Aprobar esta H con la evidencia indicada y comunicar version, archivos principales y autoridad. No avanzar a otra H.

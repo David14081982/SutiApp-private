@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "mode": "published",
+  "bundleSha256": "978ae077ef9bb470919db17e58bf354d512483d9f9d1f7d80843e073b31254d3",
+  "version": "2026112503",
+  "total": 308,
+  "groups": 41,
+  "uniqueIds": 308,
+  "initialRows": 50,
+  "pageLimit": 50,
+  "viewports": [
+    390,
+    820,
+    1440
+  ],
+  "back": true,
+  "authenticatedRefresh": true,
+  "browserErrors": 0,
+  "realBackend": true,
+  "businessWrites": 0,
+  "at": "2026-11-25T19:10:03.886Z"
+}

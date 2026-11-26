@@ -33459,9 +33459,15 @@ Object.assign(window, {
   .seniority-header{background:#7a1230;color:white;padding:20px 20px 22px;border-radius:0 0 28px 28px;flex-shrink:0}
   .seniority-nav{display:flex;align-items:center;justify-content:space-between;gap:12px}
   .seniority-nav button{width:44px;height:44px;flex-shrink:0;border:0;border-radius:14px;background:#ffffff24;color:white;display:grid;place-items:center;cursor:pointer}
-  .seniority-nav button:disabled{opacity:.45;cursor:wait}.seniority-nav span{font-size:13px;font-weight:600;letter-spacing:.055em;text-align:center}
+  .seniority-nav span{font-size:13px;font-weight:600;letter-spacing:.055em;text-align:center}.seniority-nav .seniority-nav-spacer{width:44px;height:44px;flex-shrink:0}[data-text-size] .seniority-nav .seniority-nav-spacer{min-width:48px}
   .seniority-header h1{margin:18px 0 4px;text-align:center;font-size:28px;font-weight:800;letter-spacing:-.02em}
   .seniority-header p{margin:0;text-align:center;font-size:14px;color:#ffffffd9}
+  .seniority-search{flex-shrink:0;padding:14px 16px 0}
+  .seniority-search-box{max-width:1000px;margin:auto;display:flex;align-items:center;gap:10px;min-height:48px;padding:0 4px 0 14px;background:white;border:1px solid #ece8e3;border-radius:14px;box-sizing:border-box}
+  .seniority-search-box:focus-within{border-color:#7a1230;box-shadow:0 0 0 3px #7a12301f}.seniority-search-box>svg{flex-shrink:0;color:#7a1230}
+  .seniority-search input{flex:1;min-width:0;min-height:46px;border:0;outline:0;background:none;padding:0;font:inherit;font-size:16px;color:#1d1b19;-webkit-appearance:none;appearance:none}
+  .seniority-search input:focus,.seniority-search input:focus-visible{outline:0;box-shadow:none}.seniority-search input::placeholder{color:#8a837d}.seniority-search input::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+  .seniority-search button{width:40px;height:40px;flex-shrink:0;border:0;border-radius:12px;background:none;color:#6b6560;display:grid;place-items:center;cursor:pointer}
   .seniority-scroll{flex:1;min-height:0;overflow-y:auto;padding:18px 16px 28px;overscroll-behavior:contain}
   .seniority-content{max-width:1000px;margin:auto}.seniority-total{margin:0 4px 20px;color:#6b6560;font-size:12px}
   .seniority-group{margin-bottom:24px}.seniority-group-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:0 4px;margin-bottom:12px}
@@ -33477,8 +33483,12 @@ Object.assign(window, {
   .seniority-tenure small{display:block;font-size:11px;color:#6b6560;margin-top:3px}.seniority-state{padding:24px 8px;text-align:center;color:#6b6560;font-size:14px}
   .seniority-state button{margin-top:12px;border:1px solid #7a1230;border-radius:10px;background:white;color:#7a1230;padding:10px 16px;font:inherit;cursor:pointer}
   @media(max-width:480px){.seniority-row{gap:9px;padding:14px 12px;grid-template-columns:26px 40px minmax(0,1fr) minmax(80px,105px)}.seniority-avatar{width:40px;height:40px}.seniority-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.seniority-tenure strong{font-size:16px}.seniority-nav{gap:8px}}
-  @media(min-width:700px){.seniority-header{padding-left:32px;padding-right:32px}.seniority-scroll{padding:24px 32px}.seniority-row{padding:18px 20px}.seniority-name{font-size:16px}}
+  @media(min-width:700px){.seniority-header{padding-left:32px;padding-right:32px}.seniority-search{padding:18px 32px 0}.seniority-scroll{padding:24px 32px}.seniority-row{padding:18px 20px}.seniority-name{font-size:16px}}
   `;
+  // Search matches only the work-module name (area included), never people's names;
+  // accents, case and punctuation are ignored and every typed word must appear.
+  const fold = text => String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
   function SeniorityScreen({
     app
   }) {
@@ -33490,20 +33500,23 @@ Object.assign(window, {
     });
     const [phase, setPhase] = React.useState('loading');
     const [error, setError] = React.useState('');
-    const [exporting, setExporting] = React.useState(false);
+    const [query, setQuery] = React.useState('');
     const scroll = React.useRef(null),
       sentinel = React.useRef(null),
       busy = React.useRef(false),
       generation = React.useRef(0);
     const model = window.SeniorityModel;
-    async function load(reset = false) {
+    const terms = fold(query).split(' ').filter(Boolean),
+      searching = terms.length > 0;
+    const complete = !!data.as_of && data.next_offset >= data.total;
+    async function load(reset = false, limit) {
       if (busy.current) return;
       busy.current = true;
       const epoch = generation.current;
       setPhase('loading');
       setError('');
       try {
-        const page = await window.SeniorityRepository.page(reset ? 0 : data.next_offset);
+        const page = await window.SeniorityRepository.page(reset ? 0 : data.next_offset, limit);
         if (epoch !== generation.current) return;
         if (!reset && data.as_of && (page.as_of !== data.as_of || page.revision !== data.revision)) {
           setData({
@@ -33535,7 +33548,7 @@ Object.assign(window, {
       };
     }, []);
     React.useEffect(() => {
-      if (phase !== 'loaded' || data.next_offset >= data.total || !sentinel.current) return;
+      if (searching || phase !== 'loaded' || data.next_offset >= data.total || !sentinel.current) return;
       const observer = new IntersectionObserver(entries => {
         if (entries.some(entry => entry.isIntersecting)) load();
       }, {
@@ -33544,35 +33557,14 @@ Object.assign(window, {
       });
       observer.observe(sentinel.current);
       return () => observer.disconnect();
-    }, [phase, data.next_offset, data.total]);
-    async function download() {
-      setExporting(true);
-      const epoch = generation.current;
-      try {
-        let page = await window.SeniorityRepository.page(0, 100),
-          rows = page.items;
-        const revision = page.revision,
-          asOf = page.as_of;
-        while (page.next_offset < page.total) {
-          page = await window.SeniorityRepository.page(page.next_offset, 100);
-          if (page.revision !== revision || page.as_of !== asOf) throw new Error('El padrón cambió durante la descarga. Intenta de nuevo.');
-          rows = model.merge(rows, page.items);
-          if (epoch !== generation.current) return;
-        }
-        if (epoch !== generation.current) return;
-        const url = URL.createObjectURL(new Blob([model.csv(rows, asOf)], {
-          type: 'text/csv;charset=utf-8;'
-        }));
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = 'agremiados-antiguedad-' + asOf + '.csv';
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      } catch (failure) {
-        if (epoch === generation.current) app.toast(failure.message);
-      } finally {
-        if (epoch === generation.current) setExporting(false);
-      }
+    }, [searching, phase, data.next_offset, data.total]);
+    // A search must see every module, so it reads the remaining pages (same paginated RPC, 100 per call).
+    React.useEffect(() => {
+      if (searching && phase === 'loaded' && data.next_offset < data.total) load(false, 100);
+    }, [searching, phase, data.next_offset, data.total]);
+    function search(value) {
+      setQuery(value);
+      if (scroll.current) scroll.current.scrollTop = 0;
     }
     const groups = [];
     data.items.forEach(row => {
@@ -33588,6 +33580,16 @@ Object.assign(window, {
       group.rows.push(row);
     });
     const tints = [['#f6e3e8', '#7a1230'], ['#e1eef0', '#1e5560'], ['#f5ebd9', '#7a4e10'], ['#e8e5f3', '#43367a']];
+    groups.forEach((group, index) => {
+      group.tint = tints[index % tints.length];
+    });
+    const visible = searching ? groups.filter(group => {
+      const name = fold(group.key || 'Unidad no registrada');
+      return terms.every(term => name.includes(term));
+    }) : groups;
+    const matched = visible.reduce((sum, group) => sum + group.count, 0);
+    const asOf = data.as_of ? ' · Al ' + data.as_of.split('-').reverse().join('/') + ' · Hermosillo' : '';
+    const summary = !searching ? data.total + ' agremiados' + asOf : complete ? plural(visible.length, 'módulo', 'módulos') + ' · ' + plural(matched, 'agremiado', 'agremiados') + asOf : 'Buscando en todos los módulos…';
     return h('div', {
       className: 'seniority-screen',
       'data-seniority': phase
@@ -33602,26 +33604,53 @@ Object.assign(window, {
     }, h(window.Icon, {
       name: 'arrowL',
       size: 22
-    })), h('span', null, 'Agremiados por antigüedad'), h('button', {
-      type: 'button',
-      onClick: download,
-      disabled: exporting || !data.as_of,
-      'aria-label': exporting ? 'Descargando' : 'Descargar lista'
+    })), h('span', null, 'Agremiados por antigüedad'), h('span', {
+      className: 'seniority-nav-spacer',
+      'aria-hidden': true
+    })), h('h1', null, 'Antigüedad'), h('p', null, 'Miembros por módulo de trabajo')), h('div', {
+      className: 'seniority-search',
+      role: 'search'
+    }, h('div', {
+      className: 'seniority-search-box'
     }, h(window.Icon, {
-      name: 'download',
-      size: 22
-    }))), h('h1', null, 'Antigüedad'), h('p', null, 'Miembros por módulo de trabajo')), h('div', {
+      name: 'search',
+      size: 20
+    }), h('input', {
+      type: 'search',
+      value: query,
+      placeholder: 'Buscar módulo de trabajo',
+      'aria-label': 'Buscar módulo de trabajo',
+      autoComplete: 'off',
+      spellCheck: false,
+      enterKeyHint: 'search',
+      onChange: event => search(event.target.value),
+      onKeyDown: event => {
+        if (event.key === 'Enter') event.currentTarget.blur();else if (event.key === 'Escape' && query) {
+          event.preventDefault();
+          search('');
+        }
+      }
+    }), query && h('button', {
+      type: 'button',
+      onClick: () => search(''),
+      'aria-label': 'Borrar búsqueda'
+    }, h(window.Icon, {
+      name: 'close',
+      size: 18
+    })))), h('div', {
       ref: scroll,
       className: 'seniority-scroll su-app-scroll'
     }, h('div', {
       className: 'seniority-content'
     }, data.as_of && h('p', {
       className: 'seniority-total',
-      'data-seniority-total': data.total
-    }, data.total + ' agremiados · Al ' + data.as_of.split('-').reverse().join('/') + ' · Hermosillo'), groups.map((group, index) => {
+      'data-seniority-total': data.total,
+      'data-seniority-matches': searching && complete ? matched : undefined,
+      'aria-live': 'polite'
+    }, summary), visible.map(group => {
       const unit = group.key || 'Unidad no registrada',
         slash = unit.indexOf('/'),
-        tint = tints[index % tints.length];
+        tint = group.tint;
       return h('section', {
         key: unit,
         className: 'seniority-group',
@@ -33663,7 +33692,10 @@ Object.assign(window, {
     }), phase === 'loaded' && !data.total && h('div', {
       className: 'seniority-state',
       role: 'status'
-    }, 'No hay agremiados que cumplan los criterios.'), phase === 'loading' && h('div', {
+    }, 'No hay agremiados que cumplan los criterios.'), phase === 'loaded' && searching && complete && data.total > 0 && !visible.length && h('div', {
+      className: 'seniority-state',
+      role: 'status'
+    }, 'No hay módulos con ese nombre.'), phase === 'loading' && h('div', {
       className: 'seniority-state',
       role: 'status'
     }, 'Cargando agremiados…'), phase === 'error' && h('div', {

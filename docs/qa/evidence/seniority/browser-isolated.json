@@ -5,7 +5,8 @@
     "Responsive 820px without horizontal overflow",
     "Responsive 1440px without horizontal overflow",
     "Scroll loads only the next page; one unit spanning pages remains one group with exact totals",
-    "Download uses the same paginated repository",
+    "Header has only the back button (download removed) and the title stays centered",
+    "Search matches work module or area only (accents/case ignored), never person names; reads remaining pages once; counter, empty state, clear and Escape work",
     "Back, empty state, visible source error and retry work"
   ],
   "consoleErrors": 0,

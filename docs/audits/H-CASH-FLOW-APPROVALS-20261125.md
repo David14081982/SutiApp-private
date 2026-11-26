@@ -102,3 +102,10 @@ Unexpected files changed: ninguno.
 Known limitations: 2728, SR-2026-000128, SR-2026-000194 sin fila en HISTORIAL DE PRESTAMOS; IDs 616/617 con fecha 1970. Recuperación realizada pendiente de la siguiente etapa.
 Evidence: esta auditoría.
 ```
+
+## Ajustes del 26-nov-2026 (ADR-120)
+
+- Renombre: «Recuperación sin desglose» → «Recuperación por clasificar»; programada y totales con el mismo criterio; Excel «Importe sin desglose» → «Importe por clasificar».
+- Ocultos en pantalla y Excel, con el cálculo intacto (`includeDeferred`): 10 conceptos por programa (saldos y desglose programado) y 9 totales derivados. «Recuperación futura programada» y «Entradas futuras programadas» se conservan.
+- Lectura en vivo (H005_TEST, Edge v20), vistas 2026-01 y 2026-12: 150 → 101 renglones; 1,212 celdas restantes idénticas a la versión publicada; registros de detalle 125,805 → 66,893 (vista 2026-01).
+- Pruebas: core 38, pv2 28, reconciliation 10 (nueva prueba de renglones diferidos y Excel), consolidated 16, inputs 7, criteria-integration 6, parity 3, worker 8, worker-ui, versión. Sin cambio de servidor: los nombres y el filtro corren en el navegador. Versión 2026112601.

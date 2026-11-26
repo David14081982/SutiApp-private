@@ -1,7 +1,7 @@
 import {sourceDate,fundGroup,ReportError} from './report.mjs';
 import {buildCashFlowSourceBases} from './cash-flow-source-bases.mjs';
 import {reconcileSavingsCashFlow} from './cash-flow-savings.mjs';
-import {consolidateCashFlow} from './cash-flow-consolidated.mjs';
+import {consolidateCashFlow,withoutDeferredCashFlowRows} from './cash-flow-consolidated.mjs';
 import {cashFlowInputSnapshot} from './cash-flow-inputs.mjs';
 const text=v=>String(v??'').trim();
 const key=v=>text(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
@@ -80,12 +80,14 @@ async function context(client){const auth=await client.auth.getUser();if(auth.er
 export function cashFlowSourceBases(source,savings,investors,approvals,resolved,consultedAt,report={}){
  return buildCashFlowSourceBases({source,savings,investors,approvals,resolved,consultedAt,report});
 }
-export function projectCashFlowSnapshot(snapshot){
+export function projectCashFlowSnapshot(snapshot,{includeDeferred=false}={}){
  if(snapshot?.version!=='cash-flow-inputs-v1'||snapshot?.modelVersion!=='20261104-original-components-v1'||!validFrom(snapshot.from)||!Number.isFinite(Date.parse(snapshot.consultedAt)))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
  const {source,savings,investors,from,consultedAt,sourceErrors}=snapshot;
  if(!source||!Array.isArray(source.loans)||!Array.isArray(source.requests)||source.approvals!==undefined&&!Array.isArray(source.approvals))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
  const base=reconcileSavingsCashFlow({base:buildCashFlow({from,loans:[source.loans[0]],savings,consultedAt}),savings});
- const data=consolidateCashFlow({base,loans:source.loans,requests:source.requests,approvals:source.approvals??null,investorsSource:investors,sourceErrors});
+ const consolidated=consolidateCashFlow({base,loans:source.loans,requests:source.requests,approvals:source.approvals??null,investorsSource:investors,sourceErrors});
+ // Screen and Excel omit deferred loan balances/scheduled breakdown; calculation stays intact.
+ const data=includeDeferred?consolidated:withoutDeferredCashFlowRows(consolidated);
  data.sourceBases=cashFlowSourceBases(source,savings,investors,null,null,consultedAt,data);
  delete data.savingsSourceTable;delete data.savingsBridge;delete data.loanContracts;
  return data;

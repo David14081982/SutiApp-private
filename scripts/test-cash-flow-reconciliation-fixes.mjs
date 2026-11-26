@@ -40,7 +40,7 @@ test('Fable 202 / 2981: missing or future request dates visible, no fictitious p
  assert(entries(r,'pending').some(e=>e.loanId==='2981'&&e.date==='2026-11-13'&&e.amount===null));
 });
 test('unknown AD cannot turn a total into a shrinking subtotal; original capital retained',()=>{
- const input=snapshot([quota('a',1000,{0:'2026-11-01',29:100}),quota('a',1000,{0:'2026-12-15',29:'REVISAR',28:''})],[request('a',1000)]),before=JSON.stringify(input),r=projectCashFlowSnapshot(input);
+ const input=snapshot([quota('a',1000,{0:'2026-11-01',29:100}),quota('a',1000,{0:'2026-12-15',29:'REVISAR',28:''})],[request('a',1000)]),before=JSON.stringify(input),r=projectCashFlowSnapshot(input,{includeDeferred:true});
  assert.equal(row(r,'loan_pending').cells[10].amount,900);
  assert.equal(row(r,'loan_pending').cells[11].amount,null);assert.equal(row(r,'loan_pending').cells[11].knownAmount,null);
  assert.equal(row(r,'loan_pending_unresolved_original').cells[11].amount,1000);
@@ -86,4 +86,18 @@ test('Excel uses exact same monthly cells; source dates typed, IDs preserved as 
 test('other program detail retains original registered quota amount',()=>{
  const r=projectCashFlowSnapshot(snapshot([quota('OTHER',1000,{6:'Seguro Colectivo Suti',1:'125.50'})]));
  const record=r.records.find(r=>r.id==='pv2:2');assert.equal(record.amount,125.50);assert.equal(record.registeredAmount,125.50);
+});
+
+test('deferred loan balances and scheduled breakdown are hidden from screen/Excel; every other row is unchanged',async()=>{
+ const input=snapshot([quota('a',1000,{0:'2026-11-01',29:100}),quota('a',1000,{0:'2026-12-15',29:100,27:5,25:0,28:105,1:105}),quota('b',500,{6:'Caja Chica',0:'2026-12-15',29:'REVISAR',28:''})],[request('a',1000)],2026,[approval('a',1000)]);
+ const full=projectCashFlowSnapshot(input,{includeDeferred:true}),shown=projectCashFlowSnapshot(input);
+ const hidden=['pending','pending_determined','pending_unresolved_original','interest_pending','admin_pending','principal_scheduled','interest_scheduled','admin_scheduled','unallocated_scheduled','rounding_scheduled'];
+ for(const prefix of ['loan','fund_pettyCash'])for(const m of hidden){assert(full.rows.some(r=>r.id===prefix+'_'+m),prefix+'_'+m);assert(!shown.rows.some(r=>r.id===prefix+'_'+m),prefix+'_'+m);}
+ for(const id of ['portfolio_pending','loans_principal_scheduled_total','loans_interest_scheduled_total','loans_admin_scheduled_total','loans_unallocated_scheduled_total','loans_rounding_scheduled_total','union_interest_scheduled','union_admin_scheduled','union_margin_scheduled'])assert(!shown.rows.some(r=>r.id===id),id);
+ for(const id of ['loan_scheduled','fund_pettyCash_scheduled','loans_scheduled_total','cash_in_scheduled','loan_placed','loan_count','loan_recovered','loan_principal','loan_unallocated'])assert.deepEqual(shown.rows.find(r=>r.id===id),full.rows.find(r=>r.id===id),id);
+ assert.equal(row(shown,'loan_scheduled').cells[11].amount,105);
+ assert(!shown.records.some(r=>/(_pending|_pending_determined|_pending_unresolved_original|_principal_scheduled|_interest_scheduled|_admin_scheduled|_unallocated_scheduled|_rounding_scheduled)$/.test(r.kind)));
+ const ids=new Set(shown.records.map(r=>r.id));assert(shown.records.every(r=>!r.parentRecordId||ids.has(r.parentRecordId)));
+ const file=await exporter.build(shown),zip=await Zip.loadAsync(file.bytes),xml=await zip.file('xl/worksheets/sheet1.xml').async('string');
+ assert(xml.includes('Recuperación futura programada'));assert(xml.includes('Número de préstamos otorgados'));assert(!xml.includes('Capital pendiente de recuperar'));assert(!xml.includes('Intereses programados'));
 });

@@ -10,10 +10,21 @@ const LABELS=CASH_FLOW_LOAN_FUNDS;
 const LOAN_ROWS=[
  ['placed','Capital colocado por fecha de aprobación','recorded'],['count','Número de préstamos otorgados','recorded'],
  ['recovered','Recuperación realizada','recorded'],['principal','Capital recuperado','recorded'],['interest','Intereses recuperados','recorded'],['admin','Gasto administrativo recuperado','recorded'],
- ['unallocated','Recuperación sin desglose','recorded'],['rounding','Diferencia de redondeo del desglose','recorded'],
+ ['unallocated','Recuperación por clasificar','recorded'],['rounding','Diferencia de redondeo del desglose','recorded'],
  ['pending','Capital pendiente de recuperar · total','balance'],['pending_determined','Saldo calculable · subtotal de préstamos con desglose','balance'],['pending_unresolved_original','Capital original de préstamos con saldo por conciliar','balance'],['interest_pending','Intereses pendientes según calendario','balance'],['admin_pending','Administración pendiente según calendario','balance'],
- ['scheduled','Recuperación futura programada','scheduled'],['principal_scheduled','Capital programado','scheduled'],['interest_scheduled','Intereses programados','scheduled'],['admin_scheduled','Administración programada','scheduled'],['unallocated_scheduled','Recuperación programada sin desglose','scheduled'],['rounding_scheduled','Diferencia de redondeo programada','scheduled']
+ ['scheduled','Recuperación futura programada','scheduled'],['principal_scheduled','Capital programado','scheduled'],['interest_scheduled','Intereses programados','scheduled'],['admin_scheduled','Administración programada','scheduled'],['unallocated_scheduled','Recuperación programada por clasificar','scheduled'],['rounding_scheduled','Diferencia de redondeo programada','scheduled']
 ];
+// Owner decision 2026-11-26: loan balances and the scheduled component breakdown remain
+// calculated but are not presented (screen and Excel) until HISTORIAL P V2 has complete
+// original breakdowns. Totals built only from these rows are deferred with them.
+const DEFERRED_ROW=/^(?:(?:loan|fund_[A-Za-z]+)_(?:pending|pending_determined|pending_unresolved_original|interest_pending|admin_pending|principal_scheduled|interest_scheduled|admin_scheduled|unallocated_scheduled|rounding_scheduled)|portfolio_pending|loans_(?:principal|interest|admin|unallocated|rounding)_scheduled_total|union_(?:interest|admin|margin)_scheduled)$/;
+export const isDeferredCashFlowRow=id=>DEFERRED_ROW.test(String(id));
+export function withoutDeferredCashFlowRows(data){
+ const hidden=new Set(data.rows.filter(r=>isDeferredCashFlowRow(r.id)).map(r=>r.id));
+ return {...data,rows:data.rows.filter(r=>!hidden.has(r.id)),records:data.records.filter(r=>!hidden.has(r.kind)),
+  issues:data.issues.filter(i=>!(i.affectedKinds||[]).length||(i.affectedKinds||[]).some(k=>!hidden.has(k))),
+  unassigned:data.unassigned.filter(r=>!hidden.has(r.kind))};
+}
 export function consolidateCashFlow({base,loans,requests=[],approvals=null,investorsSource=null,sourceErrors={}}){
  if(!base?.months||!Array.isArray(loans))throw new ReportError('CASH_FLOW_SOURCE_INVALID');
  // Records and source payloads are immutable. Clone the mutable containers instead of
@@ -132,7 +143,7 @@ export function consolidateCashFlow({base,loans,requests=[],approvals=null,inves
   const r=total('loans_'+component+phase+'_total',label+(phase?' programados':' recuperados')+' · cuatro programas de préstamo','Distribución consolidada de préstamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[component+phase]]));
   const denominator=rows.get(phase?'loans_scheduled_total':'loans_recovered_total');r.cells.forEach((c,i)=>{c.percentage=c.amount!==null&&denominator.cells[i].amount!==null?percent(cents(c.amount),cents(denominator.cells[i].amount)):null;});
  }
- for(const [metric,label]of [['unallocated','Recuperaci\u00f3n sin desglose'],['rounding','Diferencia de redondeo del desglose']])for(const phase of ['', '_scheduled'])total('loans_'+metric+phase+'_total',label+(phase?' programada':'')+' \u00b7 cuatro programas de préstamo','Distribuci\u00f3n consolidada de pr\u00e9stamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[metric+phase]]));
+ for(const [metric,labels]of [['unallocated',['Recuperaci\u00f3n por clasificar','Recuperaci\u00f3n programada por clasificar']],['rounding',['Diferencia de redondeo del desglose','Diferencia de redondeo del desglose programada']]])for(const phase of ['', '_scheduled'])total('loans_'+metric+phase+'_total',labels[phase?1:0]+' \u00b7 cuatro programas de préstamo','Distribuci\u00f3n consolidada de pr\u00e9stamos',phase?'scheduled':'recorded',allFunds.map(f=>[f.ids[metric+phase]]));
  total('cash_in','Total de entradas registradas','Flujo consolidado','recorded',[...recover,...[...collectionRows.values()].map(r=>[r.recovered]),['contribution'],['investor_contribution'],['cash_other_in']],{emphasis:'subtotal'});
  total('cash_out','Total de salidas registradas','Flujo consolidado','recorded',[...placed,['withdrawal_partial'],['withdrawal_total'],['withdrawal_unspecified'],['investor_yield_paid'],['investor_capital_return'],['cash_other_out']],{emphasis:'subtotal'});
  total('cash_other_net','Otros movimientos de efectivo registrados · neto','Flujo consolidado','recorded',[['investor_other']]);

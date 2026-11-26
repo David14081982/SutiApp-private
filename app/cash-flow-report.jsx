@@ -32,7 +32,7 @@
    onCancel(()=>finish(Error('CONTEXT_CHANGED')));
    try{
     const bundle=document.querySelector('script[src*="app/bundle.js"]')?.src||new URL('app/bundle.js',document.baseURI).href;
-    worker=new Worker(new URL('cash-flow-projection-worker.js?v=2026112501',bundle));
+    worker=new Worker(new URL('cash-flow-projection-worker.js?v=2026112601',bundle));
     timer=setTimeout(()=>finish(Error('PROJECTION_TIMEOUT')),120000);
     worker.onmessage=event=>{if(!isCurrent())return finish(Error('CONTEXT_CHANGED'));const result=event.data;if(result?.id!==1)return finish(Error('RESPONSE_INVALID'));if(result.error)return finish(Error(/^[A-Z_]+$/.test(result.error)?result.error:'RESPONSE_INVALID'));finish(null,result.data);};
     worker.onerror=()=>finish(Error('PROJECTION_FAILED'));

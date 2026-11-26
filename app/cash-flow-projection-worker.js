@@ -3,10 +3,10 @@ report.mjs sha256 39fd5c141705ec76d8bfab813ad01470e0f981b77d647cb0e2ad85a9dea319
 cash-flow-investor-continuity.mjs sha256 776f7493328780bf71a39780260a83822d0c6a96c93e8d34b7416a375608e74a
 cash-flow-investors.mjs sha256 e6349197c181ce56748032e8715c4fa1ff7c91e2a6de02d8adbe8e08606d6fb2
 cash-flow-loans.mjs sha256 d7536858bb33f40c3032b1134fccae531e3f8e838e78e83c7158ccb83c577c75
-cash-flow-consolidated.mjs sha256 a13b3508e5a00020aa8d31b34451f61c6f046db95d2824dd548272fe9e276792
+cash-flow-consolidated.mjs sha256 cd5ab75b5e0d8364a07e6a633049610845e572c6db3507cec99f185eea12bf06
 cash-flow-savings.mjs sha256 61fcf370216d5a2934e1cbb982e9667477ea6ae509ea82d8f2415f2f2ad120e6
 cash-flow-source-bases.mjs sha256 5687e38d36ad9fdbc21cff9396773b87cddf98480125026de77a3a98d92e098f
-cash-flow.mjs sha256 0c090ec122a3ea8b273777ef0010ff72ca060d4929f8bc834957ddadcbc2eb86
+cash-flow.mjs sha256 cce7de3f11e4efe652bf0b726ed38696b1f1f27527521cc62b4b11ec97809891
 Pure projection of an authorized in-memory snapshot; no credentials, network or persistence. */
 'use strict';
 for(const name of ["fetch","XMLHttpRequest","WebSocket","EventSource","importScripts","Worker","SharedWorker","BroadcastChannel","indexedDB","localStorage","sessionStorage","caches","navigator"]){Object.defineProperty(self,name,{value:undefined,writable:false,configurable:false});}
@@ -1521,7 +1521,19 @@ const COMPONENTS = {
   admin: 'Z'
 };
 const LABELS = CASH_FLOW_LOAN_FUNDS;
-const LOAN_ROWS = [['placed', 'Capital colocado por fecha de aprobación', 'recorded'], ['count', 'Número de préstamos otorgados', 'recorded'], ['recovered', 'Recuperación realizada', 'recorded'], ['principal', 'Capital recuperado', 'recorded'], ['interest', 'Intereses recuperados', 'recorded'], ['admin', 'Gasto administrativo recuperado', 'recorded'], ['unallocated', 'Recuperación sin desglose', 'recorded'], ['rounding', 'Diferencia de redondeo del desglose', 'recorded'], ['pending', 'Capital pendiente de recuperar · total', 'balance'], ['pending_determined', 'Saldo calculable · subtotal de préstamos con desglose', 'balance'], ['pending_unresolved_original', 'Capital original de préstamos con saldo por conciliar', 'balance'], ['interest_pending', 'Intereses pendientes según calendario', 'balance'], ['admin_pending', 'Administración pendiente según calendario', 'balance'], ['scheduled', 'Recuperación futura programada', 'scheduled'], ['principal_scheduled', 'Capital programado', 'scheduled'], ['interest_scheduled', 'Intereses programados', 'scheduled'], ['admin_scheduled', 'Administración programada', 'scheduled'], ['unallocated_scheduled', 'Recuperación programada sin desglose', 'scheduled'], ['rounding_scheduled', 'Diferencia de redondeo programada', 'scheduled']];
+const LOAN_ROWS = [['placed', 'Capital colocado por fecha de aprobación', 'recorded'], ['count', 'Número de préstamos otorgados', 'recorded'], ['recovered', 'Recuperación realizada', 'recorded'], ['principal', 'Capital recuperado', 'recorded'], ['interest', 'Intereses recuperados', 'recorded'], ['admin', 'Gasto administrativo recuperado', 'recorded'], ['unallocated', 'Recuperación por clasificar', 'recorded'], ['rounding', 'Diferencia de redondeo del desglose', 'recorded'], ['pending', 'Capital pendiente de recuperar · total', 'balance'], ['pending_determined', 'Saldo calculable · subtotal de préstamos con desglose', 'balance'], ['pending_unresolved_original', 'Capital original de préstamos con saldo por conciliar', 'balance'], ['interest_pending', 'Intereses pendientes según calendario', 'balance'], ['admin_pending', 'Administración pendiente según calendario', 'balance'], ['scheduled', 'Recuperación futura programada', 'scheduled'], ['principal_scheduled', 'Capital programado', 'scheduled'], ['interest_scheduled', 'Intereses programados', 'scheduled'], ['admin_scheduled', 'Administración programada', 'scheduled'], ['unallocated_scheduled', 'Recuperación programada por clasificar', 'scheduled'], ['rounding_scheduled', 'Diferencia de redondeo programada', 'scheduled']];
+const DEFERRED_ROW = /^(?:(?:loan|fund_[A-Za-z]+)_(?:pending|pending_determined|pending_unresolved_original|interest_pending|admin_pending|principal_scheduled|interest_scheduled|admin_scheduled|unallocated_scheduled|rounding_scheduled)|portfolio_pending|loans_(?:principal|interest|admin|unallocated|rounding)_scheduled_total|union_(?:interest|admin|margin)_scheduled)$/;
+const isDeferredCashFlowRow = id => DEFERRED_ROW.test(String(id));
+function withoutDeferredCashFlowRows(data) {
+  const hidden = new Set(data.rows.filter(r => isDeferredCashFlowRow(r.id)).map(r => r.id));
+  return {
+    ...data,
+    rows: data.rows.filter(r => !hidden.has(r.id)),
+    records: data.records.filter(r => !hidden.has(r.kind)),
+    issues: data.issues.filter(i => !(i.affectedKinds || []).length || (i.affectedKinds || []).some(k => !hidden.has(k))),
+    unassigned: data.unassigned.filter(r => !hidden.has(r.kind))
+  };
+}
 function consolidateCashFlow({
   base,
   loans,
@@ -1896,7 +1908,7 @@ function consolidateCashFlow({
       c.percentage = c.amount !== null && denominator.cells[i].amount !== null ? percent(cents(c.amount), cents(denominator.cells[i].amount)) : null;
     });
   }
-  for (const [metric, label] of [['unallocated', 'Recuperaci\u00f3n sin desglose'], ['rounding', 'Diferencia de redondeo del desglose']]) for (const phase of ['', '_scheduled']) total('loans_' + metric + phase + '_total', label + (phase ? ' programada' : '') + ' \u00b7 cuatro programas de préstamo', 'Distribuci\u00f3n consolidada de pr\u00e9stamos', phase ? 'scheduled' : 'recorded', allFunds.map(f => [f.ids[metric + phase]]));
+  for (const [metric, labels] of [['unallocated', ['Recuperaci\u00f3n por clasificar', 'Recuperaci\u00f3n programada por clasificar']], ['rounding', ['Diferencia de redondeo del desglose', 'Diferencia de redondeo del desglose programada']]]) for (const phase of ['', '_scheduled']) total('loans_' + metric + phase + '_total', labels[phase ? 1 : 0] + ' \u00b7 cuatro programas de préstamo', 'Distribuci\u00f3n consolidada de pr\u00e9stamos', phase ? 'scheduled' : 'recorded', allFunds.map(f => [f.ids[metric + phase]]));
   total('cash_in', 'Total de entradas registradas', 'Flujo consolidado', 'recorded', [...recover, ...[...collectionRows.values()].map(r => [r.recovered]), ['contribution'], ['investor_contribution'], ['cash_other_in']], {
     emphasis: 'subtotal'
   });
@@ -1976,7 +1988,7 @@ function consolidateCashFlow({
   result.notes = ['Las cuotas con fecha menor o igual al corte se clasifican por criterio operativo; no acreditan cobro bancario. Las posteriores son programadas.', 'Los porcentajes son participación de cada componente en el total de la misma cuota o fondo, mes y estado.', 'Totales con información parcial no representan un flujo completo; revisar detalle y pendientes sin fecha.'];
   return result;
 }
-return {consolidateCashFlow};
+return {consolidateCashFlow,withoutDeferredCashFlowRows};
 })();
 modules["cash-flow-savings.mjs"]=(()=>{
 const ReportError=modules["report.mjs"]["ReportError"];
@@ -2655,6 +2667,7 @@ const consolidateCashFlow=modules["cash-flow-consolidated.mjs"]["consolidateCash
 const reconcileSavingsCashFlow=modules["cash-flow-savings.mjs"]["reconcileSavingsCashFlow"];
 const ReportError=modules["report.mjs"]["ReportError"];
 const sourceDate=modules["report.mjs"]["sourceDate"];
+const withoutDeferredCashFlowRows=modules["cash-flow-consolidated.mjs"]["withoutDeferredCashFlowRows"];
 const money = v => typeof v === 'number' && Number.isFinite(v) && Number.isSafeInteger(Math.round(v * 100)) && Math.abs(v * 100 - Math.round(v * 100)) < .00001 ? Math.round(v * 100) : null;
 const inMonth = d => d?.slice(0, 7);
 function day(now) {
@@ -2858,7 +2871,9 @@ function cashFlowSourceBases(source, savings, investors, approvals, resolved, co
     report
   });
 }
-function projectCashFlowSnapshot(snapshot) {
+function projectCashFlowSnapshot(snapshot, {
+  includeDeferred = false
+} = {}) {
   if (snapshot?.version !== 'cash-flow-inputs-v1' || snapshot?.modelVersion !== '20261104-original-components-v1' || !validFrom(snapshot.from) || !Number.isFinite(Date.parse(snapshot.consultedAt))) throw new ReportError('CASH_FLOW_SOURCE_INVALID');
   const {
     source,
@@ -2878,7 +2893,7 @@ function projectCashFlowSnapshot(snapshot) {
     }),
     savings
   });
-  const data = consolidateCashFlow({
+  const consolidated = consolidateCashFlow({
     base,
     loans: source.loans,
     requests: source.requests,
@@ -2886,6 +2901,7 @@ function projectCashFlowSnapshot(snapshot) {
     investorsSource: investors,
     sourceErrors
   });
+  const data = includeDeferred ? consolidated : withoutDeferredCashFlowRows(consolidated);
   data.sourceBases = cashFlowSourceBases(source, savings, investors, null, null, consultedAt, data);
   delete data.savingsSourceTable;
   delete data.savingsBridge;

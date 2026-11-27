@@ -228,7 +228,15 @@
   const [tab,setTab]=useState(initialAffiliateId?'personas':'resumen'),[search,setSearch]=useState(''),[query,setQuery]=useState(''),[filter,setFilter]=useState('todos'),[offset,setOffset]=useState(0),[expanded,setExpanded]=useState(null);
   const [attention,setAttention]=useState('incidencias'),[program,setProgram]=useState('conciliacion'),[period,setPeriod]=useState(null),[revision,setRevision]=useState(0),[navigationError,setNavigationError]=useState(''),[requestNavigation,setRequestNavigation]=useState(null),[requestOnly,setRequestOnly]=useState(null);
   const [focusRequest,setFocusRequest]=useState(null),[dirty,setDirty]=useState(false),[showAttentionPeople,setShowAttentionPeople]=useState(false);
+  const [jcBusy,setJcBusy]=useState(false),[jcError,setJcError]=useState(''),jcController=useRef(null);
   const cache=useRef(new Map()),root=useRef(null),requestSequence=useRef(0);
+  useEffect(()=>()=>jcController.current?.abort(),[]);
+  async function downloadJc(){
+   if(jcController.current)return;const request=new AbortController();jcController.current=request;setJcBusy(true);setJcError('');
+   try{await window.SavingsJcRepository.download(request.signal);}
+   catch(error){if(!request.signal.aborted)setJcError(window.SavingsJcRepository.explain(error));}
+   finally{jcController.current=null;if(!request.signal.aborted)setJcBusy(false);}
+  }
   const [summary,reloadSummary]=useWorkspaceQuery(signal=>window.SavingsPanelRepository.summary({signal}),[revision]);
   const listing=tab==='personas'||tab==='atencion'&&attention==='incidencias'&&showAttentionPeople,listFilter=tab==='atencion'?'incidencias':filter;
   const [people,reloadPeople]=useWorkspaceQuery(signal=>window.SavingsPanelRepository.people({search:query,filter:listFilter,offset,limit:20,signal}),[query,listFilter,offset,revision],listing);
@@ -255,7 +263,9 @@
   return h('div',{key:window.SavingsPanelRepository.contextKey(),className:'svp',ref:root},h('style',null,css+extraCss),
    heading({title:'Ahorro',sub:d?'Información al '+fmt(d.today):'Administración del programa',onBack:()=>{if(mayLeave())onBack();}}),
    h('div',{className:'svp-body'},
-    h('nav',{className:'svp-tabs',role:'tablist','aria-label':'Secciones de Ahorro'},tabs.map(([value,label])=>h('button',{key:value,role:'tab','aria-selected':tab===value,onClick:()=>changeTab(value)},label))),
+    h('nav',{className:'svp-tabs',role:'tablist','aria-label':'Secciones de Ahorro'},tabs.map(([value,label])=>h('button',{key:value,role:'tab','aria-selected':tab===value,onClick:()=>changeTab(value)},label)),
+     h('button',{key:'reporte-jc',type:'button','data-savings-jc-report':true,disabled:jcBusy,'aria-busy':jcBusy,onClick:downloadJc},jcBusy?'Generando…':'Reporte JC')),
+    jcError&&h('p',{role:'alert',className:'svp-error'},jcError),
     navigationError&&h('p',{role:'alert',className:'svp-error'},navigationError),
     tab==='rh'&&h(window.SavingsRhReport,{today:d?.today}),
     tab==='historial'&&h(WithdrawalHistory,{app,cache,revision,onSaved:refresh,onDirty:setDirty,dirty,mayLeave}),

@@ -1,0 +1,51 @@
+{
+  "status": "PASS",
+  "data": "SYNTHETIC_ONLY",
+  "network": "BLOCKED",
+  "sourceHashes": {
+    "app/icons.jsx": "b4f95ea86d3a4c907f88236555ba038e9477527646517759a8559cd596687464",
+    "app/savings-panel-reference.jsx": "45bf219683caddbefd5b87c32bba3149c234633516a4109c586b025296ee4671",
+    "app/savings-panel-repository.js": "6e590b57f05c5dbdf4c671c846783eb0b54de0fd9c255ebc39c038062b5196d4",
+    "app/savings-withdrawal-history-repository.js": "a5883f8ded224d7178fdb1011ed5bfa1d301b65734fe3c71bd24f412d5dc95c6",
+    "app/savings-certification-admin.jsx": "b0275a3ec9684b01b05307d27ae80bf381829955fc26925661eb01c2721cd962",
+    "app/savings-runtime-admin.jsx": "ba27bdf4a1bd2b6765b976f685075d1424de355ec7968cad1a13495ac2cf3958",
+    "app/savings-bulk-admin.jsx": "397e85d149bc70af727cbb6231c10bdeb2f63d8c0249dde0e8022a5b20f65b05",
+    "app/savings-individual-withdrawal-repository.js": "bd5c3b95357eb8fdaeab1d6254326bb0bce588cd8eb6c7713be5a6d47ba092bf",
+    "app/savings-individual-withdrawal.jsx": "4feb145d843865075c2525dda30bf20bf6840b92cfff2e690af6c2d7acbfb681",
+    "app/savings-rh-repository.js": "511a57a4f52501aa6fbc27208bfe8fd5c57703d30dd382d481e95825015d3cf6",
+    "app/savings-rh-report.jsx": "5bfbc8d35549183b4a090e7d59428978b8a1771f7368d7d3f35b732dc2bc544b",
+    "app/savings-jc-repository.js": "8928f7fe970fbbfdbae0cbc19810175ea1944378ef13bc265d445560fdde068f",
+    "app/document-generation-design.js": "120ff1456b8f827db6297df68e7185a2e6a509cdf201994c953644f16309e2df",
+    "app/document-generation-repository.js": "7607eea6f6bc4df3ef98b57f0679cdcf35f09ef241d037e186140b638e66f4c8",
+    "app/screens-admin-document-generation.jsx": "2f1d2d64c80e7f7055f159e474de1a1becc7944076f4f941009d3b43054ec6e3",
+    "app/savings-panel-admin.jsx": "95200bc4921462ffb6bc796191e5cdae56aa801ab1c1e306b54e8432d0d2d950"
+  },
+  "checks": [
+    "Real Savings panel and Reporte JC repository with isolated transport",
+    "Existing tabs preserved; one additional download button",
+    "Explicit errors; no unexpected RPC/Edge calls"
+  ],
+  "viewports": {
+    "390": {
+      "status": "PASS",
+      "checks": [
+        "Six existing tabs unchanged; «Reporte JC» is a plain button right after Historial; nothing is requested until it is pressed",
+        "Click downloads Reporte_JC_Ahorro_<fecha>.xlsx; busy label «Generando…» blocks a second request; selected tab does not change",
+        "Denied, reconciliation, unsupported movement, invalid file and unavailable errors are explicit; a later success clears the alert",
+        "Tabs still switch; no horizontal overflow; button keeps touch size"
+      ]
+    },
+    "1440": {
+      "status": "PASS",
+      "checks": [
+        "Six existing tabs unchanged; «Reporte JC» is a plain button right after Historial; nothing is requested until it is pressed",
+        "Click downloads Reporte_JC_Ahorro_<fecha>.xlsx; busy label «Generando…» blocks a second request; selected tab does not change",
+        "Denied, reconciliation, unsupported movement, invalid file and unavailable errors are explicit; a later success clears the alert",
+        "Tabs still switch; no horizontal overflow; button keeps touch size"
+      ]
+    }
+  },
+  "browserErrors": [],
+  "networkAttempts": [],
+  "mutationAttempts": []
+}

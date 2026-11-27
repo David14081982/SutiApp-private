@@ -1,5 +1,19 @@
 # Fuentes de verdad
 
+## Reporte JC de Ahorro — publicado 2026-11-27
+
+`get_admin_savings_jc_report` → Edge `savings-jc-report` → `SavingsJcRepository` → botón
+«Reporte JC» de Admin › Ahorro. Excel derivado, nunca autoridad. Saldo (HOY) = suma de
+`savings_transactions` del participante canónico. Fechas hasta el corte certificado (06-09-2026):
+`savings_balance_certifications.source_snapshot` aprobado con las etiquetas de
+`savings_review_records.field_defs`; después: CONTRIBUTION/ADJUSTMENT/REVERSAL por
+`contribution_date`. Saldo inicial = REGULARIZATION − historial desde el 05-07-2026 + retiros
+importados fechados entre el 05-07 y el corte. Retiros: hoja importada «Solicitud de retiro» y
+`savings_requests` (importe entregado = débitos WITHDRAWAL enlazados por `idempotency_key`).
+Nombre por `savings_affiliate_display_name`; tipo de empleado por
+`affiliates.financial_employee_category_code`. Permiso `savings.reports`. Sin escrituras ni Google.
+Si una fila no cuadra con el ledger o aparece un movimiento sin columna aprobada, no hay archivo.
+
 ## Número de empleado corregido — aplicado y verificado, 2026-11-11
 
 H-EMPLOYEE-NUMBER-CORRECTION-001 conserva `public.affiliates.numero_control`

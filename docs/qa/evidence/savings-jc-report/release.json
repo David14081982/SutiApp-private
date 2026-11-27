@@ -1,0 +1,54 @@
+{
+  "edge-compile": {
+    "status": "PASS",
+    "sourceSha256": "9e7bed990fd18f7cd7876e5180b0d7eaa2b72e0ccf93bb6285f5c65033d4242b",
+    "verifyJwt": true,
+    "at": "2026-11-27T13:55:53.557Z"
+  },
+  "db-apply": {
+    "status": "PASS",
+    "migrationSha256": "3cc46c457254c38237d6d1d47ef7e9f89b961f8e662f75449f0dbc002b98163c",
+    "functionMd5": "d0da17f5d1fa29f9c69e1331976058f1",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "securityDefiner": true,
+    "volatility": "s",
+    "rowCountsUnchanged": {
+      "tx": 2179,
+      "req": 82,
+      "part": 405,
+      "rec": 1425
+    },
+    "at": "2026-11-27T13:56:10.356Z"
+  },
+  "db-verify": {
+    "status": "PASS",
+    "functionMd5": "d0da17f5d1fa29f9c69e1331976058f1",
+    "acl": "{postgres=X/postgres,authenticated=X/postgres}",
+    "people": 405,
+    "withdrawals": 231,
+    "dates": 14,
+    "firstDate": "2026-07-05",
+    "lastDate": "2026-11-15",
+    "totalCentsEqualsLedger": true,
+    "deniedWithoutPermission": "SAVINGS_REPORT_DENIED",
+    "at": "2026-11-27T13:56:17.636Z"
+  },
+  "edge-deploy": {
+    "status": "PASS",
+    "sourceSha256": "9e7bed990fd18f7cd7876e5180b0d7eaa2b72e0ccf93bb6285f5c65033d4242b",
+    "verifyJwt": true,
+    "version": 1,
+    "at": "2026-11-27T13:56:32.834Z"
+  },
+  "live": {
+    "status": "PASS",
+    "anonymousStatus": 401,
+    "preflightStatus": 204,
+    "allowOrigin": "https://sutiapp.com",
+    "downloadStatus": 200,
+    "contentDisposition": "attachment; filename=\"Reporte_JC_Ahorro_2026-11-27.xlsx\"",
+    "bytes": 66856,
+    "ms": 2237,
+    "at": "2026-11-27T13:56:39.810Z"
+  }
+}

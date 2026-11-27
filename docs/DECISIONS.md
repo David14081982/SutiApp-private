@@ -1,5 +1,23 @@
 # Registro de decisiones arquitectónicas
 
+## H-SAVINGS-JC-REPORT-001 — Reporte JC de Ahorro, 2026-11-27 (ADR-121)
+
+El propietario pide un botón «Reporte JC» junto a «Historial» en Admin › Ahorro que descargue un
+Excel actualizado con dos hojas: **Ahorro** (Folio, Nombre, Proceso, Tipo de empleado, Saldo (HOY),
+Saldo inicial, una columna por fecha de descuento desde el 05-07-2026, Retiros y Ajustes) y
+**Retiro** (retiros por fecha). Decisiones del propietario: la base es Supabase; el saldo inicial es
+el saldo con el que todos inician tras las entregas del cierre de junio 2026; sólo fechas ya
+vencidas; todos los ahorradores; columnas Retiros y Ajustes para que cada fila cuadre; en la hoja
+Retiro todos los retiros desde febrero, con «Se descuenta en»; un retiro aprobado sin entregar no
+se resta; proceso «xxxx» → proceso actual. Jubilado y pensionado son una sola categoría en Afiliados.
+
+Se reutiliza el patrón del Reporte RH (función de lectura `get_admin_savings_jc_report`, permiso
+`savings.reports`, Edge `savings-jc-report` con JWT del usuario). El archivo se genera sólo si cada
+fila reproduce el saldo del ledger; los movimientos sin columna aprobada (rendimientos, retenciones)
+detienen el reporte con aviso visible en lugar de ocultarse. No cambia ningún dato, regla ni permiso
+de Ahorro. Rollback: `supabase/recovery/20261127000100_savings_jc_report.sql`, borrar la Edge y
+revertir el commit del frontend.
+
 ## H-AFFILIATE-DOSSIER-PROGRAMS-001 — Expediente completo por programa y Ahorro, 2026-11-20 (ADR-117)
 
 El propietario observa que el expediente completo sólo mostraba préstamos y decide: una carpeta por

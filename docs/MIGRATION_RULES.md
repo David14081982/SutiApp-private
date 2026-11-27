@@ -559,3 +559,12 @@ Owner-authorized additive operational register, pending-state RPCs and loan guar
 ## 20261111000100 - assisted request actor check - APPLIED / VERIFIED
 
 Replace one expression in `capture_program_request_impersonation()` to use the existing real-actor impersonation permission. Do not change global admin intersection, writer signatures, RLS, grants, trigger binding or business rows. Forward/recovery require exact predecessor hashes and retain all pg_proc metadata except prosrc; original readable definition is in `scripts/fixtures/loan-impersonation-context-before.json`. Recovery restores the exact old body and preserves request history. Local real PostgreSQL tests: original failure, own/assisted bank loan with and without target Auth, attribution, documents, idempotency, permission/session denial and recovery PASS (16/16). PR14 merged with CI/Pages successful. An initial apply was blocked before execution for the previous preproduction gate; the owner's subsequent explicit instruction to apply this exact correction in production resolved that decision. Applied 2026-11-11 03:26:21Z against reviewed main e79bfd1, after renewed preflight, readable backup and successful CI. Postcommit readback PASS: one function body and one migration metadata row, seven business-table fingerprints unchanged within the transaction, other captured function definitions and metadata preserved. Independent post-deployment review APPROVED. No real test request or designated preproduction deployment performed. [Audit](audits/H-LOAN-IMPERSONATION-CONTEXT-20261110.md).
+
+## 20261127000100 - H-SAVINGS-JC-REPORT-001 - APPLIED / VERIFIED
+
+Additive read-only `public.get_admin_savings_jc_report()` (SECURITY DEFINER, empty search_path,
+`savings.reports`, EXECUTE only for `authenticated`). Guarded against prior installation and a taken
+version; applied and recorded in `supabase_migrations.schema_migrations` in one transaction with
+savings row counts unchanged (tx 2179, requests 82, participants 405, review records 1425). No table,
+grant, RLS, writer or Google change. Recovery: `supabase/recovery/20261127000100_savings_jc_report.sql`
+after reverting the frontend and deleting the `savings-jc-report` Edge.

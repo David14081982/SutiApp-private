@@ -1,5 +1,14 @@
 # Bitácora de agentes
 
+## H-SAVINGS-JC-REPORT-001 - 2026-11-27 - PASS
+
+Botón «Reporte JC» junto a Historial en Admin › Ahorro: descarga el Excel de Ahorro (saldo inicial
+de julio 2026, descuentos por fecha, retiros y ajustes) y la hoja Retiro, generados al momento desde
+Supabase. Migración aditiva `20261127000100_savings_jc_report` (una función de lectura,
+`savings.reports`), Edge nueva `savings-jc-report` v1, repositorio y botón focal; bundle v2026112701.
+Verificado contra el Excel aprobado (0 diferencias), en vivo y en navegador real. Auditoría:
+[H-SAVINGS-JC-REPORT-001](audits/H-SAVINGS-JC-REPORT-001.md), ADR-121.
+
 ## H-HISTORY-DEBT-CARD-001 - 2026-11-25
 
 Replace only History hero with total pending debt, next deduction and per-ID accordion. Retain published snapshot/approval/PDF behavior; exact decimal derivation, explicit incomplete balances, no new reads/writes. Focal and current regression suites plus standard Pages build PASS. Release isolated from unrelated local work; [audit](audits/H-HISTORY-DEBT-CARD-001.md). Published in commit 1dd2de3; Pages run 45585994435 and own-account verification with/without service worker plus reload PASS. Controlled live account has zero debt; populated accordion verified with isolated fixtures.

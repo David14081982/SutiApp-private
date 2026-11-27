@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "mode": "published",
+  "base": "https://sutiapp.com/",
+  "checks": [
+    "Admin > Ahorro shows the six existing tabs and «Reporte JC» right after Historial",
+    "Click downloads a valid .xlsx from the deployed savings-jc-report Edge; no error shown"
+  ],
+  "blockedWrites": [
+    {
+      "endpoint": "financial-legacy"
+    }
+  ],
+  "edgeCalls": [
+    "financial-legacy",
+    "savings-jc-report"
+  ],
+  "browserErrors": [],
+  "download": {
+    "filename": "Reporte_JC_Ahorro_<fecha>.xlsx",
+    "bytes": 66856,
+    "ms": 9497
+  }
+}

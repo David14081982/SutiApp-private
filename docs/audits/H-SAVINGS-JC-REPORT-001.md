@@ -87,3 +87,14 @@ detienen el reporte con aviso hasta que el propietario apruebe una columna para 
 de arquitectura ya estaba STALE por H anteriores (43/14 archivos de otras áreas); no se regeneró
 completo para no mezclar alcances.
 Evidence: `docs/qa/evidence/savings-jc-report/`.
+
+## Publicación verificada — 2026-11-27
+
+Commit `2a1ece8` en `main`; GitHub Pages run `46012807583` success. https://sutiapp.com sirve
+`SutiApp.html`/`sw.js` con la versión 2026112701 y `app/bundle.js?v=2026112701` con el SHA-256
+`8704f76fa9852999f391c2c70c3abcfab2c84f9acc680eb080837a434edb199f`, idéntico al build local.
+Navegador real en el sitio publicado con la cuenta admin de prueba
+(`browser-published.json`): seis pestañas intactas, «Reporte JC» después de Historial, descarga
+válida e idéntica al Excel aprobado (405 ahorradores, 231 retiros, 0 diferencias). La única
+escritura bloqueada durante la prueba fue el arranque de préstamos (`financial-legacy`), bloqueado a
+propósito como en H anteriores.
